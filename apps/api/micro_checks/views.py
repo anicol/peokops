@@ -42,20 +42,76 @@ class MicroCheckTemplateViewSet(viewsets.ModelViewSet):
     ViewSet for managing micro-check templates.
 
     Templates define the checks that can be assigned to managers.
+
+    Access Control:
+    - ADMIN: Full access (create, edit, delete, publish, archive)
+    - OWNER: View all for their brand, can clone templates
+    - GM: View-only access to assigned templates
+    - INSPECTOR: No access
     """
     queryset = MicroCheckTemplate.objects.all()
     serializer_class = MicroCheckTemplateSerializer
     permission_classes = [IsAuthenticated]
-    filterset_fields = ['category', 'severity', 'is_active']
-    search_fields = ['title', 'description']
-    ordering_fields = ['created_at', 'category', 'severity']
+    filterset_fields = ['category', 'severity', 'is_active', 'brand', 'is_local']
+    search_fields = ['title', 'description', 'success_criteria']
+    ordering_fields = ['created_at', 'category', 'severity', 'rotation_priority']
     ordering = ['-created_at']
 
+    def get_queryset(self):
+        """Filter templates based on user role and brand access"""
+        user = self.request.user
+
+        # ADMIN sees all templates
+        if user.role == 'ADMIN':
+            return self.queryset
+
+        # OWNER sees templates for their brand + global templates
+        if user.role == 'OWNER':
+            if user.store and user.store.brand:
+                return self.queryset.filter(
+                    Q(brand=user.store.brand) | Q(brand__isnull=True)
+                )
+            return self.queryset.filter(brand__isnull=True)
+
+        # GM sees templates for their brand (read-only)
+        if user.role == 'GM':
+            if user.store and user.store.brand:
+                return self.queryset.filter(
+                    Q(brand=user.store.brand) | Q(brand__isnull=True)
+                )
+            return self.queryset.filter(brand__isnull=True)
+
+        # INSPECTOR has no access to templates
+        return self.queryset.none()
+
     def perform_create(self, serializer):
-        serializer.save(created_by=self.request.user)
+        """Only ADMIN can create templates"""
+        if self.request.user.role != 'ADMIN':
+            from rest_framework.exceptions import PermissionDenied
+            raise PermissionDenied("Only administrators can create templates.")
+
+        # Set brand and creator
+        brand = self.request.data.get('brand')
+        serializer.save(
+            created_by=self.request.user,
+            brand_id=brand if brand else None
+        )
 
     def perform_update(self, serializer):
+        """Only ADMIN can update templates"""
+        if self.request.user.role != 'ADMIN':
+            from rest_framework.exceptions import PermissionDenied
+            raise PermissionDenied("Only administrators can edit templates.")
+
         serializer.save(updated_by=self.request.user)
+
+    def perform_destroy(self, instance):
+        """Only ADMIN can delete templates"""
+        if self.request.user.role != 'ADMIN':
+            from rest_framework.exceptions import PermissionDenied
+            raise PermissionDenied("Only administrators can delete templates.")
+
+        instance.delete()
 
     @extend_schema(
         summary="Get active templates by category",
@@ -70,8 +126,198 @@ class MicroCheckTemplateViewSet(viewsets.ModelViewSet):
         if not category:
             return Response({'error': 'category parameter required'}, status=400)
 
-        templates = self.queryset.filter(category=category, is_active=True)
+        templates = self.get_queryset().filter(category=category, is_active=True)
         serializer = self.get_serializer(templates, many=True)
+        return Response(serializer.data)
+
+    @extend_schema(
+        summary="Clone a template",
+        request={'application/json': {'type': 'object', 'properties': {'title': {'type': 'string'}}}},
+        responses={201: MicroCheckTemplateSerializer}
+    )
+    @action(detail=True, methods=['post'])
+    def clone(self, request, pk=None):
+        """
+        Clone a template to create a new variant.
+
+        ADMIN can clone any template.
+        OWNER can clone to create local (franchise-specific) templates.
+        """
+        user = request.user
+
+        # Only ADMIN and OWNER can clone
+        if user.role not in ['ADMIN', 'OWNER']:
+            return Response(
+                {'error': 'Only administrators and franchise owners can clone templates.'},
+                status=status.HTTP_403_FORBIDDEN
+            )
+
+        template = self.get_object()
+        new_title = request.data.get('title', f"{template.title} (Copy)")
+
+        # Determine brand for cloned template
+        if user.role == 'OWNER':
+            # Owner creates local template for their brand
+            cloned_brand = user.store.brand if user.store else None
+            is_local = True
+        else:
+            # Admin can clone to any brand or global
+            cloned_brand = None if not request.data.get('brand') else request.data.get('brand')
+            is_local = request.data.get('is_local', False)
+
+        # Create clone
+        cloned = MicroCheckTemplate.objects.create(
+            brand=cloned_brand,
+            category=template.category,
+            severity=template.severity,
+            title=new_title,
+            description=template.description,
+            success_criteria=template.success_criteria,
+            parent_template=template,
+            version=1,
+            default_photo_required=template.default_photo_required,
+            default_video_required=template.default_video_required,
+            expected_completion_seconds=template.expected_completion_seconds,
+            ai_validation_enabled=template.ai_validation_enabled,
+            ai_validation_prompt=template.ai_validation_prompt,
+            is_local=is_local,
+            include_in_rotation=True,
+            rotation_priority=template.rotation_priority,
+            is_active=True,
+            created_by=user
+        )
+
+        serializer = self.get_serializer(cloned)
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+    @extend_schema(
+        summary="Archive a template (soft delete)",
+        responses={200: MicroCheckTemplateSerializer}
+    )
+    @action(detail=True, methods=['post'])
+    def archive(self, request, pk=None):
+        """
+        Archive a template (soft delete).
+
+        Only ADMIN can archive templates.
+        Archived templates are excluded from rotation but preserved for history.
+        """
+        if request.user.role != 'ADMIN':
+            return Response(
+                {'error': 'Only administrators can archive templates.'},
+                status=status.HTTP_403_FORBIDDEN
+            )
+
+        template = self.get_object()
+        template.is_active = False
+        template.include_in_rotation = False
+        template.updated_by = request.user
+        template.save()
+
+        serializer = self.get_serializer(template)
+        return Response(serializer.data)
+
+    @extend_schema(
+        summary="Publish new version of template",
+        request={'application/json': {
+            'type': 'object',
+            'properties': {
+                'description': {'type': 'string'},
+                'success_criteria': {'type': 'string'},
+                'default_photo_required': {'type': 'boolean'},
+                'default_video_required': {'type': 'boolean'},
+                'expected_completion_seconds': {'type': 'integer'},
+                'rotation_priority': {'type': 'integer'},
+            }
+        }},
+        responses={201: MicroCheckTemplateSerializer}
+    )
+    @action(detail=True, methods=['post'])
+    def publish(self, request, pk=None):
+        """
+        Publish a new version of a template.
+
+        Only ADMIN can publish new versions.
+        This creates v2, v3, etc. and deactivates the old version.
+        Old versions are preserved for historical accuracy.
+        """
+        if request.user.role != 'ADMIN':
+            return Response(
+                {'error': 'Only administrators can publish new template versions.'},
+                status=status.HTTP_403_FORBIDDEN
+            )
+
+        old_template = self.get_object()
+
+        # Create new version with updated fields
+        new_version = MicroCheckTemplate.objects.create(
+            brand=old_template.brand,
+            category=old_template.category,
+            severity=old_template.severity,
+            title=old_template.title,
+            description=request.data.get('description', old_template.description),
+            success_criteria=request.data.get('success_criteria', old_template.success_criteria),
+            parent_template=old_template,
+            version=old_template.version + 1,
+            default_photo_required=request.data.get('default_photo_required', old_template.default_photo_required),
+            default_video_required=request.data.get('default_video_required', old_template.default_video_required),
+            expected_completion_seconds=request.data.get('expected_completion_seconds', old_template.expected_completion_seconds),
+            ai_validation_enabled=request.data.get('ai_validation_enabled', old_template.ai_validation_enabled),
+            ai_validation_prompt=request.data.get('ai_validation_prompt', old_template.ai_validation_prompt),
+            is_local=old_template.is_local,
+            include_in_rotation=True,
+            rotation_priority=request.data.get('rotation_priority', old_template.rotation_priority),
+            is_active=True,
+            created_by=request.user
+        )
+
+        # Deactivate old version
+        old_template.is_active = False
+        old_template.include_in_rotation = False
+        old_template.updated_by = request.user
+        old_template.save()
+
+        serializer = self.get_serializer(new_version)
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+    @extend_schema(
+        summary="Get version history for a template",
+        responses={200: MicroCheckTemplateSerializer(many=True)}
+    )
+    @action(detail=True, methods=['get'])
+    def history(self, request, pk=None):
+        """
+        Get complete version history for a template.
+
+        Returns all versions (ancestors and descendants) sorted by version number.
+        ADMIN and OWNER can view history.
+        """
+        user = request.user
+        if user.role not in ['ADMIN', 'OWNER']:
+            return Response(
+                {'error': 'Permission denied.'},
+                status=status.HTTP_403_FORBIDDEN
+            )
+
+        template = self.get_object()
+
+        # Get all versions in this template's lineage
+        versions = [template]
+
+        # Walk backwards to find all ancestors
+        current = template.parent_template
+        while current:
+            versions.append(current)
+            current = current.parent_template
+
+        # Walk forwards to find all descendants
+        descendants = MicroCheckTemplate.objects.filter(parent_template=template)
+        versions.extend(list(descendants))
+
+        # Remove duplicates and sort by version number (descending)
+        versions = sorted(set(versions), key=lambda t: t.version, reverse=True)
+
+        serializer = self.get_serializer(versions, many=True)
         return Response(serializer.data)
 
 
@@ -236,6 +482,18 @@ class MicroCheckRunViewSet(viewsets.ModelViewSet):
 
         # Get today's local date for the store
         local_date = get_store_local_date(store)
+
+        # Check if any active templates exist before creating run
+        from .utils import select_templates_for_run
+        selected_templates = select_templates_for_run(store, num_items=3)
+
+        if not selected_templates:
+            return Response({
+                'error': 'NO_TEMPLATES',
+                'message': 'No active templates available for Quick Checks. Please configure templates first.',
+                'user_role': user.role,
+                'can_configure': user.role in ['ADMIN', 'OWNER']
+            }, status=status.HTTP_400_BAD_REQUEST)
 
         # Check if a run already exists for today
         existing_run = MicroCheckRun.objects.filter(
