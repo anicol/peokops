@@ -466,9 +466,12 @@ class MicroCheckRunViewSet(viewsets.ModelViewSet):
         user = request.user
 
         # Get store from request or user's store
-        store_id = request.data.get('store_id') or user.store
+        store_id = request.data.get('store_id')
         if not store_id:
-            return Response({'error': 'No store associated with user'}, status=400)
+            if hasattr(user, 'store') and user.store:
+                store_id = user.store.id
+            else:
+                return Response({'error': 'No store associated with user'}, status=400)
 
         try:
             store = Store.objects.get(id=store_id)
@@ -476,7 +479,8 @@ class MicroCheckRunViewSet(viewsets.ModelViewSet):
             return Response({'error': 'Store not found'}, status=404)
 
         # Check permissions - user must have access to this store
-        if user.role != 'ADMIN' and store_id != user.store:
+        user_store_id = user.store.id if hasattr(user, 'store') and user.store else None
+        if user.role != 'ADMIN' and store_id != user_store_id:
             if user.role == 'GM' and store not in user.managed_stores.all():
                 return Response({'error': 'No access to this store'}, status=403)
 
