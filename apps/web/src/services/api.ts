@@ -13,6 +13,14 @@ import type {
   InspectionStats,
   Upload,
 } from '@/types';
+import type {
+  MicroCheckRun,
+  MicroCheckResponse,
+  MicroCheckStreak,
+  CorrectiveAction,
+  SubmitResponseRequest,
+  RunStatsResponse,
+} from '@/types/microCheck';
 
 // Upload-specific types
 export interface PresignedUrlRequest {
@@ -366,6 +374,119 @@ export const actionItemsAPI = {
   
   deleteActionItem: async (id: number): Promise<void> => {
     await api.delete(`/inspections/actions/${id}/`);
+  },
+};
+
+// Micro-Checks API
+export const microCheckAPI = {
+  // Get run by magic link token (no auth required)
+  getRunByToken: async (token: string): Promise<MicroCheckRun> => {
+    const response = await api.get('/micro-checks/runs/by-token/', {
+      params: { token },
+      headers: { Authorization: '' }, // Override auth for this request
+    });
+    return response.data;
+  },
+
+  // Submit response via magic link (no auth required)
+  submitResponseViaToken: async (data: SubmitResponseRequest): Promise<MicroCheckResponse> => {
+    const response = await api.post('/micro-checks/responses/submit_via_magic_link/', data, {
+      headers: { Authorization: '' }, // Override auth for this request
+    });
+    return response.data;
+  },
+
+  // Get runs for a store (auth required)
+  getRuns: async (storeId: number, status?: string): Promise<MicroCheckRun[]> => {
+    const response = await api.get('/micro-checks/runs/', {
+      params: { store: storeId, status },
+    });
+    return response.data.results || response.data;
+  },
+
+  // Get pending runs for a store (auth required)
+  getPendingRuns: async (storeId: number): Promise<MicroCheckRun[]> => {
+    const response = await api.get('/micro-checks/runs/pending/', {
+      params: { store_id: storeId },
+    });
+    return response.data.results || response.data;
+  },
+
+  // Get run statistics (auth required)
+  getRunStats: async (storeId: number): Promise<RunStatsResponse> => {
+    const response = await api.get('/micro-checks/runs/stats/', {
+      params: { store_id: storeId },
+    });
+    return response.data;
+  },
+
+  // Get responses (history) for a store (auth required)
+  getResponses: async (storeId: number, params?: Record<string, any>): Promise<MicroCheckResponse[]> => {
+    const response = await api.get('/micro-checks/responses/', {
+      params: { store: storeId, ...params },
+    });
+    return response.data.results || response.data;
+  },
+
+  // Get responses by category (auth required)
+  getResponsesByCategory: async (storeId: number, category: string): Promise<MicroCheckResponse[]> => {
+    const response = await api.get('/micro-checks/responses/by_category/', {
+      params: { store_id: storeId, category },
+    });
+    return response.data.results || response.data;
+  },
+
+  // Get streaks for a store (auth required)
+  getStreaks: async (storeId: number): Promise<MicroCheckStreak[]> => {
+    const response = await api.get('/micro-checks/streaks/', {
+      params: { store: storeId },
+    });
+    return response.data.results || response.data;
+  },
+
+  // Get leaderboard (auth required)
+  getLeaderboard: async (storeId: number): Promise<MicroCheckStreak[]> => {
+    const response = await api.get('/micro-checks/streaks/leaderboard/', {
+      params: { store_id: storeId },
+    });
+    return response.data;
+  },
+
+  // Get corrective actions (auth required)
+  getCorrectiveActions: async (storeId?: number, params?: Record<string, any>): Promise<CorrectiveAction[]> => {
+    const response = await api.get('/micro-checks/actions/', {
+      params: { store: storeId, ...params },
+    });
+    return response.data.results || response.data;
+  },
+
+  // Get overdue actions (auth required)
+  getOverdueActions: async (storeId?: number): Promise<CorrectiveAction[]> => {
+    const response = await api.get('/micro-checks/actions/overdue/', {
+      params: storeId ? { store_id: storeId } : undefined,
+    });
+    return response.data;
+  },
+
+  // Resolve corrective action (auth required)
+  resolveAction: async (actionId: string, resolutionNotes: string): Promise<CorrectiveAction> => {
+    const response = await api.post(`/micro-checks/actions/${actionId}/resolve/`, {
+      resolution_notes: resolutionNotes,
+    });
+    return response.data;
+  },
+
+  // Upload photo (for authenticated submissions)
+  uploadPhoto: async (file: File): Promise<string> => {
+    const formData = new FormData();
+    formData.append('file', file);
+
+    const response = await api.post('/micro-checks/media/', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+    return response.data.s3_key;
   },
 };
 

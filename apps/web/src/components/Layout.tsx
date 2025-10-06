@@ -34,6 +34,7 @@ const navigationSections = [
     items: [
       { name: 'My Videos', href: '/videos', icon: Video, key: 'videos' },
       { name: 'My Inspections', href: '/inspections', icon: FileSearch, key: 'inspections' },
+      { name: 'Quick Checks', href: '/micro-check-history', icon: Target, key: 'quickChecks' },
       { name: 'Improvement Tracking', href: '/coaching/trends', icon: TrendingUp, key: 'coachingTrends' },
       { name: 'Action Items', href: '/actions', icon: CheckSquare, key: 'actionItems' },
     ]
