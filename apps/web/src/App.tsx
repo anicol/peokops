@@ -21,6 +21,7 @@ import AdminQueuePage from '@/pages/AdminQueuePage';
 import MicroCheckInvitePage from '@/pages/MicroCheckInvitePage';
 import MicroCheckPage from '@/pages/MicroCheckPage';
 import MicroCheckHistoryPage from '@/pages/MicroCheckHistoryPage';
+import MicroCheckTemplatesPage from '@/pages/MicroCheckTemplatesPage';
 import { MobileCaptureProvider } from '@/pages/MobileCaptureContext';
 import DemoModeIndicator from '@/components/DemoModeIndicator';
 function AppRoutes() {
@@ -222,6 +223,18 @@ function AppRoutes() {
               </Layout>
             ) : (
               <Navigate to="/login" replace />
+            )
+          }
+        />
+        <Route
+          path="/micro-check-templates"
+          element={
+            isAuthenticated && (user?.role === 'ADMIN' || user?.role === 'OWNER') ? (
+              <Layout>
+                <MicroCheckTemplatesPage />
+              </Layout>
+            ) : (
+              <Navigate to="/" replace />
             )
           }
         />

@@ -9,6 +9,7 @@ import {
   Award,
   Filter,
   Loader2,
+  Settings,
 } from 'lucide-react';
 import { microCheckAPI } from '@/services/api';
 import { useAuth } from '@/hooks/useAuth';
@@ -106,12 +107,24 @@ const MicroCheckHistoryPage = () => {
 
   const handleStartCheck = async () => {
     setCreatingRun(true);
+    setError(null); // Clear any previous errors
     try {
       const { token } = await microCheckAPI.createInstantRun(storeId);
       navigate(`/micro-check?token=${token}`);
     } catch (err: any) {
       console.error('Error creating run:', err);
-      setError('Unable to create check run. Please try again.');
+
+      // Handle NO_TEMPLATES error specifically
+      if (err.response?.data?.error === 'NO_TEMPLATES') {
+        const data = err.response.data;
+        if (data.can_configure) {
+          setError('No Quick Check templates configured yet. Click "Configure Templates" below to set them up.');
+        } else {
+          setError('No Quick Check templates available. Please contact your administrator to configure templates.');
+        }
+      } else {
+        setError('Unable to create check run. Please try again.');
+      }
     } finally {
       setCreatingRun(false);
     }
@@ -156,6 +169,14 @@ const MicroCheckHistoryPage = () => {
             <h1 className="text-2xl font-bold text-gray-900 mb-2">Quick Checks</h1>
             <p className="text-gray-600">Track your daily quick checks and improvement streaks.</p>
           </div>
+          {(user?.role === 'ADMIN' || user?.role === 'OWNER') && (
+            <Link to="/micro-check-templates">
+              <button className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors font-medium flex items-center justify-center">
+                <Settings className="w-4 h-4 mr-2" />
+                Configure Templates
+              </button>
+            </Link>
+          )}
         </div>
 
         <div className="max-w-2xl mx-auto">
@@ -165,6 +186,14 @@ const MicroCheckHistoryPage = () => {
             <p className="text-gray-600 mb-6">
               Start your first quick check to begin tracking your progress and building streaks.
             </p>
+
+            {/* Show error message if present */}
+            {error && (
+              <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
+                <p className="text-sm text-red-600">{error}</p>
+              </div>
+            )}
+
             <button
               onClick={handleStartCheck}
               disabled={creatingRun}
@@ -192,20 +221,30 @@ const MicroCheckHistoryPage = () => {
           <h1 className="text-2xl font-bold text-gray-900 mb-2">Quick Checks</h1>
           <p className="text-gray-600">Track your daily quick checks and improvement streaks.</p>
         </div>
-        <button
-          onClick={handleStartCheck}
-          disabled={creatingRun}
-          className="px-6 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
-        >
-          {creatingRun ? (
-            <span className="flex items-center">
-              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-              Creating...
-            </span>
-          ) : (
-            "Run Today's Checks"
+        <div className="flex flex-col sm:flex-row gap-3">
+          {(user?.role === 'ADMIN' || user?.role === 'OWNER') && (
+            <Link to="/micro-check-templates">
+              <button className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors font-medium flex items-center justify-center">
+                <Settings className="w-4 h-4 mr-2" />
+                Configure Templates
+              </button>
+            </Link>
           )}
-        </button>
+          <button
+            onClick={handleStartCheck}
+            disabled={creatingRun}
+            className="px-6 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {creatingRun ? (
+              <span className="flex items-center">
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                Creating...
+              </span>
+            ) : (
+              "Run Today's Checks"
+            )}
+          </button>
+        </div>
       </div>
 
       <div className="max-w-7xl">
