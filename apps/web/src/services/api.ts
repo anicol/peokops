@@ -381,7 +381,7 @@ export const actionItemsAPI = {
 export const microCheckAPI = {
   // Get run by magic link token (no auth required)
   getRunByToken: async (token: string): Promise<MicroCheckRun> => {
-    const response = await api.get('/micro-checks/runs/by-token/', {
+    const response = await api.get('/micro-checks/runs/by_token/', {
       params: { token },
       headers: { Authorization: '' }, // Override auth for this request
     });
@@ -487,6 +487,14 @@ export const microCheckAPI = {
       },
     });
     return response.data.s3_key;
+  },
+
+  // Create instant run for current user (auth required)
+  createInstantRun: async (storeId?: number): Promise<{ run: MicroCheckRun; token: string; message: string }> => {
+    const response = await api.post('/micro-checks/runs/create_instant_run/', {
+      store_id: storeId,
+    });
+    return response.data;
   },
 };
 

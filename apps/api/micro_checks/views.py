@@ -151,6 +151,154 @@ class MicroCheckRunViewSet(viewsets.ModelViewSet):
             'completion_rate': (completed / total * 100) if total > 0 else 0
         })
 
+    @extend_schema(
+        summary="Get run by magic link token",
+        parameters=[
+            OpenApiParameter(name='token', description='Magic link token', required=True, type=str)
+        ]
+    )
+    @action(detail=False, methods=['get'], permission_classes=[AllowAny])
+    def by_token(self, request):
+        """Get run details using a magic link token (no authentication required)."""
+        from .utils import hash_token
+
+        token = request.query_params.get('token')
+        if not token:
+            return Response({'error': 'token required'}, status=400)
+
+        # Hash the token to look up assignment
+        token_hash = hash_token(token)
+
+        try:
+            assignment = MicroCheckAssignment.objects.select_related('run__store').get(
+                access_token_hash=token_hash
+            )
+        except MicroCheckAssignment.DoesNotExist:
+            return Response({'error': 'Invalid token'}, status=404)
+
+        # Check if token is expired
+        if assignment.token_expires_at < timezone.now():
+            return Response({'error': 'Token expired'}, status=403)
+
+        # Update usage tracking
+        if assignment.first_used_at is None:
+            assignment.first_used_at = timezone.now()
+
+        assignment.use_count += 1
+        assignment.last_used_at = timezone.now()
+
+        # Track IP
+        x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
+        if x_forwarded_for:
+            assignment.ip_last_used = x_forwarded_for.split(',')[0]
+        else:
+            assignment.ip_last_used = request.META.get('REMOTE_ADDR')
+
+        assignment.save()
+
+        serializer = self.get_serializer(assignment.run)
+        return Response(serializer.data)
+
+    @extend_schema(
+        summary="Create an instant check run for current user",
+        parameters=[
+            OpenApiParameter(name='store_id', description='Store ID (optional, uses user store if not provided)', required=False, type=int)
+        ]
+    )
+    @action(detail=False, methods=['post'])
+    def create_instant_run(self, request):
+        """
+        Create an instant micro-check run for the authenticated user.
+
+        This allows managers to start a check on-demand without waiting for scheduled SMS.
+        Returns the run details and a magic link token to start the checks immediately.
+        """
+        from brands.models import Store
+        from .tasks import _create_run_for_store
+        from .utils import generate_magic_link_token, hash_token, get_store_local_date
+
+        user = request.user
+
+        # Get store from request or user's store
+        store_id = request.data.get('store_id') or user.store
+        if not store_id:
+            return Response({'error': 'No store associated with user'}, status=400)
+
+        try:
+            store = Store.objects.get(id=store_id)
+        except Store.DoesNotExist:
+            return Response({'error': 'Store not found'}, status=404)
+
+        # Check permissions - user must have access to this store
+        if user.role != 'ADMIN' and store_id != user.store:
+            if user.role == 'GM' and store not in user.managed_stores.all():
+                return Response({'error': 'No access to this store'}, status=403)
+
+        # Get today's local date for the store
+        local_date = get_store_local_date(store)
+
+        # Check if a run already exists for today
+        existing_run = MicroCheckRun.objects.filter(
+            store=store,
+            scheduled_for=local_date
+        ).first()
+
+        if existing_run:
+            # Create new assignment for existing run
+            raw_token = generate_magic_link_token()
+            token_hash = hash_token(raw_token)
+            token_expires_at = timezone.now() + timezone.timedelta(hours=24)
+
+            assignment = MicroCheckAssignment.objects.create(
+                run=existing_run,
+                store=store,
+                sent_to=user,
+                access_token_hash=token_hash,
+                token_expires_at=token_expires_at,
+                purpose='RUN_ACCESS',
+                scope={'run_id': str(existing_run.id), 'store_id': store.id},
+                sent_via='WEB',
+                first_used_at=timezone.now()
+            )
+
+            serializer = self.get_serializer(existing_run)
+            return Response({
+                'run': serializer.data,
+                'token': raw_token,
+                'message': 'Using existing run for today'
+            })
+
+        # Create new run
+        run = _create_run_for_store(store, local_date)
+
+        if not run:
+            return Response({'error': 'Failed to create run'}, status=500)
+
+        # Generate magic link token
+        raw_token = generate_magic_link_token()
+        token_hash = hash_token(raw_token)
+
+        # Create assignment for the current user
+        token_expires_at = timezone.now() + timezone.timedelta(hours=24)
+        assignment = MicroCheckAssignment.objects.create(
+            run=run,
+            store=store,
+            sent_to=user,
+            access_token_hash=token_hash,
+            token_expires_at=token_expires_at,
+            purpose='RUN_ACCESS',
+            scope={'run_id': str(run.id), 'store_id': store.id},
+            sent_via='WEB',
+            first_used_at=timezone.now()
+        )
+
+        serializer = self.get_serializer(run)
+        return Response({
+            'run': serializer.data,
+            'token': raw_token,
+            'message': 'Created new run for today'
+        }, status=status.HTTP_201_CREATED)
+
 
 class MicroCheckResponseViewSet(viewsets.ModelViewSet):
     """
@@ -161,7 +309,7 @@ class MicroCheckResponseViewSet(viewsets.ModelViewSet):
     queryset = MicroCheckResponse.objects.select_related(
         'run_item__run',
         'store',
-        'responder'
+        'completed_by'
     )
     serializer_class = MicroCheckResponseSerializer
     filterset_fields = ['store', 'category', 'status', 'severity']
@@ -209,7 +357,7 @@ class MicroCheckResponseViewSet(viewsets.ModelViewSet):
         local_date = get_store_local_date(store)
 
         response = serializer.save(
-            responder=self.request.user,
+            completed_by=self.request.user,
             store=store,
             category=run_item.category_snapshot,
             severity=run_item.severity_snapshot,
@@ -301,7 +449,7 @@ class MicroCheckResponseViewSet(viewsets.ModelViewSet):
         user_agent = request.META.get('HTTP_USER_AGENT', '')
 
         response = serializer.save(
-            responder=assignment.manager,
+            completed_by=assignment.manager,
             store=store,
             category=run_item.category_snapshot,
             severity=run_item.severity_snapshot,
@@ -346,10 +494,10 @@ class MicroCheckStreakViewSet(viewsets.ReadOnlyModelViewSet):
 
     Read-only - streaks are calculated automatically by tasks.
     """
-    queryset = MicroCheckStreak.objects.select_related('store', 'manager')
+    queryset = MicroCheckStreak.objects.select_related('store', 'user')
     serializer_class = MicroCheckStreakSerializer
     permission_classes = [IsAuthenticated]
-    filterset_fields = ['store', 'manager']
+    filterset_fields = ['store', 'user']
     ordering_fields = ['current_streak', 'longest_streak', 'last_completed_date']
     ordering = ['-current_streak']
 

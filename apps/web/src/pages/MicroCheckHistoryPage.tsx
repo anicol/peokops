@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import {
   Target,
   Calendar,
@@ -16,11 +16,13 @@ import type { MicroCheckResponse, MicroCheckStreak } from '@/types/microCheck';
 
 const MicroCheckHistoryPage = () => {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [timeRange, setTimeRange] = useState('30days');
   const [responses, setResponses] = useState<MicroCheckResponse[]>([]);
   const [streaks, setStreaks] = useState<MicroCheckStreak[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [creatingRun, setCreatingRun] = useState(false);
 
   // Get user's store (for now, assume first managed store or user's store)
   const storeId = user?.store || 1; // TODO: Handle multiple stores
@@ -102,6 +104,19 @@ const MicroCheckHistoryPage = () => {
   const currentStreak = streaks[0]?.current_streak || 0;
   const maxStreak = streaks[0]?.longest_streak || 0;
 
+  const handleStartCheck = async () => {
+    setCreatingRun(true);
+    try {
+      const { token } = await microCheckAPI.createInstantRun(storeId);
+      navigate(`/micro-check?token=${token}`);
+    } catch (err: any) {
+      console.error('Error creating run:', err);
+      setError('Unable to create check run. Please try again.');
+    } finally {
+      setCreatingRun(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="p-4 lg:p-8">
@@ -132,19 +147,65 @@ const MicroCheckHistoryPage = () => {
     );
   }
 
+  // Show simplified empty state when no sessions exist
+  if (sessions.length === 0) {
+    return (
+      <div className="p-4 lg:p-8">
+        <div className="flex flex-col lg:flex-row lg:justify-between lg:items-center mb-8 space-y-4 lg:space-y-0">
+          <div>
+            <h1 className="text-2xl font-bold text-gray-900 mb-2">Quick Checks</h1>
+            <p className="text-gray-600">Track your daily quick checks and improvement streaks.</p>
+          </div>
+        </div>
+
+        <div className="max-w-2xl mx-auto">
+          <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-12 text-center">
+            <Target className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">No Check Sessions Yet</h3>
+            <p className="text-gray-600 mb-6">
+              Start your first quick check to begin tracking your progress and building streaks.
+            </p>
+            <button
+              onClick={handleStartCheck}
+              disabled={creatingRun}
+              className="inline-block px-6 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {creatingRun ? (
+                <span className="flex items-center">
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Creating...
+                </span>
+              ) : (
+                'Run Your First Check'
+              )}
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="p-4 lg:p-8">
       <div className="flex flex-col lg:flex-row lg:justify-between lg:items-center mb-8 space-y-4 lg:space-y-0">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 mb-2">Micro-Check History</h1>
+          <h1 className="text-2xl font-bold text-gray-900 mb-2">Quick Checks</h1>
           <p className="text-gray-600">Track your daily quick checks and improvement streaks.</p>
         </div>
-        <Link
-          to="/micro-check"
-          className="px-6 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors font-medium inline-block text-center"
+        <button
+          onClick={handleStartCheck}
+          disabled={creatingRun}
+          className="px-6 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          Run Today's Checks
-        </Link>
+          {creatingRun ? (
+            <span className="flex items-center">
+              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+              Creating...
+            </span>
+          ) : (
+            "Run Today's Checks"
+          )}
+        </button>
       </div>
 
       <div className="max-w-7xl">
@@ -246,93 +307,77 @@ const MicroCheckHistoryPage = () => {
                 </div>
               </div>
 
-              {sessions.length === 0 ? (
-                <div className="p-12 text-center">
-                  <Target className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-                  <h3 className="text-lg font-semibold text-gray-900 mb-2">No Sessions Yet</h3>
-                  <p className="text-gray-600 mb-6">
-                    Start your first micro-check to begin tracking your progress.
-                  </p>
-                  <Link
-                    to="/micro-check"
-                    className="inline-block px-6 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors font-medium"
-                  >
-                    Run Your First Check
-                  </Link>
-                </div>
-              ) : (
-                <div className="divide-y divide-gray-200">
-                  {sessions.map((session, sessionIdx) => (
-                    <div key={sessionIdx} className="p-6 hover:bg-gray-50 transition-colors">
-                      <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between mb-4 space-y-4 lg:space-y-0">
-                        <div className="flex items-center space-x-4">
-                          <div className="w-12 h-12 bg-teal-100 rounded-lg flex items-center justify-center flex-shrink-0">
-                            <Target className="w-6 h-6 text-teal-600" />
-                          </div>
-                          <div>
-                            <div className="font-semibold text-gray-900 mb-1">
-                              {formatDate(session.date)} Morning Check
-                            </div>
-                            <div className="flex items-center space-x-4 text-sm text-gray-600">
-                              <div className="flex items-center">
-                                <Calendar className="w-4 h-4 mr-1" />
-                                {session.time}
-                              </div>
-                              <div className="flex items-center">
-                                <Clock className="w-4 h-4 mr-1" />
-                                ~2 min
-                              </div>
-                            </div>
-                          </div>
+              <div className="divide-y divide-gray-200">
+                {sessions.map((session, sessionIdx) => (
+                  <div key={sessionIdx} className="p-6 hover:bg-gray-50 transition-colors">
+                    <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between mb-4 space-y-4 lg:space-y-0">
+                      <div className="flex items-center space-x-4">
+                        <div className="w-12 h-12 bg-teal-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                          <Target className="w-6 h-6 text-teal-600" />
                         </div>
-
-                        <div className="flex items-center justify-between lg:justify-end space-x-6">
-                          <div className="text-center">
-                            <div className="text-lg font-bold text-green-600">{session.passed}</div>
-                            <div className="text-xs text-gray-600">Passed</div>
+                        <div>
+                          <div className="font-semibold text-gray-900 mb-1">
+                            {formatDate(session.date)} Morning Check
                           </div>
-                          <div className="text-center">
-                            <div className="text-lg font-bold text-orange-600">{session.fixed}</div>
-                            <div className="text-xs text-gray-600">Fixed</div>
-                          </div>
-                          <div className="text-center">
-                            <div className="text-lg font-bold text-blue-600">
-                              {Math.round((session.passed / session.totalChecks) * 100)}%
+                          <div className="flex items-center space-x-4 text-sm text-gray-600">
+                            <div className="flex items-center">
+                              <Calendar className="w-4 h-4 mr-1" />
+                              {session.time}
                             </div>
-                            <div className="text-xs text-gray-600">Success</div>
+                            <div className="flex items-center">
+                              <Clock className="w-4 h-4 mr-1" />
+                              ~2 min
+                            </div>
                           </div>
                         </div>
                       </div>
 
-                      {/* Check Details */}
-                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                        {session.checks.map((check) => (
-                          <div
-                            key={check.id}
-                            className={`p-3 rounded-lg border ${
-                              check.status === 'PASS'
-                                ? 'bg-green-50 border-green-200'
-                                : 'bg-orange-50 border-orange-200'
-                            }`}
-                          >
-                            <div className="flex items-center mb-1">
-                              {check.status === 'PASS' ? (
-                                <CheckCircle className="w-4 h-4 text-green-600 mr-2 flex-shrink-0" />
-                              ) : (
-                                <AlertTriangle className="w-4 h-4 text-orange-600 mr-2 flex-shrink-0" />
-                              )}
-                              <span className="text-sm font-medium text-gray-900 truncate">
-                                {check.category_display}
-                              </span>
-                            </div>
-                            {check.notes && <p className="text-xs text-gray-600 ml-6">{check.notes}</p>}
+                      <div className="flex items-center justify-between lg:justify-end space-x-6">
+                        <div className="text-center">
+                          <div className="text-lg font-bold text-green-600">{session.passed}</div>
+                          <div className="text-xs text-gray-600">Passed</div>
+                        </div>
+                        <div className="text-center">
+                          <div className="text-lg font-bold text-orange-600">{session.fixed}</div>
+                          <div className="text-xs text-gray-600">Fixed</div>
+                        </div>
+                        <div className="text-center">
+                          <div className="text-lg font-bold text-blue-600">
+                            {Math.round((session.passed / session.totalChecks) * 100)}%
                           </div>
-                        ))}
+                          <div className="text-xs text-gray-600">Success</div>
+                        </div>
                       </div>
                     </div>
-                  ))}
-                </div>
-              )}
+
+                    {/* Check Details */}
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                      {session.checks.map((check) => (
+                        <div
+                          key={check.id}
+                          className={`p-3 rounded-lg border ${
+                            check.status === 'PASS'
+                              ? 'bg-green-50 border-green-200'
+                              : 'bg-orange-50 border-orange-200'
+                          }`}
+                        >
+                          <div className="flex items-center mb-1">
+                            {check.status === 'PASS' ? (
+                              <CheckCircle className="w-4 h-4 text-green-600 mr-2 flex-shrink-0" />
+                            ) : (
+                              <AlertTriangle className="w-4 h-4 text-orange-600 mr-2 flex-shrink-0" />
+                            )}
+                            <span className="text-sm font-medium text-gray-900 truncate">
+                              {check.category_display}
+                            </span>
+                          </div>
+                          {check.notes && <p className="text-xs text-gray-600 ml-6">{check.notes}</p>}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
         </div>

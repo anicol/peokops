@@ -35,6 +35,24 @@ class MicroCheckTemplate(models.Model):
     ai_validation_enabled = models.BooleanField(default=False)
     ai_validation_prompt = models.TextField(blank=True)
 
+    # Brand and ownership
+    brand = models.ForeignKey('brands.Brand', on_delete=models.CASCADE, null=True, blank=True,
+                              help_text="Brand that owns this template (null = global/system template)",
+                              related_name='micro_check_templates')
+    is_local = models.BooleanField(default=False,
+                                   help_text="Local template (franchise-specific) vs global (brand-wide)")
+
+    # Selection logic
+    include_in_rotation = models.BooleanField(default=True,
+                                             help_text="Include in daily auto-rotation")
+    rotation_priority = models.IntegerField(default=50,
+                                           help_text="Priority for selection (0-100, higher = more likely)")
+
+    # Visual reference
+    visual_reference_image = models.ImageField(upload_to='micro_checks/references/',
+                                              blank=True, null=True,
+                                              help_text="Optional reference image showing 'what good looks like'")
+
     is_active = models.BooleanField(default=True)
 
     # Auditing

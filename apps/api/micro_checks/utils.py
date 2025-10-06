@@ -100,11 +100,9 @@ def should_require_photo(template, coverage):
     Determine if photo should be required for this check.
 
     Logic:
-    - ALWAYS: Always require photo
-    - NEVER: Never require photo
     - FIRST_TIME: Require if this is the first time for this template
     - AFTER_FAIL: Require if last response was a failure
-    - RANDOM_10: 10% chance of requiring photo
+    - Default: Use template's default setting
 
     Args:
         template: MicroCheckTemplate instance
@@ -115,32 +113,25 @@ def should_require_photo(template, coverage):
     """
     from .models import MicroCheckRunItem
 
-    # If template doesn't have photo guidance, never require
-    if not template.photo_guidance:
-        return False, MicroCheckRunItem.PhotoRequiredReason.NEVER
+    # Check template's default photo requirement
+    if not template.default_photo_required:
+        return False, ''
 
     # Check template's default photo requirement logic
-    # This is a placeholder - you may want to add a field to template
-    # for photo_requirement_strategy
-
     if coverage is None:
         # First time seeing this template
-        return True, MicroCheckRunItem.PhotoRequiredReason.FIRST_TIME
+        return True, MicroCheckRunItem.PhotoRequiredReason.FIRST_CHECK_OF_WEEK
 
-    if coverage.last_response_status == 'FAIL':
+    if coverage.last_visual_status == 'FAIL':
         # Previous failure
-        return True, MicroCheckRunItem.PhotoRequiredReason.AFTER_FAIL
-
-    if coverage.consecutive_fails >= 2:
-        # Multiple consecutive failures
-        return True, MicroCheckRunItem.PhotoRequiredReason.AFTER_FAIL
+        return True, MicroCheckRunItem.PhotoRequiredReason.PRIOR_FAIL
 
     # Random 10% chance
     import random
     if random.random() < 0.1:
-        return True, MicroCheckRunItem.PhotoRequiredReason.RANDOM_10
+        return True, MicroCheckRunItem.PhotoRequiredReason.RANDOM_AUDIT
 
-    return False, MicroCheckRunItem.PhotoRequiredReason.NEVER
+    return False, ''
 
 
 def select_templates_for_run(store, num_items=3):
@@ -183,14 +174,12 @@ def select_templates_for_run(store, num_items=3):
 
         if coverage:
             # Reduce priority based on recent usage
-            days_since_use = (timezone.now().date() - coverage.last_used_date).days
+            days_since_use = (timezone.now() - coverage.last_visual_verified_at).days
             priority += days_since_use * 2
 
-            # Increase priority for consecutive fails
-            priority += coverage.consecutive_fails * 30
-
-            # Reduce priority for consecutive passes (it's probably fine)
-            priority -= coverage.consecutive_passes * 5
+            # Increase priority if last check failed
+            if coverage.last_visual_status == 'FAIL':
+                priority += 30
         else:
             # Never seen before - high priority
             priority += 200
@@ -328,3 +317,38 @@ def create_corrective_action_for_failure(response, assigned_to=None):
     )
 
     return action
+
+
+def seed_default_templates(brand, created_by=None):
+    """
+    Seed default coaching templates for a new brand.
+
+    This function automatically creates 15 industry-standard micro-check
+    templates when a brand is created, providing an immediate "batteries included"
+    experience where managers can start running Quick Checks on day 1.
+
+    Args:
+        brand: Brand instance to associate templates with
+        created_by: Optional User instance who created the brand
+
+    Returns:
+        list: List of created MicroCheckTemplate instances
+    """
+    from .models import MicroCheckTemplate
+    from .default_templates import get_default_templates
+
+    templates_created = []
+    default_templates = get_default_templates()
+
+    for template_data in default_templates:
+        template = MicroCheckTemplate.objects.create(
+            brand=brand,
+            is_local=False,
+            include_in_rotation=True,
+            is_active=True,
+            created_by=created_by,
+            **template_data
+        )
+        templates_created.append(template)
+
+    return templates_created

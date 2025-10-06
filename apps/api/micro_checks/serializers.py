@@ -24,9 +24,13 @@ class MicroCheckTemplateSerializer(serializers.ModelSerializer):
     class Meta:
         model = MicroCheckTemplate
         fields = [
-            'id', 'category', 'category_display', 'severity', 'severity_display',
-            'title', 'description', 'guidance', 'pass_criteria', 'fail_criteria',
-            'photo_guidance', 'version', 'parent_template', 'is_active',
+            'id', 'brand', 'category', 'category_display', 'severity', 'severity_display',
+            'title', 'description', 'success_criteria',
+            'version', 'parent_template',
+            'default_photo_required', 'default_video_required', 'expected_completion_seconds',
+            'ai_validation_enabled', 'ai_validation_prompt',
+            'is_local', 'include_in_rotation', 'rotation_priority',
+            'visual_reference_image', 'is_active',
             'created_at', 'created_by', 'created_by_name', 'updated_at', 'updated_by'
         ]
         read_only_fields = ['id', 'created_at', 'created_by', 'updated_at', 'updated_by']
@@ -43,8 +47,7 @@ class MicroCheckRunItemSerializer(serializers.ModelSerializer):
             'id', 'run', 'template', 'template_title', 'order',
             'photo_required', 'photo_required_reason', 'photo_required_reason_display',
             'template_version', 'title_snapshot', 'category_snapshot', 'severity_snapshot',
-            'description_snapshot', 'guidance_snapshot', 'pass_criteria_snapshot',
-            'fail_criteria_snapshot', 'photo_guidance_snapshot'
+            'success_criteria_snapshot'
         ]
         read_only_fields = ['id']
 
@@ -61,10 +64,10 @@ class MicroCheckRunSerializer(serializers.ModelSerializer):
         fields = [
             'id', 'store', 'store_name', 'scheduled_for', 'sequence',
             'store_timezone', 'retention_policy', 'retention_policy_display',
-            'expires_at', 'status', 'status_display', 'completed_at',
-            'items', 'created_at', 'created_by', 'updated_at', 'updated_by'
+            'retain_until', 'status', 'status_display', 'completed_at',
+            'items', 'created_at', 'created_by'
         ]
-        read_only_fields = ['id', 'created_at', 'created_by', 'updated_at', 'updated_by']
+        read_only_fields = ['id', 'created_at', 'created_by']
 
 
 class MicroCheckAssignmentSerializer(serializers.ModelSerializer):

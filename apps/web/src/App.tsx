@@ -35,64 +35,201 @@ function AppRoutes() {
     );
   }
 
-  // Unauthenticated routes (magic links, public pages)
   return (
-    <Routes>
-      {/* Magic link routes - no auth required */}
-      <Route path="/check/:token" element={<MicroCheckInvitePage />} />
-      <Route path="/micro-check" element={<MicroCheckPage />} />
+    <MobileCaptureProvider>
+      <Routes>
+        {/* Magic link routes - no auth required */}
+        <Route path="/check/:token" element={<MicroCheckInvitePage />} />
+        <Route path="/micro-check" element={<MicroCheckPage />} />
 
-      {/* Auth routes */}
-      <Route path="/login" element={<LoginPage />} />
-      <Route path="/trial-signup" element={<TrialSignupPage />} />
+        {/* Auth routes */}
+        <Route path="/login" element={isAuthenticated ? <Navigate to="/" replace /> : <LoginPage />} />
+        <Route path="/trial-signup" element={isAuthenticated ? <Navigate to="/" replace /> : <TrialSignupPage />} />
 
-      {/* Authenticated routes */}
-      {isAuthenticated ? (
+        {/* Full-screen authenticated routes (no layout) */}
         <Route
-          path="/*"
+          path="/capture"
+          element={isAuthenticated ? <MobileCapturePage /> : <Navigate to="/login" replace />}
+        />
+        <Route
+          path="/processing/:uploadId"
+          element={isAuthenticated ? <ProcessingPage /> : <Navigate to="/login" replace />}
+        />
+
+        {/* Regular authenticated routes (with layout) */}
+        <Route
+          path="/"
           element={
-            <MobileCaptureProvider>
-              <Routes>
-                {/* Mobile capture route - full screen without layout */}
-                <Route path="/capture" element={<MobileCapturePage />} />
-
-                {/* Processing page - full screen without layout */}
-                <Route path="/processing/:uploadId" element={<ProcessingPage />} />
-
-                {/* Regular routes with layout */}
-                <Route
-                  path="/*"
-                  element={
-                    <Layout>
-                      <Routes>
-                        <Route path="/" element={<Dashboard />} />
-                        <Route path="/videos" element={<VideosPage />} />
-                        <Route path="/videos/upload" element={<VideoUploadPage />} />
-                        <Route path="/videos/:id" element={<VideoDetailPage />} />
-                        <Route path="/inspections" element={<InspectionsPage />} />
-                        <Route path="/inspections/:id" element={<InspectionDetailPage />} />
-                        <Route path="/actions" element={<ActionItemsPage />} />
-                        <Route path="/brands" element={<BrandsPage />} />
-                        <Route path="/stores" element={<StoresPage />} />
-                        <Route path="/users" element={<UsersPage />} />
-                        <Route path="/inspector-queue" element={<InspectorQueuePage />} />
-                        <Route path="/admin/queue" element={<AdminQueuePage />} />
-                        <Route path="/admin/users" element={<AdminUsersPage />} />
-                        <Route path="/micro-check-history" element={<MicroCheckHistoryPage />} />
-                        <Route path="/login" element={<Navigate to="/" replace />} />
-                        <Route path="*" element={<Navigate to="/" replace />} />
-                      </Routes>
-                    </Layout>
-                  }
-                />
-              </Routes>
-            </MobileCaptureProvider>
+            isAuthenticated ? (
+              <Layout>
+                <Dashboard />
+              </Layout>
+            ) : (
+              <Navigate to="/login" replace />
+            )
           }
         />
-      ) : (
-        <Route path="*" element={<Navigate to="/login" replace />} />
-      )}
-    </Routes>
+        <Route
+          path="/videos"
+          element={
+            isAuthenticated ? (
+              <Layout>
+                <VideosPage />
+              </Layout>
+            ) : (
+              <Navigate to="/login" replace />
+            )
+          }
+        />
+        <Route
+          path="/videos/upload"
+          element={
+            isAuthenticated ? (
+              <Layout>
+                <VideoUploadPage />
+              </Layout>
+            ) : (
+              <Navigate to="/login" replace />
+            )
+          }
+        />
+        <Route
+          path="/videos/:id"
+          element={
+            isAuthenticated ? (
+              <Layout>
+                <VideoDetailPage />
+              </Layout>
+            ) : (
+              <Navigate to="/login" replace />
+            )
+          }
+        />
+        <Route
+          path="/inspections"
+          element={
+            isAuthenticated ? (
+              <Layout>
+                <InspectionsPage />
+              </Layout>
+            ) : (
+              <Navigate to="/login" replace />
+            )
+          }
+        />
+        <Route
+          path="/inspections/:id"
+          element={
+            isAuthenticated ? (
+              <Layout>
+                <InspectionDetailPage />
+              </Layout>
+            ) : (
+              <Navigate to="/login" replace />
+            )
+          }
+        />
+        <Route
+          path="/actions"
+          element={
+            isAuthenticated ? (
+              <Layout>
+                <ActionItemsPage />
+              </Layout>
+            ) : (
+              <Navigate to="/login" replace />
+            )
+          }
+        />
+        <Route
+          path="/brands"
+          element={
+            isAuthenticated ? (
+              <Layout>
+                <BrandsPage />
+              </Layout>
+            ) : (
+              <Navigate to="/login" replace />
+            )
+          }
+        />
+        <Route
+          path="/stores"
+          element={
+            isAuthenticated ? (
+              <Layout>
+                <StoresPage />
+              </Layout>
+            ) : (
+              <Navigate to="/login" replace />
+            )
+          }
+        />
+        <Route
+          path="/users"
+          element={
+            isAuthenticated ? (
+              <Layout>
+                <UsersPage />
+              </Layout>
+            ) : (
+              <Navigate to="/login" replace />
+            )
+          }
+        />
+        <Route
+          path="/inspector-queue"
+          element={
+            isAuthenticated ? (
+              <Layout>
+                <InspectorQueuePage />
+              </Layout>
+            ) : (
+              <Navigate to="/login" replace />
+            )
+          }
+        />
+        <Route
+          path="/admin/queue"
+          element={
+            isAuthenticated ? (
+              <Layout>
+                <AdminQueuePage />
+              </Layout>
+            ) : (
+              <Navigate to="/login" replace />
+            )
+          }
+        />
+        <Route
+          path="/admin/users"
+          element={
+            isAuthenticated ? (
+              <Layout>
+                <AdminUsersPage />
+              </Layout>
+            ) : (
+              <Navigate to="/login" replace />
+            )
+          }
+        />
+        <Route
+          path="/micro-check-history"
+          element={
+            isAuthenticated ? (
+              <Layout>
+                <MicroCheckHistoryPage />
+              </Layout>
+            ) : (
+              <Navigate to="/login" replace />
+            )
+          }
+        />
+
+        {/* Catch-all redirect */}
+        <Route path="*" element={<Navigate to={isAuthenticated ? "/" : "/login"} replace />} />
+      </Routes>
+    </MobileCaptureProvider>
   );
 }
 

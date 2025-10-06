@@ -101,13 +101,15 @@ def _create_run_for_store(store, scheduled_date):
         MicroCheckRun instance or None if creation failed
     """
     # Determine retention policy based on store's mode
-    # You may want to add a mode field to Store model
-    retention_policy = 'COACHING_7D'  # Default to coaching mode
+    retention_policy = 'COACHING'  # Default to coaching mode
     if hasattr(store, 'inspection_mode') and store.inspection_mode == 'ENTERPRISE':
-        retention_policy = 'ENTERPRISE_365D'
+        retention_policy = 'ENTERPRISE'
 
-    # Calculate expiry
-    expires_at = calculate_retention_expiry(retention_policy)
+    # Calculate retention date
+    if retention_policy == 'ENTERPRISE':
+        retain_until = timezone.now() + timezone.timedelta(days=365)
+    else:
+        retain_until = timezone.now() + timezone.timedelta(days=7)
 
     # Get next sequence number (allows multiple runs per day)
     sequence = get_next_sequence_number(store, scheduled_date)
@@ -119,7 +121,8 @@ def _create_run_for_store(store, scheduled_date):
         sequence=sequence,
         store_timezone=store.timezone,
         retention_policy=retention_policy,
-        expires_at=expires_at,
+        retain_until=retain_until,
+        created_via='MANUAL',
         status='PENDING'
     )
 
@@ -133,32 +136,17 @@ def _create_run_for_store(store, scheduled_date):
             template=template,
             order=order,
             photo_required=photo_required,
-            photo_required_reason=photo_reason,
+            photo_required_reason=photo_reason if photo_reason else '',
             # Snapshot immutable template data
             template_version=template.version,
             title_snapshot=template.title,
             category_snapshot=template.category,
             severity_snapshot=template.severity,
-            description_snapshot=template.description,
-            guidance_snapshot=template.guidance,
-            pass_criteria_snapshot=template.pass_criteria,
-            fail_criteria_snapshot=template.fail_criteria,
-            photo_guidance_snapshot=template.photo_guidance
+            success_criteria_snapshot=template.success_criteria
         )
 
-        # Update coverage tracking
-        if coverage:
-            coverage.last_used_date = scheduled_date
-            coverage.times_used += 1
-            coverage.save()
-        else:
-            CheckCoverage.objects.create(
-                store=store,
-                template=template,
-                category=template.category,
-                last_used_date=scheduled_date,
-                times_used=1
-            )
+        # Coverage tracking is updated when responses are submitted
+        # For now, we just create the run items
 
     logger.info(f"Created run {run.id} with {len(selected)} items for store {store.id}")
     return run
