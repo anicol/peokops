@@ -252,9 +252,9 @@ class MicroCheckTemplateViewSet(viewsets.ModelViewSet):
         # Create new version with updated fields
         new_version = MicroCheckTemplate.objects.create(
             brand=old_template.brand,
-            category=old_template.category,
-            severity=old_template.severity,
-            title=old_template.title,
+            category=request.data.get('category', old_template.category),
+            severity=request.data.get('severity', old_template.severity),
+            title=request.data.get('title', old_template.title),
             description=request.data.get('description', old_template.description),
             success_criteria=request.data.get('success_criteria', old_template.success_criteria),
             parent_template=old_template,
