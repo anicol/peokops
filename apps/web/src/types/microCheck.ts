@@ -28,19 +28,36 @@ export type PhotoRequiredReason = 'ALWAYS' | 'NEVER' | 'FIRST_TIME' | 'AFTER_FAI
 
 export interface MicroCheckTemplate {
   id: string;
+  brand: number | null;
   category: MicroCheckCategory;
   category_display: string;
   severity: MicroCheckSeverity;
   severity_display: string;
   title: string;
   description: string;
-  guidance: string;
-  pass_criteria: string;
-  fail_criteria: string;
-  photo_guidance: string;
+  success_criteria: string; // What "PASS" looks like
+
+  // Versioning
   version: number;
   parent_template: string | null;
+
+  // Requirements
+  default_photo_required: boolean;
+  default_video_required: boolean;
+  expected_completion_seconds: number;
+
+  // AI (future)
+  ai_validation_enabled: boolean;
+  ai_validation_prompt: string;
+
+  // Lifecycle & Selection
   is_active: boolean;
+  is_local: boolean;
+  include_in_rotation: boolean;
+  rotation_priority: number;
+  visual_reference_image: string | null;
+
+  // Audit
   created_at: string;
   created_by: number;
   created_by_name: string;
@@ -241,6 +258,13 @@ export interface LeaderboardResponse {
 
 export interface OverdueActionsResponse {
   actions: CorrectiveAction[];
+}
+
+export interface CreateRunErrorResponse {
+  error: 'NO_TEMPLATES' | string;
+  message: string;
+  user_role: string;
+  can_configure: boolean;
 }
 
 // Frontend-specific types for UI state

@@ -496,6 +496,68 @@ export const microCheckAPI = {
     });
     return response.data;
   },
+
+  // Template Management (ADMIN and OWNER only)
+
+  // Get all templates with optional filtering
+  getTemplates: async (params?: {
+    category?: string;
+    severity?: string;
+    is_active?: boolean;
+    brand?: number;
+    is_local?: boolean;
+    search?: string;
+  }): Promise<MicroCheckTemplate[]> => {
+    const response = await api.get('/micro-checks/templates/', { params });
+    return response.data.results || response.data;
+  },
+
+  // Get single template by ID
+  getTemplate: async (id: string): Promise<MicroCheckTemplate> => {
+    const response = await api.get(`/micro-checks/templates/${id}/`);
+    return response.data;
+  },
+
+  // Create new template (ADMIN only)
+  createTemplate: async (data: Partial<MicroCheckTemplate>): Promise<MicroCheckTemplate> => {
+    const response = await api.post('/micro-checks/templates/', data);
+    return response.data;
+  },
+
+  // Update template (ADMIN only)
+  updateTemplate: async (id: string, data: Partial<MicroCheckTemplate>): Promise<MicroCheckTemplate> => {
+    const response = await api.patch(`/micro-checks/templates/${id}/`, data);
+    return response.data;
+  },
+
+  // Delete template (ADMIN only)
+  deleteTemplate: async (id: string): Promise<void> => {
+    await api.delete(`/micro-checks/templates/${id}/`);
+  },
+
+  // Clone template (ADMIN and OWNER)
+  cloneTemplate: async (id: string, title?: string): Promise<MicroCheckTemplate> => {
+    const response = await api.post(`/micro-checks/templates/${id}/clone/`, { title });
+    return response.data;
+  },
+
+  // Archive template (ADMIN only) - soft delete
+  archiveTemplate: async (id: string): Promise<MicroCheckTemplate> => {
+    const response = await api.post(`/micro-checks/templates/${id}/archive/`);
+    return response.data;
+  },
+
+  // Publish new version of template (ADMIN only)
+  publishTemplate: async (id: string, updates: Partial<MicroCheckTemplate>): Promise<MicroCheckTemplate> => {
+    const response = await api.post(`/micro-checks/templates/${id}/publish/`, updates);
+    return response.data;
+  },
+
+  // Get version history for template (ADMIN and OWNER)
+  getTemplateHistory: async (id: string): Promise<MicroCheckTemplate[]> => {
+    const response = await api.get(`/micro-checks/templates/${id}/history/`);
+    return response.data;
+  },
 };
 
 export default api;
