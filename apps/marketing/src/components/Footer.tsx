@@ -14,8 +14,11 @@ const Footer = () => {
               </div>
               <span className="text-xl font-bold">PeakOps</span>
             </Link>
+            <p className="text-gray-400 text-sm font-semibold">
+              AI Agents for Frontline Excellence
+            </p>
             <p className="text-gray-400 text-sm">
-              AI-powered inspections that start with coaching. Empower managers and brands with scalable compliance.
+              Empower managers. Enable brands. Elevate every location.
             </p>
           </div>
 
@@ -24,13 +27,18 @@ const Footer = () => {
             <h3 className="font-semibold text-white mb-4">Product</h3>
             <ul className="space-y-2 text-sm">
               <li>
-                <Link to="/coaching" className="text-gray-400 hover:text-white transition-colors">
-                  Coaching Mode
+                <Link to="/coaching-mode" className="text-gray-400 hover:text-white transition-colors">
+                  The Guide
+                </Link>
+              </li>
+              <li>
+                <Link to="/coaching-mode" className="text-gray-400 hover:text-white transition-colors">
+                  The Coach
                 </Link>
               </li>
               <li>
                 <Link to="/enterprise" className="text-gray-400 hover:text-white transition-colors">
-                  Enterprise
+                  The Inspector
                 </Link>
               </li>
               <li>
