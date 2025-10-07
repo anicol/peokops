@@ -25,7 +25,7 @@ import MicroCheckTemplatesPage from '@/pages/MicroCheckTemplatesPage';
 import { MobileCaptureProvider } from '@/pages/MobileCaptureContext';
 import DemoModeIndicator from '@/components/DemoModeIndicator';
 function AppRoutes() {
-  const { isAuthenticated, isLoading } = useAuth();
+  const { isAuthenticated, isLoading, user } = useAuth();
 
   // Show loading state while checking authentication
   if (isLoading) {
@@ -229,7 +229,7 @@ function AppRoutes() {
         <Route
           path="/micro-check-templates"
           element={
-            isAuthenticated && (user?.role === 'ADMIN' || user?.role === 'OWNER') ? (
+            isAuthenticated && (user?.role === 'ADMIN' || user?.role === 'OWNER' || user?.role === 'GM') ? (
               <Layout>
                 <MicroCheckTemplatesPage />
               </Layout>

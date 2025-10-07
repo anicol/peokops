@@ -151,8 +151,6 @@ export default function AdminUsersPage() {
         return 'bg-green-100 text-green-800';
       case 'INSPECTOR':
         return 'bg-gray-100 text-gray-800';
-      case 'TRIAL_ADMIN':
-        return 'bg-yellow-100 text-yellow-800';
       default:
         return 'bg-gray-100 text-gray-800';
     }
@@ -226,7 +224,6 @@ export default function AdminUsersPage() {
           <option value="OWNER">Owner</option>
           <option value="GM">General Manager</option>
           <option value="INSPECTOR">Inspector</option>
-          <option value="TRIAL_ADMIN">Trial Admin</option>
         </select>
       </div>
 
@@ -558,14 +555,13 @@ function AdminUserFormModal({ user, brands, stores, onClose }: AdminUserFormModa
               <select
                 required
                 value={formData.role}
-                onChange={(e) => setFormData({ ...formData, role: e.target.value as 'ADMIN' | 'OWNER' | 'GM' | 'INSPECTOR' | 'TRIAL_ADMIN' })}
+                onChange={(e) => setFormData({ ...formData, role: e.target.value as 'ADMIN' | 'OWNER' | 'GM' | 'INSPECTOR' })}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
               >
                 <option value="ADMIN">Admin</option>
                 <option value="OWNER">Owner</option>
                 <option value="GM">General Manager</option>
                 <option value="INSPECTOR">Inspector</option>
-                <option value="TRIAL_ADMIN">Trial Admin</option>
               </select>
             </div>
 

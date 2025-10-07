@@ -26,6 +26,13 @@ export type SkipReason = 'NOT_APPLICABLE' | 'EQUIPMENT_UNAVAILABLE' | 'AREA_CLOS
 
 export type PhotoRequiredReason = 'ALWAYS' | 'NEVER' | 'FIRST_TIME' | 'AFTER_FAIL' | 'RANDOM_10';
 
+export type TemplateSource = 'PEAKOPS' | 'LOCAL';
+
+export interface TemplateUsageStats {
+  times_used: number;
+  pass_rate: number | null;
+}
+
 export interface MicroCheckTemplate {
   id: string;
   brand: number | null;
@@ -36,6 +43,9 @@ export interface MicroCheckTemplate {
   title: string;
   description: string;
   success_criteria: string; // What "PASS" looks like
+
+  // Source
+  source: TemplateSource; // PEAKOPS = starter templates, LOCAL = user-created/customized
 
   // Versioning
   version: number;
@@ -56,6 +66,9 @@ export interface MicroCheckTemplate {
   include_in_rotation: boolean;
   rotation_priority: number;
   visual_reference_image: string | null;
+
+  // Usage statistics
+  usage_stats?: TemplateUsageStats;
 
   // Audit
   created_at: string;

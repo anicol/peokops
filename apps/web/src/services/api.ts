@@ -20,6 +20,7 @@ import type {
   CorrectiveAction,
   SubmitResponseRequest,
   RunStatsResponse,
+  MicroCheckTemplate,
 } from '@/types/microCheck';
 
 // Upload-specific types
@@ -538,6 +539,12 @@ export const microCheckAPI = {
   // Clone template (ADMIN and OWNER)
   cloneTemplate: async (id: string, title?: string): Promise<MicroCheckTemplate> => {
     const response = await api.post(`/micro-checks/templates/${id}/clone/`, { title });
+    return response.data;
+  },
+
+  // Duplicate template (for coaching mode - converts PEAKOPS to LOCAL)
+  duplicateTemplate: async (id: string, title?: string): Promise<MicroCheckTemplate> => {
+    const response = await api.post(`/micro-checks/templates/${id}/duplicate/`, { title });
     return response.data;
   },
 

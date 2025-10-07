@@ -657,28 +657,31 @@ class MicroCheckResponseViewSet(viewsets.ModelViewSet):
         try:
             assignment = MicroCheckAssignment.objects.select_related(
                 'run__store',
-                'manager'
-            ).get(token_hash=token_hash)
+                'sent_to'
+            ).get(access_token_hash=token_hash)
         except MicroCheckAssignment.DoesNotExist:
             return Response({'error': 'Invalid token'}, status=404)
 
         # Validate token not expired
-        if assignment.expires_at < timezone.now():
+        if assignment.token_expires_at < timezone.now():
             return Response({'error': 'Token expired'}, status=403)
 
         # Update access tracking
-        if assignment.first_accessed_at is None:
-            assignment.first_accessed_at = timezone.now()
-            assignment.status = 'ACCESSED'
+        if assignment.first_used_at is None:
+            assignment.first_used_at = timezone.now()
 
-        assignment.access_count += 1
+        assignment.use_count += 1
+        assignment.last_used_at = timezone.now()
 
         # Track IP
         x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
         if x_forwarded_for:
-            assignment.last_access_ip = x_forwarded_for.split(',')[0]
+            assignment.ip_last_used = x_forwarded_for.split(',')[0]
         else:
-            assignment.last_access_ip = request.META.get('REMOTE_ADDR')
+            assignment.ip_last_used = request.META.get('REMOTE_ADDR')
+
+        # Track user agent
+        assignment.user_agent_last_used = request.META.get('HTTP_USER_AGENT', '')
 
         assignment.save()
 
@@ -711,14 +714,15 @@ class MicroCheckResponseViewSet(viewsets.ModelViewSet):
         user_agent = request.META.get('HTTP_USER_AGENT', '')
 
         response = serializer.save(
-            completed_by=assignment.manager,
+            completed_by=assignment.sent_to,
             store=store,
             category=run_item.category_snapshot,
             severity=run_item.severity_snapshot,
             completed_at=timezone.now(),
             local_completed_date=local_date,
             ip_address=ip_address,
-            user_agent=user_agent
+            user_agent=user_agent,
+            created_by=assignment.sent_to
         )
 
         # Trigger async processing
