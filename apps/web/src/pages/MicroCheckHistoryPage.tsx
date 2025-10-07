@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import {
   Target,
@@ -28,11 +28,7 @@ const MicroCheckHistoryPage = () => {
   // Get user's store (for now, assume first managed store or user's store)
   const storeId = user?.store || 1; // TODO: Handle multiple stores
 
-  useEffect(() => {
-    fetchData();
-  }, [storeId, timeRange]);
-
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     try {
       setLoading(true);
       const [responsesData, streaksData] = await Promise.all([
@@ -47,7 +43,11 @@ const MicroCheckHistoryPage = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [storeId]);
+
+  useEffect(() => {
+    fetchData();
+  }, [fetchData, timeRange]);
 
   // Group responses by date (local_completed_date)
   const groupedByDate = responses.reduce((acc, response) => {

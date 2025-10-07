@@ -1,4 +1,4 @@
-import React, { useRef, useEffect, useState } from 'react';
+import React, { useRef, useEffect, useState, useCallback } from 'react';
 import { Camera, X } from 'lucide-react';
 
 interface MicroCheckCameraProps {
@@ -14,13 +14,20 @@ const MicroCheckCamera: React.FC<MicroCheckCameraProps> = ({ onCapture, onCancel
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
+  const stopCamera = useCallback(() => {
+    if (stream) {
+      stream.getTracks().forEach((track) => track.stop());
+      setStream(null);
+    }
+  }, [stream]);
+
   useEffect(() => {
     startCamera();
 
     return () => {
       stopCamera();
     };
-  }, []);
+  }, [stopCamera]);
 
   const startCamera = async () => {
     try {
@@ -54,13 +61,6 @@ const MicroCheckCamera: React.FC<MicroCheckCameraProps> = ({ onCapture, onCancel
       } else {
         setError('Unable to access camera. Please try again.');
       }
-    }
-  };
-
-  const stopCamera = () => {
-    if (stream) {
-      stream.getTracks().forEach((track) => track.stop());
-      setStream(null);
     }
   };
 

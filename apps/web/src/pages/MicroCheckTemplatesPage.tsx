@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   Settings,
   Plus,
@@ -39,13 +39,7 @@ const MicroCheckTemplatesPage = () => {
   const isOperator = user?.role === 'GM' || user?.role === 'OWNER';
   const canManage = isAdmin || isOperator;
 
-  useEffect(() => {
-    if (canManage) {
-      fetchTemplates();
-    }
-  }, [canManage, categoryFilter, severityFilter, activeTab]);
-
-  const fetchTemplates = async () => {
+  const fetchTemplates = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
@@ -70,7 +64,13 @@ const MicroCheckTemplatesPage = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [activeTab, categoryFilter, severityFilter, user?.brand_id]);
+
+  useEffect(() => {
+    if (canManage) {
+      fetchTemplates();
+    }
+  }, [canManage, fetchTemplates]);
 
   const handleCreateTemplate = () => {
     setModalMode('create');
