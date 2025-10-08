@@ -81,8 +81,6 @@ export default function UsersPage() {
         return 'bg-purple-100 text-purple-800';
       case 'OWNER':
         return 'bg-blue-100 text-blue-800';
-      case 'TRIAL_ADMIN':
-        return 'bg-indigo-100 text-indigo-800';
       case 'GM':
         return 'bg-green-100 text-green-800';
       case 'INSPECTOR':
@@ -94,13 +92,9 @@ export default function UsersPage() {
 
   const canManageRole = (role: string) => {
     // OWNER can manage OWNER, GM, INSPECTOR
-    // TRIAL_ADMIN can manage TRIAL_ADMIN, GM, INSPECTOR (same as OWNER but for trial)
     // GM can manage GM, INSPECTOR
     if (currentUser?.role === 'OWNER') {
       return ['OWNER', 'GM', 'INSPECTOR'].includes(role);
-    }
-    if (currentUser?.role === 'TRIAL_ADMIN') {
-      return ['TRIAL_ADMIN', 'GM', 'INSPECTOR'].includes(role);
     }
     if (currentUser?.role === 'GM') {
       return ['GM', 'INSPECTOR'].includes(role);
@@ -165,7 +159,6 @@ export default function UsersPage() {
         >
           <option value="all">All Roles</option>
           {currentUser?.role === 'OWNER' && <option value="OWNER">Owner</option>}
-          {currentUser?.role === 'TRIAL_ADMIN' && <option value="TRIAL_ADMIN">Trial Admin</option>}
           <option value="GM">General Manager</option>
           <option value="INSPECTOR">Inspector</option>
         </select>
@@ -399,8 +392,6 @@ function UserFormModal({ user, stores, currentUserRole, onClose }: UserFormModal
 
   const availableRoles = currentUserRole === 'OWNER'
     ? ['OWNER', 'GM', 'INSPECTOR']
-    : currentUserRole === 'TRIAL_ADMIN'
-    ? ['TRIAL_ADMIN', 'GM', 'INSPECTOR']
     : ['GM', 'INSPECTOR'];
 
   return (
@@ -505,7 +496,7 @@ function UserFormModal({ user, stores, currentUserRole, onClose }: UserFormModal
               <select
                 required
                 value={formData.role}
-                onChange={(e) => setFormData({ ...formData, role: e.target.value as 'ADMIN' | 'OWNER' | 'GM' | 'INSPECTOR' | 'TRIAL_ADMIN' })}
+                onChange={(e) => setFormData({ ...formData, role: e.target.value as 'ADMIN' | 'OWNER' | 'GM' | 'INSPECTOR' })}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
               >
                 {availableRoles.map(role => (

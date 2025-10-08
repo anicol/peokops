@@ -24,114 +24,159 @@ export default function CorporatePage() {
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
           <div className="max-w-4xl mx-auto text-center">
             <h1 className="text-4xl md:text-6xl font-bold leading-tight mb-6">
-              AI-powered video inspections at scale: <span className="text-blue-300">Coaching + Compliance</span> in one platform
+              Scale Brand Standards Without Scaling Costs
             </h1>
-            <p className="text-xl md:text-2xl text-blue-100 mb-8 leading-relaxed">
-              Transform your brand's inspection process with video-powered AI, delivering comprehensive coverage, consistent standards, and significant cost savings.
+            <p className="text-xl md:text-2xl text-blue-100 mb-4 leading-relaxed">
+              Finally, a scalable way to see every store and every shift while knowing your brand standards are met each day.
+            </p>
+            <p className="text-lg text-blue-100 mb-8 leading-relaxed">
+              PeakOps turns compliance into a proactive system that delivers visibility, consistency, and measurable results across your entire network.
             </p>
             <div className="mb-8">
               <Link
                 to="/demo"
-                className="px-8 py-4 bg-blue-400 text-blue-900 rounded-lg hover:bg-blue-300 transition-colors font-semibold text-lg shadow-lg"
+                className="inline-block px-8 py-4 bg-blue-400 text-blue-900 rounded-lg hover:bg-blue-300 transition-colors font-semibold text-lg shadow-lg"
               >
-                Get Demo
+                Request Demo
               </Link>
             </div>
+            <p className="text-blue-200 text-sm mb-2">
+              30-minute walkthrough • Custom ROI analysis • Implementation planning
+            </p>
             <p className="text-blue-200 text-sm">
-              ✅ 50-70% travel savings • ✅ 3-5× inspection coverage • ✅ Consistent standards
+              ✅ 50–70% travel savings • ✅ 3–5× more coverage • ✅ Consistent, objective standards
             </p>
           </div>
         </div>
       </section>
 
-      {/* Two Modes Explained */}
+      {/* The Problem */}
+      <section className="py-20 bg-red-50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="max-w-4xl mx-auto text-center">
+            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
+              Why Enterprise Inspections Feel Broken
+            </h2>
+            <p className="text-xl text-gray-600 mb-12">
+              Audits are expensive, inconsistent, and reactive — designed for oversight, not improvement.
+            </p>
+
+            <div className="grid md:grid-cols-2 gap-6 mb-12">
+              <div className="bg-white p-6 rounded-xl shadow-lg border border-red-200">
+                <h3 className="font-semibold text-gray-900 mb-2">Limited visibility.</h3>
+                <p className="text-gray-600 text-sm">It's impossible to see every store, every week.</p>
+              </div>
+
+              <div className="bg-white p-6 rounded-xl shadow-lg border border-red-200">
+                <h3 className="font-semibold text-gray-900 mb-2">Inconsistent standards.</h3>
+                <p className="text-gray-600 text-sm">Each inspector focuses on something different.</p>
+              </div>
+
+              <div className="bg-white p-6 rounded-xl shadow-lg border border-red-200">
+                <h3 className="font-semibold text-gray-900 mb-2">High travel costs.</h3>
+                <p className="text-gray-600 text-sm">Teams fly thousands of miles for one-day snapshots.</p>
+              </div>
+
+              <div className="bg-white p-6 rounded-xl shadow-lg border border-red-200">
+                <h3 className="font-semibold text-gray-900 mb-2">Reactive culture.</h3>
+                <p className="text-gray-600 text-sm">Issues surface only after they've become brand risks.</p>
+              </div>
+            </div>
+
+            <div className="bg-blue-600 text-white p-8 rounded-2xl">
+              <h3 className="text-2xl font-bold mb-2">
+                Inspections shouldn't depend on travel or luck.
+              </h3>
+              <p className="text-blue-100 text-lg">
+                They should happen every day.
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Three AI Agents System */}
       <section className="py-20 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
             <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
-              Two Modes, Complete Coverage
+              Three AI Agents. One Continuous Improvement System.
             </h2>
             <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-              Start with coaching for private store-level adoption, then scale to enterprise compliance when ready.
+              PeakOps unites three specialized AI agents that work together to turn daily actions into measurable excellence — scaling from individual stores to enterprise compliance.
             </p>
           </div>
-          
-          <div className="grid lg:grid-cols-2 gap-12">
-            {/* Coaching Mode */}
-            <div className="bg-teal-50 p-8 rounded-2xl border border-teal-200">
+
+          <div className="space-y-12">
+            {/* The Guide */}
+            <div className="bg-gradient-to-br from-green-50 to-teal-50 p-8 rounded-2xl border border-green-200">
               <div className="flex items-center mb-6">
-                <div className="w-12 h-12 bg-teal-600 rounded-lg flex items-center justify-center mr-4">
-                  <Users className="w-6 h-6 text-white" />
+                <div className="w-12 h-12 bg-green-600 rounded-lg flex items-center justify-center mr-4">
+                  <span className="text-white font-bold text-xl">🧭</span>
                 </div>
-                <h3 className="text-2xl font-bold text-gray-900">Coaching Mode</h3>
+                <h3 className="text-2xl font-bold text-gray-900">The Guide — Build Daily Habits</h3>
               </div>
-              
-              <div className="space-y-4 mb-8">
-                <div className="flex items-start">
-                  <CheckCircle className="w-5 h-5 text-teal-600 mr-3 mt-0.5 flex-shrink-0" />
-                  <div>
-                    <div className="font-medium text-gray-900">Private store-level adoption</div>
-                    <div className="text-sm text-gray-600">Managers can use coaching mode independently without corporate oversight</div>
-                  </div>
+
+              <div className="grid md:grid-cols-2 gap-6 mb-4">
+                <div>
+                  <p className="text-gray-700 mb-4">Sends managers "Today's 3" — quick, AI-powered micro-checks to reinforce standards.</p>
+                  <ul className="space-y-2 text-gray-600">
+                    <li>• Builds consistency and accountability across shifts.</li>
+                    <li>• Keeps every store inspection-ready through simple, repeatable action.</li>
+                  </ul>
                 </div>
-                <div className="flex items-start">
-                  <CheckCircle className="w-5 h-5 text-teal-600 mr-3 mt-0.5 flex-shrink-0" />
-                  <div>
-                    <div className="font-medium text-gray-900">Store videos deleted after processing for complete privacy</div>
-                    <div className="text-sm text-gray-600">Complete privacy during the coaching and improvement phase</div>
-                  </div>
+                <div className="bg-white p-4 rounded-lg border border-green-200">
+                  <p className="text-green-800 font-medium mb-2">Start small. Stay consistent.</p>
+                  <Link to="/coaching" className="text-green-600 hover:text-green-700 font-medium text-sm">Start Free →</Link>
                 </div>
-                <div className="flex items-start">
-                  <CheckCircle className="w-5 h-5 text-teal-600 mr-3 mt-0.5 flex-shrink-0" />
-                  <div>
-                    <div className="font-medium text-gray-900">Instant feedback & improvement</div>
-                    <div className="text-sm text-gray-600">Build confidence and compliance before official inspections</div>
-                  </div>
-                </div>
-              </div>
-              
-              <div className="bg-white p-4 rounded-lg border border-teal-200">
-                <div className="text-sm text-teal-800 font-medium">Perfect for:</div>
-                <div className="text-sm text-gray-600">Rolling out inspection processes, training new managers, building compliance culture</div>
               </div>
             </div>
 
-            {/* Enterprise Mode */}
-            <div className="bg-blue-50 p-8 rounded-2xl border border-blue-200">
+            {/* The Coach */}
+            <div className="bg-gradient-to-br from-teal-50 to-blue-50 p-8 rounded-2xl border border-teal-200">
+              <div className="flex items-center mb-6">
+                <div className="w-12 h-12 bg-teal-600 rounded-lg flex items-center justify-center mr-4">
+                  <span className="text-white font-bold text-xl">🧠</span>
+                </div>
+                <h3 className="text-2xl font-bold text-gray-900">The Coach — Build Confidence Before Audits</h3>
+              </div>
+
+              <div className="grid md:grid-cols-2 gap-6 mb-4">
+                <div>
+                  <p className="text-gray-700 mb-4">Managers record short video walkthroughs for private AI feedback.</p>
+                  <ul className="space-y-2 text-gray-600">
+                    <li>• Results are delivered in minutes with clear, timestamped insights.</li>
+                    <li>• Videos are deleted after processing — full privacy, zero stress.</li>
+                  </ul>
+                </div>
+                <div className="bg-white p-4 rounded-lg border border-teal-200">
+                  <p className="text-teal-800 font-medium mb-2">AI that helps you shine — not get watched.</p>
+                  <Link to="/coaching" className="text-teal-600 hover:text-teal-700 font-medium text-sm">Learn More →</Link>
+                </div>
+              </div>
+            </div>
+
+            {/* The Inspector */}
+            <div className="bg-gradient-to-br from-blue-50 to-purple-50 p-8 rounded-2xl border border-blue-200">
               <div className="flex items-center mb-6">
                 <div className="w-12 h-12 bg-blue-600 rounded-lg flex items-center justify-center mr-4">
-                  <BarChart className="w-6 h-6 text-white" />
+                  <span className="text-white font-bold text-xl">🔍</span>
                 </div>
-                <h3 className="text-2xl font-bold text-gray-900">Enterprise Mode</h3>
+                <h3 className="text-2xl font-bold text-gray-900">The Inspector — Build Compliance at Scale</h3>
               </div>
-              
-              <div className="space-y-4 mb-8">
-                <div className="flex items-start">
-                  <CheckCircle className="w-5 h-5 text-blue-600 mr-3 mt-0.5 flex-shrink-0" />
-                  <div>
-                    <div className="font-medium text-gray-900">Official compliance records from retained video inspections</div>
-                    <div className="text-sm text-gray-600">Auditable reports for regulatory and corporate requirements</div>
-                  </div>
+
+              <div className="grid md:grid-cols-2 gap-6 mb-4">
+                <div>
+                  <p className="text-gray-700 mb-4">AI video inspections with official records and audit-ready reports.</p>
+                  <ul className="space-y-2 text-gray-600">
+                    <li>• Objective scoring and automated insights across every location.</li>
+                    <li>• Dashboards for brand, region, and franchise visibility — without the travel.</li>
+                  </ul>
                 </div>
-                <div className="flex items-start">
-                  <CheckCircle className="w-5 h-5 text-blue-600 mr-3 mt-0.5 flex-shrink-0" />
-                  <div>
-                    <div className="font-medium text-gray-900">Corporate dashboards & analytics</div>
-                    <div className="text-sm text-gray-600">Regional trends, compliance heatmaps, and performance tracking</div>
-                  </div>
+                <div className="bg-white p-4 rounded-lg border border-blue-200">
+                  <p className="text-blue-800 font-medium mb-2">Scale inspections without scaling travel.</p>
+                  <Link to="/demo" className="text-blue-600 hover:text-blue-700 font-medium text-sm">Get Demo →</Link>
                 </div>
-                <div className="flex items-start">
-                  <CheckCircle className="w-5 h-5 text-blue-600 mr-3 mt-0.5 flex-shrink-0" />
-                  <div>
-                    <div className="font-medium text-gray-900">Integration & automation</div>
-                    <div className="text-sm text-gray-600">Connect to task management systems and enterprise workflows</div>
-                  </div>
-                </div>
-              </div>
-              
-              <div className="bg-white p-4 rounded-lg border border-blue-200">
-                <div className="text-sm text-blue-800 font-medium">Perfect for:</div>
-                <div className="text-sm text-gray-600">Corporate compliance, franchise oversight, regulatory reporting, performance management</div>
               </div>
             </div>
           </div>
@@ -149,7 +194,7 @@ export default function CorporatePage() {
               See the measurable impact on your operations and bottom line
             </p>
           </div>
-          
+
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
             <div className="bg-white p-8 rounded-2xl shadow-lg text-center">
               <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
@@ -234,7 +279,7 @@ export default function CorporatePage() {
                   </li>
                 </ul>
               </div>
-              
+
               <div className="bg-gradient-to-br from-blue-50 to-purple-50 p-6 rounded-xl">
                 <img
                   src="https://images.pexels.com/photos/3184465/pexels-photo-3184465.jpeg?auto=compress&cs=tinysrgb&w=800"
@@ -262,7 +307,7 @@ export default function CorporatePage() {
               See the exact financial impact for your brand
             </p>
           </div>
-          
+
           <ROICalculator />
         </div>
       </section>
@@ -278,7 +323,7 @@ export default function CorporatePage() {
               Your data protection requirements, precisely met
             </p>
           </div>
-          
+
           <div className="grid lg:grid-cols-2 gap-12">
             <div className="bg-white p-8 rounded-2xl shadow-lg">
               <div className="flex items-center mb-6">
@@ -287,7 +332,7 @@ export default function CorporatePage() {
                 </div>
                 <h3 className="text-xl font-semibold text-gray-900">Configurable Retention Policies</h3>
               </div>
-              
+
               <ul className="space-y-4">
                 <li className="flex items-start">
                   <CheckCircle className="w-5 h-5 text-teal-600 mr-3 mt-0.5 flex-shrink-0" />
@@ -318,29 +363,29 @@ export default function CorporatePage() {
                 <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center mr-4">
                   <Lock className="w-6 h-6 text-blue-600" />
                 </div>
-                <h3 className="text-xl font-semibold text-gray-900">Data Security & Compliance</h3>
+                <h3 className="text-xl font-semibold text-gray-900">Enterprise-Grade Security</h3>
               </div>
-              
+
               <ul className="space-y-4">
                 <li className="flex items-start">
                   <CheckCircle className="w-5 h-5 text-blue-600 mr-3 mt-0.5 flex-shrink-0" />
                   <div>
-                    <div className="font-medium text-gray-900">SOC 2 Type II certified</div>
-                    <div className="text-sm text-gray-600">Independently audited security controls and procedures</div>
+                    <div className="font-medium text-gray-900">Bank-level encryption</div>
+                    <div className="text-sm text-gray-600">Data encrypted in transit and at rest with industry-standard protocols</div>
                   </div>
                 </li>
                 <li className="flex items-start">
                   <CheckCircle className="w-5 h-5 text-blue-600 mr-3 mt-0.5 flex-shrink-0" />
                   <div>
-                    <div className="font-medium text-gray-900">End-to-end encryption</div>
-                    <div className="text-sm text-gray-600">Data encrypted in transit and at rest with enterprise-grade protocols</div>
+                    <div className="font-medium text-gray-900">Secure cloud infrastructure</div>
+                    <div className="text-sm text-gray-600">Hosted on enterprise-grade cloud providers with 99.9% uptime</div>
                   </div>
                 </li>
                 <li className="flex items-start">
                   <CheckCircle className="w-5 h-5 text-blue-600 mr-3 mt-0.5 flex-shrink-0" />
                   <div>
-                    <div className="font-medium text-gray-900">GDPR & CCPA compliant</div>
-                    <div className="text-sm text-gray-600">Full compliance with international privacy regulations</div>
+                    <div className="font-medium text-gray-900">Role-based access controls</div>
+                    <div className="text-sm text-gray-600">Granular permissions ensure team members only see what they need</div>
                   </div>
                 </li>
               </ul>
@@ -349,146 +394,66 @@ export default function CorporatePage() {
         </div>
       </section>
 
-      {/* Integrations */}
+      {/* Enterprise Partnership */}
       <section className="py-20 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-16">
-            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
-              Seamless Enterprise Integrations
-            </h2>
-            <p className="text-xl text-gray-600">
-              Connect PeakOps to your existing workflow and systems
-            </p>
-          </div>
-          
-          <div className="grid md:grid-cols-2 gap-12 items-center">
-            <div>
-              <h3 className="text-2xl font-bold text-gray-900 mb-6">
-                Popular Integrations
-              </h3>
-              <ul className="space-y-4">
-                <li className="flex items-center p-4 bg-gray-50 rounded-lg">
-                  <div className="w-10 h-10 bg-orange-500 rounded-lg flex items-center justify-center mr-4">
-                    <span className="text-white font-bold text-sm">CT</span>
-                  </div>
-                  <div>
-                    <div className="font-medium text-gray-900">CrunchTime</div>
-                    <div className="text-sm text-gray-600">Automatic task creation and assignment</div>
-                  </div>
-                </li>
-                <li className="flex items-center p-4 bg-gray-50 rounded-lg">
-                  <div className="w-10 h-10 bg-blue-500 rounded-lg flex items-center justify-center mr-4">
-                    <span className="text-white font-bold text-sm">MU</span>
-                  </div>
-                  <div>
-                    <div className="font-medium text-gray-900">MeazureUp</div>
-                    <div className="text-sm text-gray-600">Compliance scoring and reporting integration</div>
-                  </div>
-                </li>
-                <li className="flex items-center p-4 bg-gray-50 rounded-lg">
-                  <div className="w-10 h-10 bg-green-500 rounded-lg flex items-center justify-center mr-4">
-                    <span className="text-white font-bold text-sm">API</span>
-                  </div>
-                  <div>
-                    <div className="font-medium text-gray-900">Custom API Integration</div>
-                    <div className="text-sm text-gray-600">Connect to any system with webhooks and REST API</div>
-                  </div>
-                </li>
-              </ul>
-              
-              <div className="mt-8 p-6 bg-blue-50 rounded-xl border border-blue-200">
-                <h4 className="font-semibold text-blue-900 mb-2">Enterprise API Features</h4>
-                <ul className="text-sm text-blue-800 space-y-1">
-                  <li>• Real-time webhooks for instant notifications</li>
-                  <li>• RESTful API for custom integrations</li>
-                  <li>• Bulk data export and reporting</li>
-                  <li>• Single Sign-On (SSO) support</li>
-                </ul>
-              </div>
-            </div>
-            
-            <div className="bg-gray-100 p-8 rounded-2xl">
-              <div className="bg-white p-6 rounded-xl shadow-lg">
-                <div className="text-center mb-4">
-                  <h4 className="font-semibold text-gray-900">Sample Webhook Payload</h4>
-                </div>
-                <pre className="text-xs bg-gray-50 p-3 rounded border text-gray-700 overflow-x-auto">
-{`{
-  "event": "inspection_completed",
-  "store_id": "store_123",
-  "inspection_id": "insp_456",
-  "overall_score": 88,
-  "categories": {
-    "cleanliness": 78,
-    "safety": 95,
-    "uniforms": 92
-  },
-  "action_items": [
-    {
-      "priority": "high",
-      "category": "cleanliness",
-      "description": "Clean drink station"
-    }
-  ],
-  "completed_at": "2024-03-15T14:30:00Z"
-}`}
-                </pre>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Pilot Invite */}
-      <section className="py-20 bg-gray-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="max-w-4xl mx-auto">
-            <div className="bg-gradient-to-r from-blue-600 to-purple-600 text-white p-8 rounded-2xl text-center">
+            <div className="bg-gradient-to-r from-blue-600 to-purple-600 text-white p-12 rounded-2xl text-center">
               <h2 className="text-3xl md:text-4xl font-bold mb-6">
-                Partner with us to prove proactive inspections at scale
+                Partner With Us to Shape the Future of Brand Compliance
               </h2>
               <p className="text-xl text-blue-100 mb-8">
-                Join our enterprise pilot program and help shape the future of brand compliance. We'll work directly with your team to customize the platform for your specific needs.
+                Join our enterprise pilot program and customize PeakOps to your brand standards.
               </p>
-              
+
               <div className="grid md:grid-cols-3 gap-6 mb-8">
                 <div className="bg-white bg-opacity-20 p-6 rounded-xl">
                   <h3 className="font-semibold mb-2">Custom Implementation</h3>
-                  <p className="text-sm text-blue-100">Tailored setup for your brand standards and workflows</p>
+                  <p className="text-sm text-blue-100">Tailored setup for your standards and workflows.</p>
                 </div>
                 <div className="bg-white bg-opacity-20 p-6 rounded-xl">
                   <h3 className="font-semibold mb-2">Dedicated Support</h3>
-                  <p className="text-sm text-blue-100">Direct access to our development and customer success teams</p>
+                  <p className="text-sm text-blue-100">Direct access to our product and customer success teams.</p>
                 </div>
                 <div className="bg-white bg-opacity-20 p-6 rounded-xl">
                   <h3 className="font-semibold mb-2">Pilot Pricing</h3>
-                  <p className="text-sm text-blue-100">Special rates for early enterprise adopters</p>
+                  <p className="text-sm text-blue-100">Special rates for early enterprise adopters.</p>
                 </div>
               </div>
-              
+
               <Link
                 to="/demo"
-                className="px-8 py-4 bg-white text-blue-600 rounded-lg hover:bg-gray-100 transition-colors font-semibold text-lg shadow-lg"
+                className="inline-block px-8 py-4 bg-white text-blue-600 rounded-lg hover:bg-gray-100 transition-colors font-semibold text-lg shadow-lg mb-8"
               >
                 Request Enterprise Pilot
               </Link>
+
+              <div className="mt-8 pt-8 border-t border-white border-opacity-20">
+                <p className="text-lg text-blue-100 italic">
+                  "With PeakOps, we review every location every month — without doubling our costs."
+                </p>
+                <p className="text-sm text-blue-200 mt-2">— VP of Operations, National QSR Brand</p>
+              </div>
             </div>
           </div>
         </div>
       </section>
 
       {/* Final CTA */}
-      <section className="py-20 bg-white">
+      <section className="py-20 bg-gray-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-6">
-            Ready to Transform Your Brand's Video Inspection Process?
+            Ready to Transform Brand Compliance?
           </h2>
+          <p className="text-xl text-gray-600 mb-4 max-w-3xl mx-auto">
+            Replace reactive audits with proactive insight.
+          </p>
           <p className="text-xl text-gray-600 mb-8 max-w-3xl mx-auto">
-            Schedule a demo to see how PeakOps can deliver measurable ROI, consistent standards, and scalable compliance for your brand.
+            Scale visibility, consistency, and excellence — without scaling costs.
           </p>
           <Link
             to="/demo"
-            className="px-8 py-4 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-semibold text-lg shadow-lg"
+            className="inline-block px-8 py-4 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-semibold text-lg shadow-lg"
           >
             Request Demo
           </Link>

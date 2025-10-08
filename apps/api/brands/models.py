@@ -24,7 +24,7 @@ class Brand(models.Model):
     
     @classmethod
     def create_trial_brand(cls, user):
-        """Create a trial brand with smart defaults"""
+        """Create a trial brand with smart defaults and seeded Quick Check templates"""
         brand = cls.objects.create(
             name=f"{user.first_name or user.username}'s Trial",
             is_trial=True,
@@ -32,6 +32,11 @@ class Brand(models.Model):
             retention_days_coaching=7,  # Trial gets 7-day retention
             inspection_config=cls.get_default_trial_config()
         )
+
+        # Auto-seed default Quick Check templates for immediate use
+        from micro_checks.utils import seed_default_templates
+        seed_default_templates(brand, created_by=user)
+
         return brand
     
     @staticmethod

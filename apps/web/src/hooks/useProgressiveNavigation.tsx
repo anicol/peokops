@@ -7,7 +7,15 @@ export interface NavigationState {
   showUserEmail: boolean;
   showSkipToDashboard: boolean;
 
-  // Main navigation items
+  // New simplified navigation items
+  home: 'hidden' | 'visible-disabled' | 'enabled';
+  checks: 'hidden' | 'enabled';
+  walkthroughs: 'hidden' | 'enabled';
+  templates: 'hidden' | 'enabled';
+  insights: 'hidden' | 'enabled';
+  settings: 'hidden' | 'enabled';
+
+  // Legacy navigation items (for backward compatibility)
   dashboard: 'hidden' | 'visible-disabled' | 'enabled';
   videos: 'hidden' | 'enabled';
   inspections: 'hidden' | 'enabled';
@@ -19,9 +27,6 @@ export interface NavigationState {
   adminQueue: 'hidden' | 'enabled';
   adminUsers: 'hidden' | 'enabled';
 
-  // Settings/Profile
-  settings: 'hidden' | 'partial' | 'full';
-
   // Never available in trial
   billing: 'hidden';
   teamManagement: 'hidden';
@@ -32,12 +37,25 @@ export function useProgressiveNavigation(): NavigationState {
   const { user } = useAuth();
   
   return useMemo(() => {
+    const isEnterprise = user?.role === 'ADMIN' || user?.role === 'INSPECTOR';
+    const isCoaching = user?.role === 'OWNER' || user?.role === 'GM';
+
     // Default state - non-trial users get full access
     if (!user?.is_trial_user) {
       return {
         showLogo: true,
         showUserEmail: true,
         showSkipToDashboard: false,
+
+        // New navigation
+        home: 'enabled',
+        checks: 'enabled',
+        walkthroughs: isCoaching || isEnterprise ? 'enabled' : 'hidden',
+        templates: isCoaching || isEnterprise ? 'enabled' : 'hidden',
+        insights: 'enabled',
+        settings: 'enabled',
+
+        // Legacy navigation
         dashboard: 'enabled',
         videos: 'enabled',
         inspections: 'enabled',
@@ -48,8 +66,7 @@ export function useProgressiveNavigation(): NavigationState {
         inspectorQueue: ['INSPECTOR', 'ADMIN'].includes(user?.role || '') ? 'enabled' : 'hidden',
         adminQueue: user?.role === 'ADMIN' ? 'enabled' : 'hidden',
         adminUsers: user?.role === 'ADMIN' ? 'enabled' : 'hidden',
-        settings: 'full',
-        billing: 'hidden', // Always hidden for trials
+        billing: 'hidden',
         teamManagement: 'hidden',
         apiAccess: 'hidden',
       };
@@ -63,40 +80,41 @@ export function useProgressiveNavigation(): NavigationState {
     const hasMultipleVideos = (trial?.videos_used || 0) >= 3;
     const hoursSinceSignup = user.hours_since_signup || 0;
     const hasBeenActive24Hours = hoursSinceSignup >= 24;
-    
+
     // Trial user progressive navigation logic
     const state: NavigationState = {
       // Always visible during trial
       showLogo: true,
       showUserEmail: true,
       showSkipToDashboard: !hasCompletedDemo, // Hide after demo completion
-      
-      // Progressive unlocking based on demo stages
-      dashboard: hasCompletedDemo 
-        ? 'enabled' 
-        : user.has_seen_demo 
-          ? 'visible-disabled' 
+
+      // New navigation - Trial users see: Home, Checks, Insights, Settings
+      home: hasCompletedDemo
+        ? 'enabled'
+        : user.has_seen_demo
+          ? 'visible-disabled'
           : 'hidden',
-      
-      // After first upload
+      checks: 'enabled', // Always visible
+      walkthroughs: 'hidden', // Hidden for trial
+      templates: 'hidden', // Hidden for trial
+      insights: 'enabled', // Always visible
+      settings: 'enabled', // Always visible
+
+      // Legacy navigation
+      dashboard: hasCompletedDemo
+        ? 'enabled'
+        : user.has_seen_demo
+          ? 'visible-disabled'
+          : 'hidden',
       videos: hasUploadedVideo ? 'enabled' : 'hidden',
-      
-      // After first AI analysis complete
       inspections: hasInspections ? 'enabled' : 'hidden',
       actionItems: hasInspections ? 'enabled' : 'hidden',
-      
-      // After 24 hours or 3+ videos
       stores: (hasBeenActive24Hours || hasMultipleVideos) ? 'enabled' : 'hidden',
-      settings: (hasBeenActive24Hours || hasMultipleVideos) ? 'partial' : 'hidden',
-
-      // Admin/role-based (only if unlocked)
-      users: (hasBeenActive24Hours || hasMultipleVideos) && ['OWNER', 'GM', 'TRIAL_ADMIN'].includes(user?.role || '') ? 'enabled' : 'hidden',
-      brands: 'hidden', // Never available in trial
-      inspectorQueue: 'hidden', // Never available in trial
-      adminQueue: 'hidden', // Never available in trial
-      adminUsers: 'hidden', // Never available in trial
-
-      // Never available in trial
+      users: (hasBeenActive24Hours || hasMultipleVideos) && ['OWNER', 'GM'].includes(user?.role || '') ? 'enabled' : 'hidden',
+      brands: 'hidden',
+      inspectorQueue: 'hidden',
+      adminQueue: 'hidden',
+      adminUsers: 'hidden',
       billing: 'hidden',
       teamManagement: 'hidden',
       apiAccess: 'hidden',

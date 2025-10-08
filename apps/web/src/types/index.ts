@@ -23,7 +23,7 @@ export interface User {
   first_name: string;
   last_name: string;
   full_name: string;
-  role: 'ADMIN' | 'OWNER' | 'GM' | 'INSPECTOR' | 'TRIAL_ADMIN';
+  role: 'ADMIN' | 'OWNER' | 'GM' | 'INSPECTOR';
   store: number | null;
   store_name?: string;
   brand_name?: string;
@@ -205,11 +205,42 @@ export interface AuthResponse {
 }
 
 export interface InspectionStats {
+  // Basic stats (all users)
   total_inspections: number;
   completed_inspections: number;
   average_score: number | null;
   critical_findings: number;
   open_action_items: number;
+
+  // Trial user stats
+  streak_days?: number;
+  runs_this_week?: number;
+  runs_last_week?: number;
+  issues_resolved_this_week?: number;
+  yesterday_score?: number | null;
+  today_score?: number | null;
+
+  // Coaching mode stats
+  avg_streak_across_stores?: number;
+  total_stores?: number;
+  active_stores_today?: number;
+  top_performing_category?: string;
+  top_category_improvement?: number;
+  store_engagement?: Array<{
+    store_id: number;
+    store_name: string;
+    completed_today: boolean;
+    last_check?: string;
+  }>;
+
+  // Enterprise stats
+  completion_rate?: number;
+  template_coverage?: number;
+  avg_resolution_time_days?: number;
+  trend_data?: Array<{
+    date: string;
+    compliance: number;
+  }>;
 }
 
 export interface Upload {

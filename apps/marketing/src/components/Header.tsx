@@ -38,14 +38,21 @@ const Header = () => {
                     className="block px-4 py-2 text-gray-700 hover:bg-gray-50 hover:text-blue-600"
                     onClick={() => setIsProductOpen(false)}
                   >
-                    Coaching Mode
+                    The Guide
+                  </Link>
+                  <Link
+                    to="/coaching-mode"
+                    className="block px-4 py-2 text-gray-700 hover:bg-gray-50 hover:text-blue-600"
+                    onClick={() => setIsProductOpen(false)}
+                  >
+                    The Coach
                   </Link>
                   <Link
                     to="/enterprise"
                     className="block px-4 py-2 text-gray-700 hover:bg-gray-50 hover:text-blue-600"
                     onClick={() => setIsProductOpen(false)}
                   >
-                    Enterprise
+                    The Inspector
                   </Link>
                 </div>
               )}
@@ -128,14 +135,21 @@ const Header = () => {
                 className="block text-gray-700 hover:text-blue-600"
                 onClick={() => setIsMenuOpen(false)}
               >
-                Coaching Mode
+                The Guide
+              </Link>
+              <Link
+                to="/coaching-mode"
+                className="block text-gray-700 hover:text-blue-600"
+                onClick={() => setIsMenuOpen(false)}
+              >
+                The Coach
               </Link>
               <Link
                 to="/enterprise"
                 className="block text-gray-700 hover:text-blue-600"
                 onClick={() => setIsMenuOpen(false)}
               >
-                Enterprise
+                The Inspector
               </Link>
               <Link
                 to="/roi-calculator"

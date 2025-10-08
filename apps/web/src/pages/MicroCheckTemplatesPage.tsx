@@ -1,0 +1,621 @@
+import React, { useState, useEffect, useCallback } from 'react';
+import {
+  Settings,
+  Plus,
+  Edit,
+  Copy,
+  Archive,
+  Trash2,
+  Search,
+  Filter,
+  X,
+  Loader2,
+  AlertCircle,
+  ChevronDown,
+  Sparkles,
+  TrendingUp,
+} from 'lucide-react';
+import { useAuth } from '@/hooks/useAuth';
+import { microCheckAPI } from '@/services/api';
+import type { MicroCheckTemplate, MicroCheckCategory, MicroCheckSeverity } from '@/types/microCheck';
+
+const MicroCheckTemplatesPage = () => {
+  const { user } = useAuth();
+  const [activeTab, setActiveTab] = useState<'starters' | 'my-templates'>('my-templates');
+  const [templates, setTemplates] = useState<MicroCheckTemplate[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [categoryFilter, setCategoryFilter] = useState<string>('');
+  const [severityFilter, setSeverityFilter] = useState<string>('');
+  const [showFilters, setShowFilters] = useState(false);
+  const [showModal, setShowModal] = useState(false);
+  const [modalMode, setModalMode] = useState<'create' | 'edit'>('create');
+  const [selectedTemplate, setSelectedTemplate] = useState<MicroCheckTemplate | null>(null);
+  const [formData, setFormData] = useState<Partial<MicroCheckTemplate>>({});
+  const [submitting, setSubmitting] = useState(false);
+
+  const isAdmin = user?.role === 'ADMIN';
+  const isOperator = user?.role === 'GM' || user?.role === 'OWNER';
+  const canManage = isAdmin || isOperator;
+
+  const fetchTemplates = useCallback(async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const params: any = {};
+
+      // Filter by source based on active tab
+      if (activeTab === 'starters') {
+        params.source = 'PEAKOPS';
+      } else {
+        params.source = 'LOCAL';
+      }
+
+      if (categoryFilter) params.category = categoryFilter;
+      if (severityFilter) params.severity = severityFilter;
+      if (user?.brand_id) params.brand = user.brand_id;
+
+      const data = await microCheckAPI.getTemplates(params);
+      setTemplates(data);
+    } catch (err: any) {
+      console.error('Error fetching templates:', err);
+      setError('Unable to load templates');
+    } finally {
+      setLoading(false);
+    }
+  }, [activeTab, categoryFilter, severityFilter, user?.brand_id]);
+
+  useEffect(() => {
+    if (canManage) {
+      fetchTemplates();
+    }
+  }, [canManage, fetchTemplates]);
+
+  const handleCreateTemplate = () => {
+    setModalMode('create');
+    setSelectedTemplate(null);
+    setFormData({
+      category: 'CLEANLINESS',
+      severity: 'MEDIUM',
+      title: '',
+      description: '',
+      success_criteria: '',
+      default_photo_required: false,
+      expected_completion_seconds: 30,
+      is_active: true,
+      rotation_priority: 50,
+    });
+    setShowModal(true);
+  };
+
+  const handleEditTemplate = (template: MicroCheckTemplate) => {
+    setModalMode('edit');
+    setSelectedTemplate(template);
+    setFormData({
+      category: template.category,
+      severity: template.severity,
+      title: template.title,
+      description: template.description,
+      success_criteria: template.success_criteria,
+      default_photo_required: template.default_photo_required,
+      expected_completion_seconds: template.expected_completion_seconds,
+      is_active: template.is_active,
+      rotation_priority: template.rotation_priority,
+    });
+    setShowModal(true);
+  };
+
+  const handleDuplicateTemplate = async (template: MicroCheckTemplate) => {
+    try {
+      await microCheckAPI.duplicateTemplate(template.id, `${template.title} (My Copy)`);
+      // Switch to "My Templates" tab and refresh
+      setActiveTab('my-templates');
+      fetchTemplates();
+    } catch (err) {
+      console.error('Error duplicating template:', err);
+      alert('Unable to duplicate template');
+    }
+  };
+
+  const handleArchiveTemplate = async (template: MicroCheckTemplate) => {
+    if (!confirm(`Archive "${template.title}"? This will mark it as inactive.`)) return;
+    try {
+      await microCheckAPI.archiveTemplate(template.id);
+      fetchTemplates();
+    } catch (err) {
+      console.error('Error archiving template:', err);
+      alert('Unable to archive template');
+    }
+  };
+
+  const handleDeleteTemplate = async (template: MicroCheckTemplate) => {
+    if (!confirm(`Delete "${template.title}"? This action cannot be undone.`)) return;
+    try {
+      await microCheckAPI.deleteTemplate(template.id);
+      fetchTemplates();
+    } catch (err) {
+      console.error('Error deleting template:', err);
+      alert('Unable to delete template');
+    }
+  };
+
+  const handleSubmitForm = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setSubmitting(true);
+    try {
+      if (modalMode === 'create') {
+        await microCheckAPI.createTemplate(formData);
+      } else if (modalMode === 'edit' && selectedTemplate) {
+        await microCheckAPI.updateTemplate(selectedTemplate.id, formData);
+      }
+      setShowModal(false);
+      fetchTemplates();
+    } catch (err: any) {
+      console.error('Error submitting template:', err);
+      alert(err.response?.data?.message || 'Unable to save template');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const filteredTemplates = templates.filter((t) =>
+    t.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    t.description.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  const getCategoryBadgeColor = (category: MicroCheckCategory) => {
+    const colors: Record<MicroCheckCategory, string> = {
+      PPE: 'bg-purple-100 text-purple-700',
+      SAFETY: 'bg-red-100 text-red-700',
+      CLEANLINESS: 'bg-blue-100 text-blue-700',
+      FOOD_HANDLING: 'bg-green-100 text-green-700',
+      EQUIPMENT: 'bg-gray-100 text-gray-700',
+      WASTE_MANAGEMENT: 'bg-orange-100 text-orange-700',
+      PEST_CONTROL: 'bg-yellow-100 text-yellow-700',
+      STORAGE: 'bg-indigo-100 text-indigo-700',
+      DOCUMENTATION: 'bg-pink-100 text-pink-700',
+      FACILITY: 'bg-teal-100 text-teal-700',
+    };
+    return colors[category] || 'bg-gray-100 text-gray-700';
+  };
+
+  const getSeverityBadgeColor = (severity: MicroCheckSeverity) => {
+    const colors: Record<MicroCheckSeverity, string> = {
+      CRITICAL: 'bg-red-100 text-red-700 border-red-300',
+      HIGH: 'bg-orange-100 text-orange-700 border-orange-300',
+      MEDIUM: 'bg-yellow-100 text-yellow-700 border-yellow-300',
+      LOW: 'bg-green-100 text-green-700 border-green-300',
+    };
+    return colors[severity] || 'bg-gray-100 text-gray-700';
+  };
+
+  if (!canManage) {
+    return (
+      <div className="p-4 lg:p-8">
+        <div className="max-w-2xl mx-auto text-center">
+          <AlertCircle className="w-16 h-16 text-red-500 mx-auto mb-4" />
+          <h1 className="text-2xl font-bold text-gray-900 mb-2">Access Denied</h1>
+          <p className="text-gray-600">You do not have permission to manage templates.</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (loading) {
+    return (
+      <div className="p-4 lg:p-8">
+        <div className="flex items-center justify-center min-h-[400px]">
+          <div className="text-center">
+            <Loader2 className="w-12 h-12 text-teal-600 animate-spin mx-auto mb-4" />
+            <p className="text-gray-600">Loading templates...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="p-4 lg:p-8">
+      <div className="max-w-7xl mx-auto">
+        {/* Header */}
+        <div className="mb-6">
+          <div className="flex items-center justify-between mb-2">
+            <div className="flex items-center">
+              <Settings className="w-8 h-8 text-teal-600 mr-3" />
+              <div>
+                <h1 className="text-2xl font-bold text-gray-900">My Templates</h1>
+                <p className="text-gray-600">Manage your Quick Check templates</p>
+              </div>
+            </div>
+          </div>
+
+          {/* Info Banner for Coaching Users */}
+          {isOperator && (
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mt-4">
+              <p className="text-sm text-blue-800">
+                <Sparkles className="w-4 h-4 inline mr-2" />
+                You can customize our starter templates or create your own quick checks for your team
+              </p>
+            </div>
+          )}
+        </div>
+
+        {/* Tabs */}
+        <div className="flex border-b border-gray-200 mb-6">
+          <button
+            onClick={() => setActiveTab('my-templates')}
+            className={`px-6 py-3 font-medium text-sm transition-colors ${
+              activeTab === 'my-templates'
+                ? 'border-b-2 border-teal-600 text-teal-600'
+                : 'text-gray-600 hover:text-gray-900'
+            }`}
+          >
+            My Templates
+          </button>
+          <button
+            onClick={() => setActiveTab('starters')}
+            className={`px-6 py-3 font-medium text-sm transition-colors ${
+              activeTab === 'starters'
+                ? 'border-b-2 border-teal-600 text-teal-600'
+                : 'text-gray-600 hover:text-gray-900'
+            }`}
+          >
+            PeakOps Starters
+          </button>
+        </div>
+
+        {/* Action Bar */}
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 mb-6">
+          <div className="flex flex-col lg:flex-row gap-4">
+            <div className="flex-1">
+              <div className="relative">
+                <Search className="w-5 h-5 text-gray-400 absolute left-3 top-1/2 transform -translate-y-1/2" />
+                <input
+                  type="text"
+                  placeholder="Search templates..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
+                />
+              </div>
+            </div>
+            <div className="flex gap-2">
+              <button
+                onClick={() => setShowFilters(!showFilters)}
+                className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors font-medium flex items-center justify-center"
+              >
+                <Filter className="w-5 h-5 mr-2" />
+                Filters
+                <ChevronDown className={`w-4 h-4 ml-2 transition-transform ${showFilters ? 'rotate-180' : ''}`} />
+              </button>
+              {activeTab === 'my-templates' && (
+                <button
+                  onClick={handleCreateTemplate}
+                  className="px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors font-medium flex items-center"
+                >
+                  <Plus className="w-5 h-5 mr-2" />
+                  New Template
+                </button>
+              )}
+            </div>
+          </div>
+
+          {showFilters && (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4 pt-4 border-t border-gray-200">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Category</label>
+                <select
+                  value={categoryFilter}
+                  onChange={(e) => setCategoryFilter(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
+                >
+                  <option value="">All Categories</option>
+                  <option value="PPE">PPE</option>
+                  <option value="SAFETY">Safety</option>
+                  <option value="CLEANLINESS">Cleanliness</option>
+                  <option value="FOOD_HANDLING">Food Handling</option>
+                  <option value="EQUIPMENT">Equipment</option>
+                  <option value="WASTE_MANAGEMENT">Waste Management</option>
+                  <option value="PEST_CONTROL">Pest Control</option>
+                  <option value="STORAGE">Storage</option>
+                  <option value="DOCUMENTATION">Documentation</option>
+                  <option value="FACILITY">Facility</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Severity</label>
+                <select
+                  value={severityFilter}
+                  onChange={(e) => setSeverityFilter(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
+                >
+                  <option value="">All Severities</option>
+                  <option value="CRITICAL">Critical</option>
+                  <option value="HIGH">High</option>
+                  <option value="MEDIUM">Medium</option>
+                  <option value="LOW">Low</option>
+                </select>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Error Display */}
+        {error && (
+          <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
+            <p className="text-red-600">{error}</p>
+          </div>
+        )}
+
+        {/* Templates Grid */}
+        {filteredTemplates.length === 0 ? (
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-12 text-center">
+            <Settings className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">
+              {activeTab === 'starters' ? 'No Starter Templates Found' : 'No Custom Templates Yet'}
+            </h3>
+            <p className="text-gray-600 mb-6">
+              {searchTerm || categoryFilter || severityFilter
+                ? 'Try adjusting your filters'
+                : activeTab === 'starters'
+                ? 'Starter templates will appear here'
+                : 'Create your first template or duplicate a starter template'}
+            </p>
+            {activeTab === 'my-templates' && !searchTerm && !categoryFilter && !severityFilter && (
+              <button
+                onClick={handleCreateTemplate}
+                className="px-6 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors font-medium"
+              >
+                Create Template
+              </button>
+            )}
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {filteredTemplates.map((template) => (
+              <div
+                key={template.id}
+                className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow"
+              >
+                <div className="flex items-start justify-between mb-4">
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2 mb-2">
+                      <h3 className="text-lg font-semibold text-gray-900">{template.title}</h3>
+                      {!template.is_active && (
+                        <span className="px-2 py-1 bg-gray-100 text-gray-600 text-xs rounded">Inactive</span>
+                      )}
+                      {template.source === 'PEAKOPS' && (
+                        <span className="px-2 py-1 bg-blue-100 text-blue-700 text-xs rounded flex items-center">
+                          <Sparkles className="w-3 h-3 mr-1" />
+                          Starter
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-sm text-gray-600 mb-3">{template.description}</p>
+                    <div className="flex flex-wrap gap-2 mb-3">
+                      <span className={`px-2 py-1 rounded text-xs font-medium ${getCategoryBadgeColor(template.category)}`}>
+                        {template.category_display}
+                      </span>
+                      <span className={`px-2 py-1 rounded text-xs font-medium border ${getSeverityBadgeColor(template.severity)}`}>
+                        {template.severity_display}
+                      </span>
+                      {template.default_photo_required && (
+                        <span className="px-2 py-1 bg-blue-100 text-blue-700 text-xs rounded">Photo Required</span>
+                      )}
+                    </div>
+
+                    {/* Usage Stats */}
+                    {template.usage_stats && activeTab === 'my-templates' && (
+                      <div className="flex items-center gap-4 text-xs text-gray-500 mb-2">
+                        <span className="flex items-center">
+                          <TrendingUp className="w-3 h-3 mr-1" />
+                          Used {template.usage_stats.times_used} times
+                        </span>
+                        {template.usage_stats.pass_rate !== null && (
+                          <span>Pass rate: {Math.round(template.usage_stats.pass_rate)}%</span>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Actions */}
+                <div className="flex flex-wrap gap-2 pt-4 border-t border-gray-200">
+                  {activeTab === 'starters' ? (
+                    <button
+                      onClick={() => handleDuplicateTemplate(template)}
+                      className="px-3 py-1.5 bg-teal-50 text-teal-700 rounded hover:bg-teal-100 transition-colors text-sm font-medium flex items-center"
+                    >
+                      <Copy className="w-4 h-4 mr-1" />
+                      Duplicate to My Templates
+                    </button>
+                  ) : (
+                    <>
+                      <button
+                        onClick={() => handleEditTemplate(template)}
+                        className="px-3 py-1.5 bg-blue-50 text-blue-700 rounded hover:bg-blue-100 transition-colors text-sm font-medium flex items-center"
+                      >
+                        <Edit className="w-4 h-4 mr-1" />
+                        Edit
+                      </button>
+                      <button
+                        onClick={() => handleArchiveTemplate(template)}
+                        className="px-3 py-1.5 bg-orange-50 text-orange-700 rounded hover:bg-orange-100 transition-colors text-sm font-medium flex items-center"
+                      >
+                        <Archive className="w-4 h-4 mr-1" />
+                        Archive
+                      </button>
+                      {isAdmin && (
+                        <button
+                          onClick={() => handleDeleteTemplate(template)}
+                          className="px-3 py-1.5 bg-red-50 text-red-700 rounded hover:bg-red-100 transition-colors text-sm font-medium flex items-center"
+                        >
+                          <Trash2 className="w-4 h-4 mr-1" />
+                          Delete
+                        </button>
+                      )}
+                    </>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Modal for Create/Edit */}
+      {showModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="sticky top-0 bg-white border-b border-gray-200 p-6 flex items-center justify-between">
+              <h2 className="text-xl font-bold text-gray-900">
+                {modalMode === 'create' ? 'Create Template' : 'Edit Template'}
+              </h2>
+              <button
+                onClick={() => setShowModal(false)}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                <X className="w-6 h-6" />
+              </button>
+            </div>
+
+            <form onSubmit={handleSubmitForm} className="p-6 space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Title *</label>
+                <input
+                  type="text"
+                  required
+                  value={formData.title || ''}
+                  onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Description *</label>
+                <textarea
+                  required
+                  rows={3}
+                  value={formData.description || ''}
+                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Success Criteria *</label>
+                <textarea
+                  required
+                  rows={3}
+                  value={formData.success_criteria || ''}
+                  onChange={(e) => setFormData({ ...formData, success_criteria: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
+                  placeholder="Describe what a PASS looks like"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Category *</label>
+                  <select
+                    required
+                    value={formData.category || ''}
+                    onChange={(e) => setFormData({ ...formData, category: e.target.value as MicroCheckCategory })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
+                  >
+                    <option value="PPE">PPE</option>
+                    <option value="SAFETY">Safety</option>
+                    <option value="CLEANLINESS">Cleanliness</option>
+                    <option value="FOOD_HANDLING">Food Handling</option>
+                    <option value="EQUIPMENT">Equipment</option>
+                    <option value="WASTE_MANAGEMENT">Waste Management</option>
+                    <option value="PEST_CONTROL">Pest Control</option>
+                    <option value="STORAGE">Storage</option>
+                    <option value="DOCUMENTATION">Documentation</option>
+                    <option value="FACILITY">Facility</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Severity *</label>
+                  <select
+                    required
+                    value={formData.severity || ''}
+                    onChange={(e) => setFormData({ ...formData, severity: e.target.value as MicroCheckSeverity })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
+                  >
+                    <option value="CRITICAL">Critical</option>
+                    <option value="HIGH">High</option>
+                    <option value="MEDIUM">Medium</option>
+                    <option value="LOW">Low</option>
+                  </select>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Expected Completion (seconds)</label>
+                <input
+                  type="number"
+                  min="10"
+                  max="300"
+                  value={formData.expected_completion_seconds || 30}
+                  onChange={(e) => setFormData({ ...formData, expected_completion_seconds: parseInt(e.target.value) })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <label className="flex items-center">
+                  <input
+                    type="checkbox"
+                    checked={formData.default_photo_required || false}
+                    onChange={(e) => setFormData({ ...formData, default_photo_required: e.target.checked })}
+                    className="w-4 h-4 text-teal-600 border-gray-300 rounded focus:ring-teal-500"
+                  />
+                  <span className="ml-2 text-sm text-gray-700">Photo Required</span>
+                </label>
+
+                <label className="flex items-center">
+                  <input
+                    type="checkbox"
+                    checked={formData.is_active !== false}
+                    onChange={(e) => setFormData({ ...formData, is_active: e.target.checked })}
+                    className="w-4 h-4 text-teal-600 border-gray-300 rounded focus:ring-teal-500"
+                  />
+                  <span className="ml-2 text-sm text-gray-700">Active</span>
+                </label>
+              </div>
+
+              <div className="flex justify-end gap-3 pt-4 border-t border-gray-200">
+                <button
+                  type="button"
+                  onClick={() => setShowModal(false)}
+                  className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors font-medium"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={submitting}
+                  className="px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
+                >
+                  {submitting ? (
+                    <>
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      Saving...
+                    </>
+                  ) : (
+                    modalMode === 'create' ? 'Create Template' : 'Save Changes'
+                  )}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+export default MicroCheckTemplatesPage;
