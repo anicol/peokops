@@ -25,19 +25,23 @@ export default function PricingPage() {
   const faqItems = [
     {
       question: "What does the free trial include?",
-      answer: "One store, 10 videos, Coaching Mode only. Private results, videos deleted after processing."
+      answer: "You can test The Guide and The Coach for one location. Run up to 10 videos and daily micro-checks. All results are private, and videos are deleted after processing."
     },
     {
       question: "Do I need a credit card for the free trial?",
-      answer: "No, start risk-free."
+      answer: "No. You can start completely free — no credit card required."
     },
     {
-      question: "Will corporate see my coaching videos?",
-      answer: "No, all coaching videos are private and deleted after processing."
+      question: "Will corporate see my coaching or micro-check results?",
+      answer: "No. Both The Guide and The Coach keep results private at the store level unless you choose to share them."
     },
     {
-      question: "How fast do I see results?",
-      answer: "Within 10 minutes of your first upload, you'll see real AI detections in your store."
+      question: "How fast will I see results?",
+      answer: "You'll receive AI feedback within minutes of your first video or check submission."
+    },
+    {
+      question: "Is my data secure with PeakOps?",
+      answer: "Yes. We use enterprise-grade encryption and maintain strict security standards. All videos are deleted after analysis in coaching mode, and enterprise retention is fully configurable."
     }
   ];
 
@@ -58,304 +62,196 @@ export default function PricingPage() {
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
           <div className="max-w-4xl mx-auto text-center">
             <h1 className="text-4xl md:text-6xl font-bold leading-tight mb-6">
-              AI Inspections for Every Level of Your Business
+              AI-powered consistency for every stage of your growth.
             </h1>
             <p className="text-xl md:text-2xl text-blue-100 mb-8 leading-relaxed">
-              Start free with Coaching. Scale to Corporate when you're ready.
+              Start simple. Build confidence. Scale visibility.
             </p>
-            
-            <div className="flex flex-col sm:flex-row justify-center items-center space-y-2 sm:space-y-0 sm:space-x-8 mb-8 text-lg">
-              <div className="flex items-center">
-                <Check className="w-5 h-5 text-green-300 mr-2" />
-                <span>Free trial — no credit card required</span>
-              </div>
-              <div className="flex items-center">
-                <Check className="w-5 h-5 text-green-300 mr-2" />
-                <span>Instant AI scorecards</span>
-              </div>
-              <div className="flex items-center">
-                <Check className="w-5 h-5 text-green-300 mr-2" />
-                <span>Proven ROI at enterprise scale</span>
-              </div>
-            </div>
-            
-            <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Link
-                to="/coaching"
-                className="px-8 py-4 bg-teal-400 text-teal-900 rounded-lg hover:bg-teal-300 transition-colors font-semibold text-lg shadow-lg"
-              >
-                Get Started Free
-              </Link>
-              <Link
-                to="/enterprise"
-                className="px-8 py-4 border-2 border-white text-white rounded-lg hover:bg-white hover:text-blue-600 transition-colors font-semibold text-lg"
-              >
-                Talk to Sales
-              </Link>
-            </div>
           </div>
         </div>
       </section>
 
 
-      {/* Coaching Program */}
+      {/* Pricing Tiers */}
       <section className="py-20 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-16">
-            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
-              Coaching Program
-            </h2>
-            <p className="text-xl text-gray-600">
-              Private AI coaching to build confidence and reduce inspection stress.
-            </p>
-          </div>
-          
-          <div className="max-w-5xl mx-auto">
-            <div className="grid lg:grid-cols-2 gap-8">
-              {/* Starter Coaching */}
-              <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-8">
-                <div className="text-center mb-8">
-                  <h3 className="text-2xl font-bold text-gray-900 mb-2">Starter Coaching</h3>
-                  <div className="text-4xl font-bold text-teal-600 mb-4">$49</div>
-                  <div className="text-gray-600">per store/month</div>
-                </div>
-                
-                <ul className="space-y-4 mb-8">
-                  <li className="flex items-start">
-                    <Check className="w-5 h-5 text-teal-600 mr-3 mt-0.5 flex-shrink-0" />
-                    <span className="text-gray-700">Unlimited coaching videos</span>
-                  </li>
-                  <li className="flex items-start">
-                    <Check className="w-5 h-5 text-teal-600 mr-3 mt-0.5 flex-shrink-0" />
-                    <span className="text-gray-700">Private scorecards</span>
-                  </li>
-                  <li className="flex items-start">
-                    <Check className="w-5 h-5 text-teal-600 mr-3 mt-0.5 flex-shrink-0" />
-                    <span className="text-gray-700">Videos deleted after processing</span>
-                  </li>
-                  <li className="flex items-start">
-                    <Check className="w-5 h-5 text-teal-600 mr-3 mt-0.5 flex-shrink-0" />
-                    <span className="text-gray-700">Actionable to-do lists</span>
-                  </li>
-                </ul>
-                
-                <Link
-                  to="/coaching"
-                  className="block w-full text-center px-6 py-3 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors font-semibold"
-                >
-                  Start Free →
-                </Link>
-              </div>
-
-              {/* Pro Coaching */}
-              <div className="bg-white rounded-2xl shadow-lg border-2 border-blue-500 p-8 relative">
-                <div className="absolute -top-4 left-1/2 transform -translate-x-1/2">
-                  <div className="bg-blue-500 text-white px-4 py-2 rounded-full text-sm font-semibold">
-                    Most Popular
-                  </div>
-                </div>
-                
-                <div className="text-center mb-8">
-                  <h3 className="text-2xl font-bold text-gray-900 mb-2">Pro Coaching</h3>
-                  <div className="text-4xl font-bold text-blue-600 mb-4">$79</div>
-                  <div className="text-gray-600">per store/month</div>
-                </div>
-                
-                <ul className="space-y-4 mb-8">
-                  <li className="flex items-start">
-                    <Check className="w-5 h-5 text-blue-600 mr-3 mt-0.5 flex-shrink-0" />
-                    <span className="text-gray-700">Everything in Starter</span>
-                  </li>
-                  <li className="flex items-start">
-                    <Check className="w-5 h-5 text-blue-600 mr-3 mt-0.5 flex-shrink-0" />
-                    <span className="text-gray-700">Multi-manager coaching analytics</span>
-                  </li>
-                  <li className="flex items-start">
-                    <Check className="w-5 h-5 text-blue-600 mr-3 mt-0.5 flex-shrink-0" />
-                    <span className="text-gray-700">Optional report sharing with corporate</span>
-                  </li>
-                  <li className="flex items-start">
-                    <Check className="w-5 h-5 text-blue-600 mr-3 mt-0.5 flex-shrink-0" />
-                    <span className="text-gray-700">Team trend tracking</span>
-                  </li>
-                </ul>
-                
-                <Link
-                  to="/coaching"
-                  className="block w-full text-center px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-semibold"
-                >
-                  Start Free →
-                </Link>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Corporate Program */}
-      <section className="py-20 bg-gray-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-16">
-            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
-              Corporate Program
-            </h2>
-            <p className="text-xl text-gray-600">
-              Scale inspections, cut travel costs, and ensure compliance.
-            </p>
-          </div>
-          
-          <div className="grid lg:grid-cols-3 gap-8 mb-12">
+          <div className="grid lg:grid-cols-3 gap-8">
             {/* Essentials */}
-            <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-8">
+            <div className="bg-gradient-to-br from-green-50 to-teal-50 rounded-2xl shadow-lg border border-green-200 p-8">
               <div className="text-center mb-8">
-                <h3 className="text-2xl font-bold text-gray-900 mb-2">Essentials</h3>
-                <p className="text-gray-600 mb-6">For emerging brands (under 200 locations)</p>
+                <h3 className="text-2xl font-bold text-gray-900 mb-2">Essentials: Daily Excellence</h3>
+                <p className="text-gray-700 mb-6">
+                  Start improving operations with daily micro-checks and instant AI feedback.
+                </p>
+                <p className="text-sm text-gray-600 mb-6 italic">
+                  Includes The Guide and The Coach.
+                </p>
+                <div className="text-4xl font-bold text-green-600 mb-2">$49</div>
+                <div className="text-gray-600">/ store / month</div>
               </div>
-              
+
               <ul className="space-y-4 mb-8">
                 <li className="flex items-start">
                   <Check className="w-5 h-5 text-green-600 mr-3 mt-0.5 flex-shrink-0" />
-                  <span className="text-gray-700">Coaching + Inspection Mode</span>
+                  <span className="text-gray-700">3 randomized micro-checks per day</span>
                 </li>
                 <li className="flex items-start">
                   <Check className="w-5 h-5 text-green-600 mr-3 mt-0.5 flex-shrink-0" />
-                  <span className="text-gray-700">Official compliance records</span>
+                  <span className="text-gray-700">Private video feedback</span>
                 </li>
                 <li className="flex items-start">
                   <Check className="w-5 h-5 text-green-600 mr-3 mt-0.5 flex-shrink-0" />
-                  <span className="text-gray-700">Corporate dashboards</span>
+                  <span className="text-gray-700">Progress tracking</span>
                 </li>
                 <li className="flex items-start">
                   <Check className="w-5 h-5 text-green-600 mr-3 mt-0.5 flex-shrink-0" />
-                  <span className="text-gray-700">Email support</span>
+                  <span className="text-gray-700">Works on any device</span>
                 </li>
               </ul>
+
+              <a
+                href={TRIAL_SIGNUP_URL}
+                className="block w-full text-center px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-semibold"
+              >
+                Start Free Trial
+              </a>
             </div>
 
             {/* Professional */}
-            <div className="bg-white rounded-2xl shadow-lg border-2 border-blue-500 p-8 relative">
+            <div className="bg-gradient-to-br from-teal-50 to-blue-50 rounded-2xl shadow-lg border-2 border-teal-500 p-8 relative">
               <div className="absolute -top-4 left-1/2 transform -translate-x-1/2">
-                <div className="bg-blue-500 text-white px-4 py-2 rounded-full text-sm font-semibold flex items-center">
+                <div className="bg-teal-500 text-white px-4 py-2 rounded-full text-sm font-semibold flex items-center">
                   <Star className="w-4 h-4 mr-1" />
                   Most Popular
                 </div>
               </div>
-              
-              <div className="text-center mb-8">
-                <h3 className="text-2xl font-bold text-gray-900 mb-2">Professional</h3>
-                <p className="text-gray-600 mb-6">For growth brands (200–1,000 locations)</p>
-              </div>
-              
-              <ul className="space-y-4 mb-8">
-                <li className="flex items-start">
-                  <Check className="w-5 h-5 text-blue-600 mr-3 mt-0.5 flex-shrink-0" />
-                  <span className="text-gray-700">Everything in Essentials</span>
-                </li>
-                <li className="flex items-start">
-                  <Check className="w-5 h-5 text-blue-600 mr-3 mt-0.5 flex-shrink-0" />
-                  <span className="text-gray-700">Advanced analytics & compliance heatmaps</span>
-                </li>
-                <li className="flex items-start">
-                  <Check className="w-5 h-5 text-blue-600 mr-3 mt-0.5 flex-shrink-0" />
-                  <span className="text-gray-700">Priority phone support</span>
-                </li>
-                <li className="flex items-start">
-                  <Check className="w-5 h-5 text-blue-600 mr-3 mt-0.5 flex-shrink-0" />
-                  <span className="text-gray-700">Workflow integrations</span>
-                </li>
-              </ul>
-            </div>
 
-            {/* Enterprise Elite */}
-            <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-8">
               <div className="text-center mb-8">
-                <h3 className="text-2xl font-bold text-gray-900 mb-2">Enterprise Elite</h3>
-                <p className="text-gray-600 mb-6">For large brands (1,000+ locations)</p>
-              </div>
-              
-              <ul className="space-y-4 mb-8">
-                <li className="flex items-start">
-                  <Check className="w-5 h-5 text-purple-600 mr-3 mt-0.5 flex-shrink-0" />
-                  <span className="text-gray-700">Everything in Professional</span>
-                </li>
-                <li className="flex items-start">
-                  <Check className="w-5 h-5 text-purple-600 mr-3 mt-0.5 flex-shrink-0" />
-                  <span className="text-gray-700">Dedicated success manager</span>
-                </li>
-                <li className="flex items-start">
-                  <Check className="w-5 h-5 text-purple-600 mr-3 mt-0.5 flex-shrink-0" />
-                  <span className="text-gray-700">SLA guarantees</span>
-                </li>
-                <li className="flex items-start">
-                  <Check className="w-5 h-5 text-purple-600 mr-3 mt-0.5 flex-shrink-0" />
-                  <span className="text-gray-700">Custom reporting & enterprise workflow integration</span>
-                </li>
-              </ul>
-            </div>
-          </div>
-
-          {/* Pricing Note */}
-          <div className="bg-blue-50 rounded-2xl p-8 text-center max-w-4xl mx-auto mb-8">
-            <div className="flex items-start justify-center mb-4">
-              <div className="text-2xl mr-2">📌</div>
-              <div className="text-left">
-                <p className="text-gray-700 mb-4">
-                  <strong>Pricing is customized by brand size and program level.</strong> On average, PeakOps delivers 50–70% travel savings, often saving $650K–$1.8M annually for a 1,300-store brand.
+                <h3 className="text-2xl font-bold text-gray-900 mb-2">Professional: Confident Operations</h3>
+                <p className="text-gray-700 mb-6">
+                  Stay inspection-ready across every shift with cross-location visibility and analytics.
                 </p>
+                <p className="text-sm text-gray-600 mb-6 italic">
+                  Includes The Guide and The Coach.
+                </p>
+                <div className="text-4xl font-bold text-teal-600 mb-2">$79</div>
+                <div className="text-gray-600">/ store / month</div>
               </div>
+
+              <ul className="space-y-4 mb-8">
+                <li className="flex items-start">
+                  <Check className="w-5 h-5 text-teal-600 mr-3 mt-0.5 flex-shrink-0" />
+                  <span className="text-gray-700">Multi-manager reporting</span>
+                </li>
+                <li className="flex items-start">
+                  <Check className="w-5 h-5 text-teal-600 mr-3 mt-0.5 flex-shrink-0" />
+                  <span className="text-gray-700">Trend tracking</span>
+                </li>
+                <li className="flex items-start">
+                  <Check className="w-5 h-5 text-teal-600 mr-3 mt-0.5 flex-shrink-0" />
+                  <span className="text-gray-700">Optional regional sharing</span>
+                </li>
+                <li className="flex items-start">
+                  <Check className="w-5 h-5 text-teal-600 mr-3 mt-0.5 flex-shrink-0" />
+                  <span className="text-gray-700">Team accountability tools</span>
+                </li>
+              </ul>
+
+              <a
+                href={TRIAL_SIGNUP_URL}
+                className="block w-full text-center px-6 py-3 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors font-semibold"
+              >
+                Start Free Trial
+              </a>
             </div>
-            <Link
-              to="/enterprise"
-              className="inline-block px-8 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-semibold"
-            >
-              Talk to Sales →
-            </Link>
+
+            {/* Enterprise */}
+            <div className="bg-gradient-to-br from-blue-50 to-purple-50 rounded-2xl shadow-lg border border-blue-200 p-8">
+              <div className="text-center mb-8">
+                <h3 className="text-2xl font-bold text-gray-900 mb-2">Enterprise: Brand Consistency</h3>
+                <p className="text-gray-700 mb-6">
+                  Get full compliance visibility, ROI, and performance insights across your network.
+                </p>
+                <p className="text-sm text-gray-600 mb-6 italic">
+                  Includes The Guide, The Coach, and The Inspector.
+                </p>
+                <div className="text-3xl font-bold text-blue-600 mb-2">Custom Pricing</div>
+              </div>
+
+              <ul className="space-y-4 mb-8">
+                <li className="flex items-start">
+                  <Check className="w-5 h-5 text-blue-600 mr-3 mt-0.5 flex-shrink-0" />
+                  <span className="text-gray-700">Enterprise dashboards</span>
+                </li>
+                <li className="flex items-start">
+                  <Check className="w-5 h-5 text-blue-600 mr-3 mt-0.5 flex-shrink-0" />
+                  <span className="text-gray-700">50–70% travel savings</span>
+                </li>
+                <li className="flex items-start">
+                  <Check className="w-5 h-5 text-blue-600 mr-3 mt-0.5 flex-shrink-0" />
+                  <span className="text-gray-700">Auditable reports</span>
+                </li>
+                <li className="flex items-start">
+                  <Check className="w-5 h-5 text-blue-600 mr-3 mt-0.5 flex-shrink-0" />
+                  <span className="text-gray-700">Enterprise-grade security</span>
+                </li>
+              </ul>
+
+              <Link
+                to="/demo"
+                className="block w-full text-center px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-semibold"
+              >
+                Request Demo
+              </Link>
+            </div>
           </div>
         </div>
       </section>
 
       {/* ROI Section */}
-      <section className="py-20 bg-white">
+      <section className="py-20 bg-gray-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
             <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
-              PeakOps Pays for Itself
+              📊 Proven ROI
             </h2>
           </div>
-          
+
           <div className="max-w-4xl mx-auto">
-            <div className="grid md:grid-cols-3 gap-8 mb-12">
-              <div className="bg-red-50 p-8 rounded-2xl border border-red-200 text-center">
-                <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-6">
-                  <TrendingUp className="w-8 h-8 text-red-600" />
-                </div>
-                <h3 className="text-xl font-semibold text-gray-900 mb-3">Current Costs</h3>
-                <p className="text-gray-700">Average in-person inspection costs: <strong>$500–$1,000 per visit</strong></p>
-              </div>
-
-              <div className="bg-green-50 p-8 rounded-2xl border border-green-200 text-center">
-                <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
-                  <Calculator className="w-8 h-8 text-green-600" />
-                </div>
-                <h3 className="text-xl font-semibold text-gray-900 mb-3">Break Even</h3>
-                <p className="text-gray-700">With PeakOps, <strong>even one reduced trip per month</strong> covers the investment</p>
-              </div>
-
-              <div className="bg-blue-50 p-8 rounded-2xl border border-blue-200 text-center">
-                <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-6">
-                  <BarChart3 className="w-8 h-8 text-blue-600" />
-                </div>
-                <h3 className="text-xl font-semibold text-gray-900 mb-3">Scale Impact</h3>
-                <p className="text-gray-700">Brands save <strong>up to $1.8M annually</strong> while increasing coverage 3–5×</p>
-              </div>
+            <div className="overflow-x-auto mb-12">
+              <table className="w-full border-collapse bg-white shadow-lg rounded-2xl overflow-hidden">
+                <thead>
+                  <tr className="bg-blue-600 text-white">
+                    <th className="text-left py-4 px-6 font-bold">Metric</th>
+                    <th className="text-left py-4 px-6 font-bold">Typical Result</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr className="border-b border-gray-200">
+                    <td className="py-4 px-6 font-semibold text-gray-900">Travel Cost Savings</td>
+                    <td className="py-4 px-6 text-gray-700">50–70% reduction with video-based inspections</td>
+                  </tr>
+                  <tr className="border-b border-gray-200">
+                    <td className="py-4 px-6 font-semibold text-gray-900">Inspection Coverage</td>
+                    <td className="py-4 px-6 text-gray-700">3–5× more locations reviewed with the same team</td>
+                  </tr>
+                  <tr>
+                    <td className="py-4 px-6 font-semibold text-gray-900">Consistency</td>
+                    <td className="py-4 px-6 text-gray-700">100% objective AI scoring across every store</td>
+                  </tr>
+                </tbody>
+              </table>
             </div>
-            
-            <div className="text-center">
+
+            <div className="bg-green-50 rounded-2xl p-8 text-center border border-green-200">
+              <p className="text-lg text-gray-700 mb-6">
+                Even one reduced in-person visit per month per store often covers the investment.
+              </p>
               <Link
-                to="/roi"
+                to="/roi-calculator"
                 className="inline-block px-8 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-semibold text-lg"
               >
-                Calculate Your Savings →
+                Calculate Your Savings
               </Link>
             </div>
           </div>
@@ -363,9 +259,14 @@ export default function PricingPage() {
       </section>
 
       {/* FAQ */}
-      <section className="py-20 bg-gray-50">
+      <section className="py-20 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="max-w-4xl mx-auto space-y-8">
+          <div className="text-center mb-12">
+            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
+              ❓ Frequently Asked Questions
+            </h2>
+          </div>
+          <div className="max-w-4xl mx-auto space-y-6">
             {faqItems.map((item, index) => (
               <div key={index} className="bg-white p-6 rounded-xl shadow-lg">
                 <h3 className="text-lg font-semibold text-gray-900 mb-3">
@@ -383,11 +284,12 @@ export default function PricingPage() {
       {/* Final CTA */}
       <section className="py-20 bg-gradient-to-r from-blue-600 to-teal-600 text-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <h2 className="text-3xl md:text-4xl font-bold mb-4">
-            Start where you are. Scale when you're ready.
+          <h2 className="text-3xl md:text-4xl font-bold mb-6">
+            Start Where You Are. Scale When You're Ready.
           </h2>
           <p className="text-xl text-blue-100 mb-8 max-w-3xl mx-auto">
-            Coaching builds confidence. Corporate drives compliance.
+            Choose the plan that fits your current stage.<br />
+            Upgrade anytime as your needs grow.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <a
@@ -397,7 +299,7 @@ export default function PricingPage() {
               Start Free Trial
             </a>
             <Link
-              to="/enterprise"
+              to="/demo"
               className="px-8 py-4 border-2 border-white text-white rounded-lg hover:bg-white hover:text-blue-600 transition-colors font-semibold text-lg"
             >
               Talk to Sales
