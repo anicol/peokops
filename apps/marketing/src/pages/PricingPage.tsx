@@ -75,37 +75,41 @@ export default function PricingPage() {
       {/* Pricing Tiers */}
       <section className="py-20 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid lg:grid-cols-3 gap-8">
+          <div className="grid lg:grid-cols-3 gap-8 items-stretch">
             {/* Essentials */}
-            <div className="bg-gradient-to-br from-green-50 to-teal-50 rounded-2xl shadow-lg border border-green-200 p-8">
+            <div className="bg-gradient-to-br from-green-50 to-teal-50 rounded-2xl shadow-lg border border-green-200 p-8 flex flex-col">
               <div className="text-center mb-8">
-                <h3 className="text-2xl font-bold text-gray-900 mb-2">Essentials: Daily Excellence</h3>
-                <p className="text-gray-700 mb-6">
-                  Start improving operations with daily micro-checks and instant AI feedback.
+                <h3 className="text-2xl font-bold text-gray-900 mb-2">Essentials:<br />Daily Excellence</h3>
+                <p className="text-gray-700 mb-4">
+                  For single stores or small teams building daily consistency.
                 </p>
-                <p className="text-sm text-gray-600 mb-6 italic">
-                  Includes The Guide and The Coach.
+                <p className="text-sm text-gray-600 mb-6 italic" style={{minHeight: '60px'}}>
+                  Build habits with AI-powered micro-checks and instant feedback; no setup, no stress.
                 </p>
                 <div className="text-4xl font-bold text-green-600 mb-2">$49</div>
-                <div className="text-gray-600">/ store / month</div>
+                <div className="text-gray-600">/ store per month</div>
               </div>
 
-              <ul className="space-y-4 mb-8">
+              <ul className="space-y-4 mb-8 flex-grow">
                 <li className="flex items-start">
                   <Check className="w-5 h-5 text-green-600 mr-3 mt-0.5 flex-shrink-0" />
                   <span className="text-gray-700">3 randomized micro-checks per day</span>
                 </li>
                 <li className="flex items-start">
                   <Check className="w-5 h-5 text-green-600 mr-3 mt-0.5 flex-shrink-0" />
-                  <span className="text-gray-700">Private video feedback</span>
+                  <span className="text-gray-700">AI feedback with improvement prompts</span>
                 </li>
                 <li className="flex items-start">
                   <Check className="w-5 h-5 text-green-600 mr-3 mt-0.5 flex-shrink-0" />
-                  <span className="text-gray-700">Progress tracking</span>
+                  <span className="text-gray-700">Private results (no corporate visibility)</span>
                 </li>
                 <li className="flex items-start">
                   <Check className="w-5 h-5 text-green-600 mr-3 mt-0.5 flex-shrink-0" />
-                  <span className="text-gray-700">Works on any device</span>
+                  <span className="text-gray-700">Trend and progress tracking over time</span>
+                </li>
+                <li className="flex items-start">
+                  <Check className="w-5 h-5 text-green-600 mr-3 mt-0.5 flex-shrink-0" />
+                  <span className="text-gray-700">Works on any smartphone</span>
                 </li>
               </ul>
 
@@ -118,7 +122,7 @@ export default function PricingPage() {
             </div>
 
             {/* Professional */}
-            <div className="bg-gradient-to-br from-teal-50 to-blue-50 rounded-2xl shadow-lg border-2 border-teal-500 p-8 relative">
+            <div className="bg-gradient-to-br from-teal-50 to-blue-50 rounded-2xl shadow-lg border-2 border-teal-500 p-8 relative flex flex-col">
               <div className="absolute -top-4 left-1/2 transform -translate-x-1/2">
                 <div className="bg-teal-500 text-white px-4 py-2 rounded-full text-sm font-semibold flex items-center">
                   <Star className="w-4 h-4 mr-1" />
@@ -127,33 +131,37 @@ export default function PricingPage() {
               </div>
 
               <div className="text-center mb-8">
-                <h3 className="text-2xl font-bold text-gray-900 mb-2">Professional: Confident Operations</h3>
-                <p className="text-gray-700 mb-6">
-                  Stay inspection-ready across every shift with cross-location visibility and analytics.
+                <h3 className="text-2xl font-bold text-gray-900 mb-2">Professional:<br />Confident Operations</h3>
+                <p className="text-gray-700 mb-4">
+                  For multi-unit operators who want consistent standards across every location.
                 </p>
-                <p className="text-sm text-gray-600 mb-6 italic">
-                  Includes The Guide and The Coach.
+                <p className="text-sm text-gray-600 mb-6 italic" style={{minHeight: '60px'}}>
+                  Stay inspection-ready across every shift with team-level analytics, shared visibility, and habit tracking.
                 </p>
                 <div className="text-4xl font-bold text-teal-600 mb-2">$79</div>
-                <div className="text-gray-600">/ store / month</div>
+                <div className="text-gray-600">/ store per month</div>
               </div>
 
-              <ul className="space-y-4 mb-8">
+              <ul className="space-y-4 mb-8 flex-grow">
                 <li className="flex items-start">
                   <Check className="w-5 h-5 text-teal-600 mr-3 mt-0.5 flex-shrink-0" />
-                  <span className="text-gray-700">Multi-manager reporting</span>
+                  <span className="text-gray-700">Everything in Essentials</span>
                 </li>
                 <li className="flex items-start">
                   <Check className="w-5 h-5 text-teal-600 mr-3 mt-0.5 flex-shrink-0" />
-                  <span className="text-gray-700">Trend tracking</span>
+                  <span className="text-gray-700">Private AI video feedback from The Coach</span>
                 </li>
                 <li className="flex items-start">
                   <Check className="w-5 h-5 text-teal-600 mr-3 mt-0.5 flex-shrink-0" />
-                  <span className="text-gray-700">Optional regional sharing</span>
+                  <span className="text-gray-700">Multi-manager reporting and analytics</span>
                 </li>
                 <li className="flex items-start">
                   <Check className="w-5 h-5 text-teal-600 mr-3 mt-0.5 flex-shrink-0" />
-                  <span className="text-gray-700">Team accountability tools</span>
+                  <span className="text-gray-700">Optional regional sharing for oversight</span>
+                </li>
+                <li className="flex items-start">
+                  <Check className="w-5 h-5 text-teal-600 mr-3 mt-0.5 flex-shrink-0" />
+                  <span className="text-gray-700">Cross-location trend tracking and accountability tools</span>
                 </li>
               </ul>
 
@@ -166,34 +174,42 @@ export default function PricingPage() {
             </div>
 
             {/* Enterprise */}
-            <div className="bg-gradient-to-br from-blue-50 to-purple-50 rounded-2xl shadow-lg border border-blue-200 p-8">
+            <div className="bg-gradient-to-br from-blue-50 to-purple-50 rounded-2xl shadow-lg border border-blue-200 p-8 flex flex-col">
               <div className="text-center mb-8">
-                <h3 className="text-2xl font-bold text-gray-900 mb-2">Enterprise: Brand Consistency</h3>
-                <p className="text-gray-700 mb-6">
-                  Get full compliance visibility, ROI, and performance insights across your network.
+                <h3 className="text-2xl font-bold text-gray-900 mb-2">Enterprise:<br />Brand Consistency</h3>
+                <p className="text-gray-700 mb-4">
+                  For brands and franchises ready for complete visibility and compliance at scale.
                 </p>
-                <p className="text-sm text-gray-600 mb-6 italic">
-                  Includes The Guide, The Coach, and The Inspector.
+                <p className="text-sm text-gray-600 mb-6 italic" style={{minHeight: '60px'}}>
+                  Get objective, auditable insights across your network — reduce inspection costs, increase consistency, and drive measurable ROI.
                 </p>
-                <div className="text-3xl font-bold text-blue-600 mb-2">Custom Pricing</div>
+                <div className="text-3xl font-bold text-blue-600 mb-2">Custom</div>
               </div>
 
-              <ul className="space-y-4 mb-8">
+              <ul className="space-y-4 mb-8 flex-grow">
                 <li className="flex items-start">
                   <Check className="w-5 h-5 text-blue-600 mr-3 mt-0.5 flex-shrink-0" />
-                  <span className="text-gray-700">Enterprise dashboards</span>
+                  <span className="text-gray-700">Everything in Professional</span>
                 </li>
                 <li className="flex items-start">
                   <Check className="w-5 h-5 text-blue-600 mr-3 mt-0.5 flex-shrink-0" />
-                  <span className="text-gray-700">50–70% travel savings</span>
+                  <span className="text-gray-700">Enterprise dashboards and compliance heatmaps</span>
                 </li>
                 <li className="flex items-start">
                   <Check className="w-5 h-5 text-blue-600 mr-3 mt-0.5 flex-shrink-0" />
-                  <span className="text-gray-700">Auditable reports</span>
+                  <span className="text-gray-700">50–70% reduction in travel costs</span>
                 </li>
                 <li className="flex items-start">
                   <Check className="w-5 h-5 text-blue-600 mr-3 mt-0.5 flex-shrink-0" />
-                  <span className="text-gray-700">Enterprise-grade security</span>
+                  <span className="text-gray-700">3–5× more inspection coverage per team</span>
+                </li>
+                <li className="flex items-start">
+                  <Check className="w-5 h-5 text-blue-600 mr-3 mt-0.5 flex-shrink-0" />
+                  <span className="text-gray-700">Secure data handling with configurable video retention policies</span>
+                </li>
+                <li className="flex items-start">
+                  <Check className="w-5 h-5 text-blue-600 mr-3 mt-0.5 flex-shrink-0" />
+                  <span className="text-gray-700">Flexible integrations through API and webhooks for your existing systems</span>
                 </li>
               </ul>
 
