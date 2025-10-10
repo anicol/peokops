@@ -96,7 +96,7 @@ const NeedsFixCaptureScreen: React.FC<NeedsFixCaptureScreenProps> = ({
     return (
       <MicroCheckCamera
         onCapture={handlePhotoCapture}
-        onClose={() => setShowCamera(false)}
+        onCancel={() => setShowCamera(false)}
       />
     );
   }
