@@ -161,35 +161,63 @@ def start_inspection(request, video_id):
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def inspection_stats(request):
+    from datetime import timedelta
+    from django.utils import timezone as tz
+
     user = request.user
+    now = tz.now()
+    today_start = now.replace(hour=0, minute=0, second=0, microsecond=0)
+    yesterday_start = today_start - timedelta(days=1)
+    week_start = today_start - timedelta(days=7)
 
     if user.role == 'ADMIN':
         inspections = Inspection.objects.all()
     else:
         inspections = Inspection.objects.filter(store=user.store)
-    
+
     total_inspections = inspections.count()
     completed_inspections = inspections.filter(status=Inspection.Status.COMPLETED).count()
     avg_score = inspections.filter(overall_score__isnull=False).aggregate(
         avg_score=models.Avg('overall_score')
     )['avg_score']
-    
+
+    # Today's and yesterday's average scores
+    today_inspections = inspections.filter(created_at__gte=today_start, overall_score__isnull=False)
+    yesterday_inspections = inspections.filter(
+        created_at__gte=yesterday_start,
+        created_at__lt=today_start,
+        overall_score__isnull=False
+    )
+
+    today_score = today_inspections.aggregate(avg=models.Avg('overall_score'))['avg']
+    yesterday_score = yesterday_inspections.aggregate(avg=models.Avg('overall_score'))['avg']
+
     critical_findings = Finding.objects.filter(
         inspection__in=inspections,
         severity=Finding.Severity.CRITICAL
     ).count()
-    
+
     open_actions = ActionItem.objects.filter(
         inspection__in=inspections,
         status=ActionItem.Status.OPEN
     ).count()
-    
+
+    # Resolved actions this week
+    resolved_this_week = ActionItem.objects.filter(
+        inspection__in=inspections,
+        status=ActionItem.Status.COMPLETED,
+        updated_at__gte=week_start
+    ).count()
+
     return Response({
         'total_inspections': total_inspections,
         'completed_inspections': completed_inspections,
         'average_score': round(avg_score, 1) if avg_score else None,
+        'today_score': round(today_score, 1) if today_score else None,
+        'yesterday_score': round(yesterday_score, 1) if yesterday_score else None,
         'critical_findings': critical_findings,
         'open_action_items': open_actions,
+        'resolved_this_week': resolved_this_week,
     })
 
 

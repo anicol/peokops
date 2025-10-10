@@ -83,6 +83,8 @@ export interface MicroCheckRunItem {
   run: string;
   template: string;
   template_title: string;
+  template_description?: string; // From template, not snapshot
+  template_reference_image?: string; // URL to reference image
   order: number;
   photo_required: boolean;
   photo_required_reason: PhotoRequiredReason;
@@ -91,11 +93,7 @@ export interface MicroCheckRunItem {
   title_snapshot: string;
   category_snapshot: MicroCheckCategory;
   severity_snapshot: MicroCheckSeverity;
-  description_snapshot: string;
-  guidance_snapshot: string;
-  pass_criteria_snapshot: string;
-  fail_criteria_snapshot: string;
-  photo_guidance_snapshot: string;
+  success_criteria_snapshot: string; // What the backend actually has
 }
 
 export interface MicroCheckRun {
@@ -111,7 +109,12 @@ export interface MicroCheckRun {
   status: RunStatus;
   status_display: string;
   completed_at: string | null;
+  completed_by: number | null;
+  completed_by_name: string | null;
   items: MicroCheckRunItem[];
+  completed_item_ids: string[]; // IDs of run_items that already have responses
+  completed_count: number; // Count of completed items
+  magic_link_token?: string;
   created_at: string;
   created_by: number | null;
   updated_at: string;
@@ -162,26 +165,30 @@ export interface MicroCheckResponse {
   id: string;
   run_item: string;
   run_item_details?: MicroCheckRunItem;
+  run: string;
+  assignment: string | null;
+  template: string;
   store: number;
   store_name: string;
   category: MicroCheckCategory;
   category_display: string;
-  severity: MicroCheckSeverity;
+  severity_snapshot: MicroCheckSeverity;
   severity_display: string;
   status: ResponseStatus;
   status_display: string;
-  pass_fail_override: boolean | null;
-  override_reason: string;
+  notes: string;
   skip_reason: SkipReason | '';
   skip_reason_display: string;
-  notes: string;
-  responder: number;
-  responder_name: string;
-  photo: string | null;
+  skip_reason_detail: string;
+  media: string | null;
+  completed_by: number | null;
+  completed_by_name: string;
   completed_at: string;
   local_completed_date: string;
-  ip_address: string;
-  user_agent: string;
+  completion_seconds: number | null;
+  override_reason: string;
+  overridden_by: number | null;
+  overridden_at: string | null;
   created_at: string;
   created_by: number | null;
   updated_at: string;
@@ -222,6 +229,9 @@ export interface MicroCheckStreak {
   updated_at: string;
 }
 
+export type CorrectiveActionStatus = 'OPEN' | 'IN_PROGRESS' | 'RESOLVED' | 'VERIFIED' | 'DISMISSED';
+export type CorrectiveActionCreatedFrom = 'MICRO_CHECK' | 'MANUAL' | 'AI_DETECTED';
+
 export interface CorrectiveAction {
   id: string;
   response: string;
@@ -230,16 +240,20 @@ export interface CorrectiveAction {
   store_name: string;
   category: MicroCheckCategory;
   category_display: string;
-  severity: MicroCheckSeverity;
-  severity_display: string;
-  description: string;
-  due_date: string;
+  status: CorrectiveActionStatus;
+  due_at: string | null;
   assigned_to: number | null;
   assigned_to_name: string;
+  before_media: string | null;
+  after_media: string | null;
   resolved_at: string | null;
   resolved_by: number | null;
   resolved_by_name: string;
   resolution_notes: string;
+  fixed_during_session: boolean;
+  created_from: CorrectiveActionCreatedFrom;
+  verified_at: string | null;
+  verification_confidence: number | null;
   created_at: string;
   created_by: number | null;
   updated_at: string;
@@ -254,7 +268,8 @@ export interface SubmitResponseRequest {
   status: ResponseStatus;
   notes?: string;
   skip_reason?: SkipReason;
-  photo?: File | string; // File for upload or base64 string
+  photo?: File | string; // File for upload or base64 string (deprecated - use media instead)
+  media?: string; // MediaAsset ID
 }
 
 export interface RunStatsResponse {

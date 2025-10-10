@@ -155,7 +155,9 @@ def create_demo_videos_and_inspections(user, store):
         
         # Create inspection with realistic AI analysis
         inspection = Inspection.objects.create(
-            video=video,
+            created_by=user,
+            store=store,
+            title=video.title,
             mode=Inspection.Mode.COACHING,  # Trial users get coaching mode
             status=Inspection.Status.COMPLETED,
             overall_score=scenario["overall_score"],
@@ -174,7 +176,11 @@ def create_demo_videos_and_inspections(user, store):
             expires_at=timezone.now() + timedelta(days=7),  # Trial retention period
             created_at=created_date + timedelta(minutes=random.randint(2, 8)),
         )
-        
+
+        # Link video to inspection
+        video.inspection = inspection
+        video.save()
+
         # Create findings and action items
         for finding_data in scenario["findings"]:
             finding = Finding.objects.create(

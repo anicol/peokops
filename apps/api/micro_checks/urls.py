@@ -5,8 +5,12 @@ from .views import (
     MicroCheckRunViewSet,
     MicroCheckResponseViewSet,
     MicroCheckStreakViewSet,
+    StoreStreakViewSet,
     CorrectiveActionViewSet,
-    CheckCoverageViewSet
+    CheckCoverageViewSet,
+    MediaAssetViewSet,
+    get_today_checks,
+    list_templates
 )
 
 router = DefaultRouter()
@@ -14,11 +18,15 @@ router.register(r'templates', MicroCheckTemplateViewSet, basename='microcheck-te
 router.register(r'runs', MicroCheckRunViewSet, basename='microcheck-run')
 router.register(r'responses', MicroCheckResponseViewSet, basename='microcheck-response')
 router.register(r'streaks', MicroCheckStreakViewSet, basename='microcheck-streak')
+router.register(r'store-streaks', StoreStreakViewSet, basename='store-streak')
 router.register(r'actions', CorrectiveActionViewSet, basename='corrective-action')
 router.register(r'coverage', CheckCoverageViewSet, basename='check-coverage')
+router.register(r'media', MediaAssetViewSet, basename='media-asset')
 
 app_name = 'micro_checks'
 
 urlpatterns = [
+    path('today/', get_today_checks, name='today-checks'),
+    path('templates/available/', list_templates, name='list-templates'),
     path('', include(router.urls)),
 ]

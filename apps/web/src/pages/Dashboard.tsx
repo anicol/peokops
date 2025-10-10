@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useQuery } from 'react-query';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { inspectionsAPI, videosAPI, microCheckAPI } from '@/services/api';
 import { useAuth } from '@/hooks/useAuth';
 import { useBehaviorTracking } from '@/hooks/useBehaviorTracking';
@@ -29,11 +29,25 @@ import {
 
 export default function Dashboard() {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [demoRequested, setDemoRequested] = useState(false);
 
   // Behavior tracking and smart nudges
   const { trackDashboardView } = useBehaviorTracking();
   const { nudges, handleNudgeAction, dismissNudge } = useSmartNudges();
+
+  // Check if trial user needs to complete onboarding
+  useEffect(() => {
+    console.log('Dashboard: Checking onboarding status', {
+      user: user?.email,
+      is_trial_user: user?.is_trial_user,
+      onboarding_completed_at: user?.onboarding_completed_at
+    });
+    if (user && user.is_trial_user && !user.onboarding_completed_at) {
+      console.log('Dashboard: Redirecting to onboarding - not completed');
+      navigate('/onboarding');
+    }
+  }, [user, navigate]);
 
   // Track dashboard view on mount
   useEffect(() => {
@@ -58,6 +72,12 @@ export default function Dashboard() {
   const { data: microCheckRuns } = useQuery(
     'recent-micro-checks',
     () => user?.store ? microCheckAPI.getRuns(user.store) : Promise.resolve([]),
+    { enabled: !!user?.store }
+  );
+
+  const { data: dashboardStats } = useQuery(
+    ['dashboard-stats', user?.store],
+    () => user?.store ? microCheckAPI.getDashboardStats(user.store) : Promise.resolve(null),
     { enabled: !!user?.store }
   );
 
@@ -91,23 +111,23 @@ export default function Dashboard() {
 
   // Render appropriate dashboard based on role
   if (isEnterprise) {
-    return <EnterpriseDashboard user={user} stats={stats} recentInspections={recentInspections} nudges={nudges} handleNudgeAction={handleNudgeAction} dismissNudge={dismissNudge} />;
+    return <EnterpriseDashboard user={user} stats={stats} dashboardStats={dashboardStats} recentInspections={recentInspections} nudges={nudges} handleNudgeAction={handleNudgeAction} dismissNudge={dismissNudge} />;
   } else if (isCoaching && !isTrial) {
-    return <CoachingDashboard user={user} stats={stats} recentVideos={recentVideos} microCheckRuns={microCheckRuns} nudges={nudges} handleNudgeAction={handleNudgeAction} dismissNudge={dismissNudge} />;
+    return <CoachingDashboard user={user} stats={stats} dashboardStats={dashboardStats} recentVideos={recentVideos} microCheckRuns={microCheckRuns} nudges={nudges} handleNudgeAction={handleNudgeAction} dismissNudge={dismissNudge} />;
   } else {
-    return <TrialDashboard user={user} stats={stats} microCheckRuns={microCheckRuns} setDemoRequested={setDemoRequested} nudges={nudges} handleNudgeAction={handleNudgeAction} dismissNudge={dismissNudge} />;
+    return <TrialDashboard user={user} stats={stats} dashboardStats={dashboardStats} microCheckRuns={microCheckRuns} setDemoRequested={setDemoRequested} nudges={nudges} handleNudgeAction={handleNudgeAction} dismissNudge={dismissNudge} />;
   }
 }
 
 // Trial User Dashboard
-function TrialDashboard({ user, stats, microCheckRuns, setDemoRequested, nudges, handleNudgeAction, dismissNudge }: any) {
-  const yesterdayScore = stats?.yesterday_score || 82;
-  const todayScore = stats?.today_score || stats?.average_score || 85;
-  const streakDays = stats?.streak_days || 5;
-  const runsThisWeek = stats?.runs_this_week || 12;
-  const runsLastWeek = stats?.runs_last_week || 9;
-  const issuesResolved = stats?.issues_resolved_this_week || 8;
-  const avgScore = stats?.average_score || 85;
+function TrialDashboard({ user, stats, dashboardStats, microCheckRuns, setDemoRequested, nudges, handleNudgeAction, dismissNudge }: any) {
+  const yesterdayScore = dashboardStats?.yesterday_score ?? stats?.yesterday_score ?? null;
+  const todayScore = dashboardStats?.today_score ?? stats?.today_score ?? dashboardStats?.average_score ?? stats?.average_score ?? null;
+  const streakDays = dashboardStats?.user_streak?.current_streak ?? 0;
+  const runsThisWeek = dashboardStats?.runs_this_week ?? 0;
+  const runsLastWeek = dashboardStats?.runs_last_week ?? 0;
+  const issuesResolved = dashboardStats?.issues_resolved_this_week ?? 0;
+  const avgScore = dashboardStats?.average_score ?? stats?.average_score ?? null;
 
   return (
     <div className="p-4 lg:p-8">
@@ -119,15 +139,23 @@ function TrialDashboard({ user, stats, microCheckRuns, setDemoRequested, nudges,
               <div className="flex flex-col sm:flex-row sm:items-center sm:space-x-4 space-y-2 sm:space-y-0">
                 <div className="flex items-center space-x-2">
                   <span className="text-blue-200">Yesterday:</span>
-                  <span className="text-2xl font-bold">{yesterdayScore}%</span>
+                  <span className="text-2xl font-bold">{yesterdayScore !== null ? `${Math.round(yesterdayScore)}%` : 'N/A'}</span>
                 </div>
-                <TrendingUp className="w-6 h-6 text-green-300" />
+                {todayScore !== null && yesterdayScore !== null && todayScore >= yesterdayScore && (
+                  <TrendingUp className="w-6 h-6 text-green-300" />
+                )}
                 <div className="flex items-center space-x-2">
                   <span className="text-blue-200">Today:</span>
-                  <span className="text-3xl font-bold text-green-300">{todayScore}%</span>
+                  <span className="text-3xl font-bold text-green-300">{todayScore !== null ? `${Math.round(todayScore)}%` : 'N/A'}</span>
                 </div>
               </div>
-              <p className="text-blue-100 mt-2">You're trending upward — nice work!</p>
+              {todayScore !== null && yesterdayScore !== null && todayScore >= yesterdayScore ? (
+                <p className="text-blue-100 mt-2">You're trending upward — nice work!</p>
+              ) : todayScore !== null ? (
+                <p className="text-blue-100 mt-2">Complete more checks to track your progress</p>
+              ) : (
+                <p className="text-blue-100 mt-2">Run your first check to see your score!</p>
+              )}
             </div>
 
             <Link
@@ -346,17 +374,17 @@ function TrialDashboard({ user, stats, microCheckRuns, setDemoRequested, nudges,
 }
 
 // Coaching Mode Dashboard
-function CoachingDashboard({ user, stats, recentVideos, microCheckRuns, nudges, handleNudgeAction, dismissNudge }: any) {
-  const avgStoreScore = stats?.average_score || 86;
-  const openIssues = stats?.open_action_items || 23;
-  const checksToday = stats?.completion_rate || 74;
+function CoachingDashboard({ user, stats, dashboardStats, recentVideos, microCheckRuns, nudges, handleNudgeAction, dismissNudge }: any) {
+  const avgStoreScore = dashboardStats?.average_score ?? stats?.average_score ?? null;
+  const openIssues = stats?.open_action_items ?? 0;
+  const checksToday = stats?.completion_rate ?? 0;
 
-  const avgStreakAcrossStores = stats?.avg_streak_across_stores || 4.2;
-  const totalRunsThisWeek = stats?.runs_this_week || 128;
-  const runsLastWeek = stats?.runs_last_week || 111;
-  const issuesResolved = stats?.issues_resolved_this_week || 56;
-  const topCategory = stats?.top_performing_category || 'Cleanliness';
-  const topCategoryImprovement = stats?.top_category_improvement || 12;
+  const avgStreakAcrossStores = dashboardStats?.store_streak?.current_streak ?? 0;
+  const totalRunsThisWeek = dashboardStats?.runs_this_week ?? 0;
+  const runsLastWeek = dashboardStats?.runs_last_week ?? 0;
+  const issuesResolved = dashboardStats?.issues_resolved_this_week ?? 0;
+  const topCategory = stats?.top_performing_category ?? 'N/A';
+  const topCategoryImprovement = stats?.top_category_improvement ?? 0;
 
   return (
     <div className="p-4 lg:p-8">
@@ -368,7 +396,7 @@ function CoachingDashboard({ user, stats, recentVideos, microCheckRuns, nudges, 
               <div className="grid grid-cols-3 gap-4 text-sm">
                 <div>
                   <div className="text-indigo-200">Avg Store Score</div>
-                  <div className="text-2xl font-bold">{avgStoreScore}%</div>
+                  <div className="text-2xl font-bold">{avgStoreScore !== null ? `${Math.round(avgStoreScore)}%` : 'N/A'}</div>
                 </div>
                 <div>
                   <div className="text-indigo-200">Open Issues</div>
@@ -529,16 +557,16 @@ function CoachingDashboard({ user, stats, recentVideos, microCheckRuns, nudges, 
 }
 
 // Enterprise Dashboard
-function EnterpriseDashboard({ user, stats, recentInspections, nudges, handleNudgeAction, dismissNudge }: any) {
-  const totalStores = stats?.total_stores || 482;
-  const activeToday = stats?.active_stores_today || 417;
-  const avgCompliance = stats?.average_score || 91.3;
-  const criticalFindings = stats?.critical_findings || 2;
-  const openActions = stats?.open_action_items || 94;
+function EnterpriseDashboard({ user, stats, dashboardStats, recentInspections, nudges, handleNudgeAction, dismissNudge }: any) {
+  const totalStores = stats?.total_stores ?? 0;
+  const activeToday = stats?.active_stores_today ?? 0;
+  const avgCompliance = dashboardStats?.average_score ?? stats?.average_score ?? null;
+  const criticalFindings = stats?.critical_findings ?? 0;
+  const openActions = stats?.open_action_items ?? 0;
 
-  const completionRate = stats?.completion_rate || 86;
-  const templateCoverage = stats?.template_coverage || 78;
-  const avgResolutionTime = stats?.avg_resolution_time_days || 2.5;
+  const completionRate = stats?.completion_rate ?? 0;
+  const templateCoverage = stats?.template_coverage ?? 0;
+  const avgResolutionTime = stats?.avg_resolution_time_days ?? 0;
 
   return (
     <div className="p-4 lg:p-8">
@@ -556,7 +584,7 @@ function EnterpriseDashboard({ user, stats, recentInspections, nudges, handleNud
             </div>
             <div>
               <div className="text-gray-300">Avg Compliance</div>
-              <div className="text-2xl font-bold">{avgCompliance}%</div>
+              <div className="text-2xl font-bold">{avgCompliance !== null ? `${Math.round(avgCompliance)}%` : 'N/A'}</div>
             </div>
             <div>
               <div className="text-gray-300">Critical Findings</div>

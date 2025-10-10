@@ -34,6 +34,8 @@ const MicroCheckTemplatesPage = () => {
   const [selectedTemplate, setSelectedTemplate] = useState<MicroCheckTemplate | null>(null);
   const [formData, setFormData] = useState<Partial<MicroCheckTemplate>>({});
   const [submitting, setSubmitting] = useState(false);
+  const [referenceImageFile, setReferenceImageFile] = useState<File | null>(null);
+  const [referenceImagePreview, setReferenceImagePreview] = useState<string | null>(null);
 
   const isAdmin = user?.role === 'ADMIN';
   const isOperator = user?.role === 'GM' || user?.role === 'OWNER';
@@ -86,6 +88,8 @@ const MicroCheckTemplatesPage = () => {
       is_active: true,
       rotation_priority: 50,
     });
+    setReferenceImageFile(null);
+    setReferenceImagePreview(null);
     setShowModal(true);
   };
 
@@ -103,7 +107,27 @@ const MicroCheckTemplatesPage = () => {
       is_active: template.is_active,
       rotation_priority: template.rotation_priority,
     });
+    setReferenceImageFile(null);
+    setReferenceImagePreview(template.visual_reference_image || null);
     setShowModal(true);
+  };
+
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setReferenceImageFile(file);
+      // Create preview
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setReferenceImagePreview(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleRemoveImage = () => {
+    setReferenceImageFile(null);
+    setReferenceImagePreview(null);
   };
 
   const handleDuplicateTemplate = async (template: MicroCheckTemplate) => {
@@ -144,10 +168,25 @@ const MicroCheckTemplatesPage = () => {
     e.preventDefault();
     setSubmitting(true);
     try {
+      // Create FormData for file upload
+      const submitData = new FormData();
+
+      // Append all form fields
+      Object.entries(formData).forEach(([key, value]) => {
+        if (value !== undefined && value !== null) {
+          submitData.append(key, String(value));
+        }
+      });
+
+      // Append image if selected
+      if (referenceImageFile) {
+        submitData.append('visual_reference_image', referenceImageFile);
+      }
+
       if (modalMode === 'create') {
-        await microCheckAPI.createTemplate(formData);
+        await microCheckAPI.createTemplate(submitData);
       } else if (modalMode === 'edit' && selectedTemplate) {
-        await microCheckAPI.updateTemplate(selectedTemplate.id, formData);
+        await microCheckAPI.updateTemplate(selectedTemplate.id, submitData);
       }
       setShowModal(false);
       fetchTemplates();
@@ -513,6 +552,61 @@ const MicroCheckTemplatesPage = () => {
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
                   placeholder="Describe what a PASS looks like"
                 />
+              </div>
+
+              {/* Reference Image Upload */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Reference Image <span className="text-gray-500 font-normal">(optional)</span>
+                </label>
+                <p className="text-xs text-gray-500 mb-3">
+                  Upload an example image showing what "good" looks like
+                </p>
+
+                {referenceImagePreview ? (
+                  <div className="relative">
+                    <img
+                      src={referenceImagePreview}
+                      alt="Reference preview"
+                      className="w-full h-48 object-cover rounded-lg border border-gray-300"
+                    />
+                    <button
+                      type="button"
+                      onClick={handleRemoveImage}
+                      className="absolute top-2 right-2 p-2 bg-red-600 text-white rounded-full hover:bg-red-700 transition-colors shadow-lg"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  </div>
+                ) : (
+                  <label className="flex flex-col items-center justify-center w-full h-48 border-2 border-gray-300 border-dashed rounded-lg cursor-pointer hover:bg-gray-50 transition-colors">
+                    <div className="flex flex-col items-center justify-center pt-5 pb-6">
+                      <svg
+                        className="w-10 h-10 mb-3 text-gray-400"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"
+                        />
+                      </svg>
+                      <p className="mb-2 text-sm text-gray-500">
+                        <span className="font-semibold">Click to upload</span> or drag and drop
+                      </p>
+                      <p className="text-xs text-gray-500">PNG, JPG up to 10MB</p>
+                    </div>
+                    <input
+                      type="file"
+                      className="hidden"
+                      accept="image/*"
+                      onChange={handleImageChange}
+                    />
+                  </label>
+                )}
               </div>
 
               <div className="grid grid-cols-2 gap-4">

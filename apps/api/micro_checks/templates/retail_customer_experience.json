@@ -1,0 +1,60 @@
+{
+  "industry": "RETAIL",
+  "focus": "customer_experience",
+  "checks": [
+    {
+      "id": "retail_cx_001",
+      "title": "Store entrance clean and inviting",
+      "description": "Verify entrance doors, mats, and immediate entry area are clean and welcoming",
+      "category": "customer_experience",
+      "pass_criteria": "Clean doors, fresh mats, organized entrance area",
+      "fail_criteria": "Dirty doors, worn mats, or cluttered entrance",
+      "image_prompt": "Photo of store entrance from outside looking in"
+    },
+    {
+      "id": "retail_cx_002",
+      "title": "Aisles clear and easy to navigate",
+      "description": "Check that main aisles are free of obstacles and properly lit",
+      "category": "customer_experience",
+      "pass_criteria": "Clear pathways, no carts/boxes blocking flow, good lighting",
+      "fail_criteria": "Blocked aisles, poor lighting, or difficult navigation",
+      "image_prompt": "Photo looking down main aisle"
+    },
+    {
+      "id": "retail_cx_003",
+      "title": "Product signage accurate and visible",
+      "description": "Verify price tags and promotional signage are current and clearly displayed",
+      "category": "customer_experience",
+      "pass_criteria": "All signs in place, prices accurate, easy to read",
+      "fail_criteria": "Missing signs, wrong prices, or illegible tags",
+      "image_prompt": "Photo of product display with pricing/signage visible"
+    },
+    {
+      "id": "retail_cx_004",
+      "title": "Checkout area clean and organized",
+      "description": "Check that registers, counters, and queuing area are tidy and professional",
+      "category": "customer_experience",
+      "pass_criteria": "Clean counters, organized impulse items, clear queue line",
+      "fail_criteria": "Cluttered counters, disorganized products, or unclear queuing",
+      "image_prompt": "Photo of checkout counter area"
+    },
+    {
+      "id": "retail_cx_005",
+      "title": "Shelves well-stocked and faced",
+      "description": "Verify products are properly stocked with labels facing forward",
+      "category": "customer_experience",
+      "pass_criteria": "Full shelves, products faced forward, no empty spots",
+      "fail_criteria": "Many empty spaces, products turned backwards, or disheveled appearance",
+      "image_prompt": "Photo of representative shelf section"
+    },
+    {
+      "id": "retail_cx_006",
+      "title": "Staff visible and approachable",
+      "description": "Check that team members are present on floor with clean uniforms/name tags",
+      "category": "customer_experience",
+      "pass_criteria": "Staff visible, professional appearance, name tags worn",
+      "fail_criteria": "No staff visible, unprofessional appearance, or missing name tags",
+      "image_prompt": "Photo showing staff member in store environment"
+    }
+  ]
+}

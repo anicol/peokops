@@ -1,11 +1,17 @@
 from rest_framework import viewsets, status
-from rest_framework.decorators import action
+from rest_framework.decorators import action, api_view, permission_classes
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated, AllowAny
+from rest_framework.filters import OrderingFilter
+from rest_framework.parsers import MultiPartParser, FormParser
+from django_filters.rest_framework import DjangoFilterBackend
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
 from django.db.models import Q, Count, Avg
+from django.core.files.storage import default_storage
 from drf_spectacular.utils import extend_schema, OpenApiParameter
+import hashlib
+import uuid
 
 from .models import (
     MicroCheckTemplate,
@@ -16,6 +22,7 @@ from .models import (
     MicroCheckResponse,
     CheckCoverage,
     MicroCheckStreak,
+    StoreStreak,
     CorrectiveAction
 )
 from .serializers import (
@@ -27,6 +34,7 @@ from .serializers import (
     MicroCheckResponseSerializer,
     CheckCoverageSerializer,
     MicroCheckStreakSerializer,
+    StoreStreakSerializer,
     CorrectiveActionSerializer
 )
 from .utils import (
@@ -338,13 +346,33 @@ class MicroCheckRunViewSet(viewsets.ModelViewSet):
         """Filter runs based on user's accessible stores"""
         user = self.request.user
 
-        # Admins see all
-        if user.role == 'ADMIN':
+        # Super admins see all
+        if user.role == 'SUPER_ADMIN':
             return self.queryset
 
-        # GMs see their stores
+        # Admins see all runs for their brand
+        if user.role == 'ADMIN':
+            if user.store:
+                return self.queryset.filter(store__brand=user.store.brand)
+            return self.queryset
+
+        # Owners see all runs for their brand
+        if user.role == 'OWNER':
+            if user.store:
+                return self.queryset.filter(store__brand=user.store.brand)
+            return self.queryset
+
+        # GMs see only their store's runs
         if user.role == 'GM':
-            return self.queryset.filter(store__in=user.managed_stores.all())
+            if user.store:
+                return self.queryset.filter(store=user.store)
+            return self.queryset.none()
+
+        # Trial admins see all runs for their brand
+        if user.role == 'TRIAL_ADMIN':
+            if user.store:
+                return self.queryset.filter(store__brand=user.store.brand)
+            return self.queryset
 
         # Inspectors see nothing (micro-checks are for managers only)
         return self.queryset.none()
@@ -395,6 +423,124 @@ class MicroCheckRunViewSet(viewsets.ModelViewSet):
             'pending': pending,
             'expired': expired,
             'completion_rate': (completed / total * 100) if total > 0 else 0
+        })
+
+    @extend_schema(
+        summary="Get dashboard statistics for a store",
+        parameters=[
+            OpenApiParameter(name='store_id', description='Store ID', required=True, type=str)
+        ]
+    )
+    @action(detail=False, methods=['get'])
+    def dashboard_stats(self, request):
+        """Get comprehensive dashboard statistics for a store including user and store metrics"""
+        from datetime import datetime, timedelta
+        from django.db.models import Count, Q, Avg
+        from django.utils import timezone as tz
+
+        store_id = request.query_params.get('store_id')
+        if not store_id:
+            return Response({'error': 'store_id parameter required'}, status=400)
+
+        user = request.user
+        now = tz.now()
+        today_start = now.replace(hour=0, minute=0, second=0, microsecond=0)
+        yesterday_start = today_start - timedelta(days=1)
+        week_start = today_start - timedelta(days=7)
+        last_week_start = week_start - timedelta(days=7)
+
+        # Get runs for this store
+        runs = self.get_queryset().filter(store_id=store_id)
+
+        # User-specific streak
+        user_streak = None
+        try:
+            user_streak_obj = MicroCheckStreak.objects.get(user=user, store_id=store_id)
+            user_streak = {
+                'current_streak': user_streak_obj.current_streak,
+                'longest_streak': user_streak_obj.longest_streak,
+                'total_completions': user_streak_obj.total_completions,
+                'last_completion_date': user_streak_obj.last_completion_date,
+            }
+        except MicroCheckStreak.DoesNotExist:
+            user_streak = {
+                'current_streak': 0,
+                'longest_streak': 0,
+                'total_completions': 0,
+                'last_completion_date': None,
+            }
+
+        # Store-level streak
+        store_streak = None
+        try:
+            store_streak_obj = StoreStreak.objects.get(store_id=store_id)
+            store_streak = {
+                'current_streak': store_streak_obj.current_streak,
+                'longest_streak': store_streak_obj.longest_streak,
+                'total_completions': store_streak_obj.total_completions,
+                'last_completion_date': store_streak_obj.last_completion_date,
+            }
+        except StoreStreak.DoesNotExist:
+            store_streak = {
+                'current_streak': 0,
+                'longest_streak': 0,
+                'total_completions': 0,
+                'last_completion_date': None,
+            }
+
+        # Runs this week and last week
+        runs_this_week = runs.filter(completed_at__gte=week_start, status='COMPLETED').count()
+        runs_last_week = runs.filter(
+            completed_at__gte=last_week_start,
+            completed_at__lt=week_start,
+            status='COMPLETED'
+        ).count()
+
+        # Get responses for score calculations
+        responses_today = MicroCheckResponse.objects.filter(
+            store_id=store_id,
+            completed_at__gte=today_start
+        )
+        responses_yesterday = MicroCheckResponse.objects.filter(
+            store_id=store_id,
+            completed_at__gte=yesterday_start,
+            completed_at__lt=today_start
+        )
+
+        # Calculate today's and yesterday's scores (pass rate)
+        today_total = responses_today.count()
+        today_passed = responses_today.filter(status='PASS').count()
+        today_score = (today_passed / today_total * 100) if today_total > 0 else None
+
+        yesterday_total = responses_yesterday.count()
+        yesterday_passed = responses_yesterday.filter(status='PASS').count()
+        yesterday_score = (yesterday_passed / yesterday_total * 100) if yesterday_total > 0 else None
+
+        # Issues resolved this week (corrective actions marked as resolved)
+        issues_resolved = CorrectiveAction.objects.filter(
+            store_id=store_id,
+            status='RESOLVED',
+            resolved_at__gte=week_start
+        ).count()
+
+        # Average score (7 days)
+        responses_week = MicroCheckResponse.objects.filter(
+            store_id=store_id,
+            completed_at__gte=week_start
+        )
+        week_total = responses_week.count()
+        week_passed = responses_week.filter(status='PASS').count()
+        avg_score = (week_passed / week_total * 100) if week_total > 0 else None
+
+        return Response({
+            'user_streak': user_streak,
+            'store_streak': store_streak,
+            'runs_this_week': runs_this_week,
+            'runs_last_week': runs_last_week,
+            'today_score': round(today_score, 1) if today_score else None,
+            'yesterday_score': round(yesterday_score, 1) if yesterday_score else None,
+            'average_score': round(avg_score, 1) if avg_score else None,
+            'issues_resolved_this_week': issues_resolved,
         })
 
     @extend_schema(
@@ -480,8 +626,11 @@ class MicroCheckRunViewSet(viewsets.ModelViewSet):
 
         # Check permissions - user must have access to this store
         user_store_id = user.store.id if hasattr(user, 'store') and user.store else None
-        if user.role != 'ADMIN' and store_id != user_store_id:
-            if user.role == 'GM' and store not in user.managed_stores.all():
+        if user.role == 'GM' and store_id != user_store_id:
+            return Response({'error': 'No access to this store'}, status=403)
+        if user.role == 'ADMIN' or user.role == 'OWNER' or user.role == 'TRIAL_ADMIN':
+            # Check brand access
+            if user.store and store.brand != user.store.brand:
                 return Response({'error': 'No access to this store'}, status=403)
 
         # Get today's local date for the store
@@ -499,14 +648,16 @@ class MicroCheckRunViewSet(viewsets.ModelViewSet):
                 'can_configure': user.role in ['ADMIN', 'OWNER']
             }, status=status.HTTP_400_BAD_REQUEST)
 
-        # Check if a run already exists for today
+        # Check if a PENDING run already exists for today
+        # Allow users to create new runs even after completing previous ones
         existing_run = MicroCheckRun.objects.filter(
             store=store,
-            scheduled_for=local_date
+            scheduled_for=local_date,
+            status='PENDING'  # Only reuse pending runs, not completed ones
         ).first()
 
         if existing_run:
-            # Create new assignment for existing run
+            # Create new assignment for existing pending run
             raw_token = generate_magic_link_token()
             token_hash = hash_token(raw_token)
             token_expires_at = timezone.now() + timezone.timedelta(hours=24)
@@ -561,6 +712,170 @@ class MicroCheckRunViewSet(viewsets.ModelViewSet):
             'message': 'Created new run for today'
         }, status=status.HTTP_201_CREATED)
 
+    @extend_schema(
+        summary="Create first trial run for onboarding",
+        description="Creates a micro-check run specifically for trial user onboarding. Uses personalized templates based on user's focus areas."
+    )
+    @action(detail=False, methods=['post'])
+    def create_first_trial_run(self, request):
+        """
+        Create the first trial run for a new trial user during onboarding.
+
+        This endpoint:
+        - Uses the user's personalized focus areas to select checks
+        - Creates a run scheduled for today
+        - Returns a magic link token for immediate access
+        - Stores focus areas in run metadata for later reference
+        """
+        from brands.models import Store
+        from .utils import generate_magic_link_token, hash_token, get_store_local_date
+        from .generator import generator
+
+        user = request.user
+
+        # Get user's store
+        if not hasattr(user, 'store') or not user.store:
+            return Response({'error': 'No store associated with user'}, status=400)
+
+        store = user.store
+        brand = store.brand
+
+        # Update store name if provided
+        store_name = request.data.get('store_name')
+        if store_name:
+            store.name = store_name
+            store.save()
+
+        # Get today's local date for the store
+        local_date = get_store_local_date(store)
+
+        # Check if a PENDING run already exists for today
+        # Allow users to create new runs even after completing previous ones
+        existing_run = MicroCheckRun.objects.filter(
+            store=store,
+            scheduled_for=local_date,
+            status='PENDING'  # Only reuse pending runs, not completed ones
+        ).first()
+
+        if existing_run:
+            # Create new assignment for existing pending run
+            raw_token = generate_magic_link_token()
+            token_hash = hash_token(raw_token)
+            token_expires_at = timezone.now() + timezone.timedelta(hours=24)
+
+            assignment = MicroCheckAssignment.objects.create(
+                run=existing_run,
+                store=store,
+                sent_to=user,
+                access_token_hash=token_hash,
+                token_expires_at=token_expires_at,
+                purpose='RUN_ACCESS',
+                scope={'run_id': str(existing_run.id), 'store_id': store.id, 'is_trial_onboarding': True},
+                sent_via='WEB',
+                first_used_at=timezone.now()
+            )
+
+            serializer = self.get_serializer(existing_run)
+            return Response({
+                **serializer.data,
+                'magic_link_token': raw_token,
+                'message': 'Using existing run for today'
+            })
+
+        # Check if brand has onboarding data
+        if not brand or not brand.industry or not brand.focus_areas:
+            return Response({
+                'error': 'Brand profile incomplete. Please complete brand onboarding.',
+                'message': 'Unable to generate personalized checks. Please try again later.'
+            }, status=status.HTTP_400_BAD_REQUEST)
+
+        # Get personalized checks based on user's brand profile
+        checks = generator.get_today_checks(
+            industry=brand.industry,
+            focus_areas=brand.focus_areas,
+            count=3
+        )
+
+        if not checks or len(checks) == 0:
+            return Response({
+                'error': 'NO_TEMPLATES',
+                'message': 'Unable to generate personalized checks. Please try again later.'
+            }, status=status.HTTP_400_BAD_REQUEST)
+
+        # Create a new run for today
+        run = MicroCheckRun.objects.create(
+            store=store,
+            scheduled_for=local_date,
+            store_timezone=store.timezone or 'UTC',
+            created_via='MANUAL',
+            created_by=user,
+            status='PENDING'
+        )
+
+        # Create run items from check data (these are plain dicts from JSON templates)
+        # We need to create or get MicroCheckTemplate objects for these checks
+        for idx, check_data in enumerate(checks[:3], start=1):  # Ensure only 3 checks, order starts at 1
+            # Try to find existing template with same title, or create a new one
+            template, created = MicroCheckTemplate.objects.get_or_create(
+                brand=brand,
+                title=check_data.get('title', ''),
+                defaults={
+                    'category': check_data.get('category', 'CLEANLINESS'),
+                    'severity': check_data.get('severity', 'MEDIUM'),
+                    'description': check_data.get('description', ''),
+                    'success_criteria': check_data.get('pass_criteria', check_data.get('success_criteria', '')),
+                    'version': 1,
+                    'default_photo_required': check_data.get('photo_required', False),
+                    'default_video_required': False,
+                    'expected_completion_seconds': 30,
+                    'ai_validation_enabled': False,
+                    'ai_validation_prompt': '',
+                    'is_active': True,
+                    'is_local': False,
+                    'include_in_rotation': True,
+                    'rotation_priority': 5,
+                    'created_by': user
+                }
+            )
+
+            MicroCheckRunItem.objects.create(
+                run=run,
+                template=template,
+                order=idx,
+                photo_required=check_data.get('photo_required', False),
+                photo_required_reason='',
+                template_version=template.version,
+                title_snapshot=template.title,
+                category_snapshot=template.category,
+                severity_snapshot=template.severity,
+                success_criteria_snapshot=template.success_criteria
+            )
+
+        # Generate magic link token
+        raw_token = generate_magic_link_token()
+        token_hash = hash_token(raw_token)
+
+        # Create assignment for the current user
+        token_expires_at = timezone.now() + timezone.timedelta(hours=24)
+        assignment = MicroCheckAssignment.objects.create(
+            run=run,
+            store=store,
+            sent_to=user,
+            access_token_hash=token_hash,
+            token_expires_at=token_expires_at,
+            purpose='RUN_ACCESS',
+            scope={'run_id': str(run.id), 'store_id': store.id, 'is_trial_onboarding': True},
+            sent_via='WEB',
+            first_used_at=timezone.now()
+        )
+
+        serializer = self.get_serializer(run)
+        return Response({
+            **serializer.data,
+            'magic_link_token': raw_token,
+            'message': 'Created first trial run'
+        }, status=status.HTTP_201_CREATED)
+
 
 class MicroCheckResponseViewSet(viewsets.ModelViewSet):
     """
@@ -574,7 +889,8 @@ class MicroCheckResponseViewSet(viewsets.ModelViewSet):
         'completed_by'
     )
     serializer_class = MicroCheckResponseSerializer
-    filterset_fields = ['store', 'category', 'status', 'severity']
+    filter_backends = [DjangoFilterBackend, OrderingFilter]
+    filterset_fields = ['store', 'category', 'status', 'severity_snapshot', 'run']
     ordering_fields = ['completed_at', 'created_at']
     ordering = ['-completed_at']
 
@@ -591,13 +907,33 @@ class MicroCheckResponseViewSet(viewsets.ModelViewSet):
         if not user.is_authenticated:
             return self.queryset.none()
 
-        # Admins see all
-        if user.role == 'ADMIN':
+        # Super admins see all
+        if user.role == 'SUPER_ADMIN':
             return self.queryset
 
-        # GMs see their stores
+        # Admins see all for their brand
+        if user.role == 'ADMIN':
+            if user.store:
+                return self.queryset.filter(store__brand=user.store.brand)
+            return self.queryset
+
+        # Owners see all for their brand
+        if user.role == 'OWNER':
+            if user.store:
+                return self.queryset.filter(store__brand=user.store.brand)
+            return self.queryset
+
+        # GMs see only their store's responses
         if user.role == 'GM':
-            return self.queryset.filter(store__in=user.managed_stores.all())
+            if user.store:
+                return self.queryset.filter(store=user.store)
+            return self.queryset.none()
+
+        # Trial admins see all for their brand
+        if user.role == 'TRIAL_ADMIN':
+            if user.store:
+                return self.queryset.filter(store__brand=user.store.brand)
+            return self.queryset
 
         return self.queryset.none()
 
@@ -630,7 +966,11 @@ class MicroCheckResponseViewSet(viewsets.ModelViewSet):
             created_by=self.request.user
         )
 
-        # Trigger async processing
+        # Create corrective action immediately if failed (for inline fix flow)
+        if response.status == 'FAIL':
+            create_corrective_action_for_failure(response)
+
+        # Trigger async processing for other stats/streaks
         process_micro_check_response.delay(str(response.id))
 
     @extend_schema(
@@ -700,8 +1040,34 @@ class MicroCheckResponseViewSet(viewsets.ModelViewSet):
         except MicroCheckRunItem.DoesNotExist:
             return Response({'error': 'Invalid run_item for this run'}, status=400)
 
+        # Check if this run+template already has a response (matches unique_together constraint)
+        existing_response = MicroCheckResponse.objects.filter(
+            run=run,
+            template=run_item.template
+        ).first()
+
+        if existing_response:
+            # Ensure corrective action exists if response is FAIL (idempotent)
+            if existing_response.status == 'FAIL':
+                # Check if corrective action already exists
+                from .models import CorrectiveAction
+                existing_action = CorrectiveAction.objects.filter(response=existing_response).first()
+                if not existing_action:
+                    # Create it now if missing
+                    create_corrective_action_for_failure(existing_response)
+
+            # Return the existing response instead of error (idempotent)
+            return Response(
+                MicroCheckResponseSerializer(existing_response).data,
+                status=200
+            )
+
         # Create response
         serializer = self.get_serializer(data=request.data)
+        if not serializer.is_valid():
+            logger.error(f"Validation errors: {serializer.errors}")
+            logger.error(f"Request data: {request.data}")
+            return Response(serializer.errors, status=400)
         serializer.is_valid(raise_exception=True)
 
         # Get IP and user agent
@@ -714,19 +1080,31 @@ class MicroCheckResponseViewSet(viewsets.ModelViewSet):
         user_agent = request.META.get('HTTP_USER_AGENT', '')
 
         response = serializer.save(
+            run=run,
+            assignment=assignment,
+            template=run_item.template,
             completed_by=assignment.sent_to,
             store=store,
             category=run_item.category_snapshot,
-            severity=run_item.severity_snapshot,
-            completed_at=timezone.now(),
+            severity_snapshot=run_item.severity_snapshot,
             local_completed_date=local_date,
-            ip_address=ip_address,
-            user_agent=user_agent,
             created_by=assignment.sent_to
         )
 
-        # Trigger async processing
+        # Note: CorrectiveAction is auto-created by MicroCheckResponse.save() for FAIL status
+
+        # Trigger async processing for other stats/streaks
         process_micro_check_response.delay(str(response.id))
+
+        # Check if all run items have responses - if so, mark run as COMPLETED
+        total_items = run.items.count()
+        completed_items = MicroCheckResponse.objects.filter(run=run).count()
+
+        if completed_items >= total_items:
+            run.status = 'COMPLETED'
+            run.completed_at = timezone.now()
+            run.completed_by = assignment.sent_to
+            run.save(update_fields=['status', 'completed_at', 'completed_by'])
 
         return Response(
             MicroCheckResponseSerializer(response).data,
@@ -771,13 +1149,33 @@ class MicroCheckStreakViewSet(viewsets.ReadOnlyModelViewSet):
         """Filter streaks based on user's accessible stores"""
         user = self.request.user
 
-        # Admins see all
-        if user.role == 'ADMIN':
+        # Super admins see all
+        if user.role == 'SUPER_ADMIN':
             return self.queryset
 
-        # GMs see their stores
+        # Admins see all for their brand
+        if user.role == 'ADMIN':
+            if user.store:
+                return self.queryset.filter(store__brand=user.store.brand)
+            return self.queryset
+
+        # Owners see all for their brand
+        if user.role == 'OWNER':
+            if user.store:
+                return self.queryset.filter(store__brand=user.store.brand)
+            return self.queryset
+
+        # GMs see only their store's streaks
         if user.role == 'GM':
-            return self.queryset.filter(store__in=user.managed_stores.all())
+            if user.store:
+                return self.queryset.filter(store=user.store)
+            return self.queryset.none()
+
+        # Trial admins see all for their brand
+        if user.role == 'TRIAL_ADMIN':
+            if user.store:
+                return self.queryset.filter(store__brand=user.store.brand)
+            return self.queryset
 
         return self.queryset.none()
 
@@ -802,6 +1200,54 @@ class MicroCheckStreakViewSet(viewsets.ReadOnlyModelViewSet):
         return Response(serializer.data)
 
 
+class StoreStreakViewSet(viewsets.ReadOnlyModelViewSet):
+    """
+    ViewSet for viewing store-level streak information.
+
+    Read-only - streaks are calculated automatically by tasks.
+    """
+    queryset = StoreStreak.objects.select_related('store')
+    serializer_class = StoreStreakSerializer
+    permission_classes = [IsAuthenticated]
+    filterset_fields = ['store']
+    ordering_fields = ['current_streak', 'longest_streak', 'last_completion_date']
+    ordering = ['-current_streak']
+
+    def get_queryset(self):
+        """Filter store streaks based on user's accessible stores"""
+        user = self.request.user
+
+        # Super admins see all
+        if user.role == 'SUPER_ADMIN':
+            return self.queryset
+
+        # Admins see all for their brand
+        if user.role == 'ADMIN':
+            if user.store:
+                return self.queryset.filter(store__brand=user.store.brand)
+            return self.queryset
+
+        # Owners see all for their brand
+        if user.role == 'OWNER':
+            if user.store:
+                return self.queryset.filter(store__brand=user.store.brand)
+            return self.queryset
+
+        # GMs see only their store
+        if user.role == 'GM':
+            if user.store:
+                return self.queryset.filter(store=user.store)
+            return self.queryset.none()
+
+        # Trial admins see all for their brand
+        if user.role == 'TRIAL_ADMIN':
+            if user.store:
+                return self.queryset.filter(store__brand=user.store.brand)
+            return self.queryset
+
+        return self.queryset.none()
+
+
 class CorrectiveActionViewSet(viewsets.ModelViewSet):
     """
     ViewSet for managing corrective actions.
@@ -824,15 +1270,41 @@ class CorrectiveActionViewSet(viewsets.ModelViewSet):
         """Filter actions based on user's accessible stores"""
         user = self.request.user
 
-        # Admins see all
-        if user.role == 'ADMIN':
+        # Super admins see all
+        if user.role == 'SUPER_ADMIN':
             return self.queryset
 
-        # GMs see their stores or actions assigned to them
+        # Admins see all for their brand or assigned to them
+        if user.role == 'ADMIN':
+            if user.store:
+                return self.queryset.filter(
+                    Q(store__brand=user.store.brand) | Q(assigned_to=user)
+                )
+            return self.queryset
+
+        # Owners see all for their brand or assigned to them
+        if user.role == 'OWNER':
+            if user.store:
+                return self.queryset.filter(
+                    Q(store__brand=user.store.brand) | Q(assigned_to=user)
+                )
+            return self.queryset
+
+        # GMs see their store's actions or actions assigned to them
         if user.role == 'GM':
-            return self.queryset.filter(
-                Q(store__in=user.managed_stores.all()) | Q(assigned_to=user)
-            )
+            if user.store:
+                return self.queryset.filter(
+                    Q(store=user.store) | Q(assigned_to=user)
+                )
+            return self.queryset.none()
+
+        # Trial admins see all for their brand or assigned to them
+        if user.role == 'TRIAL_ADMIN':
+            if user.store:
+                return self.queryset.filter(
+                    Q(store__brand=user.store.brand) | Q(assigned_to=user)
+                )
+            return self.queryset
 
         return self.queryset.none()
 
@@ -884,6 +1356,85 @@ class CorrectiveActionViewSet(viewsets.ModelViewSet):
         serializer = self.get_serializer(actions, many=True)
         return Response(serializer.data)
 
+    @extend_schema(
+        summary="Resolve action inline during check session",
+        request={
+            'application/json': {
+                'type': 'object',
+                'properties': {
+                    'after_media_id': {'type': 'string', 'format': 'uuid'},
+                    'resolution_notes': {'type': 'string'}
+                },
+                'required': ['after_media_id']
+            }
+        }
+    )
+    @action(detail=True, methods=['post'])
+    def resolve_inline(self, request, pk=None):
+        """
+        Resolve a corrective action inline during check session.
+
+        This is called when a manager chooses "Fix Now" during a check session.
+        - Validates before/after photos exist
+        - Performs AI validation (placeholder for now)
+        - Sets status to VERIFIED if confidence > 0.8, else RESOLVED
+        - Marks as fixed_during_session=True
+        """
+        action = self.get_object()
+
+        if action.status in ['RESOLVED', 'VERIFIED', 'DISMISSED']:
+            return Response(
+                {'error': 'Action already completed'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        # Get after media
+        after_media_id = request.data.get('after_media_id')
+        if not after_media_id:
+            return Response(
+                {'error': 'after_media_id required'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        try:
+            after_media = MediaAsset.objects.get(id=after_media_id)
+        except MediaAsset.DoesNotExist:
+            return Response(
+                {'error': 'After media not found'},
+                status=status.HTTP_404_NOT_FOUND
+            )
+
+        # AI validation only if we have both before and after photos
+        if action.before_media:
+            # TODO: Perform AI validation comparing before/after photos
+            # For now, use a placeholder confidence score
+            ai_confidence = 0.85  # Placeholder - would come from AI service
+
+            # Set status based on AI confidence
+            if ai_confidence >= 0.8:
+                new_status = 'VERIFIED'
+            else:
+                new_status = 'RESOLVED'
+        else:
+            # No before photo - mark as resolved without AI verification
+            ai_confidence = None
+            new_status = 'RESOLVED'
+
+        # Update action
+        action.after_media = after_media
+        action.status = new_status
+        action.resolved_at = timezone.now()
+        action.resolved_by = request.user
+        action.resolution_notes = request.data.get('resolution_notes', '')
+        action.fixed_during_session = True
+        action.verified_at = timezone.now() if new_status == 'VERIFIED' else None
+        action.verification_confidence = ai_confidence if new_status == 'VERIFIED' else None
+        action.updated_by = request.user
+        action.save()
+
+        serializer = self.get_serializer(action)
+        return Response(serializer.data)
+
 
 class CheckCoverageViewSet(viewsets.ReadOnlyModelViewSet):
     """
@@ -902,13 +1453,33 @@ class CheckCoverageViewSet(viewsets.ReadOnlyModelViewSet):
         """Filter coverage based on user's accessible stores"""
         user = self.request.user
 
-        # Admins see all
-        if user.role == 'ADMIN':
+        # Super admins see all
+        if user.role == 'SUPER_ADMIN':
             return self.queryset
 
-        # GMs see their stores
+        # Admins see all for their brand
+        if user.role == 'ADMIN':
+            if user.store:
+                return self.queryset.filter(store__brand=user.store.brand)
+            return self.queryset
+
+        # Owners see all for their brand
+        if user.role == 'OWNER':
+            if user.store:
+                return self.queryset.filter(store__brand=user.store.brand)
+            return self.queryset
+
+        # GMs see only their store's coverage
         if user.role == 'GM':
-            return self.queryset.filter(store__in=user.managed_stores.all())
+            if user.store:
+                return self.queryset.filter(store=user.store)
+            return self.queryset.none()
+
+        # Trial admins see all for their brand
+        if user.role == 'TRIAL_ADMIN':
+            if user.store:
+                return self.queryset.filter(store__brand=user.store.brand)
+            return self.queryset
 
         return self.queryset.none()
 
@@ -934,3 +1505,192 @@ class CheckCoverageViewSet(viewsets.ReadOnlyModelViewSet):
         )
 
         return Response(coverage)
+
+
+# Onboarding-specific endpoints
+
+@extend_schema(
+    responses={
+        200: {
+            'type': 'object',
+            'properties': {
+                'checks': {
+                    'type': 'array',
+                    'items': {
+                        'type': 'object',
+                        'properties': {
+                            'id': {'type': 'string'},
+                            'title': {'type': 'string'},
+                            'description': {'type': 'string'},
+                            'category': {'type': 'string'},
+                            'pass_criteria': {'type': 'string'},
+                            'fail_criteria': {'type': 'string'},
+                            'image_prompt': {'type': 'string'}
+                        }
+                    }
+                },
+                'personalization': {
+                    'type': 'object',
+                    'properties': {
+                        'industry': {'type': 'string'},
+                        'focus_areas': {'type': 'array', 'items': {'type': 'string'}}
+                    }
+                }
+            }
+        },
+        400: {'description': 'User has no completed onboarding or no associated brand'},
+    },
+    description="Get today's 3 personalized micro-checks based on user's brand profile"
+)
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def get_today_checks(request):
+    """
+    Get today's personalized micro-checks based on user's brand profile.
+
+    Returns 3 randomized checks filtered by:
+    - Brand industry (from brand.industry)
+    - Focus areas (from brand.focus_areas)
+    """
+    from .generator import generator
+
+    user = request.user
+
+    # Check if user has completed onboarding
+    if not user.onboarding_completed_at:
+        return Response({
+            'error': 'Onboarding not completed. Please complete onboarding first.',
+            'checks': [],
+            'personalization': {}
+        }, status=status.HTTP_400_BAD_REQUEST)
+
+    # Get user's brand
+    if not user.store or not user.store.brand:
+        return Response({
+            'error': 'User has no associated brand.',
+            'checks': [],
+            'personalization': {}
+        }, status=status.HTTP_400_BAD_REQUEST)
+
+    brand = user.store.brand
+
+    # Check if brand has onboarding data
+    if not brand.industry or not brand.focus_areas:
+        return Response({
+            'error': 'Brand profile incomplete. Please complete brand onboarding.',
+            'checks': [],
+            'personalization': {
+                'industry': brand.industry,
+                'focus_areas': brand.focus_areas or []
+            }
+        }, status=status.HTTP_400_BAD_REQUEST)
+
+    # Generate checks
+    checks = generator.get_today_checks(
+        industry=brand.industry,
+        focus_areas=brand.focus_areas,
+        count=3
+    )
+
+    return Response({
+        'checks': checks,
+        'personalization': {
+            'industry': brand.industry,
+            'focus_areas': brand.focus_areas
+        }
+    }, status=status.HTTP_200_OK)
+
+
+@extend_schema(
+    responses={
+        200: {
+            'type': 'object',
+            'properties': {
+                'templates': {
+                    'type': 'array',
+                    'items': {
+                        'type': 'object',
+                        'properties': {
+                            'industry': {'type': 'string'},
+                            'focus': {'type': 'string'},
+                            'filename': {'type': 'string'}
+                        }
+                    }
+                }
+            }
+        }
+    },
+    description="List all available micro-check templates (admin only)"
+)
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def list_templates(request):
+    """List all available micro-check templates."""
+    from .generator import generator
+
+    # Only allow super admins to see this
+    if not request.user.is_super_admin:
+        return Response(
+            {'error': 'Permission denied. Admin access required.'},
+            status=status.HTTP_403_FORBIDDEN
+        )
+
+    templates = generator.get_available_templates()
+
+    return Response({
+        'templates': templates,
+        'count': len(templates)
+    }, status=status.HTTP_200_OK)
+
+
+class MediaAssetViewSet(viewsets.ModelViewSet):
+    """Upload and manage media assets"""
+    queryset = MediaAsset.objects.all()
+    serializer_class = MediaAssetSerializer
+    permission_classes = [AllowAny]  # TODO: Change to IsAuthenticated when auth is ready
+    parser_classes = [MultiPartParser, FormParser]
+
+    def create(self, request, *args, **kwargs):
+        """Upload a new media file"""
+        file = request.FILES.get('file')
+        if not file:
+            return Response(
+                {'error': 'No file provided'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        # Calculate SHA256 hash
+        file.seek(0)
+        sha256 = hashlib.sha256(file.read()).hexdigest()
+        file.seek(0)
+
+        # Check for existing media with same hash (deduplication)
+        existing = MediaAsset.objects.filter(sha256=sha256).first()
+        if existing:
+            serializer = self.get_serializer(existing)
+            return Response(serializer.data, status=status.HTTP_200_OK)
+
+        # Generate S3 key
+        file_ext = file.name.split('.')[-1] if '.' in file.name else 'jpg'
+        s3_key = f"micro-checks/media/{uuid.uuid4()}.{file_ext}"
+
+        # Upload to S3
+        s3_path = default_storage.save(s3_key, file)
+
+        # Get store from request (default to store ID 10 for now)
+        store_id = request.data.get('store_id', 10)
+
+        # Create MediaAsset
+        media_asset = MediaAsset.objects.create(
+            store_id=store_id,
+            kind=MediaAsset.Kind.IMAGE,
+            s3_key=s3_path,
+            s3_bucket=default_storage.bucket_name if hasattr(default_storage, 'bucket_name') else 'default',
+            sha256=sha256,
+            bytes=file.size,
+            retention_policy=MediaAsset.RetentionPolicy.COACHING_7D,
+            created_by=request.user if request.user.is_authenticated else None
+        )
+
+        serializer = self.get_serializer(media_asset)
+        return Response(serializer.data, status=status.HTTP_201_CREATED)

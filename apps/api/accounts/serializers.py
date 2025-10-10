@@ -23,8 +23,10 @@ class UserSerializer(serializers.ModelSerializer):
         fields = ('id', 'username', 'email', 'first_name', 'last_name', 'full_name',
                  'role', 'store', 'store_name', 'brand_name', 'brand_id', 'phone',
                  'is_active', 'is_trial_user', 'trial_status', 'hours_since_signup',
-                 'total_inspections', 'has_seen_demo', 'demo_completed_at', 'created_at', 'last_active_at')
-        read_only_fields = ('id', 'created_at', 'is_trial_user', 'trial_status', 'hours_since_signup', 'total_inspections', 'last_active_at')
+                 'total_inspections', 'has_seen_demo', 'demo_completed_at', 'onboarding_completed_at',
+                 'created_at', 'last_active_at')
+        read_only_fields = ('id', 'created_at', 'is_trial_user', 'trial_status', 'hours_since_signup',
+                           'total_inspections', 'last_active_at', 'onboarding_completed_at')
 
     def get_trial_status(self, obj):
         """Get trial status information"""
@@ -174,3 +176,45 @@ class BehaviorEventCreateSerializer(serializers.Serializer):
     event_type = serializers.ChoiceField(choices=UserBehaviorEvent.EventType.choices)
     metadata = serializers.JSONField(default=dict, required=False)
     session_id = serializers.CharField(max_length=100, required=False, allow_blank=True)
+
+
+class ProfileUpdateSerializer(serializers.ModelSerializer):
+    """Serializer for users to update their own profile"""
+
+    class Meta:
+        model = User
+        fields = ('first_name', 'last_name', 'email', 'phone')
+
+    def validate_email(self, value):
+        """Ensure email is unique (except for current user)"""
+        user = self.instance
+        if User.objects.filter(email=value).exclude(id=user.id).exists():
+            raise serializers.ValidationError("A user with this email already exists.")
+        return value
+
+
+class PasswordChangeSerializer(serializers.Serializer):
+    """Serializer for changing user password"""
+    current_password = serializers.CharField(required=True, write_only=True)
+    new_password = serializers.CharField(required=True, write_only=True, min_length=8)
+    new_password_confirm = serializers.CharField(required=True, write_only=True)
+
+    def validate_current_password(self, value):
+        """Verify current password is correct"""
+        user = self.context['request'].user
+        if not user.check_password(value):
+            raise serializers.ValidationError("Current password is incorrect.")
+        return value
+
+    def validate(self, attrs):
+        """Ensure new passwords match"""
+        if attrs['new_password'] != attrs['new_password_confirm']:
+            raise serializers.ValidationError({"new_password_confirm": "New passwords don't match."})
+        return attrs
+
+    def save(self):
+        """Update user password"""
+        user = self.context['request'].user
+        user.set_password(self.validated_data['new_password'])
+        user.save()
+        return user

@@ -1,0 +1,60 @@
+{
+  "industry": "HOSPITALITY",
+  "focus": "cleanliness",
+  "checks": [
+    {
+      "id": "hosp_clean_001",
+      "title": "Lobby and reception area spotless",
+      "description": "Verify front desk, seating, and lobby floors are clean and welcoming",
+      "category": "cleanliness",
+      "pass_criteria": "Clean floors, dusted surfaces, organized desk area",
+      "fail_criteria": "Visible dirt, cluttered desk, or dusty furniture",
+      "image_prompt": "Photo of lobby/reception area"
+    },
+    {
+      "id": "hosp_clean_002",
+      "title": "Guest room ready for check-in",
+      "description": "Check that guest room is fully cleaned with fresh linens",
+      "category": "cleanliness",
+      "pass_criteria": "Bed made with fresh linens, surfaces cleaned, no trash",
+      "fail_criteria": "Unmade bed, dirty surfaces, or trash present",
+      "image_prompt": "Photo of guest room showing bed and overall cleanliness"
+    },
+    {
+      "id": "hosp_clean_003",
+      "title": "Bathroom sparkling and stocked",
+      "description": "Verify guest bathroom is thoroughly cleaned with amenities stocked",
+      "category": "cleanliness",
+      "pass_criteria": "Spotless fixtures, fresh towels, full amenities",
+      "fail_criteria": "Dirty bathroom, used towels, or missing supplies",
+      "image_prompt": "Photo of guest bathroom"
+    },
+    {
+      "id": "hosp_clean_004",
+      "title": "Common area furniture clean and arranged",
+      "description": "Check that seating areas, tables, and common spaces are tidy",
+      "category": "cleanliness",
+      "pass_criteria": "Clean furniture, organized layout, vacuumed floors",
+      "fail_criteria": "Stained furniture, disorganized, or dirty floors",
+      "image_prompt": "Photo of common area or guest lounge"
+    },
+    {
+      "id": "hosp_clean_005",
+      "title": "Elevators and hallways clean",
+      "description": "Verify corridors, elevators, and stairwells are clean and well-lit",
+      "category": "cleanliness",
+      "pass_criteria": "Clean floors, walls, and elevator interior, good lighting",
+      "fail_criteria": "Dirty floors, stained walls, or poor lighting",
+      "image_prompt": "Photo of hallway or elevator interior"
+    },
+    {
+      "id": "hosp_clean_006",
+      "title": "Pool or fitness area maintained",
+      "description": "Check that recreational areas are clean and equipment is organized",
+      "category": "cleanliness",
+      "pass_criteria": "Clean floors, organized equipment, fresh towels available",
+      "fail_criteria": "Dirty areas, scattered equipment, or no towels",
+      "image_prompt": "Photo of pool deck or fitness center"
+    }
+  ]
+}

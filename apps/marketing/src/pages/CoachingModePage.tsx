@@ -24,22 +24,24 @@ export default function CoachingModePage() {
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
           <div className="max-w-4xl mx-auto text-center">
             <h1 className="text-4xl md:text-6xl font-bold leading-tight mb-6">
-              Better inspections start with <span className="text-teal-300">a quick video</span>, not surprise audits
+              Build Confidence Before the Audit
             </h1>
-            <p className="text-xl md:text-2xl text-teal-100 mb-8 leading-relaxed">
-              Run quick, private AI-powered video checks in minutes. No inspectors. No travel. No stress.
+            <p className="text-xl md:text-2xl text-teal-100 mb-4 leading-relaxed">
+              Give every manager an AI-powered coach that spots issues early — privately, instantly, and without the pressure of inspection day.
+            </p>
+            <p className="text-xl text-teal-100 mb-8 leading-relaxed">
+              No inspectors. No travel. No stress. Just better operations every day.
             </p>
             <div className="mb-8">
               <a
                 href={TRIAL_SIGNUP_URL}
                 className="inline-block px-8 py-4 bg-teal-400 text-teal-900 rounded-lg hover:bg-teal-300 transition-colors font-semibold text-lg shadow-lg"
               >
-                Start Free Trial
-                <span className="text-sm block font-normal">No credit card required</span>
+                Start Free
               </a>
             </div>
             <p className="text-teal-200 text-sm">
-              ✅ 7 days unlimited • ✅ Complete privacy • ✅ Instant results
+              7-day trial • No credit card • Complete privacy
             </p>
           </div>
         </div>
@@ -50,14 +52,14 @@ export default function CoachingModePage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
             <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
-              How Coaching Mode Works
+              How It Works
             </h2>
             <p className="text-xl text-gray-600">
-              Three simple steps to proactive compliance
+              Three simple steps to proactive improvement.
             </p>
           </div>
-          
-          <div className="grid md:grid-cols-3 gap-8 mb-16">
+
+          <div className="grid md:grid-cols-3 gap-8 mb-8">
             {/* Step 1 */}
             <div className="text-center">
               <div className="w-20 h-20 bg-teal-100 rounded-full flex items-center justify-center mx-auto mb-6">
@@ -67,10 +69,10 @@ export default function CoachingModePage() {
                 1
               </div>
               <h3 className="text-xl font-semibold text-gray-900 mb-3">
-                Record Walkthrough Video
+                Record a 2-Minute Walkthrough
               </h3>
               <p className="text-gray-600">
-                Capture a 2-3 minute video walkthrough of your store using any smartphone. Focus on key areas like cleanliness, safety, and compliance.
+                Capture your store on any smartphone — kitchen, dining, lobby, anywhere.
               </p>
             </div>
 
@@ -86,7 +88,7 @@ export default function CoachingModePage() {
                 AI Reviews Instantly
               </h3>
               <p className="text-gray-600">
-                Our AI analyzes your video in minutes, identifying compliance issues and opportunities for improvement with detailed timestamps.
+                Get private, timestamped feedback in minutes. No waiting weeks for audit results.
               </p>
             </div>
 
@@ -99,12 +101,18 @@ export default function CoachingModePage() {
                 3
               </div>
               <h3 className="text-xl font-semibold text-gray-900 mb-3">
-                Private Scorecard Generated
+                Review Your Private Scorecard
               </h3>
               <p className="text-gray-600">
-                Get your private scorecard with actionable recommendations. Video is permanently deleted after processing for complete privacy.
+                See exactly what to fix and what's working. Your video is automatically deleted for complete privacy.
               </p>
             </div>
+          </div>
+
+          <div className="text-center">
+            <p className="text-lg text-teal-600 font-medium">
+              AI that helps you shine — not get watched.
+            </p>
           </div>
         </div>
       </section>
@@ -113,131 +121,158 @@ export default function CoachingModePage() {
       <section className="py-20 bg-red-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="max-w-4xl mx-auto text-center">
-            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-8">
-              Are you tired of getting blindsided by inspection failures?
+            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
+              Why Inspections Feel Broken
             </h2>
-            
+            <p className="text-xl text-gray-600 mb-12">
+              Managers aren't failing — the system is.
+            </p>
+
             <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 mb-12">
               <div className="bg-white p-6 rounded-xl shadow-lg border border-red-200">
                 <div className="flex items-center justify-center w-12 h-12 bg-red-100 rounded-full mx-auto mb-4">
                   <X className="w-6 h-6 text-red-600" />
                 </div>
-                <h3 className="font-semibold text-gray-900 mb-2">Unannounced visits</h3>
-                <p className="text-gray-600 text-sm">Surprise inspections catch you off-guard with no time to prepare</p>
+                <h3 className="font-semibold text-gray-900 mb-2">Surprise visits cause stress.</h3>
+                <p className="text-gray-600 text-sm">You're preparing under pressure, not improving with intention.</p>
               </div>
 
               <div className="bg-white p-6 rounded-xl shadow-lg border border-red-200">
                 <div className="flex items-center justify-center w-12 h-12 bg-red-100 rounded-full mx-auto mb-4">
                   <X className="w-6 h-6 text-red-600" />
                 </div>
-                <h3 className="font-semibold text-gray-900 mb-2">Critical issues missed</h3>
-                <p className="text-gray-600 text-sm">Small problems become big failures during formal audits</p>
+                <h3 className="font-semibold text-gray-900 mb-2">Small issues turn into big failures.</h3>
+                <p className="text-gray-600 text-sm">Because feedback comes too late.</p>
               </div>
 
               <div className="bg-white p-6 rounded-xl shadow-lg border border-red-200">
                 <div className="flex items-center justify-center w-12 h-12 bg-red-100 rounded-full mx-auto mb-4">
                   <X className="w-6 h-6 text-red-600" />
                 </div>
-                <h3 className="font-semibold text-gray-900 mb-2">Morale drops</h3>
-                <p className="text-gray-600 text-sm">Team stress increases when audits become adversarial</p>
+                <h3 className="font-semibold text-gray-900 mb-2">Morale takes a hit.</h3>
+                <p className="text-gray-600 text-sm">Teams feel judged instead of supported.</p>
               </div>
 
               <div className="bg-white p-6 rounded-xl shadow-lg border border-red-200">
                 <div className="flex items-center justify-center w-12 h-12 bg-red-100 rounded-full mx-auto mb-4">
                   <X className="w-6 h-6 text-red-600" />
                 </div>
-                <h3 className="font-semibold text-gray-900 mb-2">Delayed feedback</h3>
-                <p className="text-gray-600 text-sm">Wait weeks for inspection results when issues need immediate attention</p>
+                <h3 className="font-semibold text-gray-900 mb-2">Inconsistent standards.</h3>
+                <p className="text-gray-600 text-sm">Every inspector looks for something different.</p>
               </div>
 
               <div className="bg-white p-6 rounded-xl shadow-lg border border-red-200">
                 <div className="flex items-center justify-center w-12 h-12 bg-red-100 rounded-full mx-auto mb-4">
                   <X className="w-6 h-6 text-red-600" />
                 </div>
-                <h3 className="font-semibold text-gray-900 mb-2">Always playing defense</h3>
-                <p className="text-gray-600 text-sm">Reactive management instead of proactive improvement</p>
+                <h3 className="font-semibold text-gray-900 mb-2">Reactive, not proactive.</h3>
+                <p className="text-gray-600 text-sm">You're managing defensively instead of building daily excellence.</p>
               </div>
 
-              <div className="bg-white p-6 rounded-xl shadow-lg border border-red-200">
+              <div className="bg-white p-6 rounded-xl shadow-lg border border-red-200 md:col-span-2 lg:col-span-1">
                 <div className="flex items-center justify-center w-12 h-12 bg-red-100 rounded-full mx-auto mb-4">
                   <X className="w-6 h-6 text-red-600" />
                 </div>
-                <h3 className="font-semibold text-gray-900 mb-2">Inconsistent standards</h3>
-                <p className="text-gray-600 text-sm">Different inspectors focus on different priorities</p>
+                <h3 className="font-semibold text-gray-900 mb-2">Built for oversight.</h3>
+                <p className="text-gray-600 text-sm">Inspections were built for oversight, not improvement.</p>
               </div>
             </div>
 
             <div className="bg-teal-600 text-white p-8 rounded-2xl">
               <h3 className="text-2xl font-bold mb-4">
-                There's a better way: Coaching Mode
+                Inspections were built for oversight. Coaching Mode was built for improvement.
               </h3>
-              <p className="text-teal-100 text-lg">
-                Get ahead of problems before they become failures. Build confidence, not stress.
-              </p>
             </div>
           </div>
         </div>
       </section>
 
-      {/* Why Managers Love It */}
+      {/* A Better Way */}
       <section className="py-20 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
             <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
-              Why Managers Love Coaching Mode
+              A Better Way to Build Confidence
             </h2>
             <p className="text-xl text-gray-600">
-              Built for busy managers who want to stay ahead, not behind
+              Coaching Mode turns every manager into their own auditor — with private feedback that builds skill, not anxiety.
             </p>
           </div>
-          
-          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
-            <div className="text-center">
-              <div className="w-16 h-16 bg-teal-100 rounded-full flex items-center justify-center mx-auto mb-6">
-                <Shield className="w-8 h-8 text-teal-600" />
-              </div>
-              <h3 className="text-xl font-semibold text-gray-900 mb-3">
-                Private
-              </h3>
-              <p className="text-gray-600">
-                Results stay at your store level. No corporate visibility during the coaching phase. Build confidence privately.
+
+          <div className="max-w-4xl mx-auto mb-12">
+            <div className="bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden">
+              <table className="w-full">
+                <thead>
+                  <tr className="bg-gray-50">
+                    <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900">Feature</th>
+                    <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900">Benefit</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-200">
+                  <tr>
+                    <td className="px-6 py-4">
+                      <div className="flex items-center">
+                        <Shield className="w-5 h-5 text-teal-600 mr-3 flex-shrink-0" />
+                        <span className="font-medium text-gray-900">🔒 Private Feedback</span>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 text-gray-700">
+                      Results stay at the store. Build confidence before corporate sees it.
+                    </td>
+                  </tr>
+                  <tr>
+                    <td className="px-6 py-4">
+                      <div className="flex items-center">
+                        <Clock className="w-5 h-5 text-blue-600 mr-3 flex-shrink-0" />
+                        <span className="font-medium text-gray-900">⚡ Instant Results</span>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 text-gray-700">
+                      Get feedback in minutes — while it still matters.
+                    </td>
+                  </tr>
+                  <tr>
+                    <td className="px-6 py-4">
+                      <div className="flex items-center">
+                        <CheckCircle className="w-5 h-5 text-orange-600 mr-3 flex-shrink-0" />
+                        <span className="font-medium text-gray-900">🎯 Actionable Reports</span>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 text-gray-700">
+                      Clear priorities, timestamps, and steps to fix issues fast.
+                    </td>
+                  </tr>
+                  <tr>
+                    <td className="px-6 py-4">
+                      <div className="flex items-center">
+                        <Star className="w-5 h-5 text-purple-600 mr-3 flex-shrink-0" />
+                        <span className="font-medium text-gray-900">🕒 Lightweight Workflow</span>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 text-gray-700">
+                      Two minutes, no scheduling, no travel, no disruption.
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <div className="max-w-3xl mx-auto">
+            <div className="bg-teal-50 border-l-4 border-teal-600 p-6 rounded-lg mb-8">
+              <p className="text-lg text-gray-800 italic">
+                "We caught three small issues before our next audit. It turned stress into confidence."
               </p>
+              <p className="text-sm text-gray-600 mt-2">— Store Manager, QSR Chain</p>
             </div>
 
             <div className="text-center">
-              <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-6">
-                <Clock className="w-8 h-8 text-blue-600" />
-              </div>
-              <h3 className="text-xl font-semibold text-gray-900 mb-3">
-                Fast
-              </h3>
-              <p className="text-gray-600">
-                Get feedback in minutes, not weeks. Address issues immediately while they're still fresh and fixable.
-              </p>
-            </div>
-
-            <div className="text-center">
-              <div className="w-16 h-16 bg-orange-100 rounded-full flex items-center justify-center mx-auto mb-6">
-                <CheckCircle className="w-8 h-8 text-orange-600" />
-              </div>
-              <h3 className="text-xl font-semibold text-gray-900 mb-3">
-                Actionable
-              </h3>
-              <p className="text-gray-600">
-                Detailed scorecards with specific tasks, timestamps, and priority levels. Know exactly what to fix first.
-              </p>
-            </div>
-
-            <div className="text-center">
-              <div className="w-16 h-16 bg-purple-100 rounded-full flex items-center justify-center mx-auto mb-6">
-                <Star className="w-8 h-8 text-purple-600" />
-              </div>
-              <h3 className="text-xl font-semibold text-gray-900 mb-3">
-                Lightweight
-              </h3>
-              <p className="text-gray-600">
-                Just a quick video, a few minutes per run. No scheduling, no travel, no disruption to daily operations. Do it when convenient.
-              </p>
+              <a
+                href={TRIAL_SIGNUP_URL}
+                className="inline-block px-8 py-4 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors font-semibold text-lg shadow-lg"
+              >
+                Start Free
+              </a>
             </div>
           </div>
         </div>
@@ -248,10 +283,10 @@ export default function CoachingModePage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
             <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
-              Example Coaching Report
+              Sample Coaching Report
             </h2>
             <p className="text-xl text-gray-600">
-              See what your private coaching scorecard looks like
+              See what instant, private feedback looks like.
             </p>
           </div>
           
@@ -338,109 +373,95 @@ export default function CoachingModePage() {
               </div>
 
               {/* Privacy Notice */}
-              <div className="bg-gray-50 p-4 border-t border-gray-200">
-                <div className="flex items-center justify-center space-x-2 text-sm text-gray-600">
-                  <Shield className="w-4 h-4" />
-                  <span>This report stays at your location. The video is deleted after processing for complete privacy.</span>
+              <div className="bg-gray-50 p-6 border-t border-gray-200">
+                <div className="space-y-2">
+                  <div className="flex items-center justify-center space-x-2 text-sm text-gray-700">
+                    <CheckCircle className="w-4 h-4 text-green-600" />
+                    <span>✅ Video deleted after analysis</span>
+                  </div>
+                  <div className="flex items-center justify-center space-x-2 text-sm text-gray-700">
+                    <CheckCircle className="w-4 h-4 text-green-600" />
+                    <span>✅ Report stays local only</span>
+                  </div>
+                  <div className="flex items-center justify-center space-x-2 text-sm text-gray-700">
+                    <CheckCircle className="w-4 h-4 text-green-600" />
+                    <span>✅ Action list ready for next shift</span>
+                  </div>
                 </div>
               </div>
-              
+
             </div>
           </div>
         </div>
       </section>
 
-      {/* Free Trial Details */}
+      {/* Start Coaching Free */}
       <section id="trial" className="py-20 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="max-w-4xl mx-auto text-center">
-            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-8">
-              Free Trial Details
+            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
+              Start Coaching Free
             </h2>
-            
-            <div className="grid md:grid-cols-3 gap-8 mb-12">
-              <div className="bg-teal-50 p-8 rounded-2xl border border-teal-200">
-                <div className="text-4xl font-bold text-teal-600 mb-4">7</div>
-                <div className="font-semibold text-gray-900 mb-2">Days Unlimited</div>
-                <p className="text-gray-600">Run as many coaching sessions as you want during your trial period</p>
-              </div>
+            <p className="text-xl text-gray-600 mb-12">
+              Build consistency and confidence before your next audit.
+            </p>
 
-              <div className="bg-blue-50 p-8 rounded-2xl border border-blue-200">
-                <div className="text-4xl font-bold text-blue-600 mb-4">$0</div>
-                <div className="font-semibold text-gray-900 mb-2">Cost, No Obligation</div>
-                <p className="text-gray-600">No credit card required. No hidden fees. No automatic billing.</p>
-              </div>
-
-              <div className="bg-orange-50 p-8 rounded-2xl border border-orange-200">
-                <div className="text-4xl font-bold text-orange-600 mb-4">📱</div>
-                <div className="font-semibold text-gray-900 mb-2">Works on Any Smartphone</div>
-                <p className="text-gray-600">Record a quick video on iOS or Android. No special equipment or apps to download.</p>
-              </div>
-            </div>
-
-            <div className="bg-gradient-to-r from-teal-600 to-blue-600 text-white p-8 rounded-2xl">
-              <h3 className="text-2xl font-bold mb-4">Ready to start coaching?</h3>
-              <p className="text-teal-100 mb-6">Join hundreds of managers who are already using PeakOps to stay ahead of compliance issues.</p>
-              <a 
+            <div className="bg-gradient-to-r from-teal-600 to-blue-600 text-white p-12 rounded-2xl">
+              <a
                 href={TRIAL_SIGNUP_URL}
-                className="inline-block px-8 py-4 bg-white text-teal-600 rounded-lg hover:bg-gray-100 transition-colors font-semibold text-lg shadow-lg"
+                className="inline-block px-8 py-4 bg-white text-teal-600 rounded-lg hover:bg-gray-100 transition-colors font-semibold text-lg shadow-lg mb-4"
               >
-                Start Free Trial Now
+                Start Free
               </a>
-              <p className="text-teal-200 text-sm mt-4">
-                Takes less than 2 minutes to get started
+              <p className="text-teal-200 text-sm">
+                7 days unlimited • No credit card • Complete privacy
               </p>
             </div>
           </div>
         </div>
       </section>
 
-      {/* Future Upgrade Teaser */}
+      {/* When You're Ready to Scale */}
       <section className="py-20 bg-gray-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="max-w-4xl mx-auto text-center">
             <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-8">
-              When You're Ready for More
+              When You're Ready to Scale
             </h2>
-            
+            <p className="text-xl text-gray-600 mb-12">
+              Upgrade from coaching to full visibility.
+            </p>
+
             <div className="bg-white p-8 rounded-2xl shadow-lg border border-gray-200">
-              <div className="grid md:grid-cols-2 gap-8 items-center">
-                <div className="text-left">
-                  <h3 className="text-2xl font-semibold text-gray-900 mb-4">
-                    Upgrade to Enterprise Mode
-                  </h3>
-                  <ul className="space-y-3">
-                    <li className="flex items-center">
-                      <CheckCircle className="w-5 h-5 text-blue-600 mr-3 flex-shrink-0" />
-                      <span className="text-gray-700">Official, auditable inspection records</span>
-                    </li>
-                    <li className="flex items-center">
-                      <CheckCircle className="w-5 h-5 text-blue-600 mr-3 flex-shrink-0" />
-                      <span className="text-gray-700">Corporate dashboards with regional trends</span>
-                    </li>
-                    <li className="flex items-center">
-                      <CheckCircle className="w-5 h-5 text-blue-600 mr-3 flex-shrink-0" />
-                      <span className="text-gray-700">Compliance reporting and heatmaps</span>
-                    </li>
-                    <li className="flex items-center">
-                      <CheckCircle className="w-5 h-5 text-blue-600 mr-3 flex-shrink-0" />
-                      <span className="text-gray-700">Integration with task management systems</span>
-                    </li>
-                  </ul>
-                </div>
-                
-                <div className="bg-gray-100 p-6 rounded-lg">
-                  <img
-                    src="https://images.pexels.com/photos/590016/pexels-photo-590016.jpeg?auto=compress&cs=tinysrgb&w=800"
-                    alt="Corporate dashboard preview"
-                    className="w-full h-40 object-cover rounded-lg"
-                  />
-                  <p className="text-sm text-gray-600 mt-3 text-center">
-                    Enterprise dashboard preview
-                  </p>
-                </div>
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead>
+                    <tr className="border-b-2 border-gray-200">
+                      <th className="px-6 py-4 text-left text-lg font-semibold text-gray-900">Coaching Mode</th>
+                      <th className="px-6 py-4 text-left text-lg font-semibold text-gray-900">Enterprise Mode</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-200">
+                    <tr>
+                      <td className="px-6 py-4 text-gray-700">Private, local improvement</td>
+                      <td className="px-6 py-4 text-gray-700">Centralized visibility</td>
+                    </tr>
+                    <tr>
+                      <td className="px-6 py-4 text-gray-700">Deleted after analysis</td>
+                      <td className="px-6 py-4 text-gray-700">Retained for compliance</td>
+                    </tr>
+                    <tr>
+                      <td className="px-6 py-4 text-gray-700">Store-level progress</td>
+                      <td className="px-6 py-4 text-gray-700">Brand-wide dashboards</td>
+                    </tr>
+                    <tr>
+                      <td className="px-6 py-4 text-gray-700">Confidence building</td>
+                      <td className="px-6 py-4 text-gray-700">Compliance tracking</td>
+                    </tr>
+                  </tbody>
+                </table>
               </div>
-              
+
               <div className="mt-8">
                 <Link
                   to="/enterprise"
@@ -462,11 +483,14 @@ export default function CoachingModePage() {
             "Coaching today. Confidence tomorrow."
           </h2>
           <p className="text-xl text-teal-100 mb-8 max-w-3xl mx-auto">
-            Stop getting surprised by inspection failures. Start building confidence with private, instant feedback that helps you improve every day.
+            Stop getting blindsided by inspection failures. Start building a culture of daily improvement with AI that helps you shine.
           </p>
-          <button className="px-8 py-4 bg-white text-teal-600 rounded-lg hover:bg-gray-100 transition-colors font-semibold text-lg shadow-lg">
-            Try Coaching Mode Free
-          </button>
+          <a
+            href={TRIAL_SIGNUP_URL}
+            className="inline-block px-8 py-4 bg-white text-teal-600 rounded-lg hover:bg-gray-100 transition-colors font-semibold text-lg shadow-lg"
+          >
+            Start Free Trial
+          </a>
           <p className="text-teal-200 text-sm mt-4">
             7 days unlimited • No credit card • Complete privacy
           </p>

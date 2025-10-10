@@ -228,27 +228,20 @@ def update_streak(store, manager, completed_date, passed):
 
     streak, created = MicroCheckStreak.objects.get_or_create(
         store=store,
-        manager=manager,
+        user=manager,  # Model uses 'user' field, not 'manager'
         defaults={
             'current_streak': 0,
             'longest_streak': 0,
-            'total_completed': 0,
-            'total_passed': 0,
-            'total_failed': 0,
-            'total_skipped': 0,
+            'total_completions': 0,
         }
     )
 
     # Update totals
-    streak.total_completed += 1
-    if passed:
-        streak.total_passed += 1
-    else:
-        streak.total_failed += 1
+    streak.total_completions += 1
 
     # Update streak logic
-    if streak.last_completed_date:
-        days_since_last = (completed_date - streak.last_completed_date).days
+    if streak.last_completion_date:
+        days_since_last = (completed_date - streak.last_completion_date).days
 
         if days_since_last == 1:
             # Consecutive day - increment streak
@@ -267,7 +260,56 @@ def update_streak(store, manager, completed_date, passed):
     if streak.current_streak > streak.longest_streak:
         streak.longest_streak = streak.current_streak
 
-    streak.last_completed_date = completed_date
+    streak.last_completion_date = completed_date
+    streak.save()
+
+    return streak
+
+
+def update_store_streak(store, completed_date):
+    """
+    Update store-level streak information after a run is completed.
+
+    Args:
+        store: Store instance
+        completed_date: Date of completion (in store's local timezone)
+    """
+    from .models import StoreStreak
+
+    streak, created = StoreStreak.objects.get_or_create(
+        store=store,
+        defaults={
+            'current_streak': 0,
+            'longest_streak': 0,
+            'total_completions': 0,
+        }
+    )
+
+    # Update total completions
+    streak.total_completions += 1
+
+    # Update streak logic
+    if streak.last_completion_date:
+        days_since_last = (completed_date - streak.last_completion_date).days
+
+        if days_since_last == 1:
+            # Consecutive day - increment streak
+            streak.current_streak += 1
+        elif days_since_last == 0:
+            # Same day - don't change streak
+            pass
+        else:
+            # Streak broken
+            streak.current_streak = 1
+    else:
+        # First completion
+        streak.current_streak = 1
+
+    # Update longest streak
+    if streak.current_streak > streak.longest_streak:
+        streak.longest_streak = streak.current_streak
+
+    streak.last_completion_date = completed_date
     streak.save()
 
     return streak
@@ -282,13 +324,19 @@ def create_corrective_action_for_failure(response, assigned_to=None):
         assigned_to: Optional User to assign to (defaults to store's GM)
 
     Returns:
-        CorrectiveAction instance
+        CorrectiveAction instance (existing or newly created)
     """
     from .models import CorrectiveAction
     from datetime import timedelta
 
     if response.status != 'FAIL':
         return None
+
+    # Check if corrective action already exists (OneToOneField)
+    try:
+        return response.corrective_action
+    except CorrectiveAction.DoesNotExist:
+        pass
 
     # Default to store's primary contact if not specified
     if assigned_to is None and hasattr(response.store, 'primary_contact'):
@@ -301,19 +349,22 @@ def create_corrective_action_for_failure(response, assigned_to=None):
         'MEDIUM': 7,
         'LOW': 14,
     }
-    due_days = severity_due_days.get(response.severity, 7)
-    due_date = timezone.now().date() + timedelta(days=due_days)
+    due_days = severity_due_days.get(response.severity_snapshot, 7)
+    due_at = timezone.now() + timedelta(days=due_days)
+
+    # Get before media from response (media is a ForeignKey, not ManyToMany)
+    before_media = response.media
 
     # Create corrective action
     action = CorrectiveAction.objects.create(
         response=response,
         store=response.store,
         category=response.category,
-        severity=response.severity,
-        description=f"Failed check: {response.run_item.title_snapshot}",
-        due_date=due_date,
+        due_at=due_at,
         assigned_to=assigned_to,
-        created_by=response.responder
+        created_by=response.completed_by,
+        before_media=before_media,
+        created_from='MICRO_CHECK'
     )
 
     return action

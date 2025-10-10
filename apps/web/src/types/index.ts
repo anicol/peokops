@@ -23,7 +23,7 @@ export interface User {
   first_name: string;
   last_name: string;
   full_name: string;
-  role: 'ADMIN' | 'OWNER' | 'GM' | 'INSPECTOR';
+  role: 'SUPER_ADMIN' | 'ADMIN' | 'OWNER' | 'GM' | 'INSPECTOR' | 'TRIAL_ADMIN';
   store: number | null;
   store_name?: string;
   brand_name?: string;
@@ -35,6 +35,7 @@ export interface User {
   has_seen_demo?: boolean;
   requested_demo?: boolean;
   demo_completed_at?: string;
+  onboarding_completed_at?: string;
   hours_since_signup?: number;
   total_inspections?: number;
   created_at: string;

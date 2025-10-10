@@ -2,29 +2,49 @@ import { useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { useProgressiveNavigation } from '@/hooks/useProgressiveNavigation';
+import { useFeatureGates } from '@/hooks/useFeatureGates';
 import {
   Home,
   CheckSquare,
-  Video,
-  Puzzle,
+  Sparkles,
+  FileSearch,
+  ListTodo,
   BarChart3,
   Settings,
   Menu,
   LogOut,
   User,
   ArrowRight,
+  Building2,
+  Users,
+  Activity,
+  Lock,
 } from 'lucide-react';
 
 const navigationSections = [
   {
-    title: null, // Flat navigation - no sections
+    title: null, // Workflows
     items: [
       { name: 'Home', href: '/', icon: Home, key: 'home' },
-      { name: 'Checks', href: '/micro-check-history', icon: CheckSquare, key: 'checks' },
-      { name: 'Walkthroughs', href: '/videos', icon: Video, key: 'walkthroughs' },
-      { name: 'Templates', href: '/micro-check-templates', icon: Puzzle, key: 'templates' },
-      { name: 'Insights', href: '/coaching/trends', icon: BarChart3, key: 'insights' },
-      { name: 'Settings', href: '/stores', icon: Settings, key: 'settings' },
+      { name: 'Micro Checks', href: '/micro-check-history', icon: CheckSquare, key: 'microChecks' },
+      { name: 'AI Coach', href: '/videos', icon: Sparkles, key: 'aiCoach' },
+      { name: 'Inspections', href: '/inspections', icon: FileSearch, key: 'inspections' },
+      { name: 'Actions', href: '/actions', icon: ListTodo, key: 'actions' },
+      { name: 'Insights', href: '/insights', icon: BarChart3, key: 'insights' },
+    ]
+  },
+  {
+    title: null, // Settings section
+    items: [
+      { name: 'Settings', href: '/profile', icon: Settings, key: 'settings' },
+    ]
+  },
+  {
+    title: 'System Administration',
+    items: [
+      { name: 'Brands', href: '/brands', icon: Building2, key: 'systemBrands' },
+      { name: 'Users', href: '/admin/users', icon: Users, key: 'systemUsers' },
+      { name: 'System Queue', href: '/admin/queue', icon: Activity, key: 'systemQueue' },
     ]
   }
 ] as const;
@@ -35,6 +55,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   const navigate = useNavigate();
   const location = useLocation();
   const navState = useProgressiveNavigation();
+  const { getProgress, registry } = useFeatureGates();
 
   const filteredSections = navigationSections
     .map(section => {
@@ -129,14 +150,17 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                       {section.items.map((item) => {
                         const state = navState[item.key as keyof typeof navState];
                         const isDisabled = state === 'visible-disabled';
+                        const isTeaser = state === 'teaser';
                         const isActive = location.pathname === item.href;
 
                         const baseClasses = 'group flex items-center px-3 py-2 text-sm font-medium rounded-md';
                         const stateClasses = isDisabled
                           ? 'text-gray-400 cursor-not-allowed'
-                          : isActive
-                            ? 'bg-gray-100 text-gray-900'
-                            : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900';
+                          : isTeaser
+                            ? 'text-gray-500 cursor-pointer hover:bg-blue-50 hover:text-blue-600'
+                            : isActive
+                              ? 'bg-gray-100 text-gray-900'
+                              : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900';
 
                         if (isDisabled) {
                           return (
@@ -147,6 +171,41 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                             >
                               <item.icon className="w-4 h-4 mr-3" />
                               {item.name}
+                            </div>
+                          );
+                        }
+
+                        if (isTeaser) {
+                          // Map navigation key to feature registry key
+                          const featureKey = item.key === 'aiCoach' ? 'ai-coach' :
+                                             item.key === 'inspections' ? 'inspections' :
+                                             item.key === 'insights' ? 'insights' : null;
+
+                          const progressHint = featureKey ? getProgress(featureKey as any) : 'Locked';
+                          const lockedRoute = featureKey ? registry[featureKey].lockedRoute : '/stores';
+
+                          // Create tooltip text
+                          const tooltipText = featureKey === 'ai-coach' ? 'Unlock after 3 Micro Checks.' :
+                                              featureKey === 'inspections' ? 'Upgrade to Enterprise.' :
+                                              featureKey === 'insights' ? 'Upgrade to unlock Insights.' :
+                                              'Locked feature';
+
+                          return (
+                            <div
+                              key={item.name}
+                              className={`${baseClasses} ${stateClasses} cursor-pointer`}
+                              title={tooltipText}
+                              onClick={() => {
+                                setSidebarOpen(false);
+                                navigate(lockedRoute);
+                              }}
+                            >
+                              <item.icon className="w-4 h-4 mr-3 flex-shrink-0" />
+                              <span className="flex-1 min-w-0 truncate">{item.name}</span>
+                              <div className="flex items-center gap-1.5 ml-2 flex-shrink-0">
+                                <span className="text-xs text-gray-400 whitespace-nowrap">{progressHint}</span>
+                                <Lock className="w-3 h-3 text-gray-400 flex-shrink-0" />
+                              </div>
                             </div>
                           );
                         }
@@ -186,14 +245,17 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                     {section.items.map((item) => {
                       const state = navState[item.key as keyof typeof navState];
                       const isDisabled = state === 'visible-disabled';
+                      const isTeaser = state === 'teaser';
                       const isActive = location.pathname === item.href;
 
                       const baseClasses = 'group flex items-center px-3 py-2 text-sm font-medium rounded-md';
                       const stateClasses = isDisabled
                         ? 'text-gray-400 cursor-not-allowed'
-                        : isActive
-                          ? 'bg-gray-100 text-gray-900'
-                          : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900';
+                        : isTeaser
+                          ? 'text-gray-500 cursor-pointer hover:bg-blue-50 hover:text-blue-600'
+                          : isActive
+                            ? 'bg-gray-100 text-gray-900'
+                            : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900';
 
                       if (isDisabled) {
                         return (
@@ -204,6 +266,38 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                           >
                             <item.icon className="w-4 h-4 mr-3" />
                             {item.name}
+                          </div>
+                        );
+                      }
+
+                      if (isTeaser) {
+                        // Map navigation key to feature registry key
+                        const featureKey = item.key === 'aiCoach' ? 'ai-coach' :
+                                           item.key === 'inspections' ? 'inspections' :
+                                           item.key === 'insights' ? 'insights' : null;
+
+                        const progressHint = featureKey ? getProgress(featureKey as any) : 'Locked';
+                        const lockedRoute = featureKey ? registry[featureKey].lockedRoute : '/stores';
+
+                        // Create tooltip text
+                        const tooltipText = featureKey === 'ai-coach' ? 'Unlock after 3 Micro Checks.' :
+                                            featureKey === 'inspections' ? 'Upgrade to Enterprise.' :
+                                            featureKey === 'insights' ? 'Upgrade to unlock Insights.' :
+                                            'Locked feature';
+
+                        return (
+                          <div
+                            key={item.name}
+                            className={`${baseClasses} ${stateClasses} cursor-pointer`}
+                            title={tooltipText}
+                            onClick={() => navigate(lockedRoute)}
+                          >
+                            <item.icon className="w-4 h-4 mr-3 flex-shrink-0" />
+                            <span className="flex-1 min-w-0 truncate">{item.name}</span>
+                            <div className="flex items-center gap-1.5 ml-2 flex-shrink-0">
+                              <span className="text-xs text-gray-400 whitespace-nowrap">{progressHint}</span>
+                              <Lock className="w-3 h-3 text-gray-400 flex-shrink-0" />
+                            </div>
                           </div>
                         );
                       }

@@ -54,12 +54,12 @@ const Login = () => {
           // Store tokens and trigger auth state update
           localStorage.setItem('access_token', data.access);
           localStorage.setItem('refresh_token', data.refresh);
-          
+
           setSuccess(true);
-          
-          // Redirect to dashboard after brief success message
+
+          // Redirect to welcome page after brief success message
           setTimeout(() => {
-            window.location.href = '/dashboard';
+            window.location.href = '/welcome';
           }, 1500);
         } else {
           setError(data.email?.[0] || data.password?.[0] || 'Failed to create account');
@@ -108,11 +108,11 @@ const Login = () => {
         <div className="bg-white rounded-2xl shadow-xl border border-gray-200 p-8">
           <div className="text-center mb-6">
             <h1 className="text-2xl font-bold text-gray-900 mb-2">
-              {isSignUp ? 'Start Your Free Trial' : 'Welcome Back'}
+              {isSignUp ? 'Start Your Free Trial — Build Confidence in 7 Days' : 'Welcome Back'}
             </h1>
             <p className="text-gray-600">
-              {isSignUp 
-                ? '7 days unlimited coaching mode - no credit card required'
+              {isSignUp
+                ? 'Experience how PeakOps helps your team stay inspection-ready — without inspectors, stress, or setup'
                 : 'Sign in to your PeakOps account'
               }
             </p>
@@ -174,10 +174,10 @@ const Login = () => {
                   <div className="text-sm">
                     <div className="font-medium text-teal-900 mb-1">Free Trial Includes:</div>
                     <ul className="text-teal-800 space-y-1">
-                      <li>• 7 days unlimited coaching runs</li>
-                      <li>• Complete privacy - videos deleted after processing</li>
-                      <li>• Instant AI feedback and scorecards</li>
-                      <li>• No credit card required</li>
+                      <li>✓ Unlimited coaching runs for 7 days</li>
+                      <li>✓ Instant AI feedback and private scorecards</li>
+                      <li>✓ Videos deleted automatically after processing</li>
+                      <li>✓ No credit card required</li>
                     </ul>
                   </div>
                 </div>

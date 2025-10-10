@@ -30,12 +30,12 @@ class StoreListCreateView(generics.ListCreateAPIView):
     ordering = ['brand__name', 'name']
 
     def get_queryset(self):
-        """Filter stores based on role - ADMIN sees all, others see only their brand"""
+        """Filter stores based on role - SUPER_ADMIN/ADMIN sees all, others see only their brand"""
         from accounts.models import User
         user = self.request.user
 
-        # ADMIN sees all stores
-        if user.role == User.Role.ADMIN:
+        # SUPER_ADMIN and ADMIN see all stores across all tenants
+        if user.role in [User.Role.SUPER_ADMIN, User.Role.ADMIN]:
             return Store.objects.filter(is_active=True)
 
         # Other roles see stores in their brand
@@ -55,12 +55,12 @@ class StoreDetailView(generics.RetrieveUpdateDestroyAPIView):
     permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
-        """Filter stores based on role - ADMIN sees all, others see only their brand"""
+        """Filter stores based on role - SUPER_ADMIN/ADMIN sees all, others see only their brand"""
         from accounts.models import User
         user = self.request.user
 
-        # ADMIN sees all stores
-        if user.role == User.Role.ADMIN:
+        # SUPER_ADMIN and ADMIN see all stores across all tenants
+        if user.role in [User.Role.SUPER_ADMIN, User.Role.ADMIN]:
             return Store.objects.all()
 
         # Other roles see stores in their brand

@@ -3,6 +3,10 @@ import { AuthProvider, useAuth } from '@/hooks/useAuth';
 import Layout from '@/components/Layout';
 import LoginPage from '@/pages/LoginPage';
 import TrialSignupPage from '@/pages/TrialSignupPage';
+import TrialWelcomePage from '@/pages/TrialWelcomePage';
+import TrialOnboardingPage from '@/pages/TrialOnboardingPage';
+import FirstChecksReadyPage from '@/pages/FirstChecksReadyPage';
+import FirstChecksCelebrationPage from '@/pages/FirstChecksCelebrationPage';
 import Dashboard from '@/pages/Dashboard';
 import VideosPage from '@/pages/VideosPage';
 import VideoUploadPage from '@/pages/VideoUploadPage';
@@ -22,8 +26,10 @@ import MicroCheckInvitePage from '@/pages/MicroCheckInvitePage';
 import MicroCheckPage from '@/pages/MicroCheckPage';
 import MicroCheckHistoryPage from '@/pages/MicroCheckHistoryPage';
 import MicroCheckTemplatesPage from '@/pages/MicroCheckTemplatesPage';
+import InsightsPage from '@/pages/InsightsPage';
+import ProfilePage from '@/pages/ProfilePage';
+import LockedFeatureView from '@/components/LockedFeatureView';
 import { MobileCaptureProvider } from '@/pages/MobileCaptureContext';
-import DemoModeIndicator from '@/components/DemoModeIndicator';
 function AppRoutes() {
   const { isAuthenticated, isLoading, user } = useAuth();
 
@@ -46,6 +52,12 @@ function AppRoutes() {
         {/* Auth routes */}
         <Route path="/login" element={isAuthenticated ? <Navigate to="/" replace /> : <LoginPage />} />
         <Route path="/trial-signup" element={isAuthenticated ? <Navigate to="/" replace /> : <TrialSignupPage />} />
+
+        {/* Trial onboarding flow */}
+        <Route path="/welcome" element={isAuthenticated ? <TrialWelcomePage /> : <Navigate to="/login" replace />} />
+        <Route path="/onboarding" element={isAuthenticated ? <TrialOnboardingPage /> : <Navigate to="/login" replace />} />
+        <Route path="/first-checks-ready" element={isAuthenticated ? <FirstChecksReadyPage /> : <Navigate to="/login" replace />} />
+        <Route path="/celebration" element={isAuthenticated ? <FirstChecksCelebrationPage /> : <Navigate to="/login" replace />} />
 
         {/* Full-screen authenticated routes (no layout) */}
         <Route
@@ -158,9 +170,7 @@ function AppRoutes() {
           path="/stores"
           element={
             isAuthenticated ? (
-              <Layout>
-                <StoresPage />
-              </Layout>
+              <Navigate to="/profile" replace />
             ) : (
               <Navigate to="/login" replace />
             )
@@ -238,6 +248,42 @@ function AppRoutes() {
             )
           }
         />
+        <Route
+          path="/insights"
+          element={
+            isAuthenticated ? (
+              <Layout>
+                <InsightsPage />
+              </Layout>
+            ) : (
+              <Navigate to="/login" replace />
+            )
+          }
+        />
+        <Route
+          path="/profile"
+          element={
+            isAuthenticated ? (
+              <Layout>
+                <ProfilePage />
+              </Layout>
+            ) : (
+              <Navigate to="/login" replace />
+            )
+          }
+        />
+        <Route
+          path="/locked/:featureKey"
+          element={
+            isAuthenticated ? (
+              <Layout>
+                <LockedFeatureView />
+              </Layout>
+            ) : (
+              <Navigate to="/login" replace />
+            )
+          }
+        />
 
         {/* Catch-all redirect */}
         <Route path="*" element={<Navigate to={isAuthenticated ? "/" : "/login"} replace />} />
@@ -247,14 +293,8 @@ function AppRoutes() {
 }
 
 function App() {
-  // Check if demo mode is enabled (could be from env variable or API)
-  const isDemoMode = import.meta.env.VITE_DEMO_MODE === 'true' || 
-                     window.location.hostname.includes('demo') ||
-                     window.location.hostname.includes('getpeakops');
-
   return (
     <AuthProvider>
-      {isDemoMode && <DemoModeIndicator />}
       <AppRoutes />
     </AuthProvider>
   );

@@ -9,6 +9,7 @@ interface AuthContextType {
   isAuthenticated: boolean;
   login: (credentials: LoginCredentials) => Promise<void>;
   logout: () => void;
+  refetchUser: () => Promise<void>;
   error: string | null;
 }
 
@@ -19,7 +20,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [error, setError] = useState<string | null>(null);
 
   // Check if user is already logged in
-  const { isLoading: isLoadingProfile } = useQuery(
+  const { isLoading: isLoadingProfile, refetch: refetchProfile } = useQuery(
     'profile',
     authAPI.getProfile,
     {
@@ -62,6 +63,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setError(null);
   };
 
+  const refetchUser = async () => {
+    await refetchProfile();
+  };
+
   const isAuthenticated = !!user;
   const isLoading = isLoadingProfile || loginMutation.isLoading;
 
@@ -73,6 +78,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         isAuthenticated,
         login,
         logout,
+        refetchUser,
         error,
       }}
     >
