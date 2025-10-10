@@ -273,6 +273,7 @@ export function useProgressiveNavigation(): NavigationState {
         inspections: 'hidden',
         actions: 'enabled',
         insights: 'hidden',
+        profile: 'enabled',
         settings: 'enabled',
         systemBrands: 'hidden',
         systemUsers: 'hidden',
@@ -315,6 +316,7 @@ export function useProgressiveNavigation(): NavigationState {
       inspections: isUnlocked('inspections') ? 'enabled' : 'teaser', // Show teaser
       actions: 'enabled', // Simple to-do list
       insights: isUnlocked('insights') ? 'enabled' : 'hidden', // Hidden during trial
+      profile: 'enabled',
       settings: 'enabled', // Profile, store info, upgrade
 
       // System Administration - Hidden for trial

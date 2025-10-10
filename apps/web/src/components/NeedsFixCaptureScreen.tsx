@@ -61,9 +61,12 @@ const NeedsFixCaptureScreen: React.FC<NeedsFixCaptureScreenProps> = ({
     );
   };
 
-  const handlePhotoCapture = (file: File) => {
+  const handlePhotoCapture = async (photoDataUrl: string) => {
+    // Convert data URL to File
+    const blob = await fetch(photoDataUrl).then(res => res.blob());
+    const file = new File([blob], `check-${Date.now()}.jpg`, { type: 'image/jpeg' });
     setPhoto(file);
-    setPhotoPreview(URL.createObjectURL(file));
+    setPhotoPreview(photoDataUrl);
     setShowCamera(false);
     // Pause timer when user takes action
     setTimerActive(false);

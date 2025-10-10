@@ -577,7 +577,7 @@ export const microCheckAPI = {
   },
 
   // Upload media and return media asset (for inline fix flow)
-  uploadMedia: async (file: File, storeId: number): Promise<MediaAsset> => {
+  uploadMedia: async (file: File, storeId: number): Promise<any> => {
     const formData = new FormData();
     formData.append('file', file);
     formData.append('store_id', storeId.toString());
@@ -620,13 +620,13 @@ export const microCheckAPI = {
   },
 
   // Create new template (ADMIN only)
-  createTemplate: async (data: Partial<MicroCheckTemplate>): Promise<MicroCheckTemplate> => {
+  createTemplate: async (data: Partial<MicroCheckTemplate> | FormData): Promise<MicroCheckTemplate> => {
     const response = await api.post('/micro-checks/templates/', data);
     return response.data;
   },
 
   // Update template (ADMIN only)
-  updateTemplate: async (id: string, data: Partial<MicroCheckTemplate>): Promise<MicroCheckTemplate> => {
+  updateTemplate: async (id: string, data: Partial<MicroCheckTemplate> | FormData): Promise<MicroCheckTemplate> => {
     const response = await api.patch(`/micro-checks/templates/${id}/`, data);
     return response.data;
   },
