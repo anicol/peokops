@@ -9,6 +9,7 @@ from .models import (
     MicroCheckResponse,
     CheckCoverage,
     MicroCheckStreak,
+    StoreStreak,
     CorrectiveAction
 )
 
@@ -39,12 +40,14 @@ class MicroCheckTemplateSerializer(serializers.ModelSerializer):
 class MicroCheckRunItemSerializer(serializers.ModelSerializer):
     """Individual check item within a run (1 of 3)"""
     template_title = serializers.CharField(source='template.title', read_only=True)
+    template_description = serializers.CharField(source='template.description', read_only=True)
+    template_reference_image = serializers.ImageField(source='template.visual_reference_image', read_only=True)
     photo_required_reason_display = serializers.CharField(source='get_photo_required_reason_display', read_only=True)
 
     class Meta:
         model = MicroCheckRunItem
         fields = [
-            'id', 'run', 'template', 'template_title', 'order',
+            'id', 'run', 'template', 'template_title', 'template_description', 'template_reference_image', 'order',
             'photo_required', 'photo_required_reason', 'photo_required_reason_display',
             'template_version', 'title_snapshot', 'category_snapshot', 'severity_snapshot',
             'success_criteria_snapshot'
@@ -58,16 +61,31 @@ class MicroCheckRunSerializer(serializers.ModelSerializer):
     store_name = serializers.CharField(source='store.name', read_only=True)
     retention_policy_display = serializers.CharField(source='get_retention_policy_display', read_only=True)
     status_display = serializers.CharField(source='get_status_display', read_only=True)
+    completed_by_name = serializers.CharField(source='completed_by.get_full_name', read_only=True, allow_null=True)
+    completed_item_ids = serializers.SerializerMethodField()
+    completed_count = serializers.SerializerMethodField()
 
     class Meta:
         model = MicroCheckRun
         fields = [
             'id', 'store', 'store_name', 'scheduled_for', 'sequence',
             'store_timezone', 'retention_policy', 'retention_policy_display',
-            'retain_until', 'status', 'status_display', 'completed_at',
-            'items', 'created_at', 'created_by'
+            'retain_until', 'status', 'status_display', 'completed_at', 'completed_by', 'completed_by_name',
+            'items', 'completed_item_ids', 'completed_count',
+            'created_at', 'created_by'
         ]
         read_only_fields = ['id', 'created_at', 'created_by']
+
+    def get_completed_item_ids(self, obj):
+        """Get list of run_item IDs that already have responses"""
+        return list(
+            MicroCheckResponse.objects.filter(run=obj)
+            .values_list('run_item_id', flat=True)
+        )
+
+    def get_completed_count(self, obj):
+        """Get count of completed items"""
+        return MicroCheckResponse.objects.filter(run=obj).count()
 
 
 class MicroCheckAssignmentSerializer(serializers.ModelSerializer):
@@ -97,16 +115,16 @@ class MicroCheckAssignmentSerializer(serializers.ModelSerializer):
 class MediaAssetSerializer(serializers.ModelSerializer):
     """Media asset with retention policy"""
     retention_policy_display = serializers.CharField(source='get_retention_policy_display', read_only=True)
-    uploaded_by_name = serializers.CharField(source='uploaded_by.get_full_name', read_only=True)
+    created_by_name = serializers.CharField(source='created_by.get_full_name', read_only=True, allow_null=True)
 
     class Meta:
         model = MediaAsset
         fields = [
-            'id', 'store', 's3_key', 's3_bucket', 'file_size_bytes',
-            'mime_type', 'sha256', 'retention_policy', 'retention_policy_display',
-            'expires_at', 'uploaded_at', 'uploaded_by', 'uploaded_by_name'
+            'id', 'store', 'kind', 's3_key', 's3_bucket', 'bytes',
+            'sha256', 'width', 'height', 'retention_policy', 'retention_policy_display',
+            'expires_at', 'created_at', 'created_by', 'created_by_name'
         ]
-        read_only_fields = ['id', 'sha256', 'uploaded_at', 'uploaded_by']
+        read_only_fields = ['id', 'sha256', 'created_at', 'created_by']
 
 
 class MicroCheckResponseSerializer(serializers.ModelSerializer):
@@ -114,24 +132,26 @@ class MicroCheckResponseSerializer(serializers.ModelSerializer):
     run_item_details = MicroCheckRunItemSerializer(source='run_item', read_only=True)
     store_name = serializers.CharField(source='store.name', read_only=True)
     category_display = serializers.CharField(source='get_category_display', read_only=True)
-    severity_display = serializers.CharField(source='get_severity_display', read_only=True)
+    severity_display = serializers.CharField(source='get_severity_snapshot_display', read_only=True)
     status_display = serializers.CharField(source='get_status_display', read_only=True)
     skip_reason_display = serializers.CharField(source='get_skip_reason_display', read_only=True)
-    responder_name = serializers.CharField(source='responder.get_full_name', read_only=True)
+    completed_by_name = serializers.CharField(source='completed_by.get_full_name', read_only=True, allow_null=True)
 
     class Meta:
         model = MicroCheckResponse
         fields = [
-            'id', 'run_item', 'run_item_details', 'store', 'store_name',
-            'category', 'category_display', 'severity', 'severity_display',
-            'status', 'status_display', 'pass_fail_override', 'override_reason',
-            'skip_reason', 'skip_reason_display', 'notes', 'responder', 'responder_name',
-            'photo', 'completed_at', 'local_completed_date', 'ip_address',
-            'user_agent', 'created_at', 'created_by', 'updated_at', 'updated_by'
+            'id', 'run_item', 'run_item_details', 'run', 'assignment', 'template',
+            'store', 'store_name', 'category', 'category_display',
+            'severity_snapshot', 'severity_display', 'status', 'status_display',
+            'notes', 'skip_reason', 'skip_reason_display', 'skip_reason_detail',
+            'media', 'completed_by', 'completed_by_name', 'completed_at',
+            'local_completed_date', 'completion_seconds',
+            'override_reason', 'overridden_by', 'overridden_at',
+            'created_at', 'created_by', 'updated_at', 'updated_by'
         ]
         read_only_fields = [
-            'id', 'completed_at', 'local_completed_date',
-            'ip_address', 'user_agent',
+            'id', 'run', 'assignment', 'template', 'store', 'category',
+            'severity_snapshot', 'local_completed_date', 'completed_at',
             'created_at', 'created_by', 'updated_at', 'updated_by'
         ]
 
@@ -160,19 +180,38 @@ class CheckCoverageSerializer(serializers.ModelSerializer):
 class MicroCheckStreakSerializer(serializers.ModelSerializer):
     """Streak tracking for gamification"""
     store_name = serializers.CharField(source='store.name', read_only=True)
-    manager_name = serializers.CharField(source='manager.get_full_name', read_only=True)
+    user_name = serializers.CharField(source='user.get_full_name', read_only=True)
 
     class Meta:
         model = MicroCheckStreak
         fields = [
-            'id', 'store', 'store_name', 'manager', 'manager_name',
-            'current_streak', 'longest_streak', 'last_completed_date',
-            'total_completed', 'total_passed', 'total_failed', 'total_skipped',
+            'id', 'store', 'store_name', 'user', 'user_name',
+            'current_streak', 'longest_streak', 'last_completion_date',
+            'total_completions',
             'created_at', 'updated_at'
         ]
         read_only_fields = [
-            'id', 'current_streak', 'longest_streak', 'last_completed_date',
-            'total_completed', 'total_passed', 'total_failed', 'total_skipped',
+            'id', 'current_streak', 'longest_streak', 'last_completion_date',
+            'total_completions',
+            'created_at', 'updated_at'
+        ]
+
+
+class StoreStreakSerializer(serializers.ModelSerializer):
+    """Store-level streak tracking"""
+    store_name = serializers.CharField(source='store.name', read_only=True)
+
+    class Meta:
+        model = StoreStreak
+        fields = [
+            'id', 'store', 'store_name',
+            'current_streak', 'longest_streak', 'last_completion_date',
+            'total_completions',
+            'created_at', 'updated_at'
+        ]
+        read_only_fields = [
+            'id', 'current_streak', 'longest_streak', 'last_completion_date',
+            'total_completions',
             'created_at', 'updated_at'
         ]
 
@@ -182,20 +221,21 @@ class CorrectiveActionSerializer(serializers.ModelSerializer):
     response_details = MicroCheckResponseSerializer(source='response', read_only=True)
     store_name = serializers.CharField(source='store.name', read_only=True)
     category_display = serializers.CharField(source='get_category_display', read_only=True)
-    severity_display = serializers.CharField(source='get_severity_display', read_only=True)
-    assigned_to_name = serializers.CharField(source='assigned_to.get_full_name', read_only=True)
-    resolved_by_name = serializers.CharField(source='resolved_by.get_full_name', read_only=True)
+    assigned_to_name = serializers.CharField(source='assigned_to.get_full_name', read_only=True, allow_null=True)
+    resolved_by_name = serializers.CharField(source='resolved_by.get_full_name', read_only=True, allow_null=True)
 
     class Meta:
         model = CorrectiveAction
         fields = [
             'id', 'response', 'response_details', 'store', 'store_name',
-            'category', 'category_display', 'severity', 'severity_display',
-            'description', 'due_date', 'assigned_to', 'assigned_to_name',
+            'category', 'category_display', 'status',
+            'due_at', 'assigned_to', 'assigned_to_name',
+            'before_media', 'after_media',
             'resolved_at', 'resolved_by', 'resolved_by_name', 'resolution_notes',
+            'fixed_during_session', 'created_from', 'verified_at', 'verification_confidence',
             'created_at', 'created_by', 'updated_at', 'updated_by'
         ]
         read_only_fields = [
-            'id', 'resolved_at', 'resolved_by',
+            'id', 'resolved_at', 'resolved_by', 'verified_at',
             'created_at', 'created_by', 'updated_at', 'updated_by'
         ]

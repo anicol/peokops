@@ -450,15 +450,15 @@ class MicroCheckResponse(models.Model):
 
         super().save(*args, **kwargs)
 
-        # Auto-create CorrectiveAction for failures
-        if self.status in ['FAIL', 'NEEDS_ATTENTION'] and not hasattr(self, 'corrective_action'):
-            CorrectiveAction.objects.create(
-                response=self,
-                store=self.store,
-                category=self.category,
-                assigned_to=self.completed_by,
-                before_media=self.media
-            )
+        # Auto-create CorrectiveAction for failures (idempotent check via try/except)
+        if self.status in ['FAIL', 'NEEDS_ATTENTION']:
+            try:
+                # Check if corrective action already exists via reverse OneToOneField
+                _ = self.corrective_action
+            except CorrectiveAction.DoesNotExist:
+                # Import here to avoid circular dependency
+                from .utils import create_corrective_action_for_failure
+                create_corrective_action_for_failure(self)
 
     def __str__(self):
         return f"{self.run} - {self.template.title} - {self.status}"
@@ -518,6 +518,31 @@ class MicroCheckStreak(models.Model):
         return f"{self.user} @ {self.store} - {self.current_streak} day streak"
 
 
+class StoreStreak(models.Model):
+    """Track store-level completion streaks (aggregate across all users)"""
+
+    store = models.OneToOneField('brands.Store', on_delete=models.CASCADE, related_name='streak')
+
+    current_streak = models.IntegerField(default=0, help_text="Days with at least one completed run")
+    longest_streak = models.IntegerField(default=0)
+    total_completions = models.IntegerField(default=0, help_text="Total runs completed")
+
+    last_completion_date = models.DateField(null=True, blank=True,
+                                            help_text="Date in store TZ of last completed run")
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = 'store_streaks'
+        indexes = [
+            models.Index(fields=['store']),
+        ]
+
+    def __str__(self):
+        return f"{self.store} - {self.current_streak} day streak"
+
+
 class CorrectiveAction(models.Model):
     """Follow-through on failed check items"""
 
@@ -525,7 +550,13 @@ class CorrectiveAction(models.Model):
         OPEN = 'OPEN', 'Open'
         IN_PROGRESS = 'IN_PROGRESS', 'In Progress'
         RESOLVED = 'RESOLVED', 'Resolved'
+        VERIFIED = 'VERIFIED', 'Verified'
         DISMISSED = 'DISMISSED', 'Dismissed'
+
+    class CreatedFrom(models.TextChoices):
+        MICRO_CHECK = 'MICRO_CHECK', 'Micro Check'
+        MANUAL = 'MANUAL', 'Manual'
+        AI_DETECTED = 'AI_DETECTED', 'AI Detected'
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     response = models.OneToOneField(MicroCheckResponse, on_delete=models.CASCADE,
@@ -554,6 +585,12 @@ class CorrectiveAction(models.Model):
                                     on_delete=models.SET_NULL,
                                     related_name='resolved_corrective_actions')
     resolution_notes = models.TextField(blank=True)
+
+    # Inline fix tracking
+    fixed_during_session = models.BooleanField(default=False, help_text="Fixed immediately during check session")
+    created_from = models.CharField(max_length=20, choices=CreatedFrom.choices, default=CreatedFrom.MICRO_CHECK)
+    verified_at = models.DateTimeField(null=True, blank=True, help_text="When AI verified the fix")
+    verification_confidence = models.FloatField(null=True, blank=True, help_text="AI confidence score 0-1")
 
     # Retention
     retention_policy = models.CharField(max_length=20,

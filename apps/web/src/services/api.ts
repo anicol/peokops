@@ -94,12 +94,22 @@ export const authAPI = {
     const response = await api.post('/auth/login/', credentials);
     return response.data;
   },
-  
+
   getProfile: async (): Promise<User> => {
     const response = await api.get('/auth/profile/');
     return response.data;
   },
-  
+
+  updateProfile: async (profileData: { first_name?: string; last_name?: string; email?: string; phone?: string }): Promise<User> => {
+    const response = await api.patch('/auth/profile/', profileData);
+    return response.data;
+  },
+
+  changePassword: async (passwordData: { current_password: string; new_password: string; new_password_confirm: string }): Promise<{ message: string }> => {
+    const response = await api.post('/auth/change-password/', passwordData);
+    return response.data;
+  },
+
   logout: () => {
     localStorage.removeItem('access_token');
     localStorage.removeItem('refresh_token');
@@ -429,6 +439,20 @@ export const microCheckAPI = {
     return response.data.results || response.data;
   },
 
+  // Get today's personalized checks based on user's brand profile (auth required)
+  getTodayChecks: async (): Promise<{ checks: any[], personalization: any }> => {
+    const response = await api.get('/micro-checks/today/');
+    return response.data;
+  },
+
+  // Create first trial run (auth required)
+  createFirstTrialRun: async (storeName?: string): Promise<MicroCheckRun> => {
+    const response = await api.post('/micro-checks/runs/create_first_trial_run/', {
+      store_name: storeName
+    });
+    return response.data;
+  },
+
   // Get responses by category (auth required)
   getResponsesByCategory: async (storeId: number, category: string): Promise<MicroCheckResponse[]> => {
     const response = await api.get('/micro-checks/responses/by_category/', {
@@ -451,6 +475,55 @@ export const microCheckAPI = {
       params: { store_id: storeId },
     });
     return response.data;
+  },
+
+  // Get dashboard statistics (auth required)
+  getDashboardStats: async (storeId: number): Promise<{
+    user_streak: {
+      current_streak: number;
+      longest_streak: number;
+      total_completions: number;
+      last_completion_date: string | null;
+    };
+    store_streak: {
+      current_streak: number;
+      longest_streak: number;
+      total_completions: number;
+      last_completion_date: string | null;
+    };
+    runs_this_week: number;
+    runs_last_week: number;
+    today_score: number | null;
+    yesterday_score: number | null;
+    average_score: number | null;
+    issues_resolved_this_week: number;
+  }> => {
+    const response = await api.get('/micro-checks/runs/dashboard_stats/', {
+      params: { store_id: storeId },
+    });
+    return response.data;
+  },
+
+  // Get store streak (auth required)
+  getStoreStreak: async (storeId: number): Promise<{
+    id: number;
+    store: number;
+    store_name: string;
+    current_streak: number;
+    longest_streak: number;
+    total_completions: number;
+    last_completion_date: string | null;
+  }> => {
+    const response = await api.get('/micro-checks/store-streaks/', {
+      params: { store: storeId },
+    });
+    const data = response.data.results || response.data;
+    return data[0] || {
+      current_streak: 0,
+      longest_streak: 0,
+      total_completions: 0,
+      last_completion_date: null,
+    };
   },
 
   // Get corrective actions (auth required)
@@ -477,6 +550,19 @@ export const microCheckAPI = {
     return response.data;
   },
 
+  // Resolve corrective action inline during check session (auth required)
+  resolveInline: async (
+    actionId: string,
+    afterMediaId: string,
+    resolutionNotes?: string
+  ): Promise<CorrectiveAction> => {
+    const response = await api.post(`/micro-checks/actions/${actionId}/resolve_inline/`, {
+      after_media_id: afterMediaId,
+      resolution_notes: resolutionNotes || '',
+    });
+    return response.data;
+  },
+
   // Upload photo (for authenticated submissions)
   uploadPhoto: async (file: File): Promise<string> => {
     const formData = new FormData();
@@ -488,6 +574,20 @@ export const microCheckAPI = {
       },
     });
     return response.data.s3_key;
+  },
+
+  // Upload media and return media asset (for inline fix flow)
+  uploadMedia: async (file: File, storeId: number): Promise<MediaAsset> => {
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('store_id', storeId.toString());
+
+    const response = await api.post('/micro-checks/media/', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+    return response.data; // Return full MediaAsset object
   },
 
   // Create instant run for current user (auth required)
