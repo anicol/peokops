@@ -1,0 +1,60 @@
+{
+  "industry": "RESTAURANT",
+  "focus": "food_safety",
+  "checks": [
+    {
+      "id": "rest_fs_001",
+      "title": "Temperature log completed this shift",
+      "description": "Verify that all required food temperatures have been logged within the last 2 hours",
+      "category": "food_safety",
+      "pass_criteria": "All required items logged with temperatures in safe range",
+      "fail_criteria": "Missing logs or temperatures outside safe range",
+      "image_prompt": "Photo of temperature log sheet showing today's entries"
+    },
+    {
+      "id": "rest_fs_002",
+      "title": "Walk-in cooler at safe temperature",
+      "description": "Check that walk-in cooler/freezer displays correct temperature (34-40°F for cooler, 0°F or below for freezer)",
+      "category": "food_safety",
+      "pass_criteria": "Temperature gauge shows safe range and unit is functioning properly",
+      "fail_criteria": "Temperature out of range or gauge not visible/functioning",
+      "image_prompt": "Photo of walk-in cooler temperature display"
+    },
+    {
+      "id": "rest_fs_003",
+      "title": "Handwashing station fully stocked",
+      "description": "Verify handwashing station has soap, paper towels, and warm running water",
+      "category": "food_safety",
+      "pass_criteria": "All supplies present and accessible",
+      "fail_criteria": "Missing soap, towels, or water not working",
+      "image_prompt": "Photo of handwashing station with supplies visible"
+    },
+    {
+      "id": "rest_fs_004",
+      "title": "Food storage labels and dates visible",
+      "description": "Check that all stored food items are properly labeled with contents and date",
+      "category": "food_safety",
+      "pass_criteria": "All containers labeled with name and date, following FIFO rotation",
+      "fail_criteria": "Unlabeled containers or missing dates",
+      "image_prompt": "Photo of food storage area showing labeled containers"
+    },
+    {
+      "id": "rest_fs_005",
+      "title": "Sanitizer buckets at proper concentration",
+      "description": "Test sanitizer solution with test strips to verify proper concentration (150-400 ppm for quat, 50-100 ppm for chlorine)",
+      "category": "food_safety",
+      "pass_criteria": "Test strip shows concentration in correct range",
+      "fail_criteria": "Concentration too low or too high",
+      "image_prompt": "Photo of test strip next to sanitizer bucket"
+    },
+    {
+      "id": "rest_fs_006",
+      "title": "Raw and cooked foods properly separated",
+      "description": "Verify raw meats stored below ready-to-eat foods and proper separation maintained",
+      "category": "food_safety",
+      "pass_criteria": "Raw foods on lower shelves, no cross-contamination risk",
+      "fail_criteria": "Raw foods above cooked/ready-to-eat items",
+      "image_prompt": "Photo of refrigeration unit showing proper food separation"
+    }
+  ]
+}

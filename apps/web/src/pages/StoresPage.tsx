@@ -457,7 +457,7 @@ function StoreFormModal({ store, brands, currentUser, onClose }: StoreFormModalP
     zip_code: store?.zip_code || '',
     phone: store?.phone || '',
     manager_email: store?.manager_email || '',
-    timezone: store?.timezone || 'UTC',
+    timezone: store?.timezone || 'America/New_York',
     is_active: store?.is_active ?? true,
   });
 

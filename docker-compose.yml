@@ -2,7 +2,7 @@ services:
   db:
     image: postgres:15
     environment:
-      POSTGRES_DB: verityinspect
+      POSTGRES_DB: peakops
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
     volumes:
@@ -25,7 +25,7 @@ services:
     ports:
       - "8000:8000"
     environment:
-      - DATABASE_URL=postgres://postgres:postgres@db:5432/verityinspect
+      - DATABASE_URL=postgres://postgres:postgres@db:5432/peakops
       - REDIS_URL=redis://redis:6379/0
     depends_on:
       - db
@@ -41,7 +41,7 @@ services:
     volumes:
       - ./apps/api:/app
     environment:
-      - DATABASE_URL=postgres://postgres:postgres@db:5432/verityinspect
+      - DATABASE_URL=postgres://postgres:postgres@db:5432/peakops
       - REDIS_URL=redis://redis:6379/0
     depends_on:
       - db
@@ -57,7 +57,7 @@ services:
     volumes:
       - ./apps/api:/app
     environment:
-      - DATABASE_URL=postgres://postgres:postgres@db:5432/verityinspect
+      - DATABASE_URL=postgres://postgres:postgres@db:5432/peakops
       - REDIS_URL=redis://redis:6379/0
     depends_on:
       - db

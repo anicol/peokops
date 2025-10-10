@@ -41,7 +41,7 @@ class Command(BaseCommand):
                 "email": "admin@inspectai.com",
                 "first_name": "System",
                 "last_name": "Administrator",
-                "role": "ADMIN",
+                "role": "SUPER_ADMIN",  # Super admin with system-wide access
                 "store": None,
                 "is_staff": True,
                 "is_superuser": True
@@ -89,7 +89,7 @@ class Command(BaseCommand):
             self.style.SUCCESS(
                 '\nDemo users created successfully!\n'
                 'Login credentials:\n'
-                '- admin / demo123 (Administrator)\n'
+                '- admin / demo123 (Super Administrator - System-wide access)\n'
                 '- manager / demo123 (General Manager)\n'
                 '- inspector / demo123 (Inspector)\n'
             )

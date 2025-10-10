@@ -1,0 +1,60 @@
+{
+  "industry": "RETAIL",
+  "focus": "cleanliness",
+  "checks": [
+    {
+      "id": "retail_clean_001",
+      "title": "Floors swept and free of debris",
+      "description": "Verify main floor areas are clean with no visible trash or spills",
+      "category": "cleanliness",
+      "pass_criteria": "Clean floors with no debris, spills cleaned promptly",
+      "fail_criteria": "Visible trash, spills, or dirty appearance",
+      "image_prompt": "Photo of main floor area showing cleanliness"
+    },
+    {
+      "id": "retail_clean_002",
+      "title": "Windows and glass doors clean",
+      "description": "Check that entrance and display windows are clean and streak-free",
+      "category": "cleanliness",
+      "pass_criteria": "Clean glass with no smudges, fingerprints, or streaks",
+      "fail_criteria": "Dirty windows, visible smudges, or streaked glass",
+      "image_prompt": "Photo of front windows or glass entrance doors"
+    },
+    {
+      "id": "retail_clean_003",
+      "title": "Restrooms clean and stocked",
+      "description": "Verify restrooms are clean with supplies available",
+      "category": "cleanliness",
+      "pass_criteria": "Clean fixtures, stocked supplies, no odors",
+      "fail_criteria": "Dirty restroom, empty dispensers, or unpleasant odor",
+      "image_prompt": "Photo of restroom showing overall condition"
+    },
+    {
+      "id": "retail_clean_004",
+      "title": "Dust-free shelves and displays",
+      "description": "Check that shelving units and product displays are dusted and clean",
+      "category": "cleanliness",
+      "pass_criteria": "No visible dust on shelves or display fixtures",
+      "fail_criteria": "Dusty shelves, dirty fixtures, or grimy appearance",
+      "image_prompt": "Photo of shelf edges and display tops"
+    },
+    {
+      "id": "retail_clean_005",
+      "title": "Fitting rooms tidy and organized",
+      "description": "Verify fitting rooms are clean with no leftover items or trash",
+      "category": "cleanliness",
+      "pass_criteria": "Clean rooms, hooks working, no trash or abandoned items",
+      "fail_criteria": "Messy rooms, broken fixtures, or uncleaned",
+      "image_prompt": "Photo inside fitting room area"
+    },
+    {
+      "id": "retail_clean_006",
+      "title": "Break room and back area organized",
+      "description": "Check that staff areas are clean and don't detract from store appearance",
+      "category": "cleanliness",
+      "pass_criteria": "Organized space, no overflow into customer areas",
+      "fail_criteria": "Cluttered, visible from sales floor, or unsanitary",
+      "image_prompt": "Photo of staff break area or back room entrance"
+    }
+  ]
+}

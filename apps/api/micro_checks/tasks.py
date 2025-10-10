@@ -21,6 +21,7 @@ from .utils import (
     get_next_sequence_number,
     select_templates_for_run,
     update_streak,
+    update_store_streak,
     create_corrective_action_for_failure
 )
 
@@ -282,7 +283,7 @@ def process_micro_check_response(response_id):
         response = MicroCheckResponse.objects.select_related(
             'run_item__run',
             'store',
-            'responder'
+            'completed_by'
         ).get(id=response_id)
     except MicroCheckResponse.DoesNotExist:
         logger.error(f"Response {response_id} not found")
@@ -304,15 +305,23 @@ def process_micro_check_response(response_id):
     if all_items_complete:
         run.status = 'COMPLETED'
         run.completed_at = timezone.now()
+        run.completed_by = response.completed_by
         run.save()
 
-        # Update streak for the responder
-        all_passed = _all_run_items_passed(run)
-        update_streak(
+        # Update streak for the user who completed the run
+        if response.completed_by:
+            all_passed = _all_run_items_passed(run)
+            update_streak(
+                store=store,
+                manager=response.completed_by,
+                completed_date=response.local_completed_date,
+                passed=all_passed
+            )
+
+        # Update store-level streak
+        update_store_streak(
             store=store,
-            manager=response.responder,
-            completed_date=response.local_completed_date,
-            passed=all_passed
+            completed_date=response.local_completed_date
         )
 
         logger.info(f"Run {run.id} completed")

@@ -6,11 +6,12 @@ from datetime import timedelta
 
 class User(AbstractUser):
     class Role(models.TextChoices):
-        ADMIN = 'ADMIN', 'Admin'
-        OWNER = 'OWNER', 'Owner'
-        GM = 'GM', 'General Manager'
-        INSPECTOR = 'INSPECTOR', 'Inspector'
-        TRIAL_ADMIN = 'TRIAL_ADMIN', 'Trial Admin'
+        SUPER_ADMIN = 'SUPER_ADMIN', 'Super Admin'  # System-wide authority
+        ADMIN = 'ADMIN', 'Admin'  # Brand-level authority
+        OWNER = 'OWNER', 'Owner'  # Regional/Franchisee
+        GM = 'GM', 'General Manager'  # Store manager
+        INSPECTOR = 'INSPECTOR', 'Inspector'  # Store inspector
+        TRIAL_ADMIN = 'TRIAL_ADMIN', 'Trial Admin'  # Trial user admin
 
     role = models.CharField(max_length=20, choices=Role.choices, default=Role.INSPECTOR)
     store = models.ForeignKey('brands.Store', on_delete=models.CASCADE, null=True, blank=True)
@@ -40,7 +41,10 @@ class User(AbstractUser):
     has_seen_demo = models.BooleanField(default=False, help_text="Whether user has viewed the interactive demo")
     requested_demo = models.BooleanField(default=False, help_text="User explicitly requested to see demo")
     demo_completed_at = models.DateTimeField(null=True, blank=True, help_text="When user completed the demo")
-    
+
+    # Onboarding tracking
+    onboarding_completed_at = models.DateTimeField(null=True, blank=True, help_text="When user completed onboarding flow")
+
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -53,7 +57,12 @@ class User(AbstractUser):
     @property
     def full_name(self):
         return f"{self.first_name} {self.last_name}".strip() or self.username
-    
+
+    @property
+    def is_super_admin(self):
+        """Check if user has super admin privileges"""
+        return self.role == self.Role.SUPER_ADMIN
+
     @property
     def is_trial_expired(self):
         """Check if trial has expired"""

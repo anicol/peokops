@@ -49,26 +49,28 @@ const MicroCheckHistoryPage = () => {
     fetchData();
   }, [fetchData, timeRange]);
 
-  // Group responses by date (local_completed_date)
-  const groupedByDate = responses.reduce((acc, response) => {
-    const date = response.local_completed_date;
-    if (!acc[date]) {
-      acc[date] = [];
+  // Group responses by run (using run_item_details.run)
+  const groupedByRun = responses.reduce((acc, response) => {
+    // Use run_item to group - all responses from same run will have same run_item prefix
+    const runId = response.run_item_details?.run || response.run_item.split('-')[0];
+    if (!acc[runId]) {
+      acc[runId] = [];
     }
-    acc[date].push(response);
+    acc[runId].push(response);
     return acc;
   }, {} as Record<string, MicroCheckResponse[]>);
 
-  // Convert to sessions array
-  const sessions = Object.entries(groupedByDate)
-    .map(([date, sessionResponses]) => {
+  // Convert to sessions array (one session per run)
+  const sessions = Object.entries(groupedByRun)
+    .map(([runId, sessionResponses]) => {
       const totalChecks = sessionResponses.length;
       const passed = sessionResponses.filter((r) => r.status === 'PASS').length;
       const fixed = sessionResponses.filter((r) => r.status === 'FAIL').length;
       const firstResponse = sessionResponses[0];
 
       return {
-        date,
+        runId,
+        date: firstResponse.local_completed_date,
         time: new Date(firstResponse.completed_at).toLocaleTimeString('en-US', {
           hour: '2-digit',
           minute: '2-digit',
@@ -82,18 +84,45 @@ const MicroCheckHistoryPage = () => {
     .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 
   const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
+    // dateString is in YYYY-MM-DD format from backend (local_completed_date)
     const today = new Date();
+    const todayString = today.toISOString().split('T')[0]; // YYYY-MM-DD
+
     const yesterday = new Date(today);
     yesterday.setDate(yesterday.getDate() - 1);
+    const yesterdayString = yesterday.toISOString().split('T')[0]; // YYYY-MM-DD
 
-    if (date.toDateString() === today.toDateString()) {
-      return 'Today';
-    } else if (date.toDateString() === yesterday.toDateString()) {
-      return 'Yesterday';
+    if (dateString === todayString) {
+      return "Today's";
+    } else if (dateString === yesterdayString) {
+      return "Yesterday's";
     } else {
+      // Parse the date for display
+      const date = new Date(dateString + 'T00:00:00'); // Treat as local midnight
       return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
     }
+  };
+
+  // Count runs per date for proper labeling
+  const runsPerDate = sessions.reduce((acc, session) => {
+    const dateKey = session.date;
+    acc[dateKey] = (acc[dateKey] || 0) + 1;
+    return acc;
+  }, {} as Record<string, number>);
+
+  const getRunLabel = (session: typeof sessions[0], index: number) => {
+    const dateLabel = formatDate(session.date);
+    const runsOnDate = runsPerDate[session.date];
+
+    if (runsOnDate > 1) {
+      // Multiple runs on same date - count which one this is
+      const runsOnSameDateBeforeThis = sessions
+        .slice(0, index)
+        .filter(s => s.date === session.date).length;
+      return `${dateLabel} Check #${runsOnDate - runsOnSameDateBeforeThis}`;
+    }
+
+    return `${dateLabel} Check`;
   };
 
   const getSuccessRate = () => {
@@ -241,7 +270,7 @@ const MicroCheckHistoryPage = () => {
                 Creating...
               </span>
             ) : (
-              "Run Today's Checks"
+              "Run Check"
             )}
           </button>
         </div>
@@ -341,8 +370,8 @@ const MicroCheckHistoryPage = () => {
             <div className="bg-white rounded-2xl shadow-lg border border-gray-200">
               <div className="p-6 border-b border-gray-200">
                 <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center space-y-2 sm:space-y-0">
-                  <h2 className="text-xl font-semibold text-gray-900">Micro-Check Sessions</h2>
-                  <div className="text-sm text-gray-600">{sessions.length} sessions completed</div>
+                  <h2 className="text-xl font-semibold text-gray-900">Micro-Check Runs</h2>
+                  <div className="text-sm text-gray-600">{sessions.length} runs completed</div>
                 </div>
               </div>
 
@@ -356,7 +385,7 @@ const MicroCheckHistoryPage = () => {
                         </div>
                         <div>
                           <div className="font-semibold text-gray-900 mb-1">
-                            {formatDate(session.date)} Morning Check
+                            {getRunLabel(session, sessionIdx)}
                           </div>
                           <div className="flex items-center space-x-4 text-sm text-gray-600">
                             <div className="flex items-center">

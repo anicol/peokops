@@ -3,6 +3,7 @@ import HomePage from './pages/HomePage';
 import PrivacyPage from './pages/PrivacyPage';
 import ROICalculatorPage from './pages/ROICalculatorPage';
 import CoachingModePage from './pages/CoachingModePage';
+import GuidePage from './pages/GuidePage';
 import CorporatePage from './pages/CorporatePage';
 import DemoPage from './pages/DemoPage';
 import AboutPage from './pages/AboutPage';
@@ -23,6 +24,7 @@ function App() {
         <Route path="/roi-calculator" element={<ROICalculatorPage />} />
         <Route path="/coaching-mode" element={<CoachingModePage />} />
         <Route path="/coaching" element={<CoachingModePage />} />
+        <Route path="/guide" element={<GuidePage />} />
         <Route path="/enterprise" element={<CorporatePage />} />
         <Route path="/demo" element={<DemoPage />} />
         <Route path="/about" element={<AboutPage />} />

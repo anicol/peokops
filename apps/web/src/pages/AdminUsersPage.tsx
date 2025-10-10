@@ -143,6 +143,8 @@ export default function AdminUsersPage() {
 
   const getRoleBadgeColor = (role: string) => {
     switch (role) {
+      case 'SUPER_ADMIN':
+        return 'bg-red-100 text-red-800 font-bold';
       case 'ADMIN':
         return 'bg-purple-100 text-purple-800';
       case 'OWNER':
@@ -220,6 +222,7 @@ export default function AdminUsersPage() {
           className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
         >
           <option value="all">All Roles</option>
+          <option value="SUPER_ADMIN">Super Admin</option>
           <option value="ADMIN">Admin</option>
           <option value="OWNER">Owner</option>
           <option value="GM">General Manager</option>

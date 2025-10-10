@@ -11,7 +11,8 @@ from drf_spectacular.utils import extend_schema
 from .models import User, SmartNudge, UserBehaviorEvent
 from .serializers import (
     UserSerializer, UserCreateSerializer, LoginSerializer, TrialSignupSerializer,
-    SmartNudgeSerializer, BehaviorEventCreateSerializer
+    SmartNudgeSerializer, BehaviorEventCreateSerializer, ProfileUpdateSerializer,
+    PasswordChangeSerializer
 )
 from .nudge_engine import BehaviorTracker, NudgeEngine
 
@@ -26,11 +27,11 @@ class UserListCreateView(generics.ListCreateAPIView):
     ordering = ['-created_at']
 
     def get_queryset(self):
-        """Filter users based on role - ADMIN sees all, OWNER/GM/TRIAL_ADMIN see only their brand"""
+        """Filter users based on role - SUPER_ADMIN/ADMIN sees all, OWNER/GM/TRIAL_ADMIN see only their brand"""
         user = self.request.user
 
-        # ADMIN sees all users
-        if user.role == User.Role.ADMIN:
+        # SUPER_ADMIN and ADMIN see all users across all tenants
+        if user.role in [User.Role.SUPER_ADMIN, User.Role.ADMIN]:
             return User.objects.all()
 
         # OWNER, GM, and TRIAL_ADMIN see users in their brand
@@ -79,11 +80,24 @@ def login_view(request):
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
-@api_view(['GET'])
+@extend_schema(
+    request=ProfileUpdateSerializer,
+    responses={200: UserSerializer},
+    description="Get or update current user's profile"
+)
+@api_view(['GET', 'PATCH'])
 @permission_classes([IsAuthenticated])
 def profile_view(request):
-    serializer = UserSerializer(request.user)
-    return Response(serializer.data)
+    if request.method == 'GET':
+        serializer = UserSerializer(request.user)
+        return Response(serializer.data)
+
+    elif request.method == 'PATCH':
+        serializer = ProfileUpdateSerializer(request.user, data=request.data, partial=True)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(UserSerializer(request.user).data)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
 @extend_schema(
@@ -108,6 +122,21 @@ def trial_signup_view(request):
             'refresh': str(refresh),
         }, status=status.HTTP_201_CREATED)
     
+    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+@extend_schema(
+    request=PasswordChangeSerializer,
+    responses={200: {"type": "object", "properties": {"message": {"type": "string"}}}},
+    description="Change current user's password"
+)
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def change_password_view(request):
+    serializer = PasswordChangeSerializer(data=request.data, context={'request': request})
+    if serializer.is_valid():
+        serializer.save()
+        return Response({'message': 'Password changed successfully'})
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 

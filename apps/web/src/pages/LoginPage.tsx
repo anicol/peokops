@@ -54,12 +54,12 @@ const Login = () => {
           // Store tokens and trigger auth state update
           localStorage.setItem('access_token', data.access);
           localStorage.setItem('refresh_token', data.refresh);
-          
+
           setSuccess(true);
-          
-          // Redirect to dashboard after brief success message
+
+          // Redirect to welcome page after brief success message
           setTimeout(() => {
-            window.location.href = '/dashboard';
+            window.location.href = '/welcome';
           }, 1500);
         } else {
           setError(data.email?.[0] || data.password?.[0] || 'Failed to create account');

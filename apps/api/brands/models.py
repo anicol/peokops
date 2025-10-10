@@ -2,6 +2,12 @@ from django.db import models
 
 
 class Brand(models.Model):
+    class Industry(models.TextChoices):
+        RESTAURANT = 'RESTAURANT', 'Restaurant'
+        RETAIL = 'RETAIL', 'Retail'
+        HOSPITALITY = 'HOSPITALITY', 'Hospitality'
+        OTHER = 'OTHER', 'Other'
+
     name = models.CharField(max_length=100, unique=True)
     logo = models.ImageField(upload_to='brands/logos/', blank=True, null=True)
     description = models.TextField(blank=True)
@@ -18,6 +24,17 @@ class Brand(models.Model):
     is_trial = models.BooleanField(default=False, help_text="Is this a trial brand")
     trial_created_by = models.ForeignKey('accounts.User', on_delete=models.CASCADE, null=True, blank=True,
                                        related_name='trial_brands_created')
+
+    # Onboarding and profiling
+    industry = models.CharField(max_length=50, choices=Industry.choices, blank=True, null=True, help_text="Primary industry vertical")
+    store_count_range = models.CharField(max_length=50, blank=True, null=True, help_text="Number of locations (flexible format for industry-specific ranges)")
+    focus_areas = models.JSONField(default=list, blank=True, help_text="Array of operational focus areas (food_safety, cleanliness, etc)")
+    onboarding_completed_at = models.DateTimeField(null=True, blank=True, help_text="When brand profile was completed")
+
+    # Brand consolidation support
+    consolidated_into = models.ForeignKey('self', on_delete=models.SET_NULL, null=True, blank=True,
+                                         related_name='consolidated_brands',
+                                         help_text="If this trial brand was consolidated into an enterprise brand")
 
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -85,7 +102,7 @@ class Store(models.Model):
     zip_code = models.CharField(max_length=10)
     phone = models.CharField(max_length=20, blank=True)
     manager_email = models.EmailField(blank=True)
-    timezone = models.CharField(max_length=50, default='UTC')
+    timezone = models.CharField(max_length=50, default='America/New_York')
     is_active = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)

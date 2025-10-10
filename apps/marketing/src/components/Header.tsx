@@ -34,14 +34,14 @@ const Header = () => {
               {isProductOpen && (
                 <div className="absolute top-full left-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-2">
                   <Link
-                    to="/coaching-mode"
+                    to="/guide"
                     className="block px-4 py-2 text-gray-700 hover:bg-gray-50 hover:text-blue-600"
                     onClick={() => setIsProductOpen(false)}
                   >
                     The Guide
                   </Link>
                   <Link
-                    to="/coaching-mode"
+                    to="/coaching"
                     className="block px-4 py-2 text-gray-700 hover:bg-gray-50 hover:text-blue-600"
                     onClick={() => setIsProductOpen(false)}
                   >
@@ -131,14 +131,14 @@ const Header = () => {
           <div className="md:hidden border-t border-gray-200 py-4">
             <div className="space-y-4">
               <Link
-                to="/coaching-mode"
+                to="/guide"
                 className="block text-gray-700 hover:text-blue-600"
                 onClick={() => setIsMenuOpen(false)}
               >
                 The Guide
               </Link>
               <Link
-                to="/coaching-mode"
+                to="/coaching"
                 className="block text-gray-700 hover:text-blue-600"
                 onClick={() => setIsMenuOpen(false)}
               >

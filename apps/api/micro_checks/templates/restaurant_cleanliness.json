@@ -1,0 +1,60 @@
+{
+  "industry": "RESTAURANT",
+  "focus": "cleanliness",
+  "checks": [
+    {
+      "id": "rest_clean_001",
+      "title": "Floors swept and mopped in prep areas",
+      "description": "Verify kitchen and prep area floors are clean with no visible debris or spills",
+      "category": "cleanliness",
+      "pass_criteria": "Floors clean, dry, and free of debris",
+      "fail_criteria": "Visible dirt, spills, or sticky residue on floors",
+      "image_prompt": "Photo of kitchen floor in main prep area"
+    },
+    {
+      "id": "rest_clean_002",
+      "title": "Food prep surfaces sanitized",
+      "description": "Check that counters, cutting boards, and prep tables are clean and sanitized",
+      "category": "cleanliness",
+      "pass_criteria": "All surfaces clean with no food residue or stains",
+      "fail_criteria": "Visible food particles, grease, or unsanitized surfaces",
+      "image_prompt": "Photo of main prep counter or cutting board area"
+    },
+    {
+      "id": "rest_clean_003",
+      "title": "Restroom cleanliness check",
+      "description": "Verify customer restroom is clean with supplies stocked",
+      "category": "cleanliness",
+      "pass_criteria": "Clean toilet/sink, stocked supplies, no odors",
+      "fail_criteria": "Dirty fixtures, empty dispensers, or unpleasant odors",
+      "image_prompt": "Photo of restroom showing overall condition"
+    },
+    {
+      "id": "rest_clean_004",
+      "title": "Dining area tables wiped down",
+      "description": "Check that dining tables are clean and ready for customers",
+      "category": "cleanliness",
+      "pass_criteria": "All tables wiped clean with no crumbs or spills",
+      "fail_criteria": "Dirty tables, sticky surfaces, or debris",
+      "image_prompt": "Photo of dining area showing table conditions"
+    },
+    {
+      "id": "rest_clean_005",
+      "title": "Trash and recycling bins emptied",
+      "description": "Verify trash receptacles are not overflowing and area around bins is clean",
+      "category": "cleanliness",
+      "pass_criteria": "Bins less than 3/4 full, no trash on floor around bins",
+      "fail_criteria": "Overflowing bins or trash on floor",
+      "image_prompt": "Photo of main trash/recycling area"
+    },
+    {
+      "id": "rest_clean_006",
+      "title": "Equipment and appliances wiped down",
+      "description": "Check that ovens, grills, fryers, and other equipment exteriors are clean",
+      "category": "cleanliness",
+      "pass_criteria": "Equipment surfaces clean with no grease buildup",
+      "fail_criteria": "Visible grease, grime, or food splatter on equipment",
+      "image_prompt": "Photo of main cooking equipment showing exterior cleanliness"
+    }
+  ]
+}

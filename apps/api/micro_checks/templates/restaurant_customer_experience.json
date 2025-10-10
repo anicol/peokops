@@ -1,0 +1,60 @@
+{
+  "industry": "RESTAURANT",
+  "focus": "customer_experience",
+  "checks": [
+    {
+      "id": "rest_cx_001",
+      "title": "Menu boards clean and readable",
+      "description": "Verify menu displays are clean, lit, and all text is clearly visible",
+      "category": "customer_experience",
+      "pass_criteria": "Menus clean, all lights working, no missing letters or prices",
+      "fail_criteria": "Dirty menus, burnt out lights, or illegible text",
+      "image_prompt": "Photo of main menu board"
+    },
+    {
+      "id": "rest_cx_002",
+      "title": "Entry and front area welcoming",
+      "description": "Check that entrance, lobby, and waiting area are clean and inviting",
+      "category": "customer_experience",
+      "pass_criteria": "Clean floors, organized seating, no clutter",
+      "fail_criteria": "Dirty entrance, trash visible, or cluttered waiting area",
+      "image_prompt": "Photo of entrance/waiting area from customer perspective"
+    },
+    {
+      "id": "rest_cx_003",
+      "title": "Staff wearing name tags and proper uniform",
+      "description": "Verify front-of-house staff have clean uniforms and visible name tags",
+      "category": "customer_experience",
+      "pass_criteria": "Clean uniforms, name tags visible, professional appearance",
+      "fail_criteria": "Stained uniforms, missing name tags, or unprofessional appearance",
+      "image_prompt": "Photo showing staff member(s) in uniform"
+    },
+    {
+      "id": "rest_cx_004",
+      "title": "Condiment and utensil station stocked",
+      "description": "Check that napkins, straws, utensils, and condiments are fully stocked and organized",
+      "category": "customer_experience",
+      "pass_criteria": "All items stocked, organized, and station clean",
+      "fail_criteria": "Empty dispensers, messy station, or missing items",
+      "image_prompt": "Photo of condiment/utensil station"
+    },
+    {
+      "id": "rest_cx_005",
+      "title": "Seating area comfortable and organized",
+      "description": "Verify dining area has clean, properly arranged seating with no broken furniture",
+      "category": "customer_experience",
+      "pass_criteria": "Chairs/tables straight, clean, and functional",
+      "fail_criteria": "Broken furniture, messy layout, or dirty seating",
+      "image_prompt": "Photo of main seating area"
+    },
+    {
+      "id": "rest_cx_006",
+      "title": "Drive-thru or pickup area clearly marked",
+      "description": "Check that customer flow is clear with visible signage for ordering/pickup",
+      "category": "customer_experience",
+      "pass_criteria": "Clear signage, organized flow, no confusion points",
+      "fail_criteria": "Missing signs, unclear flow, or customer confusion visible",
+      "image_prompt": "Photo of ordering/pickup area showing signage"
+    }
+  ]
+}
