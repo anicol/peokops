@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { AlertTriangle, Camera, Edit3, X, CheckCircle } from 'lucide-react';
 import MicroCheckCamera from './microCheck/MicroCheckCamera';
 
@@ -33,6 +33,12 @@ const NeedsFixCaptureScreen: React.FC<NeedsFixCaptureScreenProps> = ({
   const [countdown, setCountdown] = useState(AUTO_SUBMIT_SECONDS);
   const [timerActive, setTimerActive] = useState(true);
 
+  const handleSubmit = useCallback((action: 'continue' | 'fixNow') => {
+    setTimerActive(false);
+    const note = inputMode === 'text' ? noteText : selectedTags.join(', ');
+    onSubmit(note, photo, action);
+  }, [inputMode, noteText, selectedTags, photo, onSubmit]);
+
   // Auto-submit countdown
   useEffect(() => {
     if (!timerActive) return;
@@ -53,7 +59,7 @@ const NeedsFixCaptureScreen: React.FC<NeedsFixCaptureScreenProps> = ({
     }, 1000);
 
     return () => clearInterval(timer);
-  }, [timerActive]);
+  }, [timerActive, handleSubmit]);
 
   const handleTagToggle = (tag: string) => {
     setSelectedTags((prev) =>
@@ -78,12 +84,6 @@ const NeedsFixCaptureScreen: React.FC<NeedsFixCaptureScreenProps> = ({
     }
     setPhoto(null);
     setPhotoPreview(null);
-  };
-
-  const handleSubmit = (action: 'continue' | 'fixNow') => {
-    setTimerActive(false);
-    const note = inputMode === 'text' ? noteText : selectedTags.join(', ');
-    onSubmit(note, photo, action);
   };
 
   const handleUserAction = (action: 'continue' | 'fixNow') => {
