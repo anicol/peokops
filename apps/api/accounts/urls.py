@@ -13,6 +13,7 @@ router.register(r'admin/users', views.AdminUserViewSet, basename='admin-users')
 urlpatterns = [
     path('login/', views.login_view, name='login'),
     path('trial-signup/', views.trial_signup_view, name='trial-signup'),
+    path('quick-signup/', views.quick_signup_view, name='quick-signup'),
     path('trial/onboarding/', onboarding_views.complete_onboarding, name='complete-onboarding'),
     path('refresh/', TokenRefreshView.as_view(), name='token_refresh'),
     path('profile/', views.profile_view, name='profile'),
