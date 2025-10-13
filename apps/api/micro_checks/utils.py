@@ -403,3 +403,61 @@ def seed_default_templates(brand, created_by=None):
         templates_created.append(template)
 
     return templates_created
+
+
+def send_magic_link_sms(phone, token, store_name="Your Store"):
+    """
+    Send magic link SMS using Twilio.
+
+    Args:
+        phone: Phone number in E.164 format (e.g., +15551234567)
+        token: Magic link token
+        store_name: Name of the store for personalization
+
+    Returns:
+        bool: True if SMS sent successfully, False otherwise
+    """
+    from django.conf import settings
+    import logging
+
+    logger = logging.getLogger(__name__)
+
+    # Check if Twilio is configured
+    twilio_account_sid = getattr(settings, 'TWILIO_ACCOUNT_SID', None)
+    twilio_auth_token = getattr(settings, 'TWILIO_AUTH_TOKEN', None)
+    twilio_phone_number = getattr(settings, 'TWILIO_PHONE_NUMBER', None)
+
+    if not all([twilio_account_sid, twilio_auth_token, twilio_phone_number]):
+        logger.warning("Twilio credentials not configured. Skipping SMS send.")
+        return False
+
+    try:
+        from twilio.rest import Client
+
+        # Initialize Twilio client
+        client = Client(twilio_account_sid, twilio_auth_token)
+
+        # Build magic link URL
+        magic_link = build_magic_link_url(token)
+
+        # Craft message
+        message_body = (
+            f"✨ Your first {store_name} checks are ready!\n\n"
+            f"Complete 3 quick checks (under 2 min):\n"
+            f"{magic_link}\n\n"
+            f"No login required - just tap the link!"
+        )
+
+        # Send SMS
+        message = client.messages.create(
+            body=message_body,
+            from_=twilio_phone_number,
+            to=phone
+        )
+
+        logger.info(f"SMS sent successfully to {phone}. SID: {message.sid}")
+        return True
+
+    except Exception as e:
+        logger.error(f"Failed to send SMS to {phone}: {str(e)}")
+        return False

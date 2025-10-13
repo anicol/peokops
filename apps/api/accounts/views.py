@@ -170,10 +170,14 @@ def quick_signup_view(request):
         # Get quick signup data stored by serializer
         quick_signup_data = getattr(user, '_quick_signup_data', {})
 
-        # TODO: Send SMS with magic link
-        # from micro_checks.utils import send_magic_link_sms
-        # sms_sent = send_magic_link_sms(user.phone, quick_signup_data['magic_token'])
-        # quick_signup_data['sms_sent'] = sms_sent
+        # Send SMS with magic link
+        from micro_checks.utils import send_magic_link_sms
+        sms_sent = send_magic_link_sms(
+            phone=user.phone,
+            token=quick_signup_data.get('magic_token'),
+            store_name=user.store.name if user.store else "Your Store"
+        )
+        quick_signup_data['sms_sent'] = sms_sent
 
         return Response({
             'user_id': user.id,
@@ -181,7 +185,7 @@ def quick_signup_view(request):
             'refresh': str(refresh),
             'magic_token': quick_signup_data.get('magic_token'),
             'run_id': quick_signup_data.get('run_id'),
-            'sms_sent': quick_signup_data.get('sms_sent', False)
+            'sms_sent': sms_sent
         }, status=status.HTTP_201_CREATED)
 
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)

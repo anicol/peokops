@@ -267,6 +267,14 @@ COACHING_MODE_RETENTION_DAYS = config('COACHING_MODE_RETENTION_DAYS', default=7,
 ENABLE_AWS_REKOGNITION = config('ENABLE_AWS_REKOGNITION', default=True, cast=bool)
 ENABLE_YOLO_DETECTION = config('ENABLE_YOLO_DETECTION', default=False, cast=bool)
 ENABLE_OCR_DETECTION = config('ENABLE_OCR_DETECTION', default=True, cast=bool)
+
+# Twilio SMS Configuration
+TWILIO_ACCOUNT_SID = config('TWILIO_ACCOUNT_SID', default='')
+TWILIO_AUTH_TOKEN = config('TWILIO_AUTH_TOKEN', default='')
+TWILIO_PHONE_NUMBER = config('TWILIO_PHONE_NUMBER', default='')
+
+# Micro-check magic link base URL
+MICRO_CHECK_BASE_URL = config('MICRO_CHECK_BASE_URL', default='http://localhost:3001')
 ENABLE_BEDROCK_RECOMMENDATIONS = config('ENABLE_BEDROCK_RECOMMENDATIONS', default=False, cast=bool)
 
 # AWS Rekognition Configuration
