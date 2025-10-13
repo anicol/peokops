@@ -461,3 +461,75 @@ def send_magic_link_sms(phone, token, store_name="Your Store"):
     except Exception as e:
         logger.error(f"Failed to send SMS to {phone}: {str(e)}")
         return False
+
+
+def send_magic_link_email(email, token, store_name="Your Store", recipient_name=None):
+    """
+    Send magic link email as fallback when SMS fails.
+
+    Args:
+        email: Email address
+        token: Magic link token
+        store_name: Name of the store for personalization
+        recipient_name: Optional recipient name for personalization
+
+    Returns:
+        bool: True if email sent successfully, False otherwise
+    """
+    from django.core.mail import send_mail
+    from django.conf import settings
+    import logging
+
+    logger = logging.getLogger(__name__)
+
+    try:
+        # Build magic link URL
+        magic_link = build_magic_link_url(token)
+
+        # Personalize greeting
+        greeting = f"Hi {recipient_name}," if recipient_name else "Hi there,"
+
+        # Craft email subject
+        subject = f"Your {store_name} Quick Checks Are Ready! 🎯"
+
+        # Craft email body
+        message = f"""{greeting}
+
+Welcome to PeakOps! Your first 3 quick checks are ready to complete.
+
+✨ **Get Started in 2 Minutes**
+
+Complete your checks by clicking this link:
+{magic_link}
+
+**What to Expect:**
+• 3 simple checks for {store_name}
+• Takes under 2 minutes
+• No login required - just click the link
+• Works on your phone or computer
+
+**Questions?**
+Just reply to this email - we're here to help!
+
+Thanks,
+The PeakOps Team
+
+---
+This link will expire in 30 days.
+"""
+
+        # Send email
+        result = send_mail(
+            subject=subject,
+            message=message,
+            from_email=settings.DEFAULT_FROM_EMAIL,
+            recipient_list=[email],
+            fail_silently=False,
+        )
+
+        logger.info(f"Magic link email sent successfully to {email}")
+        return result > 0
+
+    except Exception as e:
+        logger.error(f"Failed to send email to {email}: {str(e)}")
+        return False

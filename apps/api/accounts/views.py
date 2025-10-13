@@ -169,23 +169,43 @@ def quick_signup_view(request):
 
         # Get quick signup data stored by serializer
         quick_signup_data = getattr(user, '_quick_signup_data', {})
+        store_name = user.store.name if user.store else "Your Store"
+        magic_token = quick_signup_data.get('magic_token')
 
-        # Send SMS with magic link
-        from micro_checks.utils import send_magic_link_sms
+        # Try SMS first
+        from micro_checks.utils import send_magic_link_sms, send_magic_link_email
         sms_sent = send_magic_link_sms(
             phone=user.phone,
-            token=quick_signup_data.get('magic_token'),
-            store_name=user.store.name if user.store else "Your Store"
+            token=magic_token,
+            store_name=store_name
         )
-        quick_signup_data['sms_sent'] = sms_sent
+
+        # Fallback to email if SMS failed and email is provided
+        email_sent = False
+        if not sms_sent and user.email and '@trial.temp' not in user.email:
+            email_sent = send_magic_link_email(
+                email=user.email,
+                token=magic_token,
+                store_name=store_name,
+                recipient_name=user.username
+            )
+
+        # Determine delivery method for response
+        delivery_method = None
+        if sms_sent:
+            delivery_method = 'sms'
+        elif email_sent:
+            delivery_method = 'email'
 
         return Response({
             'user_id': user.id,
             'access': str(access_token),
             'refresh': str(refresh),
-            'magic_token': quick_signup_data.get('magic_token'),
+            'magic_token': magic_token,
             'run_id': quick_signup_data.get('run_id'),
-            'sms_sent': sms_sent
+            'sms_sent': sms_sent,
+            'email_sent': email_sent,
+            'delivery_method': delivery_method
         }, status=status.HTTP_201_CREATED)
 
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
