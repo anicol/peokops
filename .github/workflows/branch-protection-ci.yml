@@ -31,12 +31,12 @@ jobs:
       - name: Check Django configuration
         run: |
           cd apps/api
-          python manage.py check --settings=verityinspect.settings
-          
+          python manage.py check --settings=peakops.settings
+
       - name: Validate migrations
         run: |
           cd apps/api
-          python manage.py makemigrations --check --dry-run --settings=verityinspect.settings
+          python manage.py makemigrations --check --dry-run --settings=peakops.settings
 
   validate-frontend:
     name: Validate Frontend Changes
