@@ -70,7 +70,7 @@ export default function OnboardingStoreNamePage() {
               value={storeName}
               onChange={(e) => setStoreName(e.target.value)}
               onKeyPress={handleKeyPress}
-              placeholder="e.g., Marco's Pizza #241"
+              placeholder="e.g., Downtown Location"
               className="w-full px-6 py-4 text-lg border-2 border-gray-300 rounded-xl focus:border-teal-500 focus:ring-4 focus:ring-teal-100 focus:outline-none transition-all"
               autoFocus
             />
