@@ -190,10 +190,10 @@ export default function HomePage() {
             {/* Intro paragraphs - Left-aligned with max width */}
             <div className="max-w-[640px] mx-auto space-y-4">
               <p className="text-lg md:text-xl text-gray-700 leading-relaxed text-left">
-                PeakOps brings consistency and confidence to every location through three specialized AI agents, each designed to help teams improve a little every day.
+                PeakOps builds consistency the same way great teams do — through simple, repeatable habits that add up over time.
               </p>
               <p className="text-lg md:text-xl text-gray-700 leading-relaxed text-left">
-                Together, they form a simple, scalable system that turns daily actions into measurable excellence.
+                Instead of one big audit day, PeakOps creates a daily rhythm of improvement through three connected agents, each reinforcing the next. Together, they form a continuous improvement loop that transforms everyday actions into lasting excellence.
               </p>
             </div>
           </div>
@@ -218,24 +218,24 @@ export default function HomePage() {
                   AI Habit & Consistency Agent
                 </p>
                 <p className="text-gray-600 leading-relaxed mb-4 text-base">
-                  Build daily excellence with quick, AI-powered micro-checks.
+                  Build excellence one habit at a time.
                 </p>
                 <p className="text-gray-700 text-sm mb-4 leading-relaxed opacity-85" style={{ lineHeight: '1.7' }}>
-                  The Guide sends managers "Today's 3", simple, habit-forming prompts that keep shifts sharp and standards consistent.
+                  The Guide delivers "Today's 3" — short, frictionless micro-checks that managers can complete in under two minutes. Each check reinforces standards, builds accountability, and keeps the team aligned without adding another system to manage.
                 </p>
               </div>
               <ul className="space-y-4 mb-6">
                 <li className="flex items-center">
                   <CheckCircle className="w-6 h-6 text-teal-600 mr-3 flex-shrink-0" />
-                  <span className="text-gray-700 opacity-85">Three quick checks a day — no logins, no friction</span>
+                  <span className="text-gray-700 opacity-85">Three quick checks a day — no apps, no logins</span>
                 </li>
                 <li className="flex items-center">
                   <CheckCircle className="w-6 h-6 text-teal-600 mr-3 flex-shrink-0" />
-                  <span className="text-gray-700 opacity-85">Reinforces habits and accountability across shifts</span>
+                  <span className="text-gray-700 opacity-85">Reinforces habits across shifts and managers</span>
                 </li>
                 <li className="flex items-center">
                   <CheckCircle className="w-6 h-6 text-teal-600 mr-3 flex-shrink-0" />
-                  <span className="text-gray-700 opacity-85">Keeps every store inspection-ready</span>
+                  <span className="text-gray-700 opacity-85">Keeps every store inspection-ready, every day</span>
                 </li>
               </ul>
               <p className="text-center text-base italic text-gray-600 mb-4 font-serif">
@@ -261,27 +261,27 @@ export default function HomePage() {
                   The Coach
                 </h3>
                 <p className="text-sm font-semibold text-orange-600 mb-3">
-                  AI Video Feedback Agent
+                  AI Feedback & Confidence Agent
                 </p>
                 <p className="text-gray-600 leading-relaxed mb-4 text-base">
-                  Build confidence before audits.
+                  Once daily habits are in place, The Coach helps managers grow with private, encouraging feedback.
                 </p>
                 <p className="text-gray-700 text-sm mb-4 leading-relaxed opacity-85" style={{ lineHeight: '1.7' }}>
-                  Once habits are in place, The Coach delivers instant, private AI feedback from short video walkthroughs, helping managers fix issues before corporate finds them.
+                  Managers record short walkthroughs; AI instantly highlights wins and small fixes — helping them stay confident and ready before audits or visits ever happen.
                 </p>
               </div>
               <ul className="space-y-4 mb-6">
                 <li className="flex items-center">
                   <CheckCircle className="w-6 h-6 text-orange-600 mr-3 flex-shrink-0" />
-                  <span className="text-gray-700 opacity-85">Instant AI feedback in minutes</span>
+                  <span className="text-gray-700 opacity-85">Instant, private AI feedback in minutes</span>
                 </li>
                 <li className="flex items-center">
                   <CheckCircle className="w-6 h-6 text-orange-600 mr-3 flex-shrink-0" />
-                  <span className="text-gray-700 opacity-85">Private and deleted after analysis</span>
+                  <span className="text-gray-700 opacity-85">Videos are deleted after analysis — privacy first</span>
                 </li>
                 <li className="flex items-center">
                   <CheckCircle className="w-6 h-6 text-orange-600 mr-3 flex-shrink-0" />
-                  <span className="text-gray-700 opacity-85">Confidence before every inspection</span>
+                  <span className="text-gray-700 opacity-85">Builds confidence through coaching, not criticism</span>
                 </li>
               </ul>
               <p className="text-center text-base italic text-gray-600 mb-4 font-serif">
@@ -307,31 +307,31 @@ export default function HomePage() {
                   The Inspector
                 </h3>
                 <p className="text-sm font-semibold text-blue-600 mb-3">
-                  AI Compliance & Visibility Agent
+                  AI Visibility & Insight Agent
                 </p>
                 <p className="text-gray-600 leading-relaxed mb-4 text-base">
-                  Scale visibility without scaling travel.
+                  For larger brands, The Inspector extends those same habits across hundreds of stores.
                 </p>
                 <p className="text-gray-700 text-sm mb-4 leading-relaxed opacity-85" style={{ lineHeight: '1.7' }}>
-                  For brands ready for enterprise reporting and compliance dashboards, The Inspector analyzes store videos against brand standards and generates actionable insights.
+                  It analyzes video and check data to create clear, objective insights — so leadership can see progress, not just problems.
                 </p>
               </div>
               <ul className="space-y-4 mb-6">
                 <li className="flex items-center">
                   <CheckCircle className="w-6 h-6 text-blue-600 mr-3 flex-shrink-0" />
-                  <span className="text-gray-700 opacity-85">50–70% reduction in travel costs</span>
+                  <span className="text-gray-700 opacity-85">Enterprise visibility without endless travel</span>
                 </li>
                 <li className="flex items-center">
                   <CheckCircle className="w-6 h-6 text-blue-600 mr-3 flex-shrink-0" />
-                  <span className="text-gray-700 opacity-85">Objective, auditable results</span>
+                  <span className="text-gray-700 opacity-85">Objective, consistent measurement</span>
                 </li>
                 <li className="flex items-center">
                   <CheckCircle className="w-6 h-6 text-blue-600 mr-3 flex-shrink-0" />
-                  <span className="text-gray-700 opacity-85">Enterprise dashboards and insights</span>
+                  <span className="text-gray-700 opacity-85">Actionable dashboards for brand-wide improvement</span>
                 </li>
               </ul>
               <p className="text-center text-base italic text-gray-600 mb-4 font-serif">
-                "Scale inspections without scaling travel."
+                "Scale consistency, not travel."
               </p>
               <div className="mt-auto">
                 <Link
@@ -369,7 +369,7 @@ export default function HomePage() {
                       <Compass className="w-5 h-5" />
                       The Guide
                     </td>
-                    <td className="py-4 px-6 text-gray-700 font-medium">Builds habits</td>
+                    <td className="py-4 px-6 text-gray-700 font-medium">Builds Habits</td>
                   </tr>
                   <tr className="border-b border-gray-100 hover:bg-orange-50 transition-colors">
                     <td className="py-4 px-6 text-gray-700 font-medium">Weekly</td>
@@ -377,7 +377,7 @@ export default function HomePage() {
                       <Brain className="w-5 h-5" />
                       The Coach
                     </td>
-                    <td className="py-4 px-6 text-gray-700 font-medium">Builds confidence</td>
+                    <td className="py-4 px-6 text-gray-700 font-medium">Builds Confidence</td>
                   </tr>
                   <tr className="bg-gray-50 hover:bg-blue-50 transition-colors">
                     <td className="py-4 px-6 text-gray-700 font-medium">Monthly / Quarterly</td>
@@ -385,14 +385,14 @@ export default function HomePage() {
                       <Search className="w-5 h-5" />
                       The Inspector
                     </td>
-                    <td className="py-4 px-6 text-gray-700 font-medium">Builds compliance</td>
+                    <td className="py-4 px-6 text-gray-700 font-medium">Builds Compliance</td>
                   </tr>
                 </tbody>
               </table>
             </div>
             <p className="text-center text-lg text-gray-700 mt-8 leading-relaxed">
-              From daily habits to enterprise visibility, PeakOps helps every store improve, every day.<br />
-              Start with The Guide, deepen with The Coach, and scale with The Inspector.
+              From daily habits to brand-wide excellence, PeakOps helps every team get a little better, every day.<br />
+              Start small with The Guide, grow with The Coach, and scale with The Inspector — one habit at a time.
             </p>
           </div>
         </div>
