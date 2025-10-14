@@ -63,14 +63,14 @@ export default function HomePage() {
                 href={TRIAL_SIGNUP_URL}
                 className="px-8 py-4 bg-teal-500 text-white rounded-lg hover:bg-teal-400 transition-all font-semibold text-lg shadow-xl hover:shadow-2xl hover:scale-105 transform duration-200"
               >
-                Start Free Trial →
+                Try 3 Checks Free →
               </a>
               <Link
                 to="/demo"
                 className="px-8 py-4 text-white hover:text-blue-100 transition-colors font-medium text-lg group flex items-center"
               >
                 <span className="border-b-2 border-white/40 group-hover:border-white/80 transition-colors">
-                  or Get a Demo
+                  See How Habits Build Consistency
                 </span>
                 <span className="ml-2 group-hover:translate-x-1 transition-transform">→</span>
               </Link>
