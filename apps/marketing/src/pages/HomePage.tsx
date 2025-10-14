@@ -688,25 +688,38 @@ export default function HomePage() {
       {/* Final CTA */}
       <section className="py-20 bg-gradient-to-r from-blue-600 to-teal-600 text-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <h2 className="text-3xl md:text-4xl font-bold mb-6">
-            Ready to Build a Culture of Continuous Improvement?
+          <h2 className="text-3xl md:text-5xl font-bold mb-12">
+            Ready to See the Difference?
           </h2>
-          <p className="text-xl text-blue-100 mb-8 max-w-3xl mx-auto">
-            Start with The Guide free today — add The Coach and The Inspector as you grow.
-          </p>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
+
+          <div className="flex flex-col sm:flex-row gap-6 justify-center items-center mb-8">
             <a
               href={TRIAL_SIGNUP_URL}
-              className="px-8 py-4 bg-white text-blue-600 rounded-lg hover:bg-gray-100 transition-colors font-semibold text-lg shadow-lg"
+              className="px-10 py-5 bg-white text-blue-600 rounded-xl hover:bg-gray-100 transition-colors font-bold text-xl shadow-xl hover:shadow-2xl transform hover:scale-105"
             >
-              Start Free with The Guide
+              Try 3 Checks Free
             </a>
+
+            <span className="text-2xl font-light text-blue-100">or</span>
+
             <Link
               to="/demo"
-              className="px-8 py-4 border-2 border-white text-white rounded-lg hover:bg-white hover:text-blue-600 transition-colors font-semibold text-lg"
+              className="px-10 py-5 border-2 border-white text-white rounded-xl hover:bg-white hover:text-blue-600 transition-colors font-bold text-xl"
             >
-              Schedule Demo
+              Book a Demo
             </Link>
+          </div>
+
+          <div className="space-y-2 text-lg text-blue-100 max-w-3xl mx-auto">
+            <p>
+              No login. No setup. Just start building habits that last.
+            </p>
+            <p className="text-base">
+              or
+            </p>
+            <p>
+              See how PeakOps helps your brand stay on standard — every day.
+            </p>
           </div>
         </div>
       </section>
