@@ -655,13 +655,6 @@ export default function HomePage() {
                 Three checks a day. Two minutes of focus. One habit that keeps your business running right.
               </p>
             </div>
-
-            {/* Privacy & Trust callouts */}
-            <div className="mt-12 text-lg text-gray-600">
-              <p className="font-semibold text-gray-900">
-                AI that helps, not watches.
-              </p>
-            </div>
           </div>
         </div>
       </section>
