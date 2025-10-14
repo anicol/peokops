@@ -3,7 +3,6 @@ import { Link } from 'react-router-dom';
 import { Play, CheckCircle, Shield, TrendingUp, Clock, Users, Brain, Compass, Search } from 'lucide-react';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
-import ROICalculator from '../components/ROICalculator';
 import SEO from '../components/SEO';
 import { TRIAL_SIGNUP_URL } from '../config/urls';
 
@@ -648,57 +647,37 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* ROI Calculator Preview */}
+      {/* Start Building Better Habits */}
       <section className="py-20 bg-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-12">
-            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
-              Calculate Your ROI
+            <h2 className="text-3xl md:text-5xl font-bold text-gray-900 mb-8 leading-tight">
+              Start Building Better Habits — One Day at a Time
             </h2>
-            <p className="text-xl text-gray-600">
-              See how much you could save with PeakOps
-            </p>
-          </div>
-          
-          <div className="max-w-md mx-auto">
-            <ROICalculator isPreview={true} />
-          </div>
-        </div>
-      </section>
 
-      {/* Privacy & Trust */}
-      <section className="py-20 bg-gray-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-16">
-            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
-              Privacy & Trust
-            </h2>
-            <p className="text-2xl text-gray-700 font-semibold mb-8">
-              AI that helps, not watches.
-            </p>
-          </div>
+            <div className="space-y-6 text-xl text-gray-700 leading-relaxed mb-10">
+              <p>
+                Operational excellence shouldn't depend on luck, inspections, or constant supervision. It should happen naturally — through small, repeatable actions that make every shift stronger than the last.
+              </p>
 
-          <div className="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto">
-            <div className="bg-white p-8 rounded-2xl shadow-lg text-center">
-              <div className="w-16 h-16 bg-teal-100 rounded-full flex items-center justify-center mx-auto mb-6">
-                <Shield className="w-8 h-8 text-teal-600" />
-              </div>
-              <h3 className="text-xl font-semibold text-gray-900 mb-4">
-                The Guide & The Coach
-              </h3>
-              <p className="text-gray-600">
-                Videos are private, processed, and deleted after analysis.
+              <p className="font-semibold text-gray-900">
+                PeakOps helps your teams do exactly that.
+              </p>
+
+              <p className="text-2xl font-medium text-gray-900">
+                Three checks a day. Two minutes of focus. One habit that keeps your business running right.
               </p>
             </div>
 
-            <div className="bg-white p-8 rounded-2xl shadow-lg text-center">
-              <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-6">
-                <TrendingUp className="w-8 h-8 text-blue-600" />
-              </div>
-              <h3 className="text-xl font-semibold text-gray-900 mb-4">
-                The Inspector
-              </h3>
-              <p className="text-gray-600">
+            {/* Privacy & Trust callouts */}
+            <div className="mt-12 space-y-4 text-lg text-gray-600">
+              <p className="font-semibold text-gray-900">
+                AI that helps, not watches.
+              </p>
+              <p>
+                Videos are private, processed, and deleted after analysis.
+              </p>
+              <p>
                 Enterprise data is encrypted and securely retained for reporting.
               </p>
             </div>
