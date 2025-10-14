@@ -52,8 +52,9 @@ export default function HomePage() {
 
             {/* Supporting Paragraph */}
             <p className="text-lg md:text-xl text-blue-100 mb-10 leading-relaxed max-w-2xl" style={{ lineHeight: '1.6' }}>
-              Audits are stressful. Training takes time. And keeping standards consistent across locations often feels impossible.
-              PeakOps gives managers an AI-powered teammate that spots issues early, builds better habits, and keeps every brand standard on track while corporate gains real-time visibility without the travel.
+              Audits and training days fix problems too late. PeakOps builds the habits that prevent them.
+              Each day, managers get three quick checks that reinforce standards, spot issues early, and keep every location inspection-ready — all in under two minutes.
+              Simple, satisfying, and powered by AI for instant feedback.
             </p>
 
             {/* CTAs */}
