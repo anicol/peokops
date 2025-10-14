@@ -41,7 +41,7 @@ export default function HomePage() {
 
             {/* Main Headline */}
             <h1 className="text-5xl md:text-7xl font-bold leading-tight mb-8 tracking-tight">
-              Consistency Without the Chaos.
+              Operational Excellence, Made a Daily Habit.
             </h1>
 
             {/* Subhead */}
