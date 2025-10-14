@@ -84,27 +84,14 @@ export default function HomePage() {
           {/* Visual - Right Side */}
           <div className="hidden lg:block absolute right-8 top-1/2 -translate-y-1/2 w-[440px] h-[560px]">
             <div className="relative w-full h-full rounded-2xl overflow-hidden border-2 border-white/20 shadow-2xl">
-              {/* Kitchen image with AI overlay */}
+              {/* Checklist image - building habits */}
               <img
-                src="https://images.pexels.com/photos/2696064/pexels-photo-2696064.jpeg?auto=compress&cs=tinysrgb&w=800&h=1000"
-                alt="Commercial restaurant kitchen with AI analysis overlay"
+                src="https://images.pexels.com/photos/8850720/pexels-photo-8850720.jpeg?auto=compress&cs=tinysrgb&w=800&h=1000"
+                alt="Checklist with tick marks - building daily habits"
                 className="w-full h-full object-cover"
               />
 
-              {/* AI Analysis Overlays */}
-              <div className="absolute top-6 right-6 bg-green-500 text-white px-4 py-2 rounded-lg shadow-lg flex items-center gap-2 animate-fadeIn">
-                <CheckCircle className="w-5 h-5" />
-                <span className="font-semibold text-sm">Uniform OK</span>
-              </div>
-
-              <div className="absolute bottom-6 left-6 bg-red-500 text-white px-4 py-2 rounded-lg shadow-lg flex items-center gap-2 animate-fadeIn" style={{ animationDelay: '0.3s' }}>
-                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-                </svg>
-                <span className="font-semibold text-sm">Spill detected</span>
-              </div>
-
-              {/* Subtle gradient overlay for better text contrast */}
+              {/* Subtle gradient overlay for better contrast */}
               <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent pointer-events-none"></div>
             </div>
           </div>
