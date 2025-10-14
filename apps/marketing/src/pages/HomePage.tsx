@@ -46,7 +46,8 @@ export default function HomePage() {
 
             {/* Subhead */}
             <p className="text-2xl md:text-3xl text-blue-50 mb-8 leading-relaxed font-light">
-              PeakOps helps every location deliver confident, compliant operations automatically.
+              PeakOps helps every location stay on standard through three quick micro-checks a day — no apps, no logins, no stress.
+              It turns consistency into a behavior, not a checklist.
             </p>
 
             {/* Supporting Paragraph */}
