@@ -588,16 +588,6 @@ export default function HomePage() {
                     <span className="text-gray-700 text-lg">A sense of calm knowing the store is "always ready"</span>
                   </li>
                 </ul>
-
-                {/* Manager Quote */}
-                <div className="mt-8 bg-white p-6 rounded-xl shadow-md border-l-4 border-teal-600">
-                  <p className="text-gray-700 text-lg italic mb-3 leading-relaxed">
-                    "We caught issues before our corporate audit — and for once, it didn't feel stressful."
-                  </p>
-                  <p className="text-gray-600 font-medium">
-                    — Store Manager, National QSR Brand
-                  </p>
-                </div>
               </div>
 
               {/* For Brands */}
@@ -633,15 +623,12 @@ export default function HomePage() {
               </div>
             </div>
 
-            <div className="bg-gradient-to-br from-teal-600 to-blue-600 p-12 rounded-2xl shadow-xl flex items-center justify-center">
-              <div className="text-center">
-                <h3 className="text-4xl md:text-5xl font-bold text-white mb-6 leading-tight">
-                  PeakOps builds habits that scale.
-                </h3>
-                <p className="text-2xl md:text-3xl text-white/90 font-light">
-                  Every store ready. Every day steady.
-                </p>
-              </div>
+            <div className="bg-white p-8 rounded-2xl shadow-lg">
+              <img
+                src="https://images.pexels.com/photos/3184418/pexels-photo-3184418.jpeg?auto=compress&cs=tinysrgb&w=800"
+                alt="Manager conducting inspection"
+                className="w-full h-full object-cover rounded-lg"
+              />
             </div>
           </div>
         </div>
