@@ -138,13 +138,14 @@ export default function HomePage() {
 
               <div className="space-y-6 mb-12" style={{ lineHeight: '1.7' }}>
                 <p className="text-lg md:text-xl text-gray-700">
-                  Every location is different. Every shift brings new challenges. Every manager has their own approach.
+                  Every restaurant runs on people — and people run on habits.
+                  But between turnover, shift changes, and constant fires to fight, good habits fade fast.
                 </p>
                 <p className="text-lg md:text-xl text-gray-700">
-                  Without consistent systems, standards drift. Quality varies. Audit anxiety builds.
+                  Without daily rhythm, standards drift. Quality slips. Managers spend more time reacting than improving.
                 </p>
                 <p className="text-lg md:text-xl text-gray-700">
-                  Corporate spends thousands flying inspectors and still can't see what's really happening day to day.
+                  Corporate teams try to fix it with audits and travel, but that only catches problems after they've already happened.
                 </p>
               </div>
 
@@ -156,10 +157,10 @@ export default function HomePage() {
                 <div className="relative">
                   <div className="bg-white px-6 py-8 border-l-4 border-blue-600">
                     <p className="text-2xl md:text-3xl font-bold text-gray-900 mb-4 leading-tight">
-                      Excellence shouldn't depend on travel or luck.
+                      Excellence shouldn't depend on surprise visits or perfect managers.
                     </p>
                     <p className="text-2xl md:text-3xl font-bold text-blue-600 leading-tight">
-                      It should happen every day.
+                      It should be built into the day — simple, repeatable, automatic.
                     </p>
                   </div>
                 </div>
@@ -169,7 +170,7 @@ export default function HomePage() {
               </div>
 
               <p className="text-xl text-gray-700 leading-relaxed mt-12">
-                That's why PeakOps created a new kind of operations platform, one that empowers teams to stay audit-ready every day, not just inspection day.
+                That's why PeakOps created the world's first habit-based operations platform — helping teams stay on standard every day, not just inspection day.
               </p>
             </div>
           </div>
