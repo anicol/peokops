@@ -150,22 +150,14 @@ export default function HomePage() {
               </div>
 
               {/* Emphasized key message */}
-              <div className="relative py-8 my-12">
-                <div className="absolute inset-0 flex items-center" aria-hidden="true">
-                  <div className="w-full border-t border-blue-200"></div>
-                </div>
-                <div className="relative">
-                  <div className="bg-white px-6 py-8 border-l-4 border-blue-600">
-                    <p className="text-2xl md:text-3xl font-bold text-gray-900 mb-4 leading-tight">
-                      Excellence shouldn't depend on surprise visits or perfect managers.
-                    </p>
-                    <p className="text-2xl md:text-3xl font-bold text-blue-600 leading-tight">
-                      It should be built into the day — simple, repeatable, automatic.
-                    </p>
-                  </div>
-                </div>
-                <div className="absolute inset-0 flex items-center mt-12" aria-hidden="true">
-                  <div className="w-full border-t border-blue-200"></div>
+              <div className="my-12">
+                <div className="bg-white px-6 py-8 border-l-4 border-blue-600">
+                  <p className="text-2xl md:text-3xl font-bold text-gray-900 mb-4 leading-tight">
+                    Excellence shouldn't depend on surprise visits or perfect managers.
+                  </p>
+                  <p className="text-2xl md:text-3xl font-bold text-blue-600 leading-tight">
+                    It should be built into the day — simple, repeatable, automatic.
+                  </p>
                 </div>
               </div>
 
