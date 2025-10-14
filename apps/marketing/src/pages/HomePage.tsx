@@ -133,37 +133,31 @@ export default function HomePage() {
             {/* Right side - Text content */}
             <div className="max-w-2xl lg:ml-auto">
               <h2 className="text-3xl md:text-5xl font-bold text-gray-900 mb-10 leading-tight">
-                Why Consistency Is Still So Hard
+                Why Consistency Feels Impossible
               </h2>
 
               <div className="space-y-6 mb-12" style={{ lineHeight: '1.7' }}>
                 <p className="text-lg md:text-xl text-gray-700">
-                  Every restaurant runs on people — and people run on habits.
-                  But between turnover, shift changes, and constant fires to fight, good habits fade fast.
+                  If you've ever run a restaurant, you know the pattern:
+                  One great manager sets the bar high.
+                  Then someone leaves, the next shift cuts corners, and standards start to slide.
                 </p>
                 <p className="text-lg md:text-xl text-gray-700">
-                  Without daily rhythm, standards drift. Quality slips. Managers spend more time reacting than improving.
+                  Before long, quality depends on who's on duty — not the brand.
                 </p>
                 <p className="text-lg md:text-xl text-gray-700">
-                  Corporate teams try to fix it with audits and travel, but that only catches problems after they've already happened.
+                  Audits can't fix that. They show what's broken, not how to stay consistent.
                 </p>
               </div>
 
               {/* Emphasized key message */}
               <div className="my-12">
                 <div className="bg-white px-6 py-8 border-l-4 border-blue-600">
-                  <p className="text-2xl md:text-3xl font-bold text-gray-900 mb-4 leading-tight">
-                    Excellence shouldn't depend on surprise visits or perfect managers.
-                  </p>
-                  <p className="text-2xl md:text-3xl font-bold text-blue-600 leading-tight">
-                    It should be built into the day — simple, repeatable, automatic.
+                  <p className="text-2xl md:text-3xl font-bold text-gray-900 leading-tight">
+                    PeakOps was built to change that — creating a daily rhythm that builds habits, reinforces standards, and keeps every store steady in the chaos.
                   </p>
                 </div>
               </div>
-
-              <p className="text-xl text-gray-700 leading-relaxed mt-12">
-                That's why PeakOps created the world's first habit-based operations platform — helping teams stay on standard every day, not just inspection day.
-              </p>
             </div>
           </div>
         </div>
