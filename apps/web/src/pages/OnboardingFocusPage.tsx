@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Sparkles, ArrowRight } from 'lucide-react';
 
@@ -24,6 +24,28 @@ export default function OnboardingFocusPage() {
   const [countdown, setCountdown] = useState(AUTO_SKIP_SECONDS);
   const [isSkipping, setIsSkipping] = useState(false);
 
+  const handleSkip = useCallback(() => {
+    setIsSkipping(true);
+    const onboardingData = JSON.parse(sessionStorage.getItem('onboarding') || '{}');
+
+    // Use industry defaults
+    const industryDefaults: Record<string, string[]> = {
+      RESTAURANT: ['cleanliness', 'food_safety'],
+      RETAIL: ['cleanliness', 'customer_experience'],
+      HOSPITALITY: ['cleanliness', 'customer_experience'],
+      OTHER: ['cleanliness']
+    };
+
+    const defaultFocus = industryDefaults[onboardingData.industry] || ['cleanliness'];
+
+    sessionStorage.setItem('onboarding', JSON.stringify({
+      ...onboardingData,
+      focus_areas: defaultFocus
+    }));
+
+    setTimeout(() => navigate('/checks-sent'), 500);
+  }, [navigate]);
+
   useEffect(() => {
     // Redirect if previous steps not completed
     const onboardingData = JSON.parse(sessionStorage.getItem('onboarding') || '{}');
@@ -45,7 +67,7 @@ export default function OnboardingFocusPage() {
     }, 1000);
 
     return () => clearInterval(timer);
-  }, [navigate]);
+  }, [navigate, handleSkip]);
 
   const handleToggle = (value: string) => {
     // Stop auto-skip when user interacts
@@ -94,28 +116,6 @@ export default function OnboardingFocusPage() {
     }));
 
     navigate('/checks-sent');
-  };
-
-  const handleSkip = () => {
-    setIsSkipping(true);
-    const onboardingData = JSON.parse(sessionStorage.getItem('onboarding') || '{}');
-
-    // Use industry defaults
-    const industryDefaults: Record<string, string[]> = {
-      RESTAURANT: ['cleanliness', 'food_safety'],
-      RETAIL: ['cleanliness', 'customer_experience'],
-      HOSPITALITY: ['cleanliness', 'customer_experience'],
-      OTHER: ['cleanliness']
-    };
-
-    const defaultFocus = industryDefaults[onboardingData.industry] || ['cleanliness'];
-
-    sessionStorage.setItem('onboarding', JSON.stringify({
-      ...onboardingData,
-      focus_areas: defaultFocus
-    }));
-
-    setTimeout(() => navigate('/checks-sent'), 500);
   };
 
   return (
