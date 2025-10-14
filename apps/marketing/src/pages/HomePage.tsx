@@ -657,15 +657,9 @@ export default function HomePage() {
             </div>
 
             {/* Privacy & Trust callouts */}
-            <div className="mt-12 space-y-4 text-lg text-gray-600">
+            <div className="mt-12 text-lg text-gray-600">
               <p className="font-semibold text-gray-900">
                 AI that helps, not watches.
-              </p>
-              <p>
-                Videos are private, processed, and deleted after analysis.
-              </p>
-              <p>
-                Enterprise data is encrypted and securely retained for reporting.
               </p>
             </div>
           </div>
