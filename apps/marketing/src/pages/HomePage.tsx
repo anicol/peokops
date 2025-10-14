@@ -407,7 +407,7 @@ export default function HomePage() {
               From Capture to Confidence — in Three Simple Steps
             </h2>
             <p className="text-xl text-gray-600 max-w-3xl mx-auto leading-relaxed">
-              PeakOps turns every walkthrough or micro-check into instant insights that drive daily improvement.
+              PeakOps makes daily improvement effortless. In just a few moments a day, managers capture what's happening, get instant coaching, and build lasting habits of excellence.
             </p>
           </div>
 
@@ -454,15 +454,23 @@ export default function HomePage() {
                   </div>
 
                   <h3 className="text-2xl font-bold text-gray-900 mb-3 text-center">
-                    Capture
+                    1️⃣ Capture
                   </h3>
 
-                  <p className="text-gray-700 text-center mb-4 leading-relaxed">
-                    Record a short walkthrough or complete a micro-check from your phone.
+                  <p className="text-gray-700 text-center mb-4 leading-relaxed font-semibold">
+                    See your operation through fresh eyes.
                   </p>
 
-                  <p className="text-sm text-gray-500 text-center italic">
-                    No setup, no login — just press record.
+                  <p className="text-gray-600 text-center mb-4 leading-relaxed">
+                    Record a short walkthrough or complete your three quick checks — right from your phone.
+                  </p>
+
+                  <p className="text-gray-500 text-center mb-4 text-sm leading-relaxed">
+                    No logins. No setup. Just a simple moment of awareness that starts the day on the right foot.
+                  </p>
+
+                  <p className="text-sm text-gray-600 text-center italic font-medium">
+                    "Three checks. Two minutes. Every day on standard."
                   </p>
                 </div>
 
@@ -488,15 +496,15 @@ export default function HomePage() {
                   </div>
 
                   <h3 className="text-2xl font-bold text-gray-900 mb-3 text-center">
-                    AI Analyzes
+                    2️⃣ Reflect & Respond (AI Feedback)
                   </h3>
 
-                  <p className="text-gray-700 text-center mb-4 leading-relaxed">
-                    AI reviews your video in seconds, spotting wins and opportunities.
+                  <p className="text-gray-600 text-center mb-4 leading-relaxed">
+                    AI reviews what you capture in seconds — highlighting what's working and where to improve next. It's not another report to read — it's a quick reflection that helps you adjust before problems grow.
                   </p>
 
-                  <p className="text-sm text-gray-500 text-center italic">
-                    Instant feedback — not another report to read.
+                  <p className="text-sm text-gray-600 text-center italic font-medium">
+                    Instant insights. Encouraging tone. Real progress.
                   </p>
                 </div>
 
@@ -522,15 +530,19 @@ export default function HomePage() {
                   </div>
 
                   <h3 className="text-2xl font-bold text-gray-900 mb-3 text-center">
-                    Improve
+                    3️⃣ Improve
                   </h3>
 
-                  <p className="text-gray-700 text-center mb-4 leading-relaxed">
-                    Review your Fix List, make updates, and track your team's progress.
+                  <p className="text-gray-700 text-center mb-4 leading-relaxed font-semibold">
+                    Turn insights into action.
                   </p>
 
-                  <p className="text-sm text-gray-500 text-center italic">
-                    Every check builds momentum toward consistency.
+                  <p className="text-gray-600 text-center mb-4 leading-relaxed">
+                    Your Fix Flow shows what to address, celebrates what's working, and tracks your streaks over time. Every check builds momentum — transforming daily actions into habits that stick.
+                  </p>
+
+                  <p className="text-sm text-gray-600 text-center italic font-medium">
+                    Each day adds up to consistency you can feel.
                   </p>
                 </div>
               </div>
