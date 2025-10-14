@@ -75,6 +75,11 @@ export default function HomePage() {
                 <span className="ml-2 group-hover:translate-x-1 transition-transform">→</span>
               </Link>
             </div>
+
+            {/* Supporting Tagline */}
+            <p className="mt-6 text-base md:text-lg text-blue-100/90 italic font-light">
+              Three checks. Two minutes. One habit that keeps your business running right.
+            </p>
           </div>
 
           {/* Visual - Right Side */}
