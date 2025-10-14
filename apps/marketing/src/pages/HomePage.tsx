@@ -697,15 +697,9 @@ export default function HomePage() {
             </Link>
           </div>
 
-          <div className="space-y-2 text-lg text-blue-100 max-w-3xl mx-auto">
+          <div className="text-lg text-blue-100 max-w-3xl mx-auto">
             <p>
               No login. No setup. Just start building habits that last.
-            </p>
-            <p className="text-base">
-              or
-            </p>
-            <p>
-              See how PeakOps helps your brand stay on standard — every day.
             </p>
           </div>
         </div>
