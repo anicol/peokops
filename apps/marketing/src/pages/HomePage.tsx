@@ -554,66 +554,94 @@ export default function HomePage() {
       {/* The Impact */}
       <section className="py-20 bg-gray-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid lg:grid-cols-2 gap-16 items-center">
+          <div className="text-center mb-12">
+            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-6">
+              The Impact
+            </h2>
+            <p className="text-xl text-gray-600 max-w-3xl mx-auto leading-relaxed">
+              PeakOps replaces stress and scramble with steady progress. Managers feel calm and in control. Brands see consistency take root — every day, across every store.
+            </p>
+          </div>
+
+          <div className="grid lg:grid-cols-2 gap-16 items-start">
             <div>
-              <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-8">
-                The Impact
-              </h2>
 
               {/* For Managers */}
-              <div className="mb-8">
-                <h3 className="text-xl font-semibold text-teal-600 mb-4">
-                  For Managers:
+              <div className="mb-10">
+                <h3 className="text-2xl font-bold text-teal-600 mb-6">
+                  For Managers
                 </h3>
-                <ul className="space-y-3">
+                <ul className="space-y-4">
                   <li className="flex items-start">
-                    <CheckCircle className="w-5 h-5 text-teal-600 mr-3 mt-0.5 flex-shrink-0" />
-                    <span className="text-gray-700">No more audit anxiety</span>
+                    <CheckCircle className="w-6 h-6 text-teal-600 mr-3 mt-0.5 flex-shrink-0" />
+                    <span className="text-gray-700 text-lg">No more audit anxiety or surprise visits</span>
                   </li>
                   <li className="flex items-start">
-                    <CheckCircle className="w-5 h-5 text-teal-600 mr-3 mt-0.5 flex-shrink-0" />
-                    <span className="text-gray-700">Faster team training</span>
+                    <CheckCircle className="w-6 h-6 text-teal-600 mr-3 mt-0.5 flex-shrink-0" />
+                    <span className="text-gray-700 text-lg">Faster team alignment through small, daily wins</span>
                   </li>
                   <li className="flex items-start">
-                    <CheckCircle className="w-5 h-5 text-teal-600 mr-3 mt-0.5 flex-shrink-0" />
-                    <span className="text-gray-700">Clear direction and daily wins</span>
+                    <CheckCircle className="w-6 h-6 text-teal-600 mr-3 mt-0.5 flex-shrink-0" />
+                    <span className="text-gray-700 text-lg">Clear direction and instant feedback that builds confidence</span>
+                  </li>
+                  <li className="flex items-start">
+                    <CheckCircle className="w-6 h-6 text-teal-600 mr-3 mt-0.5 flex-shrink-0" />
+                    <span className="text-gray-700 text-lg">A sense of calm knowing the store is "always ready"</span>
                   </li>
                 </ul>
+
+                {/* Manager Quote */}
+                <div className="mt-8 bg-white p-6 rounded-xl shadow-md border-l-4 border-teal-600">
+                  <p className="text-gray-700 text-lg italic mb-3 leading-relaxed">
+                    "We caught issues before our corporate audit — and for once, it didn't feel stressful."
+                  </p>
+                  <p className="text-gray-600 font-medium">
+                    — Store Manager, National QSR Brand
+                  </p>
+                </div>
               </div>
 
               {/* For Brands */}
               <div>
-                <h3 className="text-xl font-semibold text-blue-600 mb-4">
-                  For Brands:
+                <h3 className="text-2xl font-bold text-blue-600 mb-6">
+                  For Brands
                 </h3>
-                <ul className="space-y-3">
+                <ul className="space-y-4">
                   <li className="flex items-start">
-                    <CheckCircle className="w-5 h-5 text-blue-600 mr-3 mt-0.5 flex-shrink-0" />
-                    <span className="text-gray-700">Consistent standards at scale</span>
+                    <CheckCircle className="w-6 h-6 text-blue-600 mr-3 mt-0.5 flex-shrink-0" />
+                    <span className="text-gray-700 text-lg">Consistent standards that scale effortlessly</span>
                   </li>
                   <li className="flex items-start">
-                    <CheckCircle className="w-5 h-5 text-blue-600 mr-3 mt-0.5 flex-shrink-0" />
-                    <span className="text-gray-700">Continuous visibility into performance</span>
+                    <CheckCircle className="w-6 h-6 text-blue-600 mr-3 mt-0.5 flex-shrink-0" />
+                    <span className="text-gray-700 text-lg">Continuous visibility into operational health</span>
                   </li>
                   <li className="flex items-start">
-                    <CheckCircle className="w-5 h-5 text-blue-600 mr-3 mt-0.5 flex-shrink-0" />
-                    <span className="text-gray-700">50–70% reduction in travel and inspection costs</span>
+                    <CheckCircle className="w-6 h-6 text-blue-600 mr-3 mt-0.5 flex-shrink-0" />
+                    <span className="text-gray-700 text-lg">Fewer last-minute fixes and rework before inspections</span>
+                  </li>
+                  <li className="flex items-start">
+                    <CheckCircle className="w-6 h-6 text-blue-600 mr-3 mt-0.5 flex-shrink-0" />
+                    <span className="text-gray-700 text-lg">50–70% reduction in travel and inspection costs</span>
                   </li>
                 </ul>
+
+                {/* Closing Statement */}
+                <div className="mt-8 bg-gradient-to-br from-blue-50 to-teal-50 p-6 rounded-xl border border-blue-200">
+                  <p className="text-gray-700 text-lg leading-relaxed">
+                    From reactive audits to proactive habits — PeakOps keeps your brand on standard without adding complexity.
+                  </p>
+                </div>
               </div>
             </div>
 
-            <div className="bg-white p-8 rounded-2xl shadow-lg">
-              <img
-                src="https://images.pexels.com/photos/3184418/pexels-photo-3184418.jpeg?auto=compress&cs=tinysrgb&w=800"
-                alt="Manager conducting inspection"
-                className="w-full h-64 object-cover rounded-lg mb-6"
-              />
+            <div className="bg-gradient-to-br from-teal-600 to-blue-600 p-12 rounded-2xl shadow-xl flex items-center justify-center">
               <div className="text-center">
-                <h4 className="text-lg font-semibold text-gray-900 mb-2">
-                  "We caught issues before our corporate audit and saved our store from a failing grade."
-                </h4>
-                <p className="text-gray-600">— Store Manager, QSR Chain</p>
+                <h3 className="text-4xl md:text-5xl font-bold text-white mb-6 leading-tight">
+                  PeakOps builds habits that scale.
+                </h3>
+                <p className="text-2xl md:text-3xl text-white/90 font-light">
+                  Every store ready. Every day steady.
+                </p>
               </div>
             </div>
           </div>
