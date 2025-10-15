@@ -136,6 +136,40 @@ class MicroCheckResponseSerializer(serializers.ModelSerializer):
     status_display = serializers.CharField(source='get_status_display', read_only=True)
     skip_reason_display = serializers.CharField(source='get_skip_reason_display', read_only=True)
     completed_by_name = serializers.CharField(source='completed_by.get_full_name', read_only=True, allow_null=True)
+    media = serializers.SerializerMethodField()
+
+    def get_media(self, obj):
+        """Return presigned URL for media asset if it exists"""
+        if not obj.media:
+            return None
+
+        import boto3
+        from django.conf import settings
+
+        try:
+            s3_client = boto3.client(
+                's3',
+                aws_access_key_id=settings.AWS_ACCESS_KEY_ID,
+                aws_secret_access_key=settings.AWS_SECRET_ACCESS_KEY,
+                region_name=settings.AWS_S3_REGION_NAME
+            )
+
+            # Generate presigned URL for GET operation (1 hour expiry)
+            url = s3_client.generate_presigned_url(
+                'get_object',
+                Params={
+                    'Bucket': obj.media.s3_bucket,
+                    'Key': obj.media.s3_key,
+                },
+                ExpiresIn=3600
+            )
+            return url
+        except Exception as e:
+            # Log error and return None
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.error(f"Error generating presigned URL for media {obj.media.id}: {e}")
+            return None
 
     class Meta:
         model = MicroCheckResponse
