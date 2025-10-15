@@ -7,7 +7,6 @@ export default function OnboardingContactPage() {
   const navigate = useNavigate();
   const [phone, setPhone] = useState('');
   const [email, setEmail] = useState('');
-  const [smsConsent, setSmsConsent] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -41,22 +40,16 @@ export default function OnboardingContactPage() {
   const handleSubmit = async () => {
     setError('');
 
-    // Validate email (now required)
+    // Validate email (required)
     if (!email || !email.match(/^[^\s@]+@[^\s@]+\.[^\s@]+$/)) {
       setError('Please enter a valid email address');
       return;
     }
 
-    // Validate phone number
+    // Validate phone number if provided (optional for now)
     const cleanedPhone = phone.replace(/\D/g, '');
-    if (cleanedPhone.length !== 10) {
-      setError('Please enter a valid 10-digit phone number');
-      return;
-    }
-
-    // Validate SMS consent
-    if (!smsConsent) {
-      setError('Please agree to receive future SMS notifications to continue');
+    if (phone && cleanedPhone.length !== 10) {
+      setError('Please enter a valid 10-digit phone number or leave it blank');
       return;
     }
 
@@ -70,8 +63,8 @@ export default function OnboardingContactPage() {
         method: 'POST',
         headers: API_CONFIG.headers,
         body: JSON.stringify({
-          phone: `+1${cleanedPhone}`,
-          email: email || undefined,
+          phone: cleanedPhone ? `+1${cleanedPhone}` : '+10000000000', // Placeholder if no phone provided
+          email: email,
           store_name: onboardingData.storeName || 'Your Store',
           industry: onboardingData.industry,
           focus_areas: onboardingData.focus_areas || []
@@ -150,10 +143,10 @@ export default function OnboardingContactPage() {
             </p>
           </div>
 
-          {/* Phone input */}
+          {/* Phone input (optional) */}
           <div className="mb-8">
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Phone Number *
+              Phone Number (optional)
             </label>
             <div className="relative">
               <Phone className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
@@ -167,37 +160,8 @@ export default function OnboardingContactPage() {
               />
             </div>
             <p className="mt-2 text-xs text-gray-500">
-              📱 For future SMS notifications
+              📱 For future SMS notifications (you can add this later)
             </p>
-          </div>
-
-          {/* SMS Consent Checkbox */}
-          <div className="mb-6 bg-gray-50 border-2 border-gray-200 rounded-xl p-4">
-            <label className="flex items-start cursor-pointer">
-              <input
-                type="checkbox"
-                checked={smsConsent}
-                onChange={(e) => setSmsConsent(e.target.checked)}
-                className="mt-1 w-5 h-5 text-teal-600 border-gray-300 rounded focus:ring-teal-500 focus:ring-2 cursor-pointer"
-              />
-              <span className="ml-3 text-sm text-gray-700 leading-relaxed">
-                I agree to receive future SMS notifications from <strong>PeakOps</strong> when available.
-                Message & data rates may apply. Up to 1 message per day.
-                Reply STOP to unsubscribe, HELP for help.
-              </span>
-            </label>
-            <div className="mt-3 ml-8 text-xs text-gray-500">
-              By checking this box, you consent to receive automated text messages when our SMS service is verified.
-              For now, you'll receive checks via email. View our{' '}
-              <a href="/terms" target="_blank" className="text-teal-600 hover:text-teal-700 underline">
-                Terms of Service
-              </a>
-              {' '}and{' '}
-              <a href="/privacy" target="_blank" className="text-teal-600 hover:text-teal-700 underline">
-                Privacy Policy
-              </a>
-              .
-            </div>
           </div>
 
           {/* Error message */}
@@ -211,7 +175,7 @@ export default function OnboardingContactPage() {
           {/* Submit button */}
           <button
             onClick={handleSubmit}
-            disabled={isLoading || !email || phone.replace(/\D/g, '').length !== 10 || !smsConsent}
+            disabled={isLoading || !email}
             className="w-full py-4 bg-teal-600 text-white rounded-xl font-semibold text-lg hover:bg-teal-700 transition-all shadow-lg hover:shadow-xl transform hover:scale-105 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none flex items-center justify-center"
           >
             {isLoading ? (
