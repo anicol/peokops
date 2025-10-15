@@ -30,6 +30,7 @@ import AdminQueuePage from '@/pages/AdminQueuePage';
 import MicroCheckInvitePage from '@/pages/MicroCheckInvitePage';
 import MicroCheckPage from '@/pages/MicroCheckPage';
 import MicroCheckHistoryPage from '@/pages/MicroCheckHistoryPage';
+import MicroCheckRunDetailPage from '@/pages/MicroCheckRunDetailPage';
 import MicroCheckTemplatesPage from '@/pages/MicroCheckTemplatesPage';
 import InsightsPage from '@/pages/InsightsPage';
 import ProfilePage from '@/pages/ProfilePage';
@@ -242,6 +243,18 @@ function AppRoutes() {
             isAuthenticated ? (
               <Layout>
                 <MicroCheckHistoryPage />
+              </Layout>
+            ) : (
+              <Navigate to="/login" replace />
+            )
+          }
+        />
+        <Route
+          path="/micro-check/run/:runId"
+          element={
+            isAuthenticated ? (
+              <Layout>
+                <MicroCheckRunDetailPage />
               </Layout>
             ) : (
               <Navigate to="/login" replace />
