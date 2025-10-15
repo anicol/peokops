@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { MessageCircle, CheckCircle, Smartphone } from 'lucide-react';
+import { Mail, CheckCircle, Smartphone } from 'lucide-react';
 
 export default function ChecksSentPage() {
   const navigate = useNavigate();
@@ -60,7 +60,7 @@ export default function ChecksSentPage() {
           <div className="flex justify-center mb-6">
             <div className="relative">
               <div className="w-24 h-24 bg-green-100 rounded-full flex items-center justify-center animate-bounce-slow">
-                <MessageCircle className="w-12 h-12 text-green-600" />
+                <Mail className="w-12 h-12 text-green-600" />
               </div>
               <div className="absolute -top-2 -right-2">
                 <div className="w-8 h-8 bg-teal-600 rounded-full flex items-center justify-center animate-ping-slow">
@@ -72,15 +72,15 @@ export default function ChecksSentPage() {
 
           {/* Main message */}
           <h1 className="text-4xl sm:text-5xl font-bold text-gray-900 mb-4">
-            ✨ Text sent!
+            ✨ Email sent!
           </h1>
           <p className="text-xl text-gray-700 mb-2">
-            Check your phone to start
+            Check your inbox to start
           </p>
 
-          {onboardingData.phone && (
+          {onboardingData.email && (
             <p className="text-gray-600 mb-8">
-              Sent to <span className="font-semibold">{onboardingData.phone}</span>
+              Sent to <span className="font-semibold">{onboardingData.email}</span>
             </p>
           )}
 
@@ -125,16 +125,11 @@ export default function ChecksSentPage() {
           {/* Help text */}
           <div className="mt-8 pt-6 border-t border-gray-200">
             <p className="text-sm text-gray-600">
-              <strong>Didn't get the text?</strong>
+              <strong>Didn't get the email?</strong>
             </p>
             <p className="text-sm text-gray-500 mt-2">
-              Check your phone for a message from PeakOps. It may take a minute to arrive.
+              Check your inbox (and spam folder) for an email from PeakOps. It may take a minute to arrive.
             </p>
-            {onboardingData.email && (
-              <p className="text-sm text-gray-500 mt-2">
-                We also sent a backup link to <span className="font-medium">{onboardingData.email}</span>
-              </p>
-            )}
           </div>
         </div>
 
@@ -150,7 +145,7 @@ export default function ChecksSentPage() {
           </div>
           <div className="flex items-center">
             <CheckCircle className="w-5 h-5 text-green-600 mr-2" />
-            <span>SMS sent</span>
+            <span>Email sent</span>
           </div>
         </div>
       </div>
