@@ -223,7 +223,7 @@ class PasswordChangeSerializer(serializers.Serializer):
 class QuickSignupSerializer(serializers.Serializer):
     """Streamlined passwordless trial signup - account created with phone + magic link"""
     phone = serializers.CharField(required=True, help_text="Phone number in E.164 format (e.g., +15551234567)")
-    email = serializers.EmailField(required=False, allow_blank=True)
+    email = serializers.EmailField(required=True, help_text="Email address for magic link delivery (required until SMS verification)")
     store_name = serializers.CharField(max_length=200)
     industry = serializers.ChoiceField(choices=['RESTAURANT', 'RETAIL', 'HOSPITALITY', 'OTHER'])
     focus_areas = serializers.ListField(child=serializers.CharField(), required=False, allow_empty=True)

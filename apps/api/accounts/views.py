@@ -172,30 +172,23 @@ def quick_signup_view(request):
         store_name = user.store.name if user.store else "Your Store"
         magic_token = quick_signup_data.get('magic_token')
 
-        # Try SMS first
-        from micro_checks.utils import send_magic_link_sms, send_magic_link_email
-        sms_sent = send_magic_link_sms(
-            phone=user.phone,
+        # TEMPORARY: Use email only until Twilio toll-free verification completes
+        # TODO: Re-enable SMS when Twilio verification is complete
+        from micro_checks.utils import send_magic_link_email
+
+        # Send magic link via email (primary method during Twilio verification)
+        email_sent = send_magic_link_email(
+            email=user.email,
             token=magic_token,
-            store_name=store_name
+            store_name=store_name,
+            recipient_name=user.username
         )
 
-        # Fallback to email if SMS failed and email is provided
-        email_sent = False
-        if not sms_sent and user.email and '@trial.temp' not in user.email:
-            email_sent = send_magic_link_email(
-                email=user.email,
-                token=magic_token,
-                store_name=store_name,
-                recipient_name=user.username
-            )
+        # Set delivery method
+        delivery_method = 'email' if email_sent else None
 
-        # Determine delivery method for response
-        delivery_method = None
-        if sms_sent:
-            delivery_method = 'sms'
-        elif email_sent:
-            delivery_method = 'email'
+        # SMS will be enabled after Twilio verification
+        sms_sent = False
 
         return Response({
             'user_id': user.id,

@@ -41,6 +41,12 @@ export default function OnboardingContactPage() {
   const handleSubmit = async () => {
     setError('');
 
+    // Validate email (now required)
+    if (!email || !email.match(/^[^\s@]+@[^\s@]+\.[^\s@]+$/)) {
+      setError('Please enter a valid email address');
+      return;
+    }
+
     // Validate phone number
     const cleanedPhone = phone.replace(/\D/g, '');
     if (cleanedPhone.length !== 10) {
@@ -50,13 +56,7 @@ export default function OnboardingContactPage() {
 
     // Validate SMS consent
     if (!smsConsent) {
-      setError('Please agree to receive SMS notifications to continue');
-      return;
-    }
-
-    // Validate email if provided
-    if (email && !email.match(/^[^\s@]+@[^\s@]+\.[^\s@]+$/)) {
-      setError('Please enter a valid email address');
+      setError('Please agree to receive future SMS notifications to continue');
       return;
     }
 
@@ -125,11 +125,33 @@ export default function OnboardingContactPage() {
             Where should we send your daily checks?
           </h1>
           <p className="text-gray-600 mb-8 text-center">
-            We'll text your first 3 checks — no login required
+            We'll email your first 3 checks — no login required
           </p>
 
-          {/* Phone input */}
+          {/* Email input (required) */}
           <div className="mb-6">
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Email *
+            </label>
+            <div className="relative">
+              <Mail className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+              <input
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="you@company.com"
+                className="w-full pl-12 pr-4 py-4 text-lg border-2 border-gray-300 rounded-xl focus:border-teal-500 focus:ring-4 focus:ring-teal-100 focus:outline-none transition-all"
+                autoFocus
+                required
+              />
+            </div>
+            <p className="mt-2 text-xs text-gray-500">
+              📧 We'll send your checks here
+            </p>
+          </div>
+
+          {/* Phone input */}
+          <div className="mb-8">
             <label className="block text-sm font-medium text-gray-700 mb-2">
               Phone Number *
             </label>
@@ -141,32 +163,11 @@ export default function OnboardingContactPage() {
                 onChange={handlePhoneChange}
                 placeholder="(555) 123-4567"
                 className="w-full pl-12 pr-4 py-4 text-lg border-2 border-gray-300 rounded-xl focus:border-teal-500 focus:ring-4 focus:ring-teal-100 focus:outline-none transition-all"
-                autoFocus
                 maxLength={14}
               />
             </div>
             <p className="mt-2 text-xs text-gray-500">
-              📱 For SMS magic links (no passwords!)
-            </p>
-          </div>
-
-          {/* Email input (optional) */}
-          <div className="mb-8">
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Email (optional)
-            </label>
-            <div className="relative">
-              <Mail className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
-              <input
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="you@company.com"
-                className="w-full pl-12 pr-4 py-4 text-lg border-2 border-gray-300 rounded-xl focus:border-teal-500 focus:ring-4 focus:ring-teal-100 focus:outline-none transition-all"
-              />
-            </div>
-            <p className="mt-2 text-xs text-gray-500">
-              📧 For backup delivery & weekly reports
+              📱 For future SMS notifications
             </p>
           </div>
 
@@ -180,14 +181,14 @@ export default function OnboardingContactPage() {
                 className="mt-1 w-5 h-5 text-teal-600 border-gray-300 rounded focus:ring-teal-500 focus:ring-2 cursor-pointer"
               />
               <span className="ml-3 text-sm text-gray-700 leading-relaxed">
-                I agree to receive SMS notifications from <strong>PeakOps</strong>.
+                I agree to receive future SMS notifications from <strong>PeakOps</strong> when available.
                 Message & data rates may apply. Up to 1 message per day.
                 Reply STOP to unsubscribe, HELP for help.
               </span>
             </label>
             <div className="mt-3 ml-8 text-xs text-gray-500">
-              By checking this box, you consent to receive automated text messages.
-              View our{' '}
+              By checking this box, you consent to receive automated text messages when our SMS service is verified.
+              For now, you'll receive checks via email. View our{' '}
               <a href="/terms" target="_blank" className="text-teal-600 hover:text-teal-700 underline">
                 Terms of Service
               </a>
@@ -210,7 +211,7 @@ export default function OnboardingContactPage() {
           {/* Submit button */}
           <button
             onClick={handleSubmit}
-            disabled={isLoading || phone.replace(/\D/g, '').length !== 10 || !smsConsent}
+            disabled={isLoading || !email || phone.replace(/\D/g, '').length !== 10 || !smsConsent}
             className="w-full py-4 bg-teal-600 text-white rounded-xl font-semibold text-lg hover:bg-teal-700 transition-all shadow-lg hover:shadow-xl transform hover:scale-105 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none flex items-center justify-center"
           >
             {isLoading ? (
