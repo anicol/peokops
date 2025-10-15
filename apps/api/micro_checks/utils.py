@@ -476,7 +476,7 @@ def send_magic_link_email(email, token, store_name="Your Store", recipient_name=
     Returns:
         bool: True if email sent successfully, False otherwise
     """
-    from django.core.mail import send_mail
+    from django.core.mail import EmailMultiAlternatives
     from django.conf import settings
     import logging
 
@@ -492,23 +492,23 @@ def send_magic_link_email(email, token, store_name="Your Store", recipient_name=
         # Craft email subject
         subject = f"Your {store_name} Quick Checks Are Ready! 🎯"
 
-        # Craft email body
-        message = f"""{greeting}
+        # Plain text version (no markdown)
+        text_content = f"""{greeting}
 
 Welcome to PeakOps! Your first 3 quick checks are ready to complete.
 
-✨ **Get Started in 2 Minutes**
+GET STARTED IN 2 MINUTES
 
 Complete your checks by clicking this link:
 {magic_link}
 
-**What to Expect:**
-• 3 simple checks for {store_name}
-• Takes under 2 minutes
-• No login required - just click the link
-• Works on your phone or computer
+WHAT TO EXPECT:
+- 3 simple checks for {store_name}
+- Takes under 2 minutes
+- No login required - just click the link
+- Works on your phone or computer
 
-**Questions?**
+QUESTIONS?
 Just reply to this email - we're here to help!
 
 Thanks,
@@ -518,17 +518,58 @@ The PeakOps Team
 This link will expire in 30 days.
 """
 
-        # Send email
-        result = send_mail(
+        # HTML version (properly formatted)
+        html_content = f"""
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+<body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
+    <p style="font-size: 16px; margin-bottom: 20px;">{greeting}</p>
+
+    <p style="font-size: 16px; margin-bottom: 20px;">Welcome to <strong>PeakOps</strong>! Your first 3 quick checks are ready to complete.</p>
+
+    <div style="background: linear-gradient(135deg, #0d9488 0%, #06b6d4 100%); border-radius: 12px; padding: 24px; margin: 24px 0; text-align: center;">
+        <h2 style="color: white; margin: 0 0 16px 0; font-size: 20px;">✨ Get Started in 2 Minutes</h2>
+        <a href="{magic_link}" style="display: inline-block; background: white; color: #0d9488; padding: 14px 32px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 16px;">Start Your Checks</a>
+    </div>
+
+    <div style="background: #f9fafb; border-left: 4px solid #0d9488; padding: 16px; margin: 24px 0; border-radius: 4px;">
+        <h3 style="margin: 0 0 12px 0; font-size: 16px; color: #111;">What to Expect:</h3>
+        <ul style="margin: 0; padding-left: 20px;">
+            <li style="margin-bottom: 8px;">3 simple checks for {store_name}</li>
+            <li style="margin-bottom: 8px;">Takes under 2 minutes</li>
+            <li style="margin-bottom: 8px;">No login required - just click the link</li>
+            <li style="margin-bottom: 8px;">Works on your phone or computer</li>
+        </ul>
+    </div>
+
+    <p style="font-size: 16px; margin-bottom: 8px;"><strong>Questions?</strong></p>
+    <p style="font-size: 16px; margin-bottom: 24px;">Just reply to this email - we're here to help!</p>
+
+    <p style="font-size: 16px; margin-bottom: 8px;">Thanks,<br>The PeakOps Team</p>
+
+    <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 24px 0;">
+
+    <p style="font-size: 12px; color: #6b7280; margin: 0;">This link will expire in 30 days.</p>
+</body>
+</html>
+"""
+
+        # Create email with both plain text and HTML
+        msg = EmailMultiAlternatives(
             subject=subject,
-            message=message,
+            body=text_content,
             from_email=settings.DEFAULT_FROM_EMAIL,
-            recipient_list=[email],
-            fail_silently=False,
+            to=[email]
         )
+        msg.attach_alternative(html_content, "text/html")
+        msg.send()
 
         logger.info(f"Magic link email sent successfully to {email}")
-        return result > 0
+        return True
 
     except Exception as e:
         logger.error(f"Failed to send email to {email}: {str(e)}")
