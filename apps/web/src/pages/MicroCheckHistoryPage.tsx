@@ -377,7 +377,11 @@ const MicroCheckHistoryPage = () => {
 
               <div className="divide-y divide-gray-200">
                 {sessions.map((session, sessionIdx) => (
-                  <div key={sessionIdx} className="p-6 hover:bg-gray-50 transition-colors">
+                  <Link
+                    key={sessionIdx}
+                    to={`/micro-check/run/${session.runId}`}
+                    className="block p-6 hover:bg-gray-50 transition-colors"
+                  >
                     <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between mb-4 space-y-4 lg:space-y-0">
                       <div className="flex items-center space-x-4">
                         <div className="w-12 h-12 bg-teal-100 rounded-lg flex items-center justify-center flex-shrink-0">
@@ -443,7 +447,7 @@ const MicroCheckHistoryPage = () => {
                         </div>
                       ))}
                     </div>
-                  </div>
+                  </Link>
                 ))}
               </div>
             </div>
