@@ -7,6 +7,7 @@ export default function OnboardingContactPage() {
   const navigate = useNavigate();
   const [phone, setPhone] = useState('');
   const [email, setEmail] = useState('');
+  const [smsConsent, setSmsConsent] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -44,6 +45,12 @@ export default function OnboardingContactPage() {
     const cleanedPhone = phone.replace(/\D/g, '');
     if (cleanedPhone.length !== 10) {
       setError('Please enter a valid 10-digit phone number');
+      return;
+    }
+
+    // Validate SMS consent
+    if (!smsConsent) {
+      setError('Please agree to receive SMS notifications to continue');
       return;
     }
 
@@ -163,6 +170,35 @@ export default function OnboardingContactPage() {
             </p>
           </div>
 
+          {/* SMS Consent Checkbox */}
+          <div className="mb-6 bg-gray-50 border-2 border-gray-200 rounded-xl p-4">
+            <label className="flex items-start cursor-pointer">
+              <input
+                type="checkbox"
+                checked={smsConsent}
+                onChange={(e) => setSmsConsent(e.target.checked)}
+                className="mt-1 w-5 h-5 text-teal-600 border-gray-300 rounded focus:ring-teal-500 focus:ring-2 cursor-pointer"
+              />
+              <span className="ml-3 text-sm text-gray-700 leading-relaxed">
+                I agree to receive SMS notifications from <strong>PeakOps</strong>.
+                Message & data rates may apply. Up to 1 message per day.
+                Reply STOP to unsubscribe, HELP for help.
+              </span>
+            </label>
+            <div className="mt-3 ml-8 text-xs text-gray-500">
+              By checking this box, you consent to receive automated text messages.
+              View our{' '}
+              <a href="/terms" target="_blank" className="text-teal-600 hover:text-teal-700 underline">
+                Terms of Service
+              </a>
+              {' '}and{' '}
+              <a href="/privacy" target="_blank" className="text-teal-600 hover:text-teal-700 underline">
+                Privacy Policy
+              </a>
+              .
+            </div>
+          </div>
+
           {/* Error message */}
           {error && (
             <div className="mb-6 bg-red-50 border-2 border-red-200 rounded-xl p-4 flex items-start">
@@ -174,7 +210,7 @@ export default function OnboardingContactPage() {
           {/* Submit button */}
           <button
             onClick={handleSubmit}
-            disabled={isLoading || phone.replace(/\D/g, '').length !== 10}
+            disabled={isLoading || phone.replace(/\D/g, '').length !== 10 || !smsConsent}
             className="w-full py-4 bg-teal-600 text-white rounded-xl font-semibold text-lg hover:bg-teal-700 transition-all shadow-lg hover:shadow-xl transform hover:scale-105 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none flex items-center justify-center"
           >
             {isLoading ? (
@@ -195,11 +231,6 @@ export default function OnboardingContactPage() {
           >
             ← Back
           </button>
-
-          {/* Privacy note */}
-          <p className="mt-6 text-xs text-gray-500 text-center">
-            By continuing, you agree to receive SMS messages. Message & data rates may apply.
-          </p>
         </div>
       </div>
     </div>
