@@ -515,7 +515,7 @@ Thanks,
 The PeakOps Team
 
 ---
-This link will expire in 30 days.
+This link is valid for 30 days, but we recommend completing your checks today to build the habit!
 """
 
         # HTML version (properly formatted)
@@ -553,7 +553,7 @@ This link will expire in 30 days.
 
     <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 24px 0;">
 
-    <p style="font-size: 12px; color: #6b7280; margin: 0;">This link will expire in 30 days.</p>
+    <p style="font-size: 12px; color: #6b7280; margin: 0;">This link is valid for 30 days, but we recommend completing your checks today to build the habit!</p>
 </body>
 </html>
 """
