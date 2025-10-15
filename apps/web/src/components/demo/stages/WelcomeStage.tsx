@@ -15,29 +15,29 @@ export default function WelcomeStage({ onComplete }: WelcomeStageProps) {
       <div className="max-w-2xl mx-auto px-4 py-12 md:py-20 text-center">
         {/* Header */}
         <h1 className="text-3xl md:text-4xl font-bold text-gray-900 mb-8">
-          Welcome to VerityInspect
+          Welcome to PeakOps
         </h1>
-        
+
         {/* Body content */}
         <p className="text-lg md:text-xl text-gray-700 mb-8 leading-relaxed">
-          Finally, an inspection tool built for you, not just corporate.
+          Build operational excellence through simple daily habits.
         </p>
         <p className="text-lg md:text-xl text-gray-700 mb-12 leading-relaxed">
-          With Coaching Mode, you'll catch problems early, train your team, 
-          and walk into every inspection with confidence.
+          3 quick checks every day. Get AI feedback instantly.
+          Stay inspection-ready without the stress.
         </p>
 
         {/* Reassurance callout */}
-        <div className="bg-green-50 border border-green-200 rounded-lg p-6 mb-12 max-w-xl mx-auto">
-          <p className="text-green-800 font-medium text-center">
-            This is private. It only takes 2 minutes. You'll see results instantly.
+        <div className="bg-teal-50 border border-teal-200 rounded-lg p-6 mb-12 max-w-xl mx-auto">
+          <p className="text-teal-800 font-medium text-center">
+            Private, takes 2 minutes, instant feedback.
           </p>
         </div>
         
         {/* CTA Button - Mobile optimized */}
-        <button 
+        <button
           onClick={onComplete}
-          className="bg-purple-600 hover:bg-purple-700 text-white py-4 px-8 md:py-4 md:px-8 rounded-lg font-medium text-lg transition-colors inline-flex items-center min-h-[50px] min-w-[200px] justify-center"
+          className="bg-teal-600 hover:bg-teal-700 text-white py-4 px-8 md:py-4 md:px-8 rounded-lg font-medium text-lg transition-colors inline-flex items-center min-h-[50px] min-w-[200px] justify-center"
         >
           Let's Get Started
           <ArrowRight className="w-4 h-4 ml-2" />

@@ -88,9 +88,9 @@ export default function OnboardingContactPage() {
           smsSent: data.sms_sent
         }));
 
-        // Force page reload to trigger auth context to pick up new tokens
-        // This ensures the user is authenticated when they click "Go to Dashboard"
-        window.location.href = '/start/focus';
+        // Force page reload to trigger auth context and go directly to dashboard
+        // Skip the focus/checks-sent pages - let them discover features in the dashboard
+        window.location.href = '/dashboard';
         return;
       } else {
         setError(data.error || data.phone?.[0] || 'Failed to create account. Please try again.');
