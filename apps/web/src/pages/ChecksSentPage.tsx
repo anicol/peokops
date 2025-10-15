@@ -35,6 +35,11 @@ export default function ChecksSentPage() {
     }
   };
 
+  const handleGoToDashboard = () => {
+    // Use full page navigation to ensure auth context picks up tokens
+    window.location.href = '/dashboard';
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-teal-50 to-green-50 flex items-center justify-center p-4 relative overflow-hidden">
       {/* Confetti effect */}
@@ -115,7 +120,7 @@ export default function ChecksSentPage() {
             )}
 
             <button
-              onClick={() => navigate('/dashboard')}
+              onClick={handleGoToDashboard}
               className="w-full py-3 text-teal-600 hover:text-teal-700 font-medium transition-colors"
             >
               Go to Dashboard →

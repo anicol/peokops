@@ -71,7 +71,7 @@ export default function FirstChecksReadyPage() {
           <h1 className="text-2xl font-bold text-gray-900 mb-4">Oops!</h1>
           <p className="text-gray-600 mb-6">{error || 'No checks available yet.'}</p>
           <button
-            onClick={() => navigate('/dashboard')}
+            onClick={() => window.location.href = '/dashboard'}
             className="px-6 py-3 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors font-medium"
           >
             Go to Dashboard

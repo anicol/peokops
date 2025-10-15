@@ -88,8 +88,10 @@ export default function OnboardingContactPage() {
           smsSent: data.sms_sent
         }));
 
-        // Navigate to focus areas or skip to confirmation
-        navigate('/start/focus');
+        // Force page reload to trigger auth context to pick up new tokens
+        // This ensures the user is authenticated when they click "Go to Dashboard"
+        window.location.href = '/start/focus';
+        return;
       } else {
         setError(data.error || data.phone?.[0] || 'Failed to create account. Please try again.');
       }
