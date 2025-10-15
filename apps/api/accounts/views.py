@@ -176,12 +176,15 @@ def quick_signup_view(request):
         # TODO: Re-enable SMS when Twilio verification is complete
         from micro_checks.utils import send_magic_link_email
 
+        # Determine recipient name - use first name if available, otherwise just friendly greeting
+        recipient_name = user.first_name if user.first_name else None
+
         # Send magic link via email (primary method during Twilio verification)
         email_sent = send_magic_link_email(
             email=user.email,
             token=magic_token,
             store_name=store_name,
-            recipient_name=user.username
+            recipient_name=recipient_name
         )
 
         # Set delivery method
