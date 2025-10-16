@@ -211,7 +211,7 @@ export default function MicroCheckRunDetailPage() {
                                   <span className={`font-bold text-base ${isPassed ? 'text-green-700' : 'text-red-700'}`}>
                                     {isPassed ? 'Passed' : 'Failed'}
                                   </span>
-                                  {correctiveAction?.status === 'RESOLVED' && (
+                                  {(correctiveAction?.status === 'RESOLVED' || correctiveAction?.status === 'VERIFIED') && (
                                     <span className="inline-flex items-center px-2 py-1 rounded-md text-xs font-semibold bg-green-100 text-green-800">
                                       <CheckCheck className="w-3 h-3 mr-1" />
                                       Fixed
