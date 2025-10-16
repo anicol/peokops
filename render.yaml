@@ -53,6 +53,8 @@ services:
         value: us-east-1
       - key: JWT_SECRET_KEY
         generateValue: true
+      - key: MICRO_CHECK_BASE_URL
+        value: https://peakops-web.onrender.com
       - key: MAX_VIDEO_SIZE_MB
         value: "100"
       - key: SUPPORTED_VIDEO_FORMATS
