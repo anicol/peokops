@@ -202,7 +202,7 @@ export default function MicroCheckRunDetailPage() {
                           {hasResponse && (
                             <div className="mt-3 p-4 rounded-lg bg-gray-50 border-2 border-gray-200">
                               <div className="flex items-start justify-between mb-3">
-                                <div className="flex items-center">
+                                <div className="flex items-center gap-2">
                                   {isPassed ? (
                                     <CheckCircle className="w-5 h-5 text-green-600 mr-2" />
                                   ) : (
@@ -211,8 +211,14 @@ export default function MicroCheckRunDetailPage() {
                                   <span className={`font-bold text-base ${isPassed ? 'text-green-700' : 'text-red-700'}`}>
                                     {isPassed ? 'Passed' : 'Failed'}
                                   </span>
+                                  {correctiveAction?.status === 'RESOLVED' && (
+                                    <span className="inline-flex items-center px-2 py-1 rounded-md text-xs font-semibold bg-green-100 text-green-800">
+                                      <CheckCheck className="w-3 h-3 mr-1" />
+                                      Fixed
+                                    </span>
+                                  )}
                                 </div>
-                                {isFailed && (
+                                {isFailed && !correctiveAction?.status && (
                                   <div>
                                     <AlertTriangle className="w-5 h-5 text-orange-500" />
                                   </div>
@@ -284,7 +290,7 @@ export default function MicroCheckRunDetailPage() {
                               {/* Metadata */}
                               <div className="mt-3 pt-3 border-t border-gray-300 flex items-center justify-between text-xs text-gray-500">
                                 <div>
-                                  Completed by {response.completed_by_name || 'Unknown'}
+                                  {response.completed_by_name && `Completed by ${response.completed_by_name}`}
                                 </div>
                                 <div>
                                   {new Date(response.completed_at).toLocaleString('en-US', {

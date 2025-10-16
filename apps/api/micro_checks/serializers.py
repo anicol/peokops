@@ -135,8 +135,19 @@ class MicroCheckResponseSerializer(serializers.ModelSerializer):
     severity_display = serializers.CharField(source='get_severity_snapshot_display', read_only=True)
     status_display = serializers.CharField(source='get_status_display', read_only=True)
     skip_reason_display = serializers.CharField(source='get_skip_reason_display', read_only=True)
-    completed_by_name = serializers.CharField(source='completed_by.get_full_name', read_only=True, allow_null=True)
+    completed_by_name = serializers.SerializerMethodField()
     media_url = serializers.SerializerMethodField()
+
+    def get_completed_by_name(self, obj):
+        """Return display name for completed_by user, falling back to email/username"""
+        if not obj.completed_by:
+            return None
+        full_name = obj.completed_by.get_full_name().strip()
+        if full_name:
+            return full_name
+        if obj.completed_by.email:
+            return obj.completed_by.email
+        return obj.completed_by.username
 
     def get_media_url(self, obj):
         """Return presigned URL for media asset if it exists"""
