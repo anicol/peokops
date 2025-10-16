@@ -32,17 +32,34 @@ class Command(BaseCommand):
         if options['reset']:
             self.stdout.write('🗑️  Resetting demo data...')
             self.reset_demo_data()
-        
+        else:
+            # Check if demo data already exists (idempotency)
+            if self.demo_data_exists():
+                self.stdout.write(
+                    self.style.WARNING('⚠️  Demo data already exists. Use --reset to recreate.')
+                )
+                return
+
         if options['minimal']:
             self.stdout.write('📊 Creating minimal demo data...')
             self.create_minimal_demo()
         else:
             self.stdout.write('🎭 Creating comprehensive demo data...')
             self.create_comprehensive_demo()
-        
+
         self.stdout.write(
             self.style.SUCCESS('✅ Demo data creation completed successfully!')
         )
+
+    def demo_data_exists(self):
+        """Check if demo data already exists to prevent duplicate creation"""
+        # Check if any brands exist (primary indicator)
+        if Brand.objects.exists():
+            return True
+        # Check if any demo users exist
+        if User.objects.filter(email__in=['admin@demo.com', 'manager@demo.com', 'inspector@demo.com']).exists():
+            return True
+        return False
 
     def reset_demo_data(self):
         """Reset all demo data"""
@@ -420,13 +437,13 @@ class Command(BaseCommand):
             for i, scenario in enumerate(video_scenarios):
                 store = random.choice(stores)
                 
-                # Create video
+                # Create video (always COMPLETED - no PROCESSING to avoid triggering celery tasks)
                 video = Video.objects.create(
                     title=f"{scenario['title']} - {store.name}",
                     description=scenario['description'],
                     store=store,
                     duration=scenario['duration'],
-                    status=random.choice(['COMPLETED', 'COMPLETED', 'PROCESSING']),
+                    status='COMPLETED',
                     metadata={
                         'demo_video': True,
                         'scenario': scenario['title'],
@@ -501,8 +518,8 @@ class Command(BaseCommand):
             },
             {
                 'filename': 'staff_training_session.mov',
-                'mode': 'coaching', 
-                'status': 'PROCESSING'
+                'mode': 'coaching',
+                'status': 'COMPLETE'
             },
             {
                 'filename': 'evening_cleanup_routine.mp4',
@@ -512,7 +529,7 @@ class Command(BaseCommand):
             {
                 'filename': 'new_employee_orientation.mp4',
                 'mode': 'coaching',
-                'status': 'UPLOADED'
+                'status': 'COMPLETE'
             }
         ]
 
