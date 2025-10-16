@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useParams, useNavigate, Link } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery } from 'react-query';
 import { microCheckAPI } from '@/services/api';
 import {
@@ -10,7 +10,6 @@ import {
   XCircle,
   AlertTriangle,
   User,
-  ChevronRight,
   Image as ImageIcon,
   CheckCheck
 } from 'lucide-react';
@@ -158,10 +157,9 @@ export default function MicroCheckRunDetailPage() {
             const correctiveAction = correctiveActions?.find(a => a.response === response?.id);
 
             return (
-              <Link
+              <div
                 key={item.id}
-                to={`/micro-check/run/${runId}/item/${item.id}`}
-                className="block p-6 hover:bg-gray-50 transition-colors"
+                className="p-6"
               >
                 <div className="flex items-start justify-between">
                   <div className="flex items-start space-x-4 flex-1">
@@ -325,11 +323,9 @@ export default function MicroCheckRunDetailPage() {
                         </div>
                       )}
                     </div>
-
-                    <ChevronRight className="w-5 h-5 text-gray-400 flex-shrink-0 mt-1" />
                   </div>
                 </div>
-              </Link>
+              </div>
             );
           })}
         </div>
