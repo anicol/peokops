@@ -11,9 +11,10 @@ import {
   AlertTriangle,
   User,
   ChevronRight,
-  Image as ImageIcon
+  Image as ImageIcon,
+  CheckCheck
 } from 'lucide-react';
-import type { MicroCheckRun, MicroCheckResponse } from '@/types/microCheck';
+import type { MicroCheckRun, MicroCheckResponse, CorrectiveAction } from '@/types/microCheck';
 
 export default function MicroCheckRunDetailPage() {
   const { runId } = useParams<{ runId: string }>();
@@ -29,6 +30,18 @@ export default function MicroCheckRunDetailPage() {
     ['micro-check-responses', runId],
     () => microCheckAPI.getRunResponses(runId!),
     { enabled: !!runId }
+  );
+
+  const { data: correctiveActions } = useQuery<CorrectiveAction[]>(
+    ['corrective-actions', runId],
+    async () => {
+      if (!run?.store) return [];
+      const actions = await microCheckAPI.getCorrectiveActions(run.store);
+      // Filter to only actions for responses in this run
+      const responseIds = responses?.map(r => r.id) || [];
+      return actions.filter(action => responseIds.includes(action.response));
+    },
+    { enabled: !!runId && !!run && !!responses }
   );
 
   if (runLoading || responsesLoading) {
@@ -142,6 +155,7 @@ export default function MicroCheckRunDetailPage() {
             const hasResponse = !!response;
             const isPassed = response?.status === 'PASS';
             const isFailed = response?.status === 'FAIL';
+            const correctiveAction = correctiveActions?.find(a => a.response === response?.id);
 
             return (
               <Link
@@ -213,10 +227,12 @@ export default function MicroCheckRunDetailPage() {
                                 </div>
                               )}
 
-                              {/* Photo */}
+                              {/* Before Photo */}
                               {response.media_url && (
                                 <div>
-                                  <div className="text-xs font-semibold text-gray-500 uppercase mb-2">Photo</div>
+                                  <div className="text-xs font-semibold text-gray-500 uppercase mb-2">
+                                    {correctiveAction?.after_media_url ? 'Before Photo' : 'Photo'}
+                                  </div>
                                   <div className="relative rounded-lg overflow-hidden border border-gray-200 bg-white">
                                     <img
                                       src={response.media_url}
@@ -232,6 +248,36 @@ export default function MicroCheckRunDetailPage() {
                                       }}
                                     />
                                   </div>
+                                </div>
+                              )}
+
+                              {/* After Photo (from corrective action) */}
+                              {correctiveAction?.after_media_url && (
+                                <div>
+                                  <div className="flex items-center text-xs font-semibold text-green-600 uppercase mb-2">
+                                    <CheckCheck className="w-4 h-4 mr-1" />
+                                    After Photo (Fixed)
+                                  </div>
+                                  <div className="relative rounded-lg overflow-hidden border-2 border-green-200 bg-white">
+                                    <img
+                                      src={correctiveAction.after_media_url}
+                                      alt="Fixed issue"
+                                      className="w-full h-auto max-h-96 object-contain"
+                                      onError={(e) => {
+                                        e.currentTarget.style.display = 'none';
+                                        const parent = e.currentTarget.parentElement;
+                                        if (parent) {
+                                          parent.innerHTML = '<div class="p-4 text-center text-gray-500 text-sm">Image not available</div>';
+                                        }
+                                      }}
+                                    />
+                                  </div>
+                                  {correctiveAction.resolution_notes && (
+                                    <div className="mt-2 p-2 bg-green-50 rounded-lg border border-green-200">
+                                      <div className="text-xs font-semibold text-green-700 uppercase mb-1">Resolution Notes</div>
+                                      <p className="text-sm text-green-900">{correctiveAction.resolution_notes}</p>
+                                    </div>
+                                  )}
                                 </div>
                               )}
 

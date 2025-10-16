@@ -257,6 +257,47 @@ class CorrectiveActionSerializer(serializers.ModelSerializer):
     category_display = serializers.CharField(source='get_category_display', read_only=True)
     assigned_to_name = serializers.CharField(source='assigned_to.get_full_name', read_only=True, allow_null=True)
     resolved_by_name = serializers.CharField(source='resolved_by.get_full_name', read_only=True, allow_null=True)
+    before_media_url = serializers.SerializerMethodField()
+    after_media_url = serializers.SerializerMethodField()
+
+    def _get_media_url(self, media_asset):
+        """Helper to generate presigned URL for a media asset"""
+        if not media_asset:
+            return None
+
+        import boto3
+        from django.conf import settings
+
+        try:
+            s3_client = boto3.client(
+                's3',
+                aws_access_key_id=settings.AWS_ACCESS_KEY_ID,
+                aws_secret_access_key=settings.AWS_SECRET_ACCESS_KEY,
+                region_name=settings.AWS_S3_REGION_NAME
+            )
+
+            url = s3_client.generate_presigned_url(
+                'get_object',
+                Params={
+                    'Bucket': media_asset.s3_bucket,
+                    'Key': media_asset.s3_key,
+                },
+                ExpiresIn=3600
+            )
+            return url
+        except Exception as e:
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.error(f"Error generating presigned URL for media {media_asset.id}: {e}")
+            return None
+
+    def get_before_media_url(self, obj):
+        """Return presigned URL for before_media if it exists"""
+        return self._get_media_url(obj.before_media)
+
+    def get_after_media_url(self, obj):
+        """Return presigned URL for after_media if it exists"""
+        return self._get_media_url(obj.after_media)
 
     class Meta:
         model = CorrectiveAction
@@ -264,7 +305,7 @@ class CorrectiveActionSerializer(serializers.ModelSerializer):
             'id', 'response', 'response_details', 'store', 'store_name',
             'category', 'category_display', 'status',
             'due_at', 'assigned_to', 'assigned_to_name',
-            'before_media', 'after_media',
+            'before_media', 'before_media_url', 'after_media', 'after_media_url',
             'resolved_at', 'resolved_by', 'resolved_by_name', 'resolution_notes',
             'fixed_during_session', 'created_from', 'verified_at', 'verification_confidence',
             'created_at', 'created_by', 'updated_at', 'updated_by'

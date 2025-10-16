@@ -245,8 +245,10 @@ export interface CorrectiveAction {
   due_at: string | null;
   assigned_to: number | null;
   assigned_to_name: string;
-  before_media: string | null;
-  after_media: string | null;
+  before_media: string | null; // MediaAsset ID
+  before_media_url: string | null; // Presigned S3 URL
+  after_media: string | null; // MediaAsset ID
+  after_media_url: string | null; // Presigned S3 URL
   resolved_at: string | null;
   resolved_by: number | null;
   resolved_by_name: string;
