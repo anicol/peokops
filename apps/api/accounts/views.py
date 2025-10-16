@@ -12,7 +12,7 @@ from .models import User, SmartNudge, UserBehaviorEvent
 from .serializers import (
     UserSerializer, UserCreateSerializer, LoginSerializer, TrialSignupSerializer,
     SmartNudgeSerializer, BehaviorEventCreateSerializer, ProfileUpdateSerializer,
-    PasswordChangeSerializer
+    PasswordChangeSerializer, QuickSignupSerializer
 )
 from .nudge_engine import BehaviorTracker, NudgeEngine
 
@@ -137,6 +137,73 @@ def change_password_view(request):
     if serializer.is_valid():
         serializer.save()
         return Response({'message': 'Password changed successfully'})
+    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+@extend_schema(
+    request=QuickSignupSerializer,
+    responses={201: UserSerializer, 400: None},
+    description="Streamlined passwordless trial signup - creates account with phone + magic link"
+)
+@api_view(['POST'])
+@permission_classes([AllowAny])
+def quick_signup_view(request):
+    """
+    Streamlined trial signup flow:
+    1. Collect phone, email (optional), store name, industry
+    2. Create user with TRIAL_ADMIN role
+    3. Create brand + store
+    4. Seed 15 micro-check templates
+    5. Create first MicroCheckRun with 3 items
+    6. Generate magic link token
+    7. Send SMS (placeholder - not implemented yet)
+    8. Return user info + tokens + magic link
+    """
+    serializer = QuickSignupSerializer(data=request.data)
+    if serializer.is_valid():
+        user = serializer.save()
+
+        # Generate JWT tokens for immediate login
+        refresh = RefreshToken.for_user(user)
+        access_token = refresh.access_token
+
+        # Get quick signup data stored by serializer
+        quick_signup_data = getattr(user, '_quick_signup_data', {})
+        store_name = user.store.name if user.store else "Your Store"
+        magic_token = quick_signup_data.get('magic_token')
+
+        # TEMPORARY: Use email only until Twilio toll-free verification completes
+        # TODO: Re-enable SMS when Twilio verification is complete
+        from micro_checks.utils import send_magic_link_email
+
+        # Determine recipient name - use first name if available, otherwise just friendly greeting
+        recipient_name = user.first_name if user.first_name else None
+
+        # Send magic link via email (primary method during Twilio verification)
+        email_sent = send_magic_link_email(
+            email=user.email,
+            token=magic_token,
+            store_name=store_name,
+            recipient_name=recipient_name
+        )
+
+        # Set delivery method
+        delivery_method = 'email' if email_sent else None
+
+        # SMS will be enabled after Twilio verification
+        sms_sent = False
+
+        return Response({
+            'user_id': user.id,
+            'access': str(access_token),
+            'refresh': str(refresh),
+            'magic_token': magic_token,
+            'run_id': quick_signup_data.get('run_id'),
+            'sms_sent': sms_sent,
+            'email_sent': email_sent,
+            'delivery_method': delivery_method
+        }, status=status.HTTP_201_CREATED)
+
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 

@@ -199,9 +199,9 @@ export default function InteractiveDemoExperience({ onSkipToDashboard }: Interac
       <div className="bg-gradient-to-r from-indigo-500 to-purple-600 text-white p-6 rounded-lg">
         <div className="flex items-start justify-between">
           <div className="flex-1">
-            <h1 className="text-2xl font-bold mb-2">Welcome to VerityInspect, {user?.first_name}! 👋</h1>
+            <h1 className="text-2xl font-bold mb-2">Welcome to PeakOps, {user?.first_name}! 👋</h1>
             <p className="text-indigo-100 mb-4">
-              Experience the power of AI-powered restaurant inspections with this interactive demo
+              Experience the power of daily micro-checks with AI feedback in this interactive demo
             </p>
             <div className="flex items-center space-x-4 text-sm text-indigo-200">
               <span className="flex items-center">

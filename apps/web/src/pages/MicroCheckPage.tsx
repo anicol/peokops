@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useSearchParams, Link } from 'react-router-dom';
+import { useQueryClient } from 'react-query';
 import { Camera, CheckCircle, AlertTriangle, ArrowRight, Clock, Target, Loader2 } from 'lucide-react';
 import { microCheckAPI } from '@/services/api';
 import type { MicroCheckRun, MicroCheckRunItem, CheckResult, CorrectiveAction } from '@/types/microCheck';
@@ -13,6 +14,7 @@ type CheckStatus = 'PASS' | 'FAIL' | 'SKIPPED';
 const MicroCheckPage = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
+  const queryClient = useQueryClient();
   const token = searchParams.get('token');
 
   const [run, setRun] = useState<MicroCheckRun | null>(null);
@@ -317,6 +319,10 @@ const MicroCheckPage = () => {
           // Fetch store streak for display
           const streakData = await microCheckAPI.getStoreStreak(run.store);
           setStoreStreak(streakData.current_streak);
+
+          // Invalidate dashboard stats cache so it refetches with updated streak
+          queryClient.invalidateQueries(['dashboard-stats']);
+          queryClient.invalidateQueries('recent-micro-checks');
         } catch (err) {
           console.error('Error fetching summary data:', err);
           // If fetch fails, just use checkResults from this session
@@ -533,6 +539,10 @@ const MicroCheckPage = () => {
 
           const streakData = await microCheckAPI.getStoreStreak(run.store);
           setStoreStreak(streakData.current_streak);
+
+          // Invalidate dashboard stats cache so it refetches with updated streak
+          queryClient.invalidateQueries(['dashboard-stats']);
+          queryClient.invalidateQueries('recent-micro-checks');
 
           setError(null); // Clear error to show summary
           setCurrentScreen('summary');

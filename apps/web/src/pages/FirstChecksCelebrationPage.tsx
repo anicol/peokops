@@ -6,6 +6,11 @@ export default function FirstChecksCelebrationPage() {
   const [searchParams] = useSearchParams();
   const focusAreas = searchParams.get('focus') || 'your operations';
 
+  const handleGoToDashboard = () => {
+    // Use full page navigation to ensure auth context picks up tokens
+    window.location.href = '/dashboard';
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-emerald-50 to-teal-50 flex items-center justify-center p-4">
       <div className="max-w-lg w-full text-center">
@@ -55,7 +60,7 @@ export default function FirstChecksCelebrationPage() {
 
         {/* Primary CTA */}
         <button
-          onClick={() => navigate('/dashboard')}
+          onClick={handleGoToDashboard}
           className="w-full py-4 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-all font-semibold text-lg shadow-lg hover:shadow-xl transform hover:scale-105 flex items-center justify-center mb-4"
         >
           Continue to Dashboard

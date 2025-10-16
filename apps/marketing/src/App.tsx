@@ -1,6 +1,7 @@
 import { Routes, Route } from 'react-router-dom';
 import HomePage from './pages/HomePage';
 import PrivacyPage from './pages/PrivacyPage';
+import TermsPage from './pages/TermsPage';
 import ROICalculatorPage from './pages/ROICalculatorPage';
 import CoachingModePage from './pages/CoachingModePage';
 import GuidePage from './pages/GuidePage';
@@ -34,8 +35,7 @@ function App() {
         <Route path="/blog" element={<BlogPage />} />
         <Route path="/blog/coaching-over-compliance" element={<BlogCoachingOverCompliance />} />
         <Route path="/blog/daily-walkthrough" element={<BlogDailyWalkthrough />} />
-        {/* Placeholder routes for future pages */}
-        <Route path="/terms" element={<div>Terms page coming soon</div>} />
+        <Route path="/terms" element={<TermsPage />} />
       </Routes>
     </>
   );

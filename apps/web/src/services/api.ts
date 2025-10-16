@@ -415,6 +415,12 @@ export const microCheckAPI = {
     return response.data.results || response.data;
   },
 
+  // Get a single run by ID (auth required)
+  getRunById: async (runId: string): Promise<MicroCheckRun> => {
+    const response = await api.get(`/micro-checks/runs/${runId}/`);
+    return response.data;
+  },
+
   // Get pending runs for a store (auth required)
   getPendingRuns: async (storeId: number): Promise<MicroCheckRun[]> => {
     const response = await api.get('/micro-checks/runs/pending/', {
@@ -435,6 +441,14 @@ export const microCheckAPI = {
   getResponses: async (storeId: number, params?: Record<string, any>): Promise<MicroCheckResponse[]> => {
     const response = await api.get('/micro-checks/responses/', {
       params: { store: storeId, ...params },
+    });
+    return response.data.results || response.data;
+  },
+
+  // Get responses for a specific run (auth required)
+  getRunResponses: async (runId: string): Promise<MicroCheckResponse[]> => {
+    const response = await api.get('/micro-checks/responses/', {
+      params: { run: runId },
     });
     return response.data.results || response.data;
   },

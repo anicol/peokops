@@ -15,10 +15,10 @@ const Footer = () => {
               <span className="text-xl font-bold">PeakOps</span>
             </Link>
             <p className="text-gray-400 text-sm font-semibold">
-              AI Agents for Frontline Excellence
+              Habit-Based Operations Intelligence
             </p>
             <p className="text-gray-400 text-sm">
-              Empower managers. Enable brands. Elevate every location.
+              Empower teams. Build habits. Keep every location consistent.
             </p>
           </div>
 

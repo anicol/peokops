@@ -7,6 +7,11 @@ import TrialWelcomePage from '@/pages/TrialWelcomePage';
 import TrialOnboardingPage from '@/pages/TrialOnboardingPage';
 import FirstChecksReadyPage from '@/pages/FirstChecksReadyPage';
 import FirstChecksCelebrationPage from '@/pages/FirstChecksCelebrationPage';
+import OnboardingIndustryPage from '@/pages/OnboardingIndustryPage';
+import OnboardingStoreNamePage from '@/pages/OnboardingStoreNamePage';
+import OnboardingContactPage from '@/pages/OnboardingContactPage';
+import OnboardingFocusPage from '@/pages/OnboardingFocusPage';
+import ChecksSentPage from '@/pages/ChecksSentPage';
 import Dashboard from '@/pages/Dashboard';
 import VideosPage from '@/pages/VideosPage';
 import VideoUploadPage from '@/pages/VideoUploadPage';
@@ -25,6 +30,7 @@ import AdminQueuePage from '@/pages/AdminQueuePage';
 import MicroCheckInvitePage from '@/pages/MicroCheckInvitePage';
 import MicroCheckPage from '@/pages/MicroCheckPage';
 import MicroCheckHistoryPage from '@/pages/MicroCheckHistoryPage';
+import MicroCheckRunDetailPage from '@/pages/MicroCheckRunDetailPage';
 import MicroCheckTemplatesPage from '@/pages/MicroCheckTemplatesPage';
 import InsightsPage from '@/pages/InsightsPage';
 import ProfilePage from '@/pages/ProfilePage';
@@ -53,7 +59,14 @@ function AppRoutes() {
         <Route path="/login" element={isAuthenticated ? <Navigate to="/" replace /> : <LoginPage />} />
         <Route path="/trial-signup" element={isAuthenticated ? <Navigate to="/" replace /> : <TrialSignupPage />} />
 
-        {/* Trial onboarding flow */}
+        {/* New streamlined onboarding flow - no auth required */}
+        <Route path="/start" element={<OnboardingIndustryPage />} />
+        <Route path="/start/store-name" element={<OnboardingStoreNamePage />} />
+        <Route path="/start/contact" element={<OnboardingContactPage />} />
+        <Route path="/start/focus" element={<OnboardingFocusPage />} />
+        <Route path="/checks-sent" element={<ChecksSentPage />} />
+
+        {/* Old trial onboarding flow - kept for backwards compatibility */}
         <Route path="/welcome" element={isAuthenticated ? <TrialWelcomePage /> : <Navigate to="/login" replace />} />
         <Route path="/onboarding" element={isAuthenticated ? <TrialOnboardingPage /> : <Navigate to="/login" replace />} />
         <Route path="/first-checks-ready" element={isAuthenticated ? <FirstChecksReadyPage /> : <Navigate to="/login" replace />} />
@@ -230,6 +243,18 @@ function AppRoutes() {
             isAuthenticated ? (
               <Layout>
                 <MicroCheckHistoryPage />
+              </Layout>
+            ) : (
+              <Navigate to="/login" replace />
+            )
+          }
+        />
+        <Route
+          path="/micro-check/run/:runId"
+          element={
+            isAuthenticated ? (
+              <Layout>
+                <MicroCheckRunDetailPage />
               </Layout>
             ) : (
               <Navigate to="/login" replace />

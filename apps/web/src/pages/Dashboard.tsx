@@ -235,11 +235,11 @@ function TrialDashboard({ user, stats, dashboardStats, microCheckRuns, setDemoRe
             </div>
           </div>
 
-          {/* Recent Inspections */}
+          {/* Recent Checks */}
           <div className="bg-white rounded-2xl shadow-lg border border-gray-200">
             <div className="p-6 border-b border-gray-200">
               <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center space-y-2 sm:space-y-0">
-                <h3 className="text-xl font-semibold text-gray-900">Recent Inspections</h3>
+                <h3 className="text-xl font-semibold text-gray-900">Recent Checks</h3>
                 <Link to="/micro-check-history" className="text-blue-600 hover:text-blue-700 text-sm font-medium">
                   View All
                 </Link>
@@ -247,30 +247,52 @@ function TrialDashboard({ user, stats, dashboardStats, microCheckRuns, setDemoRe
             </div>
 
             <div className="divide-y divide-gray-200">
-              {microCheckRuns?.slice(0, 5).map((run: any) => (
-                <Link key={run.id} to={`/micro-check/run/${run.id}`} className="block p-6 hover:bg-gray-50 transition-colors">
-                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-3 sm:space-y-0">
-                    <div className="flex items-center space-x-4">
-                      <div className={`w-12 h-12 ${run.passed ? 'bg-green-100' : 'bg-yellow-100'} rounded-lg flex items-center justify-center`}>
-                        <span className={`${run.passed ? 'text-green-600' : 'text-yellow-600'} font-bold text-lg`}>
-                          {run.passed ? '✓' : '!'}
-                        </span>
+              {microCheckRuns?.slice(0, 5).map((run: any) => {
+                const isCompleted = run.status === 'COMPLETED';
+                const completionDate = run.completed_at || run.scheduled_for;
+                const itemCount = run.items?.length || 0;
+                const completedCount = run.completed_count || 0;
+
+                return (
+                  <Link key={run.id} to={`/micro-check/run/${run.id}`} className="block p-6 hover:bg-gray-50 transition-colors">
+                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-3 sm:space-y-0">
+                      <div className="flex items-center space-x-4">
+                        <div className={`w-12 h-12 ${isCompleted ? 'bg-green-100' : 'bg-blue-100'} rounded-lg flex items-center justify-center`}>
+                          <span className={`${isCompleted ? 'text-green-600' : 'text-blue-600'} font-bold text-lg`}>
+                            {isCompleted ? '✓' : itemCount}
+                          </span>
+                        </div>
+                        <div>
+                          <div className="font-medium text-gray-900">
+                            {new Date(completionDate).toLocaleDateString('en-US', {
+                              weekday: 'short',
+                              month: 'short',
+                              day: 'numeric'
+                            })} Checks
+                          </div>
+                          <div className="text-sm text-gray-600">
+                            {isCompleted
+                              ? `Completed at ${new Date(run.completed_at).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}`
+                              : `Scheduled for ${new Date(run.scheduled_for).toLocaleDateString()}`
+                            }
+                          </div>
+                        </div>
                       </div>
-                      <div>
-                        <div className="font-medium text-gray-900">{run.template_title}</div>
-                        <div className="text-sm text-gray-600">{new Date(run.created_at).toLocaleString()}</div>
+                      <div className="flex items-center justify-between sm:justify-end space-x-3">
+                        <div className="text-right">
+                          <div className={`text-sm font-medium ${isCompleted ? 'text-green-600' : 'text-blue-600'}`}>
+                            {isCompleted ? 'Completed' : 'Pending'}
+                          </div>
+                          <div className="text-xs text-gray-600">
+                            {completedCount}/{itemCount} items
+                          </div>
+                        </div>
+                        <ArrowRight className="w-5 h-5 text-gray-400" />
                       </div>
                     </div>
-                    <div className="flex items-center justify-between sm:justify-end space-x-3">
-                      <div className="text-right">
-                        <div className="text-sm font-medium text-gray-900">{run.passed ? 'Passed' : 'Needs Attention'}</div>
-                        <div className="text-xs text-gray-600">{run.item_count} items checked</div>
-                      </div>
-                      <ArrowRight className="w-5 h-5 text-gray-400" />
-                    </div>
-                  </div>
-                </Link>
-              ))}
+                  </Link>
+                );
+              })}
               {(!microCheckRuns || microCheckRuns.length === 0) && (
                 <div className="p-6 text-center text-gray-500">No checks completed yet</div>
               )}

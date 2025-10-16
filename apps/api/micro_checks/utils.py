@@ -403,3 +403,174 @@ def seed_default_templates(brand, created_by=None):
         templates_created.append(template)
 
     return templates_created
+
+
+def send_magic_link_sms(phone, token, store_name="Your Store"):
+    """
+    Send magic link SMS using Twilio.
+
+    Args:
+        phone: Phone number in E.164 format (e.g., +15551234567)
+        token: Magic link token
+        store_name: Name of the store for personalization
+
+    Returns:
+        bool: True if SMS sent successfully, False otherwise
+    """
+    from django.conf import settings
+    import logging
+
+    logger = logging.getLogger(__name__)
+
+    # Check if Twilio is configured
+    twilio_account_sid = getattr(settings, 'TWILIO_ACCOUNT_SID', None)
+    twilio_auth_token = getattr(settings, 'TWILIO_AUTH_TOKEN', None)
+    twilio_phone_number = getattr(settings, 'TWILIO_PHONE_NUMBER', None)
+
+    if not all([twilio_account_sid, twilio_auth_token, twilio_phone_number]):
+        logger.warning("Twilio credentials not configured. Skipping SMS send.")
+        return False
+
+    try:
+        from twilio.rest import Client
+
+        # Initialize Twilio client
+        client = Client(twilio_account_sid, twilio_auth_token)
+
+        # Build magic link URL
+        magic_link = build_magic_link_url(token)
+
+        # Craft message
+        message_body = (
+            f"✨ Your first {store_name} checks are ready!\n\n"
+            f"Complete 3 quick checks (under 2 min):\n"
+            f"{magic_link}\n\n"
+            f"No login required - just tap the link!"
+        )
+
+        # Send SMS
+        message = client.messages.create(
+            body=message_body,
+            from_=twilio_phone_number,
+            to=phone
+        )
+
+        logger.info(f"SMS sent successfully to {phone}. SID: {message.sid}")
+        return True
+
+    except Exception as e:
+        logger.error(f"Failed to send SMS to {phone}: {str(e)}")
+        return False
+
+
+def send_magic_link_email(email, token, store_name="Your Store", recipient_name=None):
+    """
+    Send magic link email as fallback when SMS fails.
+
+    Args:
+        email: Email address
+        token: Magic link token
+        store_name: Name of the store for personalization
+        recipient_name: Optional recipient name for personalization
+
+    Returns:
+        bool: True if email sent successfully, False otherwise
+    """
+    from django.core.mail import EmailMultiAlternatives
+    from django.conf import settings
+    import logging
+
+    logger = logging.getLogger(__name__)
+
+    try:
+        # Build magic link URL
+        magic_link = build_magic_link_url(token)
+
+        # Personalize greeting
+        greeting = f"Hi {recipient_name}," if recipient_name else "Hi there,"
+
+        # Craft email subject
+        subject = f"Your {store_name} Quick Checks Are Ready! 🎯"
+
+        # Plain text version (no markdown)
+        text_content = f"""{greeting}
+
+Welcome to PeakOps! Your first 3 quick checks are ready to complete.
+
+GET STARTED IN 2 MINUTES
+
+Complete your checks by clicking this link:
+{magic_link}
+
+WHAT TO EXPECT:
+- 3 simple checks for {store_name}
+- Takes under 2 minutes
+- No login required - just click the link
+- Works on your phone or computer
+
+QUESTIONS?
+Just reply to this email - we're here to help!
+
+Thanks,
+The PeakOps Team
+
+---
+This link is valid for 30 days, but we recommend completing your checks today to build the habit!
+"""
+
+        # HTML version (properly formatted)
+        html_content = f"""
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+<body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
+    <p style="font-size: 16px; margin-bottom: 20px;">{greeting}</p>
+
+    <p style="font-size: 16px; margin-bottom: 20px;">Welcome to <strong>PeakOps</strong>! Your first 3 quick checks are ready to complete.</p>
+
+    <div style="background: linear-gradient(135deg, #0d9488 0%, #06b6d4 100%); border-radius: 12px; padding: 24px; margin: 24px 0; text-align: center;">
+        <h2 style="color: white; margin: 0 0 16px 0; font-size: 20px;">✨ Get Started in 2 Minutes</h2>
+        <a href="{magic_link}" style="display: inline-block; background: white; color: #0d9488; padding: 14px 32px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 16px;">Start Your Checks</a>
+    </div>
+
+    <div style="background: #f9fafb; border-left: 4px solid #0d9488; padding: 16px; margin: 24px 0; border-radius: 4px;">
+        <h3 style="margin: 0 0 12px 0; font-size: 16px; color: #111;">What to Expect:</h3>
+        <ul style="margin: 0; padding-left: 20px;">
+            <li style="margin-bottom: 8px;">3 simple checks for {store_name}</li>
+            <li style="margin-bottom: 8px;">Takes under 2 minutes</li>
+            <li style="margin-bottom: 8px;">No login required - just click the link</li>
+            <li style="margin-bottom: 8px;">Works on your phone or computer</li>
+        </ul>
+    </div>
+
+    <p style="font-size: 16px; margin-bottom: 8px;"><strong>Questions?</strong></p>
+    <p style="font-size: 16px; margin-bottom: 24px;">Just reply to this email - we're here to help!</p>
+
+    <p style="font-size: 16px; margin-bottom: 8px;">Thanks,<br>The PeakOps Team</p>
+
+    <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 24px 0;">
+
+    <p style="font-size: 12px; color: #6b7280; margin: 0;">This link is valid for 30 days, but we recommend completing your checks today to build the habit!</p>
+</body>
+</html>
+"""
+
+        # Create email with both plain text and HTML
+        msg = EmailMultiAlternatives(
+            subject=subject,
+            body=text_content,
+            from_email=settings.DEFAULT_FROM_EMAIL,
+            to=[email]
+        )
+        msg.attach_alternative(html_content, "text/html")
+        msg.send()
+
+        logger.info(f"Magic link email sent successfully to {email}")
+        return True
+
+    except Exception as e:
+        logger.error(f"Failed to send email to {email}: {str(e)}")
+        return False

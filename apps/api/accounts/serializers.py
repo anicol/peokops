@@ -218,3 +218,169 @@ class PasswordChangeSerializer(serializers.Serializer):
         user.set_password(self.validated_data['new_password'])
         user.save()
         return user
+
+
+class QuickSignupSerializer(serializers.Serializer):
+    """Streamlined passwordless trial signup - account created with email + magic link"""
+    phone = serializers.CharField(required=True, allow_blank=True, help_text="Phone number in E.164 format (optional for now)")
+    email = serializers.EmailField(required=True, help_text="Email address for magic link delivery")
+    store_name = serializers.CharField(max_length=200)
+    industry = serializers.ChoiceField(choices=['RESTAURANT', 'RETAIL', 'HOSPITALITY', 'OTHER'])
+    focus_areas = serializers.ListField(child=serializers.CharField(), required=False, allow_empty=True)
+
+    def validate_phone(self, value):
+        """Ensure phone number is unique and properly formatted (optional for now)"""
+        # Allow blank/placeholder phone numbers
+        if not value or value == '+10000000000':
+            return value
+
+        # Check if phone already exists
+        if User.objects.filter(phone=value).exists():
+            raise serializers.ValidationError("A user with this phone number already exists.")
+
+        # Basic E.164 format validation (starts with + and has 10-15 digits)
+        if not value.startswith('+') or not value[1:].isdigit() or len(value) < 11 or len(value) > 16:
+            raise serializers.ValidationError("Phone number must be in E.164 format (e.g., +15551234567)")
+
+        return value
+
+    def validate_email(self, value):
+        """Ensure email is unique if provided"""
+        if value and User.objects.filter(email=value).exists():
+            raise serializers.ValidationError("A user with this email already exists.")
+        return value
+
+    def create(self, validated_data):
+        """Create trial user with passwordless magic link flow"""
+        phone = validated_data['phone']
+        email = validated_data.get('email', '')
+        store_name = validated_data['store_name']
+        industry = validated_data['industry']
+        focus_areas = validated_data.get('focus_areas', [])
+
+        # Generate secure random password (user won't need it - magic link only)
+        random_password = ''.join(secrets.choice(string.ascii_letters + string.digits) for _ in range(32))
+
+        # Generate referral code
+        referral_code = ''.join(secrets.choice(string.ascii_uppercase + string.digits) for _ in range(8))
+
+        # Generate username - use email if phone is placeholder/blank
+        if not phone or phone == '+10000000000':
+            # Use email as username, or generate unique username from email + random suffix
+            if email:
+                username = email.split('@')[0] + '_' + ''.join(secrets.choice(string.ascii_lowercase + string.digits) for _ in range(6))
+            else:
+                # Fallback: generate completely random username
+                username = 'trial_' + ''.join(secrets.choice(string.ascii_lowercase + string.digits) for _ in range(12))
+        else:
+            # Use phone as username (sanitized)
+            username = phone.replace('+', '').replace('-', '').replace(' ', '')
+
+        # Create trial user
+        user = User.objects.create_user(
+            username=username,
+            email=email or f"{username}@trial.temp",  # Temporary email if not provided
+            password=random_password,
+            phone=phone if phone and phone != '+10000000000' else '',  # Don't store placeholder
+            role=User.Role.TRIAL_ADMIN,
+            is_trial_user=True,
+            trial_expires_at=timezone.now().replace(hour=23, minute=59, second=59, microsecond=999999) + timedelta(days=6),
+            referral_code=referral_code
+        )
+
+        # Auto-create trial brand
+        brand = Brand.create_trial_brand(user)
+
+        # Auto-create store with provided name
+        store = Store.objects.create(
+            brand=brand,
+            name=store_name,
+            code=f"TRIAL-{user.id}",
+            address="",
+            city="",
+            state="",
+            zip_code="",
+            timezone="America/New_York",  # Default timezone, can be updated later
+            manager_email=email or phone
+        )
+
+        # Assign user to store
+        user.store = store
+        user.increment_trial_usage('store')
+        user.save()
+
+        # Mark onboarding completed
+        user.onboarding_completed_at = timezone.now()
+        user.save()
+
+        # Create first MicroCheckRun with magic link
+        from micro_checks.models import MicroCheckRun, MicroCheckRunItem, MicroCheckAssignment
+        from micro_checks.utils import (
+            generate_magic_link_token, hash_token,
+            get_store_local_date, get_next_sequence_number,
+            select_templates_for_run
+        )
+
+        # Get today's date in store timezone
+        local_date = get_store_local_date(store)
+        sequence = get_next_sequence_number(store, local_date)
+
+        # Create the run
+        run = MicroCheckRun.objects.create(
+            store=store,
+            scheduled_for=local_date,
+            daypart='ANY',
+            sequence=sequence,
+            store_timezone=store.timezone,
+            created_via='SMS',
+            status='PENDING',
+            created_by=user,
+            retention_policy='COACHING'
+        )
+
+        # Select templates for the run
+        selected_templates = select_templates_for_run(store, num_items=3)
+
+        # Create run items
+        for order, (template, coverage, photo_required, photo_reason) in enumerate(selected_templates, start=1):
+            MicroCheckRunItem.objects.create(
+                run=run,
+                template=template,
+                order=order,
+                photo_required=photo_required,
+                photo_required_reason=photo_reason or '',
+                template_version=template.version,
+                title_snapshot=template.title,
+                success_criteria_snapshot=template.success_criteria,
+                category_snapshot=template.category,
+                severity_snapshot=template.severity
+            )
+
+        # Generate magic link token
+        raw_token = generate_magic_link_token()
+        token_hash = hash_token(raw_token)
+
+        # Create assignment with magic link
+        assignment = MicroCheckAssignment.objects.create(
+            run=run,
+            store=store,
+            sent_to=user,
+            access_token_hash=token_hash,
+            token_expires_at=timezone.now() + timedelta(days=30),
+            purpose='RUN_ACCESS',
+            scope={'run_id': str(run.id), 'store_id': store.id},
+            max_uses=999,  # Allow unlimited uses for trial
+            sent_via='SMS',
+            sent_at=timezone.now(),
+            created_by=user,
+            retention_policy='COACHING'
+        )
+
+        # Store data for response
+        user._quick_signup_data = {
+            'magic_token': raw_token,
+            'run_id': str(run.id),
+            'sms_sent': False  # Will be set by SMS sending logic
+        }
+
+        return user
