@@ -214,12 +214,12 @@ export default function MicroCheckRunDetailPage() {
                               )}
 
                               {/* Photo */}
-                              {response.media && (
+                              {response.media_url && (
                                 <div>
                                   <div className="text-xs font-semibold text-gray-500 uppercase mb-2">Photo</div>
                                   <div className="relative rounded-lg overflow-hidden border border-gray-200 bg-white">
                                     <img
-                                      src={response.media}
+                                      src={response.media_url}
                                       alt="Check response"
                                       className="w-full h-auto max-h-96 object-contain"
                                       onError={(e) => {

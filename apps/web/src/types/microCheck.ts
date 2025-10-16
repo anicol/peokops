@@ -180,7 +180,8 @@ export interface MicroCheckResponse {
   skip_reason: SkipReason | '';
   skip_reason_display: string;
   skip_reason_detail: string;
-  media: string | null;
+  media: string | null; // MediaAsset ID (for writing)
+  media_url: string | null; // Presigned S3 URL (for reading/display)
   completed_by: number | null;
   completed_by_name: string;
   completed_at: string;

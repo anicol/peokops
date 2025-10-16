@@ -136,9 +136,9 @@ class MicroCheckResponseSerializer(serializers.ModelSerializer):
     status_display = serializers.CharField(source='get_status_display', read_only=True)
     skip_reason_display = serializers.CharField(source='get_skip_reason_display', read_only=True)
     completed_by_name = serializers.CharField(source='completed_by.get_full_name', read_only=True, allow_null=True)
-    media = serializers.SerializerMethodField()
+    media_url = serializers.SerializerMethodField()
 
-    def get_media(self, obj):
+    def get_media_url(self, obj):
         """Return presigned URL for media asset if it exists"""
         if not obj.media:
             return None
@@ -178,7 +178,7 @@ class MicroCheckResponseSerializer(serializers.ModelSerializer):
             'store', 'store_name', 'category', 'category_display',
             'severity_snapshot', 'severity_display', 'status', 'status_display',
             'notes', 'skip_reason', 'skip_reason_display', 'skip_reason_detail',
-            'media', 'completed_by', 'completed_by_name', 'completed_at',
+            'media', 'media_url', 'completed_by', 'completed_by_name', 'completed_at',
             'local_completed_date', 'completion_seconds',
             'override_reason', 'overridden_by', 'overridden_at',
             'created_at', 'created_by', 'updated_at', 'updated_by'
