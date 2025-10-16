@@ -253,7 +253,11 @@ function TrialDashboard({ user, stats, dashboardStats, microCheckRuns, allRespon
             </div>
 
             <div className="divide-y divide-gray-200">
-              {microCheckRuns?.slice(0, 5).map((run: any) => {
+              {microCheckRuns?.sort((a: any, b: any) => {
+                const aDate = new Date(a.completed_at || a.scheduled_for);
+                const bDate = new Date(b.completed_at || b.scheduled_for);
+                return bDate.getTime() - aDate.getTime(); // Latest first
+              }).slice(0, 5).map((run: any) => {
                 const isCompleted = run.status === 'COMPLETED';
                 const completionDate = run.completed_at || run.scheduled_for;
                 const itemCount = run.items?.length || 0;
@@ -264,12 +268,21 @@ function TrialDashboard({ user, stats, dashboardStats, microCheckRuns, allRespon
                 const passedCount = runResponses.filter((r: any) => r.status === 'PASS').length;
                 const failedCount = runResponses.filter((r: any) => r.status === 'FAIL').length;
 
-                // Group responses by category for display
-                const checksByCategory = runResponses.slice(0, 3).map((response: any) => ({
-                  id: response.id,
-                  category_display: response.category_display,
-                  status: response.status,
-                }));
+                // Calculate relative time
+                const getRelativeTime = (dateStr: string) => {
+                  const date = new Date(dateStr);
+                  const now = new Date();
+                  const diffMs = now.getTime() - date.getTime();
+                  const diffMins = Math.floor(diffMs / (1000 * 60));
+                  const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+                  const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+
+                  if (diffMins < 1) return 'Just now';
+                  if (diffMins < 60) return `${diffMins} min ago`;
+                  if (diffHours < 24) return `${diffHours} hour${diffHours > 1 ? 's' : ''} ago`;
+                  if (diffDays === 1) return 'Yesterday';
+                  return `${diffDays} days ago`;
+                };
 
                 return (
                   <Link key={run.id} to={`/micro-check/run/${run.id}`} className="block p-6 hover:bg-gray-50 transition-colors">
@@ -289,27 +302,24 @@ function TrialDashboard({ user, stats, dashboardStats, microCheckRuns, allRespon
                             })} Checks
                           </div>
                           <div className="text-sm text-gray-600">
-                            {isCompleted
-                              ? `Completed at ${new Date(run.completed_at).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}`
-                              : `${completedCount}/${itemCount} items completed`
-                            }
+                            {isCompleted ? getRelativeTime(run.completed_at) : `${completedCount}/${itemCount} items completed`}
                           </div>
                         </div>
                       </div>
 
-                      {/* Stats */}
+                      {/* Stats - Fixed width columns for alignment */}
                       {isCompleted && (
-                        <div className="flex items-center space-x-4 mr-4">
-                          <div className="text-center">
-                            <div className="text-lg font-bold text-green-600">{passedCount}</div>
+                        <div className="flex items-center space-x-6 mr-4">
+                          <div className="text-center w-16">
+                            <div className="text-lg font-bold text-green-600 tabular-nums">{passedCount}</div>
                             <div className="text-xs text-gray-500">Passed</div>
                           </div>
-                          <div className="text-center">
-                            <div className="text-lg font-bold text-red-600">{failedCount}</div>
+                          <div className="text-center w-16">
+                            <div className="text-lg font-bold text-red-600 tabular-nums">{failedCount}</div>
                             <div className="text-xs text-gray-500">Failed</div>
                           </div>
-                          <div className="text-center">
-                            <div className="text-lg font-bold text-blue-600">
+                          <div className="text-center w-16">
+                            <div className="text-lg font-bold text-blue-600 tabular-nums">
                               {Math.round((passedCount / (passedCount + failedCount)) * 100)}%
                             </div>
                             <div className="text-xs text-gray-500">Score</div>
