@@ -75,6 +75,12 @@ export default function Dashboard() {
     { enabled: !!user?.store }
   );
 
+  const { data: allResponses } = useQuery(
+    'all-micro-check-responses',
+    () => user?.store ? microCheckAPI.getResponses(user.store) : Promise.resolve([]),
+    { enabled: !!user?.store }
+  );
+
   const { data: dashboardStats } = useQuery(
     ['dashboard-stats', user?.store],
     () => user?.store ? microCheckAPI.getDashboardStats(user.store) : Promise.resolve(null),
@@ -253,42 +259,89 @@ function TrialDashboard({ user, stats, dashboardStats, microCheckRuns, setDemoRe
                 const itemCount = run.items?.length || 0;
                 const completedCount = run.completed_count || 0;
 
+                // Get responses for this run
+                const runResponses = allResponses?.filter((r: any) => r.run === run.id) || [];
+                const passedCount = runResponses.filter((r: any) => r.status === 'PASS').length;
+                const failedCount = runResponses.filter((r: any) => r.status === 'FAIL').length;
+
+                // Group responses by category for display
+                const checksByCategory = runResponses.slice(0, 3).map((response: any) => ({
+                  id: response.id,
+                  category_display: response.category_display,
+                  status: response.status,
+                }));
+
                 return (
                   <Link key={run.id} to={`/micro-check/run/${run.id}`} className="block p-6 hover:bg-gray-50 transition-colors">
-                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-3 sm:space-y-0">
-                      <div className="flex items-center space-x-4">
-                        <div className={`w-12 h-12 ${isCompleted ? 'bg-green-100' : 'bg-blue-100'} rounded-lg flex items-center justify-center`}>
-                          <span className={`${isCompleted ? 'text-green-600' : 'text-blue-600'} font-bold text-lg`}>
-                            {isCompleted ? '✓' : itemCount}
-                          </span>
-                        </div>
-                        <div>
-                          <div className="font-medium text-gray-900">
-                            {new Date(completionDate).toLocaleDateString('en-US', {
-                              weekday: 'short',
-                              month: 'short',
-                              day: 'numeric'
-                            })} Checks
+                    <div className="space-y-4">
+                      {/* Header */}
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center space-x-4">
+                          <div className={`w-12 h-12 ${isCompleted ? 'bg-green-100' : 'bg-blue-100'} rounded-lg flex items-center justify-center`}>
+                            <span className={`${isCompleted ? 'text-green-600' : 'text-blue-600'} font-bold text-lg`}>
+                              {isCompleted ? '✓' : itemCount}
+                            </span>
                           </div>
-                          <div className="text-sm text-gray-600">
-                            {isCompleted
-                              ? `Completed at ${new Date(run.completed_at).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}`
-                              : `Scheduled for ${new Date(run.scheduled_for).toLocaleDateString()}`
-                            }
-                          </div>
-                        </div>
-                      </div>
-                      <div className="flex items-center justify-between sm:justify-end space-x-3">
-                        <div className="text-right">
-                          <div className={`text-sm font-medium ${isCompleted ? 'text-green-600' : 'text-blue-600'}`}>
-                            {isCompleted ? 'Completed' : 'Pending'}
-                          </div>
-                          <div className="text-xs text-gray-600">
-                            {completedCount}/{itemCount} items
+                          <div>
+                            <div className="font-medium text-gray-900">
+                              {new Date(completionDate).toLocaleDateString('en-US', {
+                                weekday: 'short',
+                                month: 'short',
+                                day: 'numeric'
+                              })} Checks
+                            </div>
+                            <div className="text-sm text-gray-600">
+                              {isCompleted
+                                ? `Completed at ${new Date(run.completed_at).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}`
+                                : `Scheduled for ${new Date(run.scheduled_for).toLocaleDateString()}`
+                              }
+                            </div>
                           </div>
                         </div>
                         <ArrowRight className="w-5 h-5 text-gray-400" />
                       </div>
+
+                      {/* Stats and Check Details */}
+                      {isCompleted && checksByCategory.length > 0 && (
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center space-x-6">
+                            <div className="text-center">
+                              <div className="text-lg font-bold text-green-600">{passedCount}</div>
+                              <div className="text-xs text-gray-600">Passed</div>
+                            </div>
+                            <div className="text-center">
+                              <div className="text-lg font-bold text-red-600">{failedCount}</div>
+                              <div className="text-xs text-gray-600">Failed</div>
+                            </div>
+                          </div>
+
+                          <div className="flex items-center gap-2">
+                            {checksByCategory.map((check: any) => (
+                              <div
+                                key={check.id}
+                                className={`px-2 py-1 rounded text-xs font-medium ${
+                                  check.status === 'PASS'
+                                    ? 'bg-green-100 text-green-800'
+                                    : 'bg-red-100 text-red-800'
+                                }`}
+                              >
+                                {check.category_display}
+                              </div>
+                            ))}
+                            {runResponses.length > 3 && (
+                              <div className="text-xs text-gray-500">
+                                +{runResponses.length - 3} more
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      )}
+
+                      {!isCompleted && (
+                        <div className="text-sm text-gray-600">
+                          {completedCount}/{itemCount} items completed
+                        </div>
+                      )}
                     </div>
                   </Link>
                 );
