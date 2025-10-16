@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useParams, useNavigate, Link } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery } from 'react-query';
 import { microCheckAPI } from '@/services/api';
 import {
@@ -10,10 +10,10 @@ import {
   XCircle,
   AlertTriangle,
   User,
-  ChevronRight,
-  Image as ImageIcon
+  Image as ImageIcon,
+  CheckCheck
 } from 'lucide-react';
-import type { MicroCheckRun, MicroCheckResponse } from '@/types/microCheck';
+import type { MicroCheckRun, MicroCheckResponse, CorrectiveAction } from '@/types/microCheck';
 
 export default function MicroCheckRunDetailPage() {
   const { runId } = useParams<{ runId: string }>();
@@ -29,6 +29,18 @@ export default function MicroCheckRunDetailPage() {
     ['micro-check-responses', runId],
     () => microCheckAPI.getRunResponses(runId!),
     { enabled: !!runId }
+  );
+
+  const { data: correctiveActions } = useQuery<CorrectiveAction[]>(
+    ['corrective-actions', runId],
+    async () => {
+      if (!run?.store) return [];
+      const actions = await microCheckAPI.getCorrectiveActions(run.store);
+      // Filter to only actions for responses in this run
+      const responseIds = responses?.map(r => r.id) || [];
+      return actions.filter(action => responseIds.includes(action.response));
+    },
+    { enabled: !!runId && !!run && !!responses }
   );
 
   if (runLoading || responsesLoading) {
@@ -142,12 +154,12 @@ export default function MicroCheckRunDetailPage() {
             const hasResponse = !!response;
             const isPassed = response?.status === 'PASS';
             const isFailed = response?.status === 'FAIL';
+            const correctiveAction = correctiveActions?.find(a => a.response === response?.id);
 
             return (
-              <Link
+              <div
                 key={item.id}
-                to={`/micro-check/run/${runId}/item/${item.id}`}
-                className="block p-6 hover:bg-gray-50 transition-colors"
+                className="p-6"
               >
                 <div className="flex items-start justify-between">
                   <div className="flex items-start space-x-4 flex-1">
@@ -186,34 +198,106 @@ export default function MicroCheckRunDetailPage() {
 
                           {/* Response Info */}
                           {hasResponse && (
-                            <div className="mt-3 p-3 rounded-lg bg-gray-50 border border-gray-200">
-                              <div className="flex items-start justify-between">
-                                <div className="flex-1">
-                                  <div className="flex items-center mb-2">
-                                    {isPassed ? (
-                                      <CheckCircle className="w-4 h-4 text-green-600 mr-2" />
-                                    ) : (
-                                      <XCircle className="w-4 h-4 text-red-600 mr-2" />
-                                    )}
-                                    <span className={`font-semibold text-sm ${isPassed ? 'text-green-700' : 'text-red-700'}`}>
-                                      {isPassed ? 'Passed' : 'Failed'}
-                                    </span>
-                                  </div>
-                                  {response.notes && (
-                                    <p className="text-sm text-gray-600 mb-2">{response.notes}</p>
+                            <div className="mt-3 p-4 rounded-lg bg-gray-50 border-2 border-gray-200">
+                              <div className="flex items-start justify-between mb-3">
+                                <div className="flex items-center gap-2">
+                                  {isPassed ? (
+                                    <CheckCircle className="w-5 h-5 text-green-600 mr-2" />
+                                  ) : (
+                                    <XCircle className="w-5 h-5 text-red-600 mr-2" />
                                   )}
-                                  {response.media && response.media.length > 0 && (
-                                    <div className="flex items-center text-xs text-gray-500">
-                                      <ImageIcon className="w-3 h-3 mr-1" />
-                                      {response.media.length} photo{response.media.length > 1 ? 's' : ''} attached
-                                    </div>
+                                  <span className={`font-bold text-base ${isPassed ? 'text-green-700' : 'text-red-700'}`}>
+                                    {isPassed ? 'Passed' : 'Failed'}
+                                  </span>
+                                  {(correctiveAction?.status === 'RESOLVED' || correctiveAction?.status === 'VERIFIED') && (
+                                    <span className="inline-flex items-center px-2 py-1 rounded-md text-xs font-semibold bg-green-100 text-green-800">
+                                      <CheckCheck className="w-3 h-3 mr-1" />
+                                      Fixed
+                                    </span>
                                   )}
                                 </div>
-                                {isFailed && (
-                                  <div className="ml-2">
+                                {isFailed && !correctiveAction?.status && (
+                                  <div>
                                     <AlertTriangle className="w-5 h-5 text-orange-500" />
                                   </div>
                                 )}
+                              </div>
+
+                              {/* Notes */}
+                              {response.notes && (
+                                <div className="mb-3 p-3 bg-white rounded-lg border border-gray-200">
+                                  <div className="text-xs font-semibold text-gray-500 uppercase mb-1">Notes</div>
+                                  <p className="text-sm text-gray-900">{response.notes}</p>
+                                </div>
+                              )}
+
+                              {/* Before Photo */}
+                              {response.media_url && (
+                                <div>
+                                  <div className="text-xs font-semibold text-gray-500 uppercase mb-2">
+                                    {correctiveAction?.after_media_url ? 'Before Photo' : 'Photo'}
+                                  </div>
+                                  <div className="relative rounded-lg overflow-hidden border border-gray-200 bg-white">
+                                    <img
+                                      src={response.media_url}
+                                      alt="Check response"
+                                      className="w-full h-auto max-h-96 object-contain"
+                                      onError={(e) => {
+                                        // Hide image if it fails to load
+                                        e.currentTarget.style.display = 'none';
+                                        const parent = e.currentTarget.parentElement;
+                                        if (parent) {
+                                          parent.innerHTML = '<div class="p-4 text-center text-gray-500 text-sm">Image not available</div>';
+                                        }
+                                      }}
+                                    />
+                                  </div>
+                                </div>
+                              )}
+
+                              {/* After Photo (from corrective action) */}
+                              {correctiveAction?.after_media_url && (
+                                <div>
+                                  <div className="flex items-center text-xs font-semibold text-green-600 uppercase mb-2">
+                                    <CheckCheck className="w-4 h-4 mr-1" />
+                                    After Photo (Fixed)
+                                  </div>
+                                  <div className="relative rounded-lg overflow-hidden border-2 border-green-200 bg-white">
+                                    <img
+                                      src={correctiveAction.after_media_url}
+                                      alt="Fixed issue"
+                                      className="w-full h-auto max-h-96 object-contain"
+                                      onError={(e) => {
+                                        e.currentTarget.style.display = 'none';
+                                        const parent = e.currentTarget.parentElement;
+                                        if (parent) {
+                                          parent.innerHTML = '<div class="p-4 text-center text-gray-500 text-sm">Image not available</div>';
+                                        }
+                                      }}
+                                    />
+                                  </div>
+                                  {correctiveAction.resolution_notes && (
+                                    <div className="mt-2 p-2 bg-green-50 rounded-lg border border-green-200">
+                                      <div className="text-xs font-semibold text-green-700 uppercase mb-1">Resolution Notes</div>
+                                      <p className="text-sm text-green-900">{correctiveAction.resolution_notes}</p>
+                                    </div>
+                                  )}
+                                </div>
+                              )}
+
+                              {/* Metadata */}
+                              <div className="mt-3 pt-3 border-t border-gray-300 flex items-center justify-between text-xs text-gray-500">
+                                <div>
+                                  {response.completed_by_name && `Completed by ${response.completed_by_name}`}
+                                </div>
+                                <div>
+                                  {new Date(response.completed_at).toLocaleString('en-US', {
+                                    month: 'short',
+                                    day: 'numeric',
+                                    hour: 'numeric',
+                                    minute: '2-digit'
+                                  })}
+                                </div>
                               </div>
                             </div>
                           )}
@@ -239,11 +323,9 @@ export default function MicroCheckRunDetailPage() {
                         </div>
                       )}
                     </div>
-
-                    <ChevronRight className="w-5 h-5 text-gray-400 flex-shrink-0 mt-1" />
                   </div>
                 </div>
-              </Link>
+              </div>
             );
           })}
         </div>

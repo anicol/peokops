@@ -75,6 +75,12 @@ export default function Dashboard() {
     { enabled: !!user?.store }
   );
 
+  const { data: allResponses } = useQuery(
+    'all-micro-check-responses',
+    () => user?.store ? microCheckAPI.getResponses(user.store) : Promise.resolve([]),
+    { enabled: !!user?.store }
+  );
+
   const { data: dashboardStats } = useQuery(
     ['dashboard-stats', user?.store],
     () => user?.store ? microCheckAPI.getDashboardStats(user.store) : Promise.resolve(null),
@@ -115,12 +121,15 @@ export default function Dashboard() {
   } else if (isCoaching && !isTrial) {
     return <CoachingDashboard user={user} stats={stats} dashboardStats={dashboardStats} recentVideos={recentVideos} microCheckRuns={microCheckRuns} nudges={nudges} handleNudgeAction={handleNudgeAction} dismissNudge={dismissNudge} />;
   } else {
-    return <TrialDashboard user={user} stats={stats} dashboardStats={dashboardStats} microCheckRuns={microCheckRuns} setDemoRequested={setDemoRequested} nudges={nudges} handleNudgeAction={handleNudgeAction} dismissNudge={dismissNudge} />;
+    return <TrialDashboard user={user} stats={stats} dashboardStats={dashboardStats} microCheckRuns={microCheckRuns} allResponses={allResponses} setDemoRequested={setDemoRequested} nudges={nudges} handleNudgeAction={handleNudgeAction} dismissNudge={dismissNudge} />;
   }
 }
 
 // Trial User Dashboard
-function TrialDashboard({ user, stats, dashboardStats, microCheckRuns, setDemoRequested, nudges, handleNudgeAction, dismissNudge }: any) {
+function TrialDashboard({ user, stats, dashboardStats, microCheckRuns, allResponses, setDemoRequested, nudges, handleNudgeAction, dismissNudge }: any) {
+  const navigate = useNavigate();
+  const [creatingRun, setCreatingRun] = useState(false);
+
   const yesterdayScore = dashboardStats?.yesterday_score ?? stats?.yesterday_score ?? null;
   const todayScore = dashboardStats?.today_score ?? stats?.today_score ?? dashboardStats?.average_score ?? stats?.average_score ?? null;
   const streakDays = dashboardStats?.user_streak?.current_streak ?? 0;
@@ -128,6 +137,19 @@ function TrialDashboard({ user, stats, dashboardStats, microCheckRuns, setDemoRe
   const runsLastWeek = dashboardStats?.runs_last_week ?? 0;
   const issuesResolved = dashboardStats?.issues_resolved_this_week ?? 0;
   const avgScore = dashboardStats?.average_score ?? stats?.average_score ?? null;
+
+  const handleRunCheck = async () => {
+    setCreatingRun(true);
+    try {
+      const { token } = await microCheckAPI.createInstantRun(user?.store);
+      navigate(`/micro-check?token=${token}`);
+    } catch (err: any) {
+      console.error('Error creating run:', err);
+      alert('Unable to create check run. Please try again.');
+    } finally {
+      setCreatingRun(false);
+    }
+  };
 
   return (
     <div className="p-4 lg:p-8">
@@ -158,13 +180,23 @@ function TrialDashboard({ user, stats, dashboardStats, microCheckRuns, setDemoRe
               )}
             </div>
 
-            <Link
-              to="/micro-check-history"
-              className="bg-white text-blue-600 px-6 lg:px-8 py-3 lg:py-4 rounded-xl font-semibold text-base lg:text-lg hover:bg-gray-100 transition-colors shadow-lg flex items-center justify-center w-full lg:w-auto"
+            <button
+              onClick={handleRunCheck}
+              disabled={creatingRun}
+              className="bg-white text-blue-600 px-6 lg:px-8 py-3 lg:py-4 rounded-xl font-semibold text-base lg:text-lg hover:bg-gray-100 transition-colors shadow-lg flex items-center justify-center w-full lg:w-auto disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              <Play className="w-6 h-6 mr-3" />
-              Run New Check
-            </Link>
+              {creatingRun ? (
+                <>
+                  <Clock className="w-6 h-6 mr-3 animate-spin" />
+                  Creating...
+                </>
+              ) : (
+                <>
+                  <Play className="w-6 h-6 mr-3" />
+                  Run New Check
+                </>
+              )}
+            </button>
           </div>
         </div>
       </div>
@@ -247,22 +279,47 @@ function TrialDashboard({ user, stats, dashboardStats, microCheckRuns, setDemoRe
             </div>
 
             <div className="divide-y divide-gray-200">
-              {microCheckRuns?.slice(0, 5).map((run: any) => {
+              {microCheckRuns?.sort((a: any, b: any) => {
+                const aDate = new Date(a.completed_at || a.scheduled_for);
+                const bDate = new Date(b.completed_at || b.scheduled_for);
+                return bDate.getTime() - aDate.getTime(); // Latest first
+              }).slice(0, 5).map((run: any) => {
                 const isCompleted = run.status === 'COMPLETED';
                 const completionDate = run.completed_at || run.scheduled_for;
                 const itemCount = run.items?.length || 0;
                 const completedCount = run.completed_count || 0;
 
+                // Get responses for this run
+                const runResponses = allResponses?.filter((r: any) => r.run === run.id) || [];
+                const passedCount = runResponses.filter((r: any) => r.status === 'PASS').length;
+                const failedCount = runResponses.filter((r: any) => r.status === 'FAIL').length;
+
+                // Calculate relative time
+                const getRelativeTime = (dateStr: string) => {
+                  const date = new Date(dateStr);
+                  const now = new Date();
+                  const diffMs = now.getTime() - date.getTime();
+                  const diffMins = Math.floor(diffMs / (1000 * 60));
+                  const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+                  const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+
+                  if (diffMins < 1) return 'Just now';
+                  if (diffMins < 60) return `${diffMins} min ago`;
+                  if (diffHours < 24) return `${diffHours} hour${diffHours > 1 ? 's' : ''} ago`;
+                  if (diffDays === 1) return 'Yesterday';
+                  return `${diffDays} days ago`;
+                };
+
                 return (
                   <Link key={run.id} to={`/micro-check/run/${run.id}`} className="block p-6 hover:bg-gray-50 transition-colors">
-                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-3 sm:space-y-0">
-                      <div className="flex items-center space-x-4">
-                        <div className={`w-12 h-12 ${isCompleted ? 'bg-green-100' : 'bg-blue-100'} rounded-lg flex items-center justify-center`}>
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center space-x-4 flex-1">
+                        <div className={`w-12 h-12 ${isCompleted ? 'bg-green-100' : 'bg-blue-100'} rounded-lg flex items-center justify-center flex-shrink-0`}>
                           <span className={`${isCompleted ? 'text-green-600' : 'text-blue-600'} font-bold text-lg`}>
                             {isCompleted ? '✓' : itemCount}
                           </span>
                         </div>
-                        <div>
+                        <div className="flex-1 min-w-0">
                           <div className="font-medium text-gray-900">
                             {new Date(completionDate).toLocaleDateString('en-US', {
                               weekday: 'short',
@@ -271,24 +328,32 @@ function TrialDashboard({ user, stats, dashboardStats, microCheckRuns, setDemoRe
                             })} Checks
                           </div>
                           <div className="text-sm text-gray-600">
-                            {isCompleted
-                              ? `Completed at ${new Date(run.completed_at).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}`
-                              : `Scheduled for ${new Date(run.scheduled_for).toLocaleDateString()}`
-                            }
+                            {isCompleted ? getRelativeTime(run.completed_at) : `${completedCount}/${itemCount} items completed`}
                           </div>
                         </div>
                       </div>
-                      <div className="flex items-center justify-between sm:justify-end space-x-3">
-                        <div className="text-right">
-                          <div className={`text-sm font-medium ${isCompleted ? 'text-green-600' : 'text-blue-600'}`}>
-                            {isCompleted ? 'Completed' : 'Pending'}
+
+                      {/* Stats - Fixed width columns for alignment */}
+                      {isCompleted && (
+                        <div className="flex items-center space-x-6 mr-4">
+                          <div className="text-center w-16">
+                            <div className="text-lg font-bold text-green-600 tabular-nums">{passedCount}</div>
+                            <div className="text-xs text-gray-500">Passed</div>
                           </div>
-                          <div className="text-xs text-gray-600">
-                            {completedCount}/{itemCount} items
+                          <div className="text-center w-16">
+                            <div className="text-lg font-bold text-red-600 tabular-nums">{failedCount}</div>
+                            <div className="text-xs text-gray-500">Failed</div>
+                          </div>
+                          <div className="text-center w-16">
+                            <div className="text-lg font-bold text-blue-600 tabular-nums">
+                              {Math.round((passedCount / (passedCount + failedCount)) * 100)}%
+                            </div>
+                            <div className="text-xs text-gray-500">Score</div>
                           </div>
                         </div>
-                        <ArrowRight className="w-5 h-5 text-gray-400" />
-                      </div>
+                      )}
+
+                      <ArrowRight className="w-5 h-5 text-gray-400 flex-shrink-0" />
                     </div>
                   </Link>
                 );
@@ -322,13 +387,23 @@ function TrialDashboard({ user, stats, dashboardStats, microCheckRuns, setDemoRe
           <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-6">
             <h3 className="font-semibold text-gray-900 mb-4">Quick Actions</h3>
             <div className="space-y-3">
-              <Link
-                to="/micro-check-history"
-                className="flex items-center p-3 bg-blue-50 rounded-lg hover:bg-blue-100 transition-colors"
+              <button
+                onClick={handleRunCheck}
+                disabled={creatingRun}
+                className="flex items-center p-3 bg-blue-50 rounded-lg hover:bg-blue-100 transition-colors w-full disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                <Play className="w-5 h-5 text-blue-600 mr-3" />
-                <span className="font-medium text-blue-900">Run New Check</span>
-              </Link>
+                {creatingRun ? (
+                  <>
+                    <Clock className="w-5 h-5 text-blue-600 mr-3 animate-spin" />
+                    <span className="font-medium text-blue-900">Creating...</span>
+                  </>
+                ) : (
+                  <>
+                    <Play className="w-5 h-5 text-blue-600 mr-3" />
+                    <span className="font-medium text-blue-900">Run New Check</span>
+                  </>
+                )}
+              </button>
 
               <Link
                 to="/actions"
