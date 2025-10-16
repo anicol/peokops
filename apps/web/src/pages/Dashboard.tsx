@@ -127,6 +127,9 @@ export default function Dashboard() {
 
 // Trial User Dashboard
 function TrialDashboard({ user, stats, dashboardStats, microCheckRuns, allResponses, setDemoRequested, nudges, handleNudgeAction, dismissNudge }: any) {
+  const navigate = useNavigate();
+  const [creatingRun, setCreatingRun] = useState(false);
+
   const yesterdayScore = dashboardStats?.yesterday_score ?? stats?.yesterday_score ?? null;
   const todayScore = dashboardStats?.today_score ?? stats?.today_score ?? dashboardStats?.average_score ?? stats?.average_score ?? null;
   const streakDays = dashboardStats?.user_streak?.current_streak ?? 0;
@@ -134,6 +137,19 @@ function TrialDashboard({ user, stats, dashboardStats, microCheckRuns, allRespon
   const runsLastWeek = dashboardStats?.runs_last_week ?? 0;
   const issuesResolved = dashboardStats?.issues_resolved_this_week ?? 0;
   const avgScore = dashboardStats?.average_score ?? stats?.average_score ?? null;
+
+  const handleRunCheck = async () => {
+    setCreatingRun(true);
+    try {
+      const { token } = await microCheckAPI.createInstantRun(user?.store);
+      navigate(`/micro-check?token=${token}`);
+    } catch (err: any) {
+      console.error('Error creating run:', err);
+      alert('Unable to create check run. Please try again.');
+    } finally {
+      setCreatingRun(false);
+    }
+  };
 
   return (
     <div className="p-4 lg:p-8">
@@ -164,13 +180,23 @@ function TrialDashboard({ user, stats, dashboardStats, microCheckRuns, allRespon
               )}
             </div>
 
-            <Link
-              to="/micro-check-history"
-              className="bg-white text-blue-600 px-6 lg:px-8 py-3 lg:py-4 rounded-xl font-semibold text-base lg:text-lg hover:bg-gray-100 transition-colors shadow-lg flex items-center justify-center w-full lg:w-auto"
+            <button
+              onClick={handleRunCheck}
+              disabled={creatingRun}
+              className="bg-white text-blue-600 px-6 lg:px-8 py-3 lg:py-4 rounded-xl font-semibold text-base lg:text-lg hover:bg-gray-100 transition-colors shadow-lg flex items-center justify-center w-full lg:w-auto disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              <Play className="w-6 h-6 mr-3" />
-              Run New Check
-            </Link>
+              {creatingRun ? (
+                <>
+                  <Clock className="w-6 h-6 mr-3 animate-spin" />
+                  Creating...
+                </>
+              ) : (
+                <>
+                  <Play className="w-6 h-6 mr-3" />
+                  Run New Check
+                </>
+              )}
+            </button>
           </div>
         </div>
       </div>
@@ -361,13 +387,23 @@ function TrialDashboard({ user, stats, dashboardStats, microCheckRuns, allRespon
           <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-6">
             <h3 className="font-semibold text-gray-900 mb-4">Quick Actions</h3>
             <div className="space-y-3">
-              <Link
-                to="/micro-check-history"
-                className="flex items-center p-3 bg-blue-50 rounded-lg hover:bg-blue-100 transition-colors"
+              <button
+                onClick={handleRunCheck}
+                disabled={creatingRun}
+                className="flex items-center p-3 bg-blue-50 rounded-lg hover:bg-blue-100 transition-colors w-full disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                <Play className="w-5 h-5 text-blue-600 mr-3" />
-                <span className="font-medium text-blue-900">Run New Check</span>
-              </Link>
+                {creatingRun ? (
+                  <>
+                    <Clock className="w-5 h-5 text-blue-600 mr-3 animate-spin" />
+                    <span className="font-medium text-blue-900">Creating...</span>
+                  </>
+                ) : (
+                  <>
+                    <Play className="w-5 h-5 text-blue-600 mr-3" />
+                    <span className="font-medium text-blue-900">Run New Check</span>
+                  </>
+                )}
+              </button>
 
               <Link
                 to="/actions"
