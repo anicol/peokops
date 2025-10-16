@@ -577,6 +577,12 @@ export const microCheckAPI = {
     return response.data;
   },
 
+  // Update corrective action status (auth required)
+  updateCorrectiveAction: async (actionId: string, data: Partial<CorrectiveAction>): Promise<CorrectiveAction> => {
+    const response = await api.patch(`/micro-checks/actions/${actionId}/`, data);
+    return response.data;
+  },
+
   // Upload photo (for authenticated submissions)
   uploadPhoto: async (file: File): Promise<string> => {
     const formData = new FormData();
