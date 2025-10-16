@@ -121,12 +121,12 @@ export default function Dashboard() {
   } else if (isCoaching && !isTrial) {
     return <CoachingDashboard user={user} stats={stats} dashboardStats={dashboardStats} recentVideos={recentVideos} microCheckRuns={microCheckRuns} nudges={nudges} handleNudgeAction={handleNudgeAction} dismissNudge={dismissNudge} />;
   } else {
-    return <TrialDashboard user={user} stats={stats} dashboardStats={dashboardStats} microCheckRuns={microCheckRuns} setDemoRequested={setDemoRequested} nudges={nudges} handleNudgeAction={handleNudgeAction} dismissNudge={dismissNudge} />;
+    return <TrialDashboard user={user} stats={stats} dashboardStats={dashboardStats} microCheckRuns={microCheckRuns} allResponses={allResponses} setDemoRequested={setDemoRequested} nudges={nudges} handleNudgeAction={handleNudgeAction} dismissNudge={dismissNudge} />;
   }
 }
 
 // Trial User Dashboard
-function TrialDashboard({ user, stats, dashboardStats, microCheckRuns, setDemoRequested, nudges, handleNudgeAction, dismissNudge }: any) {
+function TrialDashboard({ user, stats, dashboardStats, microCheckRuns, allResponses, setDemoRequested, nudges, handleNudgeAction, dismissNudge }: any) {
   const yesterdayScore = dashboardStats?.yesterday_score ?? stats?.yesterday_score ?? null;
   const todayScore = dashboardStats?.today_score ?? stats?.today_score ?? dashboardStats?.average_score ?? stats?.average_score ?? null;
   const streakDays = dashboardStats?.user_streak?.current_streak ?? 0;
