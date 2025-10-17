@@ -10,9 +10,9 @@ export default function HomePage() {
   return (
     <div className="min-h-screen">
       <SEO
-        title="PeakOps – AI Agents for Frontline Excellence | Start Free with The Guide"
-        description="PeakOps helps frontline teams build daily habits, get instant AI coaching, and deliver consistent operations across every store. Start free with The Guide."
-        keywords="AI agents for operations, frontline excellence, restaurant management, QSR operations, daily micro-checks, video coaching, compliance automation, operational excellence, The Guide, The Coach, The Inspector"
+        title="PeakOps – Daily Micro-Checks for Operational Excellence | Build Better Habits"
+        description="Three quick questions a day. One minute. PeakOps helps multi-unit operators build daily habits that drive consistent operational excellence across every location."
+        keywords="micro-checks, daily habits, operational excellence, restaurant operations, QSR management, habit formation, behavioral consistency, store operations, multi-unit management, frontline excellence"
         url="https://getpeakops.com"
         type="website"
       />
