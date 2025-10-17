@@ -61,8 +61,8 @@ export default function Dashboard() {
     {
       enabled: !!user?.store,
       refetchOnMount: true,
-      refetchOnWindowFocus: true,
-      staleTime: 1000 // Consider data stale after 1 second for fresh data
+      refetchOnWindowFocus: false, // Don't refetch on every window focus
+      staleTime: 5 * 60 * 1000 // 5 minutes
     }
   );
 
@@ -72,8 +72,8 @@ export default function Dashboard() {
     {
       enabled: !!user?.store,
       refetchOnMount: true,
-      refetchOnWindowFocus: true,
-      staleTime: 1000
+      refetchOnWindowFocus: false,
+      staleTime: 5 * 60 * 1000 // 5 minutes
     }
   );
 
@@ -83,8 +83,8 @@ export default function Dashboard() {
     {
       enabled: !!user?.store,
       refetchOnMount: true,
-      refetchOnWindowFocus: true,
-      staleTime: 1000
+      refetchOnWindowFocus: false,
+      staleTime: 5 * 60 * 1000 // 5 minutes
     }
   );
 
