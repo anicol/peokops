@@ -297,13 +297,13 @@ const BlogPivotChroniclesPeakOps = () => {
             Something that fit into their day instead of adding to it.
           </p>
 
-          <Link to="/blog/pivot-chronicles-micro-checks" className="block bg-gray-100 rounded-lg p-6 mt-12 hover:bg-gray-200 transition-colors">
+          <Link to="/blog/pivot-chronicles-heavy-realization" className="block bg-gray-100 rounded-lg p-6 mt-12 hover:bg-gray-200 transition-colors">
             <p className="text-sm text-gray-600 mb-2">Next in The Pivot Chronicles</p>
             <p className="font-semibold text-gray-900">
-              Part 4: Micro-Checks: Simplifying to 3 Questions a Day
+              Part 4: The "Too Heavy" Realization: When Your Solution Is Harder Than the Problem
             </p>
             <p className="text-gray-700 mt-2">
-              Trading AI sophistication for behavioral consistency. Three questions, one minute, daily habits. Why this should work better... but still hasn't been validated.
+              Innovation isn't about what's possible. It's about what's easy. How we learned that friction kills adoption faster than any missing feature.
             </p>
           </Link>
         </div>
@@ -333,15 +333,15 @@ const BlogPivotChroniclesPeakOps = () => {
             </p>
           </Link>
 
-          <div className="border border-gray-200 rounded-lg p-6 hover:shadow-md transition-shadow">
-            <p className="text-sm text-gray-600 mb-2">Part 4 • Coming Soon</p>
+          <Link to="/blog/pivot-chronicles-heavy-realization" className="block border border-gray-200 rounded-lg p-6 hover:shadow-md transition-shadow">
+            <p className="text-sm text-gray-600 mb-2">Part 4</p>
             <h4 className="text-lg font-semibold text-gray-900 mb-2">
-              Micro-Checks: Simplifying to 3 Questions a Day
+              The "Too Heavy" Realization: When Your Solution Is Harder Than the Problem
             </h4>
             <p className="text-gray-700">
-              The latest pivot: daily micro-checks via email. Trading sophistication for consistency.
+              Innovation isn't about what's possible. It's about what's easy.
             </p>
-          </div>
+          </Link>
         </div>
       </section>
 

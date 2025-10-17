@@ -7,6 +7,76 @@ import NewsletterSignup from '../components/NewsletterSignup';
 const Blog = () => {
   const blogPosts = [
     {
+      id: 'pivot-chronicles-starting-over',
+      title: 'Starting Over (Again): What Would Change With 10 Real Customers',
+      excerpt: 'Part 10 of The Pivot Chronicles: If I had to start over tomorrow and get 10 paying customers in 30 days, almost everything I\'ve built so far would be irrelevant. Not because it wasn\'t good—but because it wasn\'t anchored.',
+      author: 'Alistair Nicol',
+      date: '2025-09-16',
+      readTime: '7 min read',
+      category: 'The Pivot Chronicles',
+      slug: '/blog/pivot-chronicles-starting-over'
+    },
+    {
+      id: 'pivot-chronicles-engagement-gap',
+      title: 'The Engagement Gap: When Code Velocity Masks Business Stagnation',
+      excerpt: 'Part 9 of The Pivot Chronicles: We were shipping fast and it felt amazing. The only problem? None of it mattered. We weren\'t shipping to customers—we were shipping to ourselves.',
+      author: 'Alistair Nicol',
+      date: '2025-09-09',
+      readTime: '6 min read',
+      category: 'The Pivot Chronicles',
+      slug: '/blog/pivot-chronicles-engagement-gap'
+    },
+    {
+      id: 'pivot-chronicles-zero-revenue',
+      title: 'What $0 in Revenue Teaches You (That $1M Can\'t)',
+      excerpt: 'Part 8 of The Pivot Chronicles: $0 in revenue is a gift. It doesn\'t feel like one when you\'re living it—but it tells the truth in a way numbers never can. Silence is data.',
+      author: 'Alistair Nicol',
+      date: '2025-09-02',
+      readTime: '6 min read',
+      category: 'The Pivot Chronicles',
+      slug: '/blog/pivot-chronicles-zero-revenue'
+    },
+    {
+      id: 'pivot-chronicles-pattern',
+      title: 'The Pattern: Five Pivots Without Customer Engagement',
+      excerpt: 'Part 7 of The Pivot Chronicles: We built five different products. Each one smarter, faster, and simpler than the last. And almost none of them had real customer engagement.',
+      author: 'Alistair Nicol',
+      date: '2025-08-26',
+      readTime: '7 min read',
+      category: 'The Pivot Chronicles',
+      slug: '/blog/pivot-chronicles-pattern'
+    },
+    {
+      id: 'pivot-chronicles-small-actions',
+      title: 'Small Actions, Big Shifts: The Psychology Behind Micro-Checks',
+      excerpt: 'Part 6 of The Pivot Chronicles: Simplicity scales. The easier it is to start, the higher the odds it sticks. How we turned operations software into a daily ritual through behavioral design.',
+      author: 'Alistair Nicol',
+      date: '2025-08-19',
+      readTime: '6 min read',
+      category: 'The Pivot Chronicles',
+      slug: '/blog/pivot-chronicles-small-actions'
+    },
+    {
+      id: 'pivot-chronicles-micro-checks',
+      title: 'Micro-Checks: Simplifying to 3 Questions a Day',
+      excerpt: 'Part 5 of The Pivot Chronicles: What if we stripped everything away? No uploads, no dashboards, no AI. Just three critical questions delivered via email every morning. Can radical simplicity create the habits that sophistication couldn\'t?',
+      author: 'Alistair Nicol',
+      date: '2025-08-12',
+      readTime: '7 min read',
+      category: 'The Pivot Chronicles',
+      slug: '/blog/pivot-chronicles-micro-checks'
+    },
+    {
+      id: 'pivot-chronicles-heavy-realization',
+      title: 'The "Too Heavy" Realization: When Your Solution Is Harder Than the Problem',
+      excerpt: 'Part 4 of The Pivot Chronicles: Innovation isn\'t about what\'s possible. It\'s about what\'s easy. How we learned that friction kills adoption faster than any missing feature.',
+      author: 'Alistair Nicol',
+      date: '2025-08-05',
+      readTime: '6 min read',
+      category: 'The Pivot Chronicles',
+      slug: '/blog/pivot-chronicles-heavy-realization'
+    },
+    {
       id: 'pivot-chronicles-peakops',
       title: 'PeakOps: The AI Video Analysis Pivot That Almost Made Sense',
       excerpt: 'Part 3 of The Pivot Chronicles: Finally, a tangible problem! Health code violations, safety issues, cleanliness. We built AWS Rekognition, PPE detection, the works. Why impressive tech still wasn\'t enough.',
@@ -76,7 +146,7 @@ const Blog = () => {
               PeakOps Blog
             </h1>
             <p className="text-xl md:text-2xl text-blue-100 mb-8 leading-relaxed">
-              Insights, tips, and best practices for modern restaurant inspections and management.
+              Building habits that drive operational excellence. Stories and lessons from the journey.
             </p>
           </div>
         </div>
@@ -162,23 +232,23 @@ const Blog = () => {
       <section className="py-20 bg-gradient-to-r from-blue-600 to-teal-600 text-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <h2 className="text-3xl md:text-4xl font-bold mb-6">
-            Ready to Transform Your Inspections?
+            Ready to Build Better Habits?
           </h2>
           <p className="text-xl text-blue-100 mb-8 max-w-3xl mx-auto">
-            Put these insights into practice with PeakOps's coaching-first approach.
+            Three quick questions a day. One minute. Daily operational excellence through simple, consistent habits.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Link
               to="/coaching"
               className="px-8 py-4 bg-white text-blue-600 rounded-lg hover:bg-gray-100 transition-colors font-semibold text-lg shadow-lg"
             >
-              Try Coaching Free
+              Start Your Micro-Checks
             </Link>
             <Link
               to="/enterprise"
               className="px-8 py-4 border-2 border-white text-white rounded-lg hover:bg-white hover:text-blue-600 transition-colors font-semibold text-lg"
             >
-              Get Enterprise Demo
+              Talk to Our Team
             </Link>
           </div>
         </div>

@@ -16,6 +16,13 @@ import BlogDailyWalkthrough from './pages/BlogDailyWalkthrough';
 import BlogPivotChroniclesExtenure from './pages/BlogPivotChroniclesExtenure';
 import BlogPivotChroniclesEngagement from './pages/BlogPivotChroniclesEngagement';
 import BlogPivotChroniclesPeakOps from './pages/BlogPivotChroniclesPeakOps';
+import BlogPivotChroniclesHeavyRealization from './pages/BlogPivotChroniclesHeavyRealization';
+import BlogPivotChroniclesMicroChecks from './pages/BlogPivotChroniclesMicroChecks';
+import BlogPivotChroniclesSmallActions from './pages/BlogPivotChroniclesSmallActions';
+import BlogPivotChroniclesPattern from './pages/BlogPivotChroniclesPattern';
+import BlogPivotChroniclesZeroRevenue from './pages/BlogPivotChroniclesZeroRevenue';
+import BlogPivotChroniclesEngagementGap from './pages/BlogPivotChroniclesEngagementGap';
+import BlogPivotChroniclesStartingOver from './pages/BlogPivotChroniclesStartingOver';
 import ScrollToTop from './components/ScrollToTop';
 
 function App() {
@@ -39,6 +46,13 @@ function App() {
         <Route path="/blog/pivot-chronicles-extenure" element={<BlogPivotChroniclesExtenure />} />
         <Route path="/blog/pivot-chronicles-engagement" element={<BlogPivotChroniclesEngagement />} />
         <Route path="/blog/pivot-chronicles-peakops" element={<BlogPivotChroniclesPeakOps />} />
+        <Route path="/blog/pivot-chronicles-heavy-realization" element={<BlogPivotChroniclesHeavyRealization />} />
+        <Route path="/blog/pivot-chronicles-micro-checks" element={<BlogPivotChroniclesMicroChecks />} />
+        <Route path="/blog/pivot-chronicles-small-actions" element={<BlogPivotChroniclesSmallActions />} />
+        <Route path="/blog/pivot-chronicles-pattern" element={<BlogPivotChroniclesPattern />} />
+        <Route path="/blog/pivot-chronicles-zero-revenue" element={<BlogPivotChroniclesZeroRevenue />} />
+        <Route path="/blog/pivot-chronicles-engagement-gap" element={<BlogPivotChroniclesEngagementGap />} />
+        <Route path="/blog/pivot-chronicles-starting-over" element={<BlogPivotChroniclesStartingOver />} />
         <Route path="/blog/coaching-over-compliance" element={<BlogCoachingOverCompliance />} />
         <Route path="/blog/daily-walkthrough" element={<BlogDailyWalkthrough />} />
         <Route path="/terms" element={<TermsPage />} />

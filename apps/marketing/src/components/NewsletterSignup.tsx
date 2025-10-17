@@ -64,7 +64,7 @@ const NewsletterSignup: React.FC<NewsletterSignupProps> = ({
 
       if (response.ok) {
         setStatus('success');
-        setMessage('Success! Check your email to confirm your subscription.');
+        setMessage('Success! Check your email (and spam folder) to confirm your subscription.');
         setEmail('');
       } else {
         setStatus('error');
