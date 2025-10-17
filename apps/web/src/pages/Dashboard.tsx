@@ -1,12 +1,11 @@
-import { useState, useEffect } from 'react';
+import { useEffect } from 'react';
 import { useQuery } from 'react-query';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { inspectionsAPI, videosAPI, microCheckAPI } from '@/services/api';
 import { useAuth } from '@/hooks/useAuth';
 import { useBehaviorTracking } from '@/hooks/useBehaviorTracking';
 import { useSmartNudges } from '@/hooks/useSmartNudges';
 import InspectorQueueWidget from '@/components/InspectorQueueWidget';
-import InteractiveTwoVideoDemoContainer from '@/components/demo/InteractiveTwoVideoDemoContainer';
 import { SmartNudgeContainer } from '@/components/nudges/SmartNudgeNotification';
 import TrialStatusBanner from '@/components/TrialStatusBanner';
 import {
@@ -29,8 +28,6 @@ import {
 
 export default function Dashboard() {
   const { user } = useAuth();
-  const navigate = useNavigate();
-  const [demoRequested, setDemoRequested] = useState(false);
 
   // Behavior tracking and smart nudges
   const { trackDashboardView } = useBehaviorTracking();
@@ -76,28 +73,7 @@ export default function Dashboard() {
     { enabled: !!user?.store }
   );
 
-  // MVP Demo Experience Logic
-  const shouldShowDemo = user && !user.demo_completed_at && (
-    (user.is_trial_user && (stats?.total_inspections || 0) < 3) ||
-    (user.created_at && getHoursSinceSignup(user.created_at) < 48) ||
-    user.requested_demo ||
-    demoRequested
-  );
-
-  function getHoursSinceSignup(createdAt: string): number {
-    const signup = new Date(createdAt);
-    const now = new Date();
-    const diffMs = now.getTime() - signup.getTime();
-    return Math.floor(diffMs / (1000 * 60 * 60));
-  }
-
-  const handleSkipToDashboard = () => {
-    setDemoRequested(false);
-  };
-
-  if (shouldShowDemo) {
-    return <InteractiveTwoVideoDemoContainer onClose={handleSkipToDashboard} />;
-  }
+  // Removed demo screen - users go straight to dashboard after new signup flow
 
   // Determine user type
   const isEnterprise = user?.role === 'ADMIN' || user?.role === 'INSPECTOR';
@@ -110,12 +86,12 @@ export default function Dashboard() {
   } else if (isCoaching && !isTrial) {
     return <CoachingDashboard user={user} stats={stats} dashboardStats={dashboardStats} recentVideos={recentVideos} microCheckRuns={microCheckRuns} nudges={nudges} handleNudgeAction={handleNudgeAction} dismissNudge={dismissNudge} />;
   } else {
-    return <TrialDashboard user={user} stats={stats} dashboardStats={dashboardStats} microCheckRuns={microCheckRuns} allResponses={allResponses} setDemoRequested={setDemoRequested} nudges={nudges} handleNudgeAction={handleNudgeAction} dismissNudge={dismissNudge} />;
+    return <TrialDashboard user={user} stats={stats} dashboardStats={dashboardStats} microCheckRuns={microCheckRuns} allResponses={allResponses} nudges={nudges} handleNudgeAction={handleNudgeAction} dismissNudge={dismissNudge} />;
   }
 }
 
 // Trial User Dashboard
-function TrialDashboard({ user, stats, dashboardStats, microCheckRuns, allResponses, setDemoRequested, nudges, handleNudgeAction, dismissNudge }: any) {
+function TrialDashboard({ user, stats, dashboardStats, microCheckRuns, allResponses, nudges, handleNudgeAction, dismissNudge }: any) {
   const navigate = useNavigate();
   const [creatingRun, setCreatingRun] = useState(false);
 
