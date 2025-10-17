@@ -151,14 +151,16 @@ def quick_signup_view(request):
     """
     Streamlined trial signup flow:
     1. Collect phone, email (optional), store name, industry
-    2. Create user with TRIAL_ADMIN role OR find existing user if email exists
-    3. Create brand + store (or use existing for existing user)
-    4. Seed 15 micro-check templates (if new user)
-    5. Create first MicroCheckRun with 3 items (if new user)
+    2. Create user with TRIAL_ADMIN role OR update existing user
+    3. Create brand + store
+    4. Seed 15 micro-check templates
+    5. Create first MicroCheckRun with 3 items
     6. Generate magic link token
     7. Send SMS/email with magic link
     8. Return user info + tokens + magic link
     """
+    from micro_checks.utils import send_magic_link_email
+
     # Try normal signup flow - serializer will handle existing users
     serializer = QuickSignupSerializer(data=request.data)
     if serializer.is_valid():
@@ -198,8 +200,7 @@ def quick_signup_view(request):
             'run_id': quick_signup_data.get('run_id'),
             'sms_sent': sms_sent,
             'email_sent': email_sent,
-            'delivery_method': delivery_method,
-            'existing_user': False
+            'delivery_method': delivery_method
         }, status=status.HTTP_201_CREATED)
 
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
