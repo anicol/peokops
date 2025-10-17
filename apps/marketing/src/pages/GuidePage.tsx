@@ -222,7 +222,8 @@ export default function GuidePage() {
                   <tr>
                     <td className="px-6 py-4">
                       <div className="flex items-center">
-                        <span className="font-medium text-gray-900">🔄 Habit-Forming</span>
+                        <span className="text-green-600 mr-3 flex-shrink-0 w-5 h-5 flex items-center justify-center">🔄</span>
+                        <span className="font-medium text-gray-900">Habit-Forming</span>
                       </div>
                     </td>
                     <td className="px-6 py-4 text-gray-700">
@@ -232,7 +233,8 @@ export default function GuidePage() {
                   <tr>
                     <td className="px-6 py-4">
                       <div className="flex items-center">
-                        <span className="font-medium text-gray-900">🧩 Adaptive</span>
+                        <span className="text-green-600 mr-3 flex-shrink-0 w-5 h-5 flex items-center justify-center">🧩</span>
+                        <span className="font-medium text-gray-900">Adaptive</span>
                       </div>
                     </td>
                     <td className="px-6 py-4 text-gray-700">
