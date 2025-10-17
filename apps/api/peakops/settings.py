@@ -225,7 +225,13 @@ CELERY_TASK_SERIALIZER = 'json'
 CELERY_RESULT_SERIALIZER = 'json'
 CELERY_TIMEZONE = TIME_ZONE
 
+# Micro-check scheduling settings
+MICRO_CHECK_SEND_HOUR = config('MICRO_CHECK_SEND_HOUR', default=8, cast=int)  # 8 AM UTC by default
+MICRO_CHECK_SEND_MINUTE = config('MICRO_CHECK_SEND_MINUTE', default=0, cast=int)
+
 # Celery Beat Schedule for automated tasks
+from celery.schedules import crontab
+
 CELERY_BEAT_SCHEDULE = {
     # Daily retention cleanup at 2 AM
     'cleanup-expired-uploads': {
@@ -233,11 +239,17 @@ CELERY_BEAT_SCHEDULE = {
         'schedule': 60 * 60 * 24,  # Every 24 hours
         'options': {'queue': 'maintenance'}
     },
-    # Hourly temp file cleanup  
+    # Hourly temp file cleanup
     'cleanup-temp-files': {
         'task': 'uploads.tasks.cleanup_temp_files_task',
         'schedule': 60 * 60,  # Every hour
         'options': {'queue': 'maintenance'}
+    },
+    # Hourly micro-check creation and email sending (checks each store's configured send time)
+    'create-daily-micro-checks': {
+        'task': 'micro_checks.tasks.create_daily_micro_check_runs',
+        'schedule': crontab(minute=5),  # Run at :05 past every hour
+        'options': {'queue': 'default'}
     },
 }
 

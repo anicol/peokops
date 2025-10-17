@@ -34,32 +34,49 @@ def create_daily_micro_check_runs():
     """
     Scheduled task to create daily micro-check runs for all active stores.
 
-    This should run once per day (e.g., at 2 AM UTC) and create runs
-    for stores based on their local timezone and cadence settings.
+    Runs every hour and checks if each store's local time matches their configured send time.
+    Creates runs and sends magic link emails to store managers when it's time.
     """
     from brands.models import Store
+    from datetime import datetime
+    import pytz
 
-    today_utc = timezone.now().date()
+    current_utc = timezone.now()
     stores = Store.objects.filter(is_active=True)
 
     created_count = 0
     skipped_count = 0
+    sent_count = 0
 
     for store in stores:
         try:
-            # Get store's local date
-            local_date = get_store_local_date(store)
+            # Get store's current local time
+            store_tz = pytz.timezone(store.timezone)
+            store_local_time = current_utc.astimezone(store_tz)
+            store_local_date = store_local_time.date()
+
+            # Check if it's the configured send time for this store (within the current hour)
+            send_time = store.micro_check_send_time
+            is_send_hour = (
+                store_local_time.hour == send_time.hour and
+                store_local_time.minute < 60  # Within the hour
+            )
+
+            if not is_send_hour:
+                continue  # Not time to send for this store yet
 
             # Check if this store should get a run today
-            # This depends on your cadence logic (daily, every 2 days, etc.)
-            # For now, we'll create daily runs for all stores
-            should_create = _should_create_run_for_store(store, local_date)
+            should_create = _should_create_run_for_store(store, store_local_date)
 
             if should_create:
-                run = _create_run_for_store(store, local_date)
+                run = _create_run_for_store(store, store_local_date)
                 if run:
                     created_count += 1
                     logger.info(f"Created run {run.id} for store {store.id}")
+
+                    # Auto-send magic link email to store manager(s)
+                    emails_sent = _send_run_to_managers(run, store)
+                    sent_count += emails_sent
             else:
                 skipped_count += 1
 
@@ -67,8 +84,8 @@ def create_daily_micro_check_runs():
             logger.error(f"Error creating run for store {store.id}: {str(e)}")
             continue
 
-    logger.info(f"Daily run creation: {created_count} created, {skipped_count} skipped")
-    return {'created': created_count, 'skipped': skipped_count}
+    logger.info(f"Daily run creation: {created_count} created, {skipped_count} skipped, {sent_count} emails sent")
+    return {'created': created_count, 'skipped': skipped_count, 'sent': sent_count}
 
 
 def _should_create_run_for_store(store, local_date):
@@ -151,6 +168,58 @@ def _create_run_for_store(store, scheduled_date):
 
     logger.info(f"Created run {run.id} with {len(selected)} items for store {store.id}")
     return run
+
+
+def _send_run_to_managers(run, store):
+    """
+    Send magic link emails to all managers at this store.
+
+    Returns the number of emails sent.
+    """
+    from .utils import send_magic_link_email
+
+    # Get all managers for this store
+    managers = User.objects.filter(
+        store=store,
+        role='GM',
+        is_active=True
+    )
+
+    sent_count = 0
+    for manager in managers:
+        try:
+            # Generate magic link token
+            raw_token = generate_magic_link_token()
+            token_hash = hash_token(raw_token)
+
+            # Create assignment
+            assignment = MicroCheckAssignment.objects.create(
+                run=run,
+                manager=manager,
+                token_hash=token_hash,
+                delivery_method='EMAIL',
+                sent_at=timezone.now()
+            )
+
+            # Send email with magic link
+            success = send_magic_link_email(
+                email=manager.email,
+                token=raw_token,
+                store_name=store.name,
+                recipient_name=manager.first_name or manager.username
+            )
+
+            if success:
+                sent_count += 1
+                logger.info(f"Sent micro-check email to {manager.email} for run {run.id}")
+            else:
+                logger.warning(f"Failed to send email to {manager.email} for run {run.id}")
+
+        except Exception as e:
+            logger.error(f"Error sending to manager {manager.id}: {str(e)}")
+            continue
+
+    return sent_count
 
 
 @shared_task(queue='default')

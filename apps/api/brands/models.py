@@ -104,6 +104,13 @@ class Store(models.Model):
     manager_email = models.EmailField(blank=True)
     timezone = models.CharField(max_length=50, default='America/New_York')
     is_active = models.BooleanField(default=True)
+
+    # Micro-check scheduling
+    micro_check_send_time = models.TimeField(
+        default='08:00:00',
+        help_text="Local time to send daily micro-check emails (in store's timezone)"
+    )
+
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
