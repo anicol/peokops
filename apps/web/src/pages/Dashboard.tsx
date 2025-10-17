@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import { useQuery } from 'react-query';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { inspectionsAPI, videosAPI, microCheckAPI } from '@/services/api';
 import { useAuth } from '@/hooks/useAuth';
 import { useBehaviorTracking } from '@/hooks/useBehaviorTracking';
