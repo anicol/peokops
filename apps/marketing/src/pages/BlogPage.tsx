@@ -6,6 +6,16 @@ import SEO from '../components/SEO';
 const Blog = () => {
   const blogPosts = [
     {
+      id: 'pivot-chronicles-engagement',
+      title: 'From Predictions to Engagement: Missing the Real Problem Again',
+      excerpt: 'Part 2 of The Pivot Chronicles: We thought employee engagement was the answer. Built surveys, dashboards, and scoring. Learned that another analytics dashboard wasn\'t going to win.',
+      author: 'Alistair Nicol',
+      date: '2025-07-22',
+      readTime: '7 min read',
+      category: 'The Pivot Chronicles',
+      slug: '/blog/pivot-chronicles-engagement'
+    },
+    {
       id: 'pivot-chronicles-extenure',
       title: 'Extenure: When Good Data Meets the Wrong Problem',
       excerpt: 'Part 1 of The Pivot Chronicles: How we built beautiful predictive retention analytics that nobody wanted. A brutally honest look at mistaking polite interest for product-market fit.',

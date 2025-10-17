@@ -14,6 +14,7 @@ import BlogPage from './pages/BlogPage';
 import BlogCoachingOverCompliance from './pages/BlogCoachingOverCompliance';
 import BlogDailyWalkthrough from './pages/BlogDailyWalkthrough';
 import BlogPivotChroniclesExtenure from './pages/BlogPivotChroniclesExtenure';
+import BlogPivotChroniclesEngagement from './pages/BlogPivotChroniclesEngagement';
 import ScrollToTop from './components/ScrollToTop';
 
 function App() {
@@ -35,6 +36,7 @@ function App() {
         <Route path="/roi" element={<ROICalculatorPage />} />
         <Route path="/blog" element={<BlogPage />} />
         <Route path="/blog/pivot-chronicles-extenure" element={<BlogPivotChroniclesExtenure />} />
+        <Route path="/blog/pivot-chronicles-engagement" element={<BlogPivotChroniclesEngagement />} />
         <Route path="/blog/coaching-over-compliance" element={<BlogCoachingOverCompliance />} />
         <Route path="/blog/daily-walkthrough" element={<BlogDailyWalkthrough />} />
         <Route path="/terms" element={<TermsPage />} />

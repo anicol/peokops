@@ -160,15 +160,15 @@ const BlogPivotChroniclesExtenure = () => {
             That realization ended Extenure: and started the long, humbling road toward tools that help people do better, not just know better.
           </p>
 
-          <div className="bg-gray-100 rounded-lg p-6 mt-12">
-            <p className="text-sm text-gray-600 mb-2">Coming Next in The Pivot Chronicles</p>
+          <Link to="/blog/pivot-chronicles-engagement" className="block bg-gray-100 rounded-lg p-6 mt-12 hover:bg-gray-200 transition-colors">
+            <p className="text-sm text-gray-600 mb-2">Next in The Pivot Chronicles</p>
             <p className="font-semibold text-gray-900">
               Part 2: From Predictions to Engagement: Missing the Real Problem Again
             </p>
             <p className="text-gray-700 mt-2">
               How we pivoted from retention to engagement and learned that another analytics dashboard wasn't going to win.
             </p>
-          </div>
+          </Link>
         </div>
       </article>
 
