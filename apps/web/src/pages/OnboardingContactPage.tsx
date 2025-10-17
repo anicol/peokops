@@ -219,7 +219,6 @@ export default function OnboardingContactPage() {
           </button>
         </div>
       </div>
-      </div>
     </>
   );
 }
