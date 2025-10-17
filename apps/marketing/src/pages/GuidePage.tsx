@@ -11,8 +11,8 @@ export default function GuidePage() {
     <div className="min-h-screen">
       <SEO
         title="The Guide - Daily Habit Building for Operations | PeakOps"
-        description="Build operational consistency with AI-powered micro-checks. The Guide sends quick daily prompts to keep your team focused, confident, and inspection-ready."
-        keywords="daily operations checklist, habit building, micro-checks, operational consistency, restaurant standards, team accountability"
+        description="Build operational consistency with quick micro-checks. The Guide sends three daily prompts to keep your team focused, confident, and inspection-ready—in less than one minute."
+        keywords="daily operations checklist, habit building, micro-checks, operational consistency, restaurant standards, team accountability, behavioral habits"
         url="https://getpeakops.com/guide"
         type="website"
       />
@@ -29,10 +29,10 @@ export default function GuidePage() {
               One Check at a Time
             </h1>
             <p className="text-xl md:text-2xl text-green-100 mb-4 leading-relaxed">
-              Turn daily actions into lasting habits with AI-powered micro-checks that keep your team focused, confident, and inspection ready.
+              Turn daily actions into lasting habits with quick micro-checks that keep your team focused, confident, and inspection ready.
             </p>
             <p className="text-lg text-green-100 mb-8 leading-relaxed">
-              PeakOps sends quick, AI driven prompts that help every manager spot issues early and reinforce brand standards daily: no setup, no stress.
+              PeakOps sends three quick prompts that help every manager spot issues early and reinforce brand standards daily: no setup, no stress.
             </p>
             <div className="mb-8">
               <a
@@ -46,7 +46,7 @@ export default function GuidePage() {
               7-day free trial • No credit card required
             </p>
             <p className="text-green-200 text-sm">
-              ✅ 3 randomized checks per day • ✅ Instant feedback • ✅ No login or training needed
+              ✅ 3 checks per day • ✅ Less than 1 minute • ✅ No login or training needed
             </p>
           </div>
         </div>
@@ -59,8 +59,11 @@ export default function GuidePage() {
             <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
               Why Consistency Slips
             </h2>
-            <p className="text-xl text-gray-600 mb-12">
-              Even great teams struggle with consistency: not from lack of effort, but from lack of rhythm.
+            <p className="text-xl text-gray-600 mb-4">
+              Audits and training fix problems too late. By the time issues are caught, habits have already drifted.
+            </p>
+            <p className="text-lg text-gray-600 mb-12">
+              Even great teams struggle with consistency—not from lack of effort, but from lack of daily rhythm.
             </p>
 
             <div className="grid md:grid-cols-2 gap-6 mb-12">
@@ -114,13 +117,13 @@ export default function GuidePage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
             <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
-              Meet The Guide: Your AI Habit Agent
+              Meet The Guide: Your Daily Habit Builder
             </h2>
             <p className="text-xl text-gray-600 max-w-3xl mx-auto mb-4">
-              The Guide makes consistency easy with short, randomized micro-checks sent straight to your phone or inbox.
+              The Guide makes consistency easy with three quick micro-checks sent straight to your phone or inbox.
             </p>
             <p className="text-lg text-gray-600 max-w-3xl mx-auto">
-              Each check takes less than a minute to complete: no logins, no dashboards, no extra work.
+              Each check takes less than one minute to complete: no logins, no dashboards, no extra work.
             </p>
           </div>
 
@@ -157,7 +160,7 @@ export default function GuidePage() {
                   3
                 </div>
                 <div>
-                  <h4 className="text-xl font-semibold text-gray-900 mb-2">AI Analyzes & Tracks Trends</h4>
+                  <h4 className="text-xl font-semibold text-gray-900 mb-2">Track Trends Over Time</h4>
                   <p className="text-gray-600">
                     The system identifies recurring issues and sends light feedback or reminders, helping you stay consistent over time.
                   </p>
@@ -213,7 +216,7 @@ export default function GuidePage() {
                       </div>
                     </td>
                     <td className="px-6 py-4 text-gray-700">
-                      Three questions, under two minutes. No logins or setup.
+                      Three questions, less than one minute. No logins or setup.
                     </td>
                   </tr>
                   <tr>
@@ -229,7 +232,7 @@ export default function GuidePage() {
                   <tr>
                     <td className="px-6 py-4">
                       <div className="flex items-center">
-                        <span className="font-medium text-gray-900">🧩 Adaptive AI</span>
+                        <span className="font-medium text-gray-900">🧩 Adaptive</span>
                       </div>
                     </td>
                     <td className="px-6 py-4 text-gray-700">
@@ -323,7 +326,7 @@ export default function GuidePage() {
               </div>
 
               <div className="bg-white p-6 rounded-lg border-2 border-green-300">
-                <h4 className="font-semibold text-gray-900 mb-4">AI provides feedback:</h4>
+                <h4 className="font-semibold text-gray-900 mb-4">Instant feedback:</h4>
                 <div className="space-y-3">
                   <div className="flex items-start">
                     <CheckCircle className="w-5 h-5 text-green-600 mr-3 mt-0.5 flex-shrink-0" />
@@ -450,7 +453,7 @@ export default function GuidePage() {
             </div>
 
             <p className="text-lg text-gray-600 mb-8">
-              It takes less than 2 minutes to get started.
+              It takes less than one minute to get started.
             </p>
 
             <a
