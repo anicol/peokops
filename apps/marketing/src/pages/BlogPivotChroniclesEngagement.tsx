@@ -168,7 +168,7 @@ const BlogPivotChroniclesEngagement = () => {
           </h2>
 
           <p className="mb-6">
-            I spent months perfecting the engagement dashboard:<br />
+            I spent weeks perfecting the engagement dashboard:<br />
             Drag-and-drop widgets. Custom date ranges. Exportable reports. Mobile responsive.
           </p>
 

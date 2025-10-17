@@ -6,6 +6,16 @@ import SEO from '../components/SEO';
 const Blog = () => {
   const blogPosts = [
     {
+      id: 'pivot-chronicles-peakops',
+      title: 'PeakOps: The AI Video Analysis Pivot That Almost Made Sense',
+      excerpt: 'Part 3 of The Pivot Chronicles: Finally, a tangible problem! Health code violations, safety issues, cleanliness. We built AWS Rekognition, PPE detection, the works. Why impressive tech still wasn\'t enough.',
+      author: 'Alistair Nicol',
+      date: '2025-07-29',
+      readTime: '8 min read',
+      category: 'The Pivot Chronicles',
+      slug: '/blog/pivot-chronicles-peakops'
+    },
+    {
       id: 'pivot-chronicles-engagement',
       title: 'From Predictions to Engagement: Missing the Real Problem Again',
       excerpt: 'Part 2 of The Pivot Chronicles: We thought employee engagement was the answer. Built surveys, dashboards, and scoring. Learned that another analytics dashboard wasn\'t going to win.',
