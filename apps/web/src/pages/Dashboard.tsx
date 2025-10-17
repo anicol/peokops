@@ -36,18 +36,7 @@ export default function Dashboard() {
   const { trackDashboardView } = useBehaviorTracking();
   const { nudges, handleNudgeAction, dismissNudge } = useSmartNudges();
 
-  // Check if trial user needs to complete onboarding
-  useEffect(() => {
-    console.log('Dashboard: Checking onboarding status', {
-      user: user?.email,
-      is_trial_user: user?.is_trial_user,
-      onboarding_completed_at: user?.onboarding_completed_at
-    });
-    if (user && user.is_trial_user && !user.onboarding_completed_at) {
-      console.log('Dashboard: Redirecting to onboarding - not completed');
-      navigate('/onboarding');
-    }
-  }, [user, navigate]);
+  // Removed old onboarding redirect - users now go straight to dashboard after signup
 
   // Track dashboard view on mount
   useEffect(() => {
