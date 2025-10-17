@@ -58,19 +58,34 @@ export default function Dashboard() {
   const { data: microCheckRuns } = useQuery(
     'recent-micro-checks',
     () => user?.store ? microCheckAPI.getRuns(user.store) : Promise.resolve([]),
-    { enabled: !!user?.store }
+    {
+      enabled: !!user?.store,
+      refetchOnMount: true,
+      refetchOnWindowFocus: true,
+      staleTime: 1000 // Consider data stale after 1 second for fresh data
+    }
   );
 
   const { data: allResponses } = useQuery(
     'all-micro-check-responses',
     () => user?.store ? microCheckAPI.getResponses(user.store) : Promise.resolve([]),
-    { enabled: !!user?.store }
+    {
+      enabled: !!user?.store,
+      refetchOnMount: true,
+      refetchOnWindowFocus: true,
+      staleTime: 1000
+    }
   );
 
   const { data: dashboardStats } = useQuery(
     ['dashboard-stats', user?.store],
     () => user?.store ? microCheckAPI.getDashboardStats(user.store) : Promise.resolve(null),
-    { enabled: !!user?.store }
+    {
+      enabled: !!user?.store,
+      refetchOnMount: true,
+      refetchOnWindowFocus: true,
+      staleTime: 1000
+    }
   );
 
   // Removed demo screen - users go straight to dashboard after new signup flow
