@@ -76,30 +76,26 @@ export default function OnboardingContactPage() {
       const data = await response.json();
 
       if (response.ok) {
-        // Store tokens for authenticated access
-        localStorage.setItem('access_token', data.access);
-        localStorage.setItem('refresh_token', data.refresh);
-
-        // Store user info and magic token
-        sessionStorage.setItem('onboarding', JSON.stringify({
-          ...onboardingData,
-          phone,
-          email,
-          userId: data.user_id,
-          magicToken: data.magic_token,
-          smsSent: data.sms_sent
-        }));
-
         // Check if this is an existing user
         if (data.existing_user) {
-          // Show toast message for existing user
+          // Existing user - show toast and keep them on the page
+          // They need to use the magic link from their email to log in
           setShowToast(true);
-          // Redirect after a short delay to let them see the toast
-          setTimeout(() => {
-            window.location.href = '/dashboard';
-          }, 2000);
+          setIsLoading(false);
         } else {
-          // New user - go directly to dashboard
+          // New user - store tokens and onboarding data, then go to dashboard
+          localStorage.setItem('access_token', data.access);
+          localStorage.setItem('refresh_token', data.refresh);
+
+          sessionStorage.setItem('onboarding', JSON.stringify({
+            ...onboardingData,
+            phone,
+            email,
+            userId: data.user_id,
+            magicToken: data.magic_token,
+            smsSent: data.sms_sent
+          }));
+
           window.location.href = '/dashboard';
         }
         return;
@@ -120,7 +116,7 @@ export default function OnboardingContactPage() {
         open={showToast}
         onOpenChange={setShowToast}
         title="Magic Link Sent!"
-        description="Check your email for a link to access your micro-checks. You'll be redirected to the dashboard shortly."
+        description="We've sent a new access link to your email. Click the link in your email to access your account."
         variant="success"
       />
       <div className="min-h-screen bg-gradient-to-br from-blue-50 to-teal-50 flex items-center justify-center p-4">
