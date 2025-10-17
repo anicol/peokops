@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Phone, Mail, Loader2, AlertCircle } from 'lucide-react';
 import { API_CONFIG } from '@/config/api';
-import { Toast, ToastProvider } from '@/components/Toast';
 
 export default function OnboardingContactPage() {
   const navigate = useNavigate();
@@ -10,7 +9,6 @@ export default function OnboardingContactPage() {
   const [email, setEmail] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
-  const [showToast, setShowToast] = useState(false);
 
   useEffect(() => {
     // Redirect if previous steps not completed
@@ -76,28 +74,20 @@ export default function OnboardingContactPage() {
       const data = await response.json();
 
       if (response.ok) {
-        // Check if this is an existing user
-        if (data.existing_user) {
-          // Existing user - show toast and keep them on the page
-          // They need to use the magic link from their email to log in
-          setShowToast(true);
-          setIsLoading(false);
-        } else {
-          // New user - store tokens and onboarding data, then go to dashboard
-          localStorage.setItem('access_token', data.access);
-          localStorage.setItem('refresh_token', data.refresh);
+        // Store tokens and onboarding data, then go to dashboard
+        localStorage.setItem('access_token', data.access);
+        localStorage.setItem('refresh_token', data.refresh);
 
-          sessionStorage.setItem('onboarding', JSON.stringify({
-            ...onboardingData,
-            phone,
-            email,
-            userId: data.user_id,
-            magicToken: data.magic_token,
-            smsSent: data.sms_sent
-          }));
+        sessionStorage.setItem('onboarding', JSON.stringify({
+          ...onboardingData,
+          phone,
+          email,
+          userId: data.user_id,
+          magicToken: data.magic_token,
+          smsSent: data.sms_sent
+        }));
 
-          window.location.href = '/dashboard';
-        }
+        window.location.href = '/dashboard';
         return;
       } else {
         setError(data.error || data.phone?.[0] || 'Failed to create account. Please try again.');
@@ -111,15 +101,7 @@ export default function OnboardingContactPage() {
   };
 
   return (
-    <ToastProvider>
-      <Toast
-        open={showToast}
-        onOpenChange={setShowToast}
-        title="Magic Link Sent!"
-        description="We've sent a new access link to your email. Click the link in your email to access your account."
-        variant="success"
-      />
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-teal-50 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-teal-50 flex items-center justify-center p-4">
         <div className="max-w-2xl w-full">
         {/* Progress indicator */}
         <div className="text-center mb-8">
@@ -215,7 +197,6 @@ export default function OnboardingContactPage() {
           </button>
         </div>
         </div>
-      </div>
-    </ToastProvider>
+    </div>
   );
 }

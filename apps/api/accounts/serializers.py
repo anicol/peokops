@@ -251,42 +251,59 @@ class QuickSignupSerializer(serializers.Serializer):
         return value
 
     def create(self, validated_data):
-        """Create trial user with passwordless magic link flow"""
+        """Create trial user with passwordless magic link flow - or update existing user"""
         phone = validated_data['phone']
         email = validated_data.get('email', '')
         store_name = validated_data['store_name']
         industry = validated_data['industry']
         focus_areas = validated_data.get('focus_areas', [])
 
-        # Generate secure random password (user won't need it - magic link only)
-        random_password = ''.join(secrets.choice(string.ascii_letters + string.digits) for _ in range(32))
+        # Check if user already exists with this email
+        existing_user = None
+        if email:
+            try:
+                existing_user = User.objects.get(email=email)
+            except User.DoesNotExist:
+                pass
 
-        # Generate referral code
-        referral_code = ''.join(secrets.choice(string.ascii_uppercase + string.digits) for _ in range(8))
-
-        # Generate username - use email if phone is placeholder/blank
-        if not phone or phone == '+10000000000':
-            # Use email as username, or generate unique username from email + random suffix
-            if email:
-                username = email.split('@')[0] + '_' + ''.join(secrets.choice(string.ascii_lowercase + string.digits) for _ in range(6))
-            else:
-                # Fallback: generate completely random username
-                username = 'trial_' + ''.join(secrets.choice(string.ascii_lowercase + string.digits) for _ in range(12))
+        if existing_user:
+            # User exists - update their info and create new store/brand
+            user = existing_user
+            if phone and phone != '+10000000000':
+                user.phone = phone
+            user.is_trial_user = True
+            user.trial_expires_at = timezone.now().replace(hour=23, minute=59, second=59, microsecond=999999) + timedelta(days=6)
+            user.save()
         else:
-            # Use phone as username (sanitized)
-            username = phone.replace('+', '').replace('-', '').replace(' ', '')
+            # Generate secure random password (user won't need it - magic link only)
+            random_password = ''.join(secrets.choice(string.ascii_letters + string.digits) for _ in range(32))
 
-        # Create trial user
-        user = User.objects.create_user(
-            username=username,
-            email=email or f"{username}@trial.temp",  # Temporary email if not provided
-            password=random_password,
-            phone=phone if phone and phone != '+10000000000' else '',  # Don't store placeholder
-            role=User.Role.TRIAL_ADMIN,
-            is_trial_user=True,
-            trial_expires_at=timezone.now().replace(hour=23, minute=59, second=59, microsecond=999999) + timedelta(days=6),
-            referral_code=referral_code
-        )
+            # Generate referral code
+            referral_code = ''.join(secrets.choice(string.ascii_uppercase + string.digits) for _ in range(8))
+
+            # Generate username - use email if phone is placeholder/blank
+            if not phone or phone == '+10000000000':
+                # Use email as username, or generate unique username from email + random suffix
+                if email:
+                    username = email.split('@')[0] + '_' + ''.join(secrets.choice(string.ascii_lowercase + string.digits) for _ in range(6))
+                else:
+                    # Fallback: generate completely random username
+                    username = 'trial_' + ''.join(secrets.choice(string.ascii_lowercase + string.digits) for _ in range(12))
+            else:
+                # Use phone as username (sanitized)
+                username = phone.replace('+', '').replace('-', '').replace(' ', '')
+
+            # Create trial user
+            user = User.objects.create_user(
+                username=username,
+                email=email or f"{username}@trial.temp",  # Temporary email if not provided
+                password=random_password,
+                phone=phone if phone and phone != '+10000000000' else '',  # Don't store placeholder
+                role=User.Role.TRIAL_ADMIN,
+                is_trial_user=True,
+                trial_expires_at=timezone.now().replace(hour=23, minute=59, second=59, microsecond=999999) + timedelta(days=6),
+                referral_code=referral_code
+            )
 
         # Auto-create trial brand
         brand = Brand.create_trial_brand(user)
