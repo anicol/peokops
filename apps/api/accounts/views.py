@@ -151,14 +151,98 @@ def quick_signup_view(request):
     """
     Streamlined trial signup flow:
     1. Collect phone, email (optional), store name, industry
-    2. Create user with TRIAL_ADMIN role
-    3. Create brand + store
-    4. Seed 15 micro-check templates
-    5. Create first MicroCheckRun with 3 items
+    2. Create user with TRIAL_ADMIN role OR find existing user if email exists
+    3. Create brand + store (or use existing for existing user)
+    4. Seed 15 micro-check templates (if new user)
+    5. Create first MicroCheckRun with 3 items (if new user)
     6. Generate magic link token
-    7. Send SMS (placeholder - not implemented yet)
+    7. Send SMS/email with magic link
     8. Return user info + tokens + magic link
     """
+    from micro_checks.models import MicroCheckAssignment, MicroCheckRun
+    from micro_checks.utils import (
+        send_magic_link_email,
+        generate_magic_link_token,
+        hash_token,
+        get_store_local_date,
+        get_next_sequence_number
+    )
+    from datetime import timedelta
+
+    # Check if user already exists with this email
+    email = request.data.get('email')
+    existing_user = None
+
+    if email:
+        try:
+            existing_user = User.objects.get(email=email)
+        except User.DoesNotExist:
+            pass
+
+    if existing_user:
+        # User already exists - generate new magic link and send it
+        user = existing_user
+
+        # Find the user's most recent run to attach the magic link to
+        most_recent_run = MicroCheckRun.objects.filter(
+            store=user.store
+        ).order_by('-created_at').first()
+
+        if most_recent_run:
+            # Generate new magic link token
+            raw_token = generate_magic_link_token()
+            token_hash = hash_token(raw_token)
+
+            # Create new assignment with magic link
+            assignment = MicroCheckAssignment.objects.create(
+                run=most_recent_run,
+                store=user.store,
+                sent_to=user,
+                access_token_hash=token_hash,
+                token_expires_at=timezone.now() + timedelta(days=30),
+                purpose='RUN_ACCESS',
+                scope={'run_id': str(most_recent_run.id), 'store_id': user.store.id},
+                max_uses=999,
+                sent_via='EMAIL',
+                sent_at=timezone.now(),
+                created_by=user,
+                retention_policy='COACHING'
+            )
+            magic_token = raw_token
+        else:
+            # No run exists - should not happen for existing users, but handle gracefully
+            magic_token = None
+
+        # Determine store name
+        store_name = user.store.name if user.store else "Your Store"
+        recipient_name = user.first_name if user.first_name else None
+
+        # Send magic link via email
+        email_sent = False
+        if magic_token:
+            email_sent = send_magic_link_email(
+                email=user.email,
+                token=magic_token,
+                store_name=store_name,
+                recipient_name=recipient_name
+            )
+
+        # Generate JWT tokens
+        refresh = RefreshToken.for_user(user)
+        access_token = refresh.access_token
+
+        return Response({
+            'user_id': user.id,
+            'access': str(access_token),
+            'refresh': str(refresh),
+            'magic_token': magic_token,
+            'sms_sent': False,
+            'email_sent': email_sent,
+            'delivery_method': 'email' if email_sent else None,
+            'existing_user': True
+        }, status=status.HTTP_200_OK)
+
+    # New user - proceed with normal signup flow
     serializer = QuickSignupSerializer(data=request.data)
     if serializer.is_valid():
         user = serializer.save()
@@ -171,10 +255,6 @@ def quick_signup_view(request):
         quick_signup_data = getattr(user, '_quick_signup_data', {})
         store_name = user.store.name if user.store else "Your Store"
         magic_token = quick_signup_data.get('magic_token')
-
-        # TEMPORARY: Use email only until Twilio toll-free verification completes
-        # TODO: Re-enable SMS when Twilio verification is complete
-        from micro_checks.utils import send_magic_link_email
 
         # Determine recipient name - use first name if available, otherwise just friendly greeting
         recipient_name = user.first_name if user.first_name else None
@@ -201,7 +281,8 @@ def quick_signup_view(request):
             'run_id': quick_signup_data.get('run_id'),
             'sms_sent': sms_sent,
             'email_sent': email_sent,
-            'delivery_method': delivery_method
+            'delivery_method': delivery_method,
+            'existing_user': False
         }, status=status.HTTP_201_CREATED)
 
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)

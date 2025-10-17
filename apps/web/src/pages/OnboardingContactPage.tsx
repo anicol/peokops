@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Phone, Mail, Loader2, AlertCircle } from 'lucide-react';
 import { API_CONFIG } from '@/config/api';
+import { Toast } from '@/components/Toast';
 
 export default function OnboardingContactPage() {
   const navigate = useNavigate();
@@ -9,6 +10,7 @@ export default function OnboardingContactPage() {
   const [email, setEmail] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
+  const [showToast, setShowToast] = useState(false);
 
   useEffect(() => {
     // Redirect if previous steps not completed
@@ -88,9 +90,18 @@ export default function OnboardingContactPage() {
           smsSent: data.sms_sent
         }));
 
-        // Force page reload to trigger auth context and go directly to dashboard
-        // Skip the focus/checks-sent pages - let them discover features in the dashboard
-        window.location.href = '/dashboard';
+        // Check if this is an existing user
+        if (data.existing_user) {
+          // Show toast message for existing user
+          setShowToast(true);
+          // Redirect after a short delay to let them see the toast
+          setTimeout(() => {
+            window.location.href = '/dashboard';
+          }, 2000);
+        } else {
+          // New user - go directly to dashboard
+          window.location.href = '/dashboard';
+        }
         return;
       } else {
         setError(data.error || data.phone?.[0] || 'Failed to create account. Please try again.');
@@ -104,8 +115,16 @@ export default function OnboardingContactPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-teal-50 flex items-center justify-center p-4">
-      <div className="max-w-2xl w-full">
+    <>
+      <Toast
+        open={showToast}
+        onOpenChange={setShowToast}
+        title="Magic Link Sent!"
+        description="Check your email for a link to access your micro-checks. You'll be redirected to the dashboard shortly."
+        variant="success"
+      />
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-teal-50 flex items-center justify-center p-4">
+        <div className="max-w-2xl w-full">
         {/* Progress indicator */}
         <div className="text-center mb-8">
           <p className="text-sm text-gray-600 mb-6">Step 3 of 4</p>
@@ -200,6 +219,7 @@ export default function OnboardingContactPage() {
           </button>
         </div>
       </div>
-    </div>
+      </div>
+    </>
   );
 }

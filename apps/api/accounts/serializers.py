@@ -245,9 +245,9 @@ class QuickSignupSerializer(serializers.Serializer):
         return value
 
     def validate_email(self, value):
-        """Ensure email is unique if provided"""
-        if value and User.objects.filter(email=value).exists():
-            raise serializers.ValidationError("A user with this email already exists.")
+        """Validate email format - uniqueness check moved to view"""
+        # Email uniqueness is now handled gracefully in the view
+        # by sending magic link to existing users
         return value
 
     def create(self, validated_data):
