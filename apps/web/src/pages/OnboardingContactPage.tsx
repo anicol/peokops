@@ -214,6 +214,7 @@ export default function OnboardingContactPage() {
             ← Back
           </button>
         </div>
+        </div>
       </div>
     </>
   );
