@@ -305,14 +305,48 @@ class QuickSignupSerializer(serializers.Serializer):
                 referral_code=referral_code
             )
 
-        # Auto-create trial brand
-        brand = Brand.create_trial_brand(user)
+        # Auto-create trial brand - or reuse existing brand for existing users
+        from django.db import IntegrityError
+        import time
+
+        # Try to get existing brand for user
+        existing_brand = Brand.objects.filter(trial_created_by=user, is_trial=True).first()
+
+        if existing_brand:
+            # Reuse existing brand
+            brand = existing_brand
+        else:
+            # Create new brand with unique name
+            max_attempts = 5
+            for attempt in range(max_attempts):
+                try:
+                    if attempt == 0:
+                        brand = Brand.create_trial_brand(user)
+                    else:
+                        # Add timestamp to make it unique
+                        timestamp = int(time.time())
+                        brand_name = f"{user.first_name or user.username}'s Trial {timestamp}"
+                        brand = Brand.objects.create(
+                            name=brand_name,
+                            is_trial=True,
+                            trial_created_by=user,
+                            retention_days_coaching=7,
+                            inspection_config=Brand.get_default_trial_config()
+                        )
+                        # Seed templates
+                        from micro_checks.utils import seed_default_templates
+                        seed_default_templates(brand, created_by=user)
+                    break
+                except IntegrityError:
+                    if attempt == max_attempts - 1:
+                        raise
+                    continue
 
         # Auto-create store with provided name
         store = Store.objects.create(
             brand=brand,
             name=store_name,
-            code=f"TRIAL-{user.id}",
+            code=f"TRIAL-{user.id}-{int(time.time())}",  # Make unique with timestamp
             address="",
             city="",
             state="",
