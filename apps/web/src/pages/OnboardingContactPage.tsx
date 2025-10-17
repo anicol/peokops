@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Phone, Mail, Loader2, AlertCircle } from 'lucide-react';
 import { API_CONFIG } from '@/config/api';
-import { Toast } from '@/components/Toast';
+import { Toast, ToastProvider } from '@/components/Toast';
 
 export default function OnboardingContactPage() {
   const navigate = useNavigate();
@@ -111,7 +111,7 @@ export default function OnboardingContactPage() {
   };
 
   return (
-    <>
+    <ToastProvider>
       <Toast
         open={showToast}
         onOpenChange={setShowToast}
@@ -216,6 +216,6 @@ export default function OnboardingContactPage() {
         </div>
         </div>
       </div>
-    </>
+    </ToastProvider>
   );
 }
