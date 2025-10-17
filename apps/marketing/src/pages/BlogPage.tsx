@@ -6,6 +6,16 @@ import SEO from '../components/SEO';
 const Blog = () => {
   const blogPosts = [
     {
+      id: 'pivot-chronicles-extenure',
+      title: 'Extenure: When Good Data Meets the Wrong Problem',
+      excerpt: 'Part 1 of The Pivot Chronicles: How we built beautiful predictive retention analytics that nobody wanted. A brutally honest look at mistaking polite interest for product-market fit.',
+      author: 'Alistair Nicol',
+      date: '2025-01-16',
+      readTime: '6 min read',
+      category: 'The Pivot Chronicles',
+      slug: '/blog/pivot-chronicles-extenure'
+    },
+    {
       id: 'coaching-over-compliance',
       title: 'Coaching Over Compliance: How QSR Managers Can Turn Inspections Into Growth Moments',
       excerpt: 'Most managers in quick service restaurants dread inspections. They feel like high-stakes tests where the goal is simple: don\'t fail. But there\'s a better way.',
