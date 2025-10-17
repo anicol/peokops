@@ -41,6 +41,8 @@ const NewsletterSignup: React.FC<NewsletterSignupProps> = ({
     setMessage('');
 
     try {
+      console.log('Submitting to ConvertKit:', { formId, email });
+
       const response = await fetch(
         `https://api.convertkit.com/v3/forms/${formId}/subscribe`,
         {
@@ -55,7 +57,10 @@ const NewsletterSignup: React.FC<NewsletterSignupProps> = ({
         }
       );
 
+      console.log('ConvertKit response status:', response.status);
+
       const data = await response.json();
+      console.log('ConvertKit response data:', data);
 
       if (response.ok) {
         setStatus('success');
@@ -63,7 +68,8 @@ const NewsletterSignup: React.FC<NewsletterSignupProps> = ({
         setEmail('');
       } else {
         setStatus('error');
-        setMessage(data.message || 'Something went wrong. Please try again.');
+        setMessage(data.message || data.error || 'Something went wrong. Please try again.');
+        console.error('ConvertKit API error:', data);
       }
     } catch (error) {
       setStatus('error');
