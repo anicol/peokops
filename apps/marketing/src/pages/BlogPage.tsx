@@ -2,6 +2,7 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { Calendar, Clock, User, ArrowRight } from 'lucide-react';
 import SEO from '../components/SEO';
+import NewsletterSignup from '../components/NewsletterSignup';
 
 const Blog = () => {
   const blogPosts = [
@@ -152,16 +153,7 @@ const Blog = () => {
             <p className="text-xl text-gray-600 mb-8">
               Get the latest insights on restaurant inspections and management delivered to your inbox.
             </p>
-            <div className="flex flex-col sm:flex-row gap-4 max-w-md mx-auto">
-              <input
-                type="email"
-                placeholder="Enter your email"
-                className="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-              />
-              <button className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium">
-                Subscribe
-              </button>
-            </div>
+            <NewsletterSignup />
           </div>
         </div>
       </section>
