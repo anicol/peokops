@@ -10,7 +10,7 @@ const Blog = () => {
       title: 'Extenure: When Good Data Meets the Wrong Problem',
       excerpt: 'Part 1 of The Pivot Chronicles: How we built beautiful predictive retention analytics that nobody wanted. A brutally honest look at mistaking polite interest for product-market fit.',
       author: 'Alistair Nicol',
-      date: '2025-01-16',
+      date: '2025-07-15',
       readTime: '6 min read',
       category: 'The Pivot Chronicles',
       slug: '/blog/pivot-chronicles-extenure'

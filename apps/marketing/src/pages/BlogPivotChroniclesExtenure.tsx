@@ -13,7 +13,7 @@ const BlogPivotChroniclesExtenure = () => {
         author="Alistair Nicol"
         type="article"
         url="https://getpeakops.com/blog/pivot-chronicles-extenure"
-        publishedTime="2025-01-16T00:00:00Z"
+        publishedTime="2025-07-15T00:00:00Z"
         section="The Pivot Chronicles"
         tags={['Startup Journey', 'Product-Market Fit', 'Pivots', 'Lessons Learned', 'SaaS']}
       />
@@ -46,7 +46,7 @@ const BlogPivotChroniclesExtenure = () => {
           </div>
           <div className="flex items-center">
             <Calendar className="w-4 h-4 mr-2" />
-            January 16, 2025
+            July 15, 2025
           </div>
           <div className="flex items-center">
             <Clock className="w-4 h-4 mr-2" />
