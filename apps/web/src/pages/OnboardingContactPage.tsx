@@ -74,7 +74,7 @@ export default function OnboardingContactPage() {
       const data = await response.json();
 
       if (response.ok) {
-        // Store tokens and onboarding data, then go to dashboard
+        // Store tokens and onboarding data
         localStorage.setItem('access_token', data.access);
         localStorage.setItem('refresh_token', data.refresh);
 
@@ -87,7 +87,8 @@ export default function OnboardingContactPage() {
           smsSent: data.sms_sent
         }));
 
-        window.location.href = '/dashboard';
+        // Go to step 4 - focus areas
+        navigate('/start/focus');
         return;
       } else {
         setError(data.error || data.phone?.[0] || 'Failed to create account. Please try again.');
