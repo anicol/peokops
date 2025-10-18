@@ -715,6 +715,15 @@ export const microCheckAPI = {
     const response = await api.get(`/micro-checks/templates/${id}/history/`);
     return response.data;
   },
+
+  // Get unique categories available for current user
+  getTemplateCategories: async (params?: {
+    brand?: number;
+    is_local?: boolean | string;
+  }): Promise<string[]> => {
+    const response = await api.get('/micro-checks/templates/categories/', { params });
+    return response.data.categories;
+  },
 };
 
 export default api;

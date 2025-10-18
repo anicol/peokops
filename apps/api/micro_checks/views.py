@@ -393,6 +393,13 @@ class MicroCheckTemplateViewSet(viewsets.ModelViewSet):
             }
         }
     )
+    @action(detail=False, methods=['get'])
+    def categories(self, request):
+        """Get list of unique categories for templates available to this user"""
+        queryset = self.get_queryset()
+        categories = queryset.values_list('category', flat=True).distinct().order_by('category')
+        return Response({'categories': list(categories)})
+
     @action(detail=False, methods=['post'])
     def generate_with_ai(self, request):
         """Generate micro-check templates using AI based on brand context"""

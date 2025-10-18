@@ -46,6 +46,26 @@ const MicroCheckTemplatesPage = () => {
   const isOperator = user?.role === 'GM' || user?.role === 'OWNER' || user?.role === 'TRIAL_ADMIN';
   const canManage = isAdmin || isOperator;
 
+  const fetchCategories = useCallback(async () => {
+    try {
+      const params: any = {};
+
+      // Filter by source and brand based on active tab
+      if (activeTab === 'starters') {
+        params.is_local = 'false';
+      } else {
+        if (user?.brand_id) {
+          params.brand = user.brand_id;
+        }
+      }
+
+      const categories = await microCheckAPI.getTemplateCategories(params);
+      setAvailableCategories(new Set(categories as MicroCheckCategory[]));
+    } catch (err) {
+      console.error('Error fetching categories:', err);
+    }
+  }, [activeTab, user?.brand_id]);
+
   const fetchTemplates = useCallback(async (page: number = 1, append: boolean = false) => {
     try {
       setLoading(true);
@@ -82,9 +102,6 @@ const MicroCheckTemplatesPage = () => {
         setTemplates(prev => [...prev, ...data]);
       } else {
         setTemplates(data);
-        // Extract unique categories from templates (only on first page)
-        const categories = new Set<MicroCheckCategory>(data.map((t: MicroCheckTemplate) => t.category));
-        setAvailableCategories(categories);
       }
 
       setHasMore(hasNextPage);
@@ -96,6 +113,13 @@ const MicroCheckTemplatesPage = () => {
       setLoading(false);
     }
   }, [activeTab, categoryFilter, severityFilter, searchTerm, user?.brand_id]);
+
+  // Fetch categories when tab or user changes
+  useEffect(() => {
+    if (canManage) {
+      fetchCategories();
+    }
+  }, [canManage, fetchCategories]);
 
   // Debounce search and trigger fetch on filter changes
   useEffect(() => {
