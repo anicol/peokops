@@ -687,6 +687,20 @@ export const microCheckAPI = {
     return response.data;
   },
 
+  // Generate templates using AI
+  generateTemplatesWithAI: async (category: string, count: number = 5): Promise<{
+    brand_analysis: {
+      business_type: string;
+      typical_operations: string;
+      compliance_focus_areas: string[];
+    };
+    templates: MicroCheckTemplate[];
+    count: number;
+  }> => {
+    const response = await api.post('/micro-checks/templates/generate_with_ai/', { category, count });
+    return response.data;
+  },
+
   // Get version history for template (ADMIN and OWNER)
   getTemplateHistory: async (id: string): Promise<MicroCheckTemplate[]> => {
     const response = await api.get(`/micro-checks/templates/${id}/history/`);

@@ -18,6 +18,7 @@ import {
 import { useAuth } from '@/hooks/useAuth';
 import { microCheckAPI } from '@/services/api';
 import type { MicroCheckTemplate, MicroCheckCategory, MicroCheckSeverity } from '@/types/microCheck';
+import AITemplateWizard from '@/components/AITemplateWizard';
 
 const MicroCheckTemplatesPage = () => {
   const { user } = useAuth();
@@ -36,6 +37,7 @@ const MicroCheckTemplatesPage = () => {
   const [submitting, setSubmitting] = useState(false);
   const [referenceImageFile, setReferenceImageFile] = useState<File | null>(null);
   const [referenceImagePreview, setReferenceImagePreview] = useState<string | null>(null);
+  const [showAIWizard, setShowAIWizard] = useState(false);
 
   const isAdmin = user?.role === 'ADMIN';
   const isOperator = user?.role === 'GM' || user?.role === 'OWNER' || user?.role === 'TRIAL_ADMIN';
@@ -344,13 +346,22 @@ const MicroCheckTemplatesPage = () => {
                 <ChevronDown className={`w-4 h-4 ml-2 transition-transform ${showFilters ? 'rotate-180' : ''}`} />
               </button>
               {activeTab === 'my-templates' && (
-                <button
-                  onClick={handleCreateTemplate}
-                  className="px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors font-medium flex items-center"
-                >
-                  <Plus className="w-5 h-5 mr-2" />
-                  New Template
-                </button>
+                <>
+                  <button
+                    onClick={() => setShowAIWizard(true)}
+                    className="px-4 py-2 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-lg hover:from-purple-700 hover:to-pink-700 transition-colors font-medium flex items-center"
+                  >
+                    <Sparkles className="w-5 h-5 mr-2" />
+                    Generate with AI
+                  </button>
+                  <button
+                    onClick={handleCreateTemplate}
+                    className="px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors font-medium flex items-center"
+                  >
+                    <Plus className="w-5 h-5 mr-2" />
+                    New Template
+                  </button>
+                </>
               )}
             </div>
           </div>
@@ -734,6 +745,16 @@ const MicroCheckTemplatesPage = () => {
             </form>
           </div>
         </div>
+      )}
+
+      {/* AI Template Wizard */}
+      {showAIWizard && (
+        <AITemplateWizard
+          onClose={() => setShowAIWizard(false)}
+          onComplete={() => {
+            fetchTemplates();
+          }}
+        />
       )}
     </div>
   );
