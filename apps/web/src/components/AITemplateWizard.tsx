@@ -67,7 +67,12 @@ const AITemplateWizard: React.FC<AITemplateWizardProps> = ({ onClose, onComplete
     setError(null);
 
     try {
-      const result = await microCheckAPI.generateTemplatesWithAI(selectedCategory, 5);
+      const result = await microCheckAPI.generateTemplatesWithAI(
+        selectedCategory,
+        5,
+        brandName,
+        industry || undefined
+      );
 
       setBrandAnalysis(result.brand_analysis);
       setGeneratedTemplates(result.templates);

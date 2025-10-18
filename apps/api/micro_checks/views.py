@@ -428,14 +428,18 @@ class MicroCheckTemplateViewSet(viewsets.ModelViewSet):
         count = int(request.data.get('count', 5))
         count = max(1, min(10, count))  # Clamp between 1-10
 
+        # Allow override of brand name and industry from request
+        brand_name = request.data.get('brand_name', brand.name)
+        industry = request.data.get('industry', brand.industry or None)
+
         try:
             # Initialize AI service
             ai_generator = AITemplateGenerator()
 
             # Step 1: Analyze brand
             brand_analysis = ai_generator.analyze_brand(
-                brand_name=brand.name,
-                industry=brand.industry
+                brand_name=brand_name,
+                industry=industry
             )
 
             # Step 2: Generate templates

@@ -688,7 +688,12 @@ export const microCheckAPI = {
   },
 
   // Generate templates using AI
-  generateTemplatesWithAI: async (category: string, count: number = 5): Promise<{
+  generateTemplatesWithAI: async (
+    category: string,
+    count: number = 5,
+    brandName?: string,
+    industry?: string
+  ): Promise<{
     brand_analysis: {
       business_type: string;
       typical_operations: string;
@@ -697,7 +702,10 @@ export const microCheckAPI = {
     templates: MicroCheckTemplate[];
     count: number;
   }> => {
-    const response = await api.post('/micro-checks/templates/generate_with_ai/', { category, count });
+    const payload: any = { category, count };
+    if (brandName) payload.brand_name = brandName;
+    if (industry) payload.industry = industry;
+    const response = await api.post('/micro-checks/templates/generate_with_ai/', payload);
     return response.data;
   },
 
