@@ -38,7 +38,19 @@ export default function MicroCheckRunDetailPage() {
       const actions = await microCheckAPI.getCorrectiveActions(run.store);
       // Filter to only actions for responses in this run
       const responseIds = responses?.map(r => r.id) || [];
-      return actions.filter(action => responseIds.includes(action.response));
+      const filtered = actions.filter(action => responseIds.includes(action.response));
+      console.log('Corrective Actions Debug:', {
+        totalActions: actions.length,
+        filteredActions: filtered.length,
+        responseIds,
+        actions: filtered.map(a => ({
+          id: a.id,
+          responseId: a.response,
+          beforeMediaUrl: a.before_media_url?.substring(0, 50),
+          afterMediaUrl: a.after_media_url?.substring(0, 50)
+        }))
+      });
+      return filtered;
     },
     { enabled: !!runId && !!run && !!responses }
   );

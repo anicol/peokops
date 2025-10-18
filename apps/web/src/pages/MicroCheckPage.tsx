@@ -273,6 +273,9 @@ const MicroCheckPage = () => {
 
     console.log('moveToNextCheck called, current index:', currentCheckIndex);
 
+    // Clear the before photo data URL when moving to next check
+    setBeforePhotoDataUrl(null);
+
     if (currentCheckIndex < run.items.length - 1) {
       setTimeout(() => {
         console.log('Advancing from index', currentCheckIndex, 'to', currentCheckIndex + 1);
