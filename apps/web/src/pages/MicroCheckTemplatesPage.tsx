@@ -38,7 +38,7 @@ const MicroCheckTemplatesPage = () => {
   const [referenceImagePreview, setReferenceImagePreview] = useState<string | null>(null);
 
   const isAdmin = user?.role === 'ADMIN';
-  const isOperator = user?.role === 'GM' || user?.role === 'OWNER';
+  const isOperator = user?.role === 'GM' || user?.role === 'OWNER' || user?.role === 'TRIAL_ADMIN';
   const canManage = isAdmin || isOperator;
 
   const fetchTemplates = useCallback(async () => {
