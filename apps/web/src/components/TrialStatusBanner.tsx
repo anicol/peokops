@@ -94,17 +94,21 @@ export default function TrialStatusBanner({ className = '', onUpgradeClick }: Tr
           buttonStyle: 'bg-yellow-600 hover:bg-yellow-700 text-white'
         };
         
-      default:
+      default: {
+        const hasCompletedChecks = (trial.videos_used || 0) > 0;
         return {
           bgColor: 'bg-blue-50 border-blue-200',
           textColor: 'text-blue-800',
           iconColor: 'text-blue-600',
           icon: Upload,
           title: '🚀 Welcome to your trial!',
-          message: `${daysLeft} days to explore AI-powered inspections. You have ${videosLeft} video${videosLeft !== 1 ? 's' : ''} remaining.`,
+          message: hasCompletedChecks
+            ? `${daysLeft} days to explore AI-powered quick checks. Keep checking daily to build your streak!`
+            : `${daysLeft} days to explore AI-powered quick checks. Complete your first check to get started.`,
           buttonText: 'Learn More',
           buttonStyle: 'bg-blue-600 hover:bg-blue-700 text-white'
         };
+      }
     }
   };
 

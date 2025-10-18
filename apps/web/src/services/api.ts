@@ -132,9 +132,13 @@ export const usersAPI = {
     const response = await api.patch(`/auth/users/${id}/`, userData);
     return response.data;
   },
-  
+
   deleteUser: async (id: number): Promise<void> => {
     await api.delete(`/auth/users/${id}/`);
+  },
+
+  reinviteUser: async (id: number): Promise<void> => {
+    await api.post(`/auth/users/${id}/reinvite/`);
   },
 };
 

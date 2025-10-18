@@ -6,7 +6,6 @@ import { useAuth } from '@/hooks/useAuth';
 import { useBehaviorTracking } from '@/hooks/useBehaviorTracking';
 import { useSmartNudges } from '@/hooks/useSmartNudges';
 import InspectorQueueWidget from '@/components/InspectorQueueWidget';
-import InteractiveTwoVideoDemoContainer from '@/components/demo/InteractiveTwoVideoDemoContainer';
 import { SmartNudgeContainer } from '@/components/nudges/SmartNudgeNotification';
 import TrialStatusBanner from '@/components/TrialStatusBanner';
 import {
@@ -29,25 +28,12 @@ import {
 
 export default function Dashboard() {
   const { user } = useAuth();
-  const navigate = useNavigate();
-  const [demoRequested, setDemoRequested] = useState(false);
 
   // Behavior tracking and smart nudges
   const { trackDashboardView } = useBehaviorTracking();
   const { nudges, handleNudgeAction, dismissNudge } = useSmartNudges();
 
-  // Check if trial user needs to complete onboarding
-  useEffect(() => {
-    console.log('Dashboard: Checking onboarding status', {
-      user: user?.email,
-      is_trial_user: user?.is_trial_user,
-      onboarding_completed_at: user?.onboarding_completed_at
-    });
-    if (user && user.is_trial_user && !user.onboarding_completed_at) {
-      console.log('Dashboard: Redirecting to onboarding - not completed');
-      navigate('/onboarding');
-    }
-  }, [user, navigate]);
+  // Removed old onboarding redirect - users now go straight to dashboard after signup
 
   // Track dashboard view on mount
   useEffect(() => {
@@ -72,43 +58,37 @@ export default function Dashboard() {
   const { data: microCheckRuns } = useQuery(
     'recent-micro-checks',
     () => user?.store ? microCheckAPI.getRuns(user.store) : Promise.resolve([]),
-    { enabled: !!user?.store }
+    {
+      enabled: !!user?.store,
+      refetchOnMount: true,
+      refetchOnWindowFocus: false, // Don't refetch on every window focus
+      staleTime: 5 * 60 * 1000 // 5 minutes
+    }
   );
 
   const { data: allResponses } = useQuery(
     'all-micro-check-responses',
     () => user?.store ? microCheckAPI.getResponses(user.store) : Promise.resolve([]),
-    { enabled: !!user?.store }
+    {
+      enabled: !!user?.store,
+      refetchOnMount: true,
+      refetchOnWindowFocus: false,
+      staleTime: 5 * 60 * 1000 // 5 minutes
+    }
   );
 
   const { data: dashboardStats } = useQuery(
     ['dashboard-stats', user?.store],
     () => user?.store ? microCheckAPI.getDashboardStats(user.store) : Promise.resolve(null),
-    { enabled: !!user?.store }
+    {
+      enabled: !!user?.store,
+      refetchOnMount: true,
+      refetchOnWindowFocus: false,
+      staleTime: 5 * 60 * 1000 // 5 minutes
+    }
   );
 
-  // MVP Demo Experience Logic
-  const shouldShowDemo = user && !user.demo_completed_at && (
-    (user.is_trial_user && (stats?.total_inspections || 0) < 3) ||
-    (user.created_at && getHoursSinceSignup(user.created_at) < 48) ||
-    user.requested_demo ||
-    demoRequested
-  );
-
-  function getHoursSinceSignup(createdAt: string): number {
-    const signup = new Date(createdAt);
-    const now = new Date();
-    const diffMs = now.getTime() - signup.getTime();
-    return Math.floor(diffMs / (1000 * 60 * 60));
-  }
-
-  const handleSkipToDashboard = () => {
-    setDemoRequested(false);
-  };
-
-  if (shouldShowDemo) {
-    return <InteractiveTwoVideoDemoContainer onClose={handleSkipToDashboard} />;
-  }
+  // Removed demo screen - users go straight to dashboard after new signup flow
 
   // Determine user type
   const isEnterprise = user?.role === 'ADMIN' || user?.role === 'INSPECTOR';
@@ -121,12 +101,12 @@ export default function Dashboard() {
   } else if (isCoaching && !isTrial) {
     return <CoachingDashboard user={user} stats={stats} dashboardStats={dashboardStats} recentVideos={recentVideos} microCheckRuns={microCheckRuns} nudges={nudges} handleNudgeAction={handleNudgeAction} dismissNudge={dismissNudge} />;
   } else {
-    return <TrialDashboard user={user} stats={stats} dashboardStats={dashboardStats} microCheckRuns={microCheckRuns} allResponses={allResponses} setDemoRequested={setDemoRequested} nudges={nudges} handleNudgeAction={handleNudgeAction} dismissNudge={dismissNudge} />;
+    return <TrialDashboard user={user} stats={stats} dashboardStats={dashboardStats} microCheckRuns={microCheckRuns} allResponses={allResponses} nudges={nudges} handleNudgeAction={handleNudgeAction} dismissNudge={dismissNudge} />;
   }
 }
 
 // Trial User Dashboard
-function TrialDashboard({ user, stats, dashboardStats, microCheckRuns, allResponses, setDemoRequested, nudges, handleNudgeAction, dismissNudge }: any) {
+function TrialDashboard({ user, stats, dashboardStats, microCheckRuns, allResponses, nudges, handleNudgeAction, dismissNudge }: any) {
   const navigate = useNavigate();
   const [creatingRun, setCreatingRun] = useState(false);
 
@@ -422,11 +402,11 @@ function TrialDashboard({ user, stats, dashboardStats, microCheckRuns, allRespon
               </Link>
 
               <Link
-                to="/micro-check-history"
+                to="/users"
                 className="flex items-center p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
               >
-                <Calendar className="w-5 h-5 text-gray-600 mr-3" />
-                <span className="font-medium text-gray-900">View History</span>
+                <Users className="w-5 h-5 text-gray-600 mr-3" />
+                <span className="font-medium text-gray-900">Invite Team</span>
               </Link>
             </div>
           </div>

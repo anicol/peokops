@@ -74,11 +74,10 @@ export default function OnboardingContactPage() {
       const data = await response.json();
 
       if (response.ok) {
-        // Store tokens for authenticated access
+        // Store tokens and onboarding data
         localStorage.setItem('access_token', data.access);
         localStorage.setItem('refresh_token', data.refresh);
 
-        // Store user info and magic token
         sessionStorage.setItem('onboarding', JSON.stringify({
           ...onboardingData,
           phone,
@@ -88,9 +87,8 @@ export default function OnboardingContactPage() {
           smsSent: data.sms_sent
         }));
 
-        // Force page reload to trigger auth context and go directly to dashboard
-        // Skip the focus/checks-sent pages - let them discover features in the dashboard
-        window.location.href = '/dashboard';
+        // Go to step 4 - focus areas
+        navigate('/start/focus');
         return;
       } else {
         setError(data.error || data.phone?.[0] || 'Failed to create account. Please try again.');
@@ -105,7 +103,7 @@ export default function OnboardingContactPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-teal-50 flex items-center justify-center p-4">
-      <div className="max-w-2xl w-full">
+        <div className="max-w-2xl w-full">
         {/* Progress indicator */}
         <div className="text-center mb-8">
           <p className="text-sm text-gray-600 mb-6">Step 3 of 4</p>
@@ -199,7 +197,7 @@ export default function OnboardingContactPage() {
             ← Back
           </button>
         </div>
-      </div>
+        </div>
     </div>
   );
 }

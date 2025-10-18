@@ -48,11 +48,68 @@ class UserCreateSerializer(serializers.ModelSerializer):
         return attrs
 
     def create(self, validated_data):
+        from rest_framework_simplejwt.tokens import RefreshToken
+        from django.core.mail import send_mail
+        from django.conf import settings
+
         validated_data.pop('password_confirm')
         password = validated_data.pop('password')
         user = User.objects.create_user(**validated_data)
         user.set_password(password)
         user.save()
+
+        # Get the inviting user from the request context
+        request = self.context.get('request')
+        invited_by = request.user if request and request.user.is_authenticated else None
+
+        # Generate a magic link token for the new user
+        refresh = RefreshToken.for_user(user)
+        access_token = str(refresh.access_token)
+
+        # Build the login link
+        app_url = settings.FRONTEND_URL if hasattr(settings, 'FRONTEND_URL') else 'http://localhost:3000'
+        login_link = f"{app_url}/login?token={access_token}"
+
+        # Send invitation email
+        if user.email and invited_by:
+            inviter_name = invited_by.get_full_name() or invited_by.email
+            store_name = user.store.name if user.store else 'your store'
+
+            subject = f"{inviter_name} invited you to PeakOps"
+            message = f"""
+Hi {user.first_name or user.email},
+
+{inviter_name} has invited you to join {store_name} on PeakOps!
+
+What is PeakOps?
+PeakOps helps your team maintain operational excellence through quick daily checks. Instead of lengthy inspections, you'll complete 3 quick checks each day (takes just 2 minutes) to keep your store running smoothly.
+
+Your Role: {user.get_role_display()}
+You'll receive daily check reminders via email and can complete them right from your phone or computer.
+
+Click here to get started:
+{login_link}
+
+This link will log you in automatically. Once you're in, you can run your first quick check from the dashboard.
+
+Welcome to the team,
+PeakOps
+            """
+
+            try:
+                send_mail(
+                    subject,
+                    message,
+                    settings.DEFAULT_FROM_EMAIL,
+                    [user.email],
+                    fail_silently=True,
+                )
+            except Exception as e:
+                # Log error but don't fail user creation
+                import logging
+                logger = logging.getLogger(__name__)
+                logger.error(f"Failed to send invitation email: {str(e)}")
+
         return user
 
 
@@ -245,57 +302,108 @@ class QuickSignupSerializer(serializers.Serializer):
         return value
 
     def validate_email(self, value):
-        """Ensure email is unique if provided"""
-        if value and User.objects.filter(email=value).exists():
-            raise serializers.ValidationError("A user with this email already exists.")
+        """Validate email format - uniqueness check moved to view"""
+        # Email uniqueness is now handled gracefully in the view
+        # by sending magic link to existing users
         return value
 
     def create(self, validated_data):
-        """Create trial user with passwordless magic link flow"""
+        """Create trial user with passwordless magic link flow - or update existing user"""
         phone = validated_data['phone']
         email = validated_data.get('email', '')
         store_name = validated_data['store_name']
         industry = validated_data['industry']
         focus_areas = validated_data.get('focus_areas', [])
 
-        # Generate secure random password (user won't need it - magic link only)
-        random_password = ''.join(secrets.choice(string.ascii_letters + string.digits) for _ in range(32))
+        # Check if user already exists with this email
+        existing_user = None
+        if email:
+            try:
+                existing_user = User.objects.get(email=email)
+            except User.DoesNotExist:
+                pass
 
-        # Generate referral code
-        referral_code = ''.join(secrets.choice(string.ascii_uppercase + string.digits) for _ in range(8))
-
-        # Generate username - use email if phone is placeholder/blank
-        if not phone or phone == '+10000000000':
-            # Use email as username, or generate unique username from email + random suffix
-            if email:
-                username = email.split('@')[0] + '_' + ''.join(secrets.choice(string.ascii_lowercase + string.digits) for _ in range(6))
-            else:
-                # Fallback: generate completely random username
-                username = 'trial_' + ''.join(secrets.choice(string.ascii_lowercase + string.digits) for _ in range(12))
+        if existing_user:
+            # User exists - update their info and create new store/brand
+            user = existing_user
+            if phone and phone != '+10000000000':
+                user.phone = phone
+            user.is_trial_user = True
+            user.trial_expires_at = timezone.now().replace(hour=23, minute=59, second=59, microsecond=999999) + timedelta(days=6)
+            user.save()
         else:
-            # Use phone as username (sanitized)
-            username = phone.replace('+', '').replace('-', '').replace(' ', '')
+            # Generate secure random password (user won't need it - magic link only)
+            random_password = ''.join(secrets.choice(string.ascii_letters + string.digits) for _ in range(32))
 
-        # Create trial user
-        user = User.objects.create_user(
-            username=username,
-            email=email or f"{username}@trial.temp",  # Temporary email if not provided
-            password=random_password,
-            phone=phone if phone and phone != '+10000000000' else '',  # Don't store placeholder
-            role=User.Role.TRIAL_ADMIN,
-            is_trial_user=True,
-            trial_expires_at=timezone.now().replace(hour=23, minute=59, second=59, microsecond=999999) + timedelta(days=6),
-            referral_code=referral_code
-        )
+            # Generate referral code
+            referral_code = ''.join(secrets.choice(string.ascii_uppercase + string.digits) for _ in range(8))
 
-        # Auto-create trial brand
-        brand = Brand.create_trial_brand(user)
+            # Generate username - use email if phone is placeholder/blank
+            if not phone or phone == '+10000000000':
+                # Use email as username, or generate unique username from email + random suffix
+                if email:
+                    username = email.split('@')[0] + '_' + ''.join(secrets.choice(string.ascii_lowercase + string.digits) for _ in range(6))
+                else:
+                    # Fallback: generate completely random username
+                    username = 'trial_' + ''.join(secrets.choice(string.ascii_lowercase + string.digits) for _ in range(12))
+            else:
+                # Use phone as username (sanitized)
+                username = phone.replace('+', '').replace('-', '').replace(' ', '')
+
+            # Create trial user
+            user = User.objects.create_user(
+                username=username,
+                email=email or f"{username}@trial.temp",  # Temporary email if not provided
+                password=random_password,
+                phone=phone if phone and phone != '+10000000000' else '',  # Don't store placeholder
+                role=User.Role.TRIAL_ADMIN,
+                is_trial_user=True,
+                trial_expires_at=timezone.now().replace(hour=23, minute=59, second=59, microsecond=999999) + timedelta(days=6),
+                referral_code=referral_code
+            )
+
+        # Auto-create trial brand - or reuse existing brand for existing users
+        from django.db import IntegrityError
+        import time
+
+        # Try to get existing brand for user
+        existing_brand = Brand.objects.filter(trial_created_by=user, is_trial=True).first()
+
+        if existing_brand:
+            # Reuse existing brand
+            brand = existing_brand
+        else:
+            # Create new brand with unique name
+            max_attempts = 5
+            for attempt in range(max_attempts):
+                try:
+                    if attempt == 0:
+                        brand = Brand.create_trial_brand(user)
+                    else:
+                        # Add timestamp to make it unique
+                        timestamp = int(time.time())
+                        brand_name = f"{user.first_name or user.username}'s Trial {timestamp}"
+                        brand = Brand.objects.create(
+                            name=brand_name,
+                            is_trial=True,
+                            trial_created_by=user,
+                            retention_days_coaching=7,
+                            inspection_config=Brand.get_default_trial_config()
+                        )
+                        # Seed templates
+                        from micro_checks.utils import seed_default_templates
+                        seed_default_templates(brand, created_by=user)
+                    break
+                except IntegrityError:
+                    if attempt == max_attempts - 1:
+                        raise
+                    continue
 
         # Auto-create store with provided name
         store = Store.objects.create(
             brand=brand,
             name=store_name,
-            code=f"TRIAL-{user.id}",
+            code=f"TRIAL-{user.id}-{int(time.time())}",  # Make unique with timestamp
             address="",
             city="",
             state="",

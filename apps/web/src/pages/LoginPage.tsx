@@ -31,6 +31,38 @@ const Login = () => {
     }
   }, [searchParams]);
 
+  // Handle magic link token auto-login
+  useEffect(() => {
+    const token = searchParams.get('token');
+    if (token) {
+      // Store the token and redirect to dashboard
+      localStorage.setItem('access_token', token);
+
+      // Fetch user profile to complete auth and then redirect
+      fetch(`${API_CONFIG.baseURL}${API_ENDPOINTS.auth.profile}`, {
+        headers: {
+          ...API_CONFIG.headers,
+          'Authorization': `Bearer ${token}`
+        }
+      })
+        .then(res => {
+          if (!res.ok) {
+            throw new Error(`Authentication failed: ${res.status}`);
+          }
+          return res.json();
+        })
+        .then(() => {
+          // Trigger a page reload to ensure auth state updates
+          window.location.href = '/';
+        })
+        .catch(err => {
+          console.error('Magic link login failed:', err);
+          setError('Invalid or expired login link. Please try logging in with your credentials.');
+          localStorage.removeItem('access_token');
+        });
+    }
+  }, [searchParams]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
