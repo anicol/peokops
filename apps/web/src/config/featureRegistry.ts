@@ -27,7 +27,7 @@ export const featureRegistry: Record<string, FeatureConfig> = {
     description: 'Record a 2-minute walkthrough. AI highlights what\'s right and what needs work — instantly.',
     previewUrl: '/assets/ai-coach-preview.mp4',
     unlock: { type: 'action', threshold: 3, hint: 'Complete 3 Micro Checks' },
-    ctas: { demo: true, upgrade: true },
+    ctas: { demo: false, upgrade: true },
     testimonial: 'See how top managers use AI Coach to improve daily.',
   },
   inspections: {

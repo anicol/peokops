@@ -4,7 +4,7 @@ import { featureRegistry, FeatureKey } from '@/config/featureRegistry';
 import { trackEvent } from '@/utils/telemetry';
 import { useAuth } from '@/hooks/useAuth';
 import ModalShell from './ModalShell';
-import { Lock } from 'lucide-react';
+import { Lock, CheckCircle, Video, Sparkles, AlertCircle } from 'lucide-react';
 
 export default function LockedFeatureView() {
   const { featureKey } = useParams<{ featureKey: string }>();
@@ -84,6 +84,62 @@ export default function LockedFeatureView() {
             </div>
           )}
         </div>
+
+        {/* Core Capabilities - AI Coach only */}
+        {featureKey === 'ai-coach' && (
+          <div className="bg-white rounded-2xl border-2 border-gray-200 p-8 shadow-lg">
+            <h2 className="text-2xl font-bold text-gray-900 mb-6 text-center">Core Capabilities</h2>
+            <div className="grid md:grid-cols-2 gap-6">
+              <div className="flex items-start space-x-4">
+                <div className="flex-shrink-0">
+                  <div className="w-12 h-12 rounded-full bg-teal-100 flex items-center justify-center">
+                    <Video className="w-6 h-6 text-teal-600" />
+                  </div>
+                </div>
+                <div>
+                  <h3 className="font-semibold text-gray-900 mb-2">Smart Video Analysis</h3>
+                  <p className="text-gray-600 text-sm">Upload a 2-minute video walkthrough and get instant AI-powered feedback on cleanliness, safety, and operations.</p>
+                </div>
+              </div>
+
+              <div className="flex items-start space-x-4">
+                <div className="flex-shrink-0">
+                  <div className="w-12 h-12 rounded-full bg-blue-100 flex items-center justify-center">
+                    <CheckCircle className="w-6 h-6 text-blue-600" />
+                  </div>
+                </div>
+                <div>
+                  <h3 className="font-semibold text-gray-900 mb-2">Instant Compliance Checks</h3>
+                  <p className="text-gray-600 text-sm">Automatic detection of PPE compliance, food safety violations, and cleanliness issues with timestamped findings.</p>
+                </div>
+              </div>
+
+              <div className="flex items-start space-x-4">
+                <div className="flex-shrink-0">
+                  <div className="w-12 h-12 rounded-full bg-purple-100 flex items-center justify-center">
+                    <Sparkles className="w-6 h-6 text-purple-600" />
+                  </div>
+                </div>
+                <div>
+                  <h3 className="font-semibold text-gray-900 mb-2">AI-Powered Insights</h3>
+                  <p className="text-gray-600 text-sm">Get personalized coaching recommendations and track improvement trends over time with intelligent analytics.</p>
+                </div>
+              </div>
+
+              <div className="flex items-start space-x-4">
+                <div className="flex-shrink-0">
+                  <div className="w-12 h-12 rounded-full bg-orange-100 flex items-center justify-center">
+                    <AlertCircle className="w-6 h-6 text-orange-600" />
+                  </div>
+                </div>
+                <div>
+                  <h3 className="font-semibold text-gray-900 mb-2">Action Item Creation</h3>
+                  <p className="text-gray-600 text-sm">Automatically generate prioritized action items with photos, descriptions, and deadlines from video findings.</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* CTAs */}
         <div className="flex flex-col sm:flex-row gap-4 max-w-md mx-auto">
