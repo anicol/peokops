@@ -26,7 +26,7 @@ export const featureRegistry: Record<string, FeatureConfig> = {
     lockedRoute: '/locked/ai-coach',
     description: 'Give every manager an AI-powered coach that spots issues early — privately, instantly, and without the pressure of inspection day.',
     previewUrl: '/assets/ai-coach-preview.mp4',
-    unlock: { type: 'action', threshold: 3, hint: 'Complete 3 Micro Checks to unlock' },
+    unlock: { type: 'upgrade', hint: 'Upgrade' },
     ctas: { demo: false, upgrade: true },
     testimonial: 'Build confidence before the audit. AI that helps you shine — not get watched.',
   },
@@ -37,7 +37,7 @@ export const featureRegistry: Record<string, FeatureConfig> = {
     description: 'Invite inspectors to review videos, confirm findings, and track brand consistency.',
     previewUrl: '/assets/inspections-preview.png',
     unlock: { type: 'upgrade', plan: 'enterprise', hint: 'Upgrade' },
-    ctas: { demo: true, upgrade: true },
+    ctas: { demo: false, upgrade: true },
     testimonial: 'Enterprise teams use Inspections to ensure consistent standards.',
   },
   insights: {
