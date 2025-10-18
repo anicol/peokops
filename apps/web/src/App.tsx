@@ -279,7 +279,7 @@ function AppRoutes() {
         <Route
           path="/micro-check-templates"
           element={
-            isAuthenticated && (user?.role === 'ADMIN' || user?.role === 'OWNER' || user?.role === 'GM') ? (
+            isAuthenticated && (user?.role === 'ADMIN' || user?.role === 'OWNER' || user?.role === 'TRIAL_ADMIN' || user?.role === 'GM') ? (
               <Layout>
                 <MicroCheckTemplatesPage />
               </Layout>
