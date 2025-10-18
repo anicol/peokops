@@ -37,11 +37,11 @@ const navigationSections = [
   {
     title: 'Settings', // Settings section
     items: [
-      { name: 'Profile', href: '/profile', icon: User, key: 'profile', roles: ['ADMIN', 'OWNER', 'GM'] },
-      { name: 'Templates', href: '/micro-check-templates', icon: FileText, key: 'templates', roles: ['ADMIN', 'OWNER', 'GM'] },
-      { name: 'Stores', href: '/stores', icon: Store, key: 'stores', roles: ['ADMIN', 'OWNER', 'GM'] },
-      { name: 'Users', href: '/users', icon: Users, key: 'users', roles: ['ADMIN', 'OWNER', 'GM'] },
-      { name: 'Account', href: '/brands', icon: Building2, key: 'account', roles: ['ADMIN', 'OWNER', 'GM'] },
+      { name: 'Profile', href: '/profile', icon: User, key: 'profile', roles: ['ADMIN', 'OWNER'] },
+      { name: 'Templates', href: '/micro-check-templates', icon: FileText, key: 'templates', roles: ['ADMIN', 'OWNER'] },
+      { name: 'Stores', href: '/stores', icon: Store, key: 'stores', roles: ['ADMIN', 'OWNER'] },
+      { name: 'Users', href: '/users', icon: Users, key: 'users', roles: ['ADMIN', 'OWNER'] },
+      { name: 'Account', href: '/brands', icon: Building2, key: 'account', roles: ['ADMIN', 'OWNER'] },
     ]
   },
   {
