@@ -137,9 +137,28 @@ export default function AccountPage() {
           <form onSubmit={handleSubmit}>
             {/* Brand Information */}
             <div className="p-6 border-b border-gray-200">
-              <div className="flex items-center mb-6">
-                <Settings className="w-5 h-5 text-gray-600 mr-2" />
-                <h2 className="text-lg font-semibold text-gray-900">Brand Information</h2>
+              <div className="flex items-center justify-between mb-6">
+                <div className="flex items-center">
+                  <Settings className="w-5 h-5 text-gray-600 mr-2" />
+                  <h2 className="text-lg font-semibold text-gray-900">Brand Information</h2>
+                </div>
+                <button
+                  type="submit"
+                  disabled={saving}
+                  className="inline-flex items-center px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed text-sm"
+                >
+                  {saving ? (
+                    <>
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      Saving...
+                    </>
+                  ) : (
+                    <>
+                      <Save className="w-4 h-4 mr-2" />
+                      Save Changes
+                    </>
+                  )}
+                </button>
               </div>
 
               <div className="space-y-6">
@@ -288,29 +307,6 @@ export default function AccountPage() {
                 </div>
               </div>
             )}
-
-            {/* Actions */}
-            <div className="p-6 bg-gray-50 rounded-b-2xl">
-              <div className="flex justify-end">
-                <button
-                  type="submit"
-                  disabled={saving}
-                  className="inline-flex items-center px-6 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  {saving ? (
-                    <>
-                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                      Saving...
-                    </>
-                  ) : (
-                    <>
-                      <Save className="w-4 h-4 mr-2" />
-                      Save Changes
-                    </>
-                  )}
-                </button>
-              </div>
-            </div>
           </form>
         </div>
 
