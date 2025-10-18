@@ -41,7 +41,7 @@ const navigationSections = [
       { name: 'Templates', href: '/micro-check-templates', icon: FileText, key: 'templates', roles: ['ADMIN', 'OWNER', 'TRIAL_ADMIN'] },
       { name: 'Stores', href: '/stores', icon: Store, key: 'stores', roles: ['ADMIN', 'OWNER', 'TRIAL_ADMIN'] },
       { name: 'Users', href: '/users', icon: Users, key: 'users', roles: ['ADMIN', 'OWNER', 'TRIAL_ADMIN'] },
-      { name: 'Account', href: '/brands', icon: Building2, key: 'account', roles: ['ADMIN', 'OWNER', 'TRIAL_ADMIN'] },
+      { name: 'Account', href: '/account', icon: Building2, key: 'account', roles: ['ADMIN', 'OWNER', 'TRIAL_ADMIN'] },
     ]
   },
   {
