@@ -651,7 +651,10 @@ export const microCheckAPI = {
 
   // Update template (ADMIN only)
   updateTemplate: async (id: string, data: Partial<MicroCheckTemplate> | FormData): Promise<MicroCheckTemplate> => {
-    const response = await api.patch(`/micro-checks/templates/${id}/`, data);
+    const config = data instanceof FormData ? {
+      headers: { 'Content-Type': 'multipart/form-data' }
+    } : {};
+    const response = await api.patch(`/micro-checks/templates/${id}/`, data, config);
     return response.data;
   },
 
@@ -681,6 +684,28 @@ export const microCheckAPI = {
   // Publish new version of template (ADMIN only)
   publishTemplate: async (id: string, updates: Partial<MicroCheckTemplate>): Promise<MicroCheckTemplate> => {
     const response = await api.post(`/micro-checks/templates/${id}/publish/`, updates);
+    return response.data;
+  },
+
+  // Generate templates using AI
+  generateTemplatesWithAI: async (
+    category: string,
+    count: number = 5,
+    brandName?: string,
+    industry?: string
+  ): Promise<{
+    brand_analysis: {
+      business_type: string;
+      typical_operations: string;
+      compliance_focus_areas: string[];
+    };
+    templates: MicroCheckTemplate[];
+    count: number;
+  }> => {
+    const payload: any = { category, count };
+    if (brandName) payload.brand_name = brandName;
+    if (industry) payload.industry = industry;
+    const response = await api.post('/micro-checks/templates/generate_with_ai/', payload);
     return response.data;
   },
 

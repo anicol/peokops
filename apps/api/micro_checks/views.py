@@ -62,35 +62,51 @@ class MicroCheckTemplateViewSet(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated]
     filterset_fields = ['category', 'severity', 'is_active', 'brand', 'is_local']
     search_fields = ['title', 'description', 'success_criteria']
-    ordering_fields = ['created_at', 'category', 'severity', 'rotation_priority']
-    ordering = ['-created_at']
+    ordering_fields = ['created_at', 'category', 'severity', 'rotation_priority', 'title']
+    ordering = ['title']
 
     def get_queryset(self):
         """Filter templates based on user role and brand access"""
         user = self.request.user
+        queryset = self.queryset
 
         # ADMIN sees all templates
         if user.role == 'ADMIN':
-            return self.queryset
+            return queryset
 
-        # OWNER and TRIAL_ADMIN see templates for their brand + global templates
+        # For non-admin users, apply brand filtering
+        # If a specific brand is requested in query params, show only that brand's templates
+        brand_param = self.request.query_params.get('brand')
+        if brand_param:
+            # Show only templates for the specified brand (excludes global templates)
+            if user.role in ['OWNER', 'TRIAL_ADMIN', 'GM']:
+                if user.store and user.store.brand and str(user.store.brand.id) == brand_param:
+                    return queryset.filter(brand=user.store.brand)
+            return queryset.none()
+
+        # If is_local=false is requested, show global templates
+        is_local_param = self.request.query_params.get('is_local')
+        if is_local_param == 'false':
+            return queryset.filter(brand__isnull=True)
+
+        # Default: OWNER and TRIAL_ADMIN see templates for their brand + global templates
         if user.role in ['OWNER', 'TRIAL_ADMIN']:
             if user.store and user.store.brand:
-                return self.queryset.filter(
+                return queryset.filter(
                     Q(brand=user.store.brand) | Q(brand__isnull=True)
                 )
-            return self.queryset.filter(brand__isnull=True)
+            return queryset.filter(brand__isnull=True)
 
-        # GM sees templates for their brand (read-only)
+        # GM sees templates for their brand + global templates (read-only)
         if user.role == 'GM':
             if user.store and user.store.brand:
-                return self.queryset.filter(
+                return queryset.filter(
                     Q(brand=user.store.brand) | Q(brand__isnull=True)
                 )
-            return self.queryset.filter(brand__isnull=True)
+            return queryset.filter(brand__isnull=True)
 
         # INSPECTOR has no access to templates
-        return self.queryset.none()
+        return queryset.none()
 
     def perform_create(self, serializer):
         """ADMIN, OWNER, and TRIAL_ADMIN can create templates"""
@@ -363,6 +379,136 @@ class MicroCheckTemplateViewSet(viewsets.ModelViewSet):
 
         serializer = self.get_serializer(versions, many=True)
         return Response(serializer.data)
+
+    @extend_schema(
+        summary="Generate templates using AI",
+        request={
+            'application/json': {
+                'type': 'object',
+                'properties': {
+                    'category': {'type': 'string', 'description': 'Template category (PPE, SAFETY, etc.)'},
+                    'count': {'type': 'integer', 'description': 'Number of templates to generate (default 5)'},
+                },
+                'required': ['category']
+            }
+        }
+    )
+    @action(detail=False, methods=['post'])
+    def generate_with_ai(self, request):
+        """Generate micro-check templates using AI based on brand context"""
+        from rest_framework.exceptions import PermissionDenied, ValidationError
+        from ai_services.template_generator import AITemplateGenerator
+        import logging
+
+        logger = logging.getLogger(__name__)
+        user = request.user
+
+        logger.info(f"[AI TEMPLATE GEN] Request received from user {user.email} with data: {request.data}")
+
+        # Check permissions - only OWNER, TRIAL_ADMIN, and ADMIN can generate
+        if user.role not in ['ADMIN', 'OWNER', 'TRIAL_ADMIN']:
+            raise PermissionDenied("Only administrators and managers can generate templates with AI.")
+
+        # Get user's brand
+        if user.role in ['OWNER', 'TRIAL_ADMIN']:
+            if not user.store or not user.store.brand:
+                raise ValidationError("You must be associated with a brand to generate templates.")
+            brand = user.store.brand
+        else:
+            # ADMIN must specify brand_id in request
+            brand_id = request.data.get('brand_id')
+            if not brand_id:
+                raise ValidationError("Admin users must specify brand_id.")
+            from brands.models import Brand
+            brand = get_object_or_404(Brand, id=brand_id)
+
+        # Get parameters
+        category = request.data.get('category')
+        if not category:
+            raise ValidationError("Category is required.")
+
+        count = int(request.data.get('count', 5))
+        count = max(1, min(10, count))  # Clamp between 1-10
+
+        # Allow override of brand name and industry from request
+        brand_name_override = request.data.get('brand_name')
+        industry_override = request.data.get('industry')
+
+        # Update brand with provided information if it's different
+        updated_brand = False
+        if brand_name_override and brand_name_override != brand.name:
+            brand.name = brand_name_override
+            updated_brand = True
+            logger.info(f"Updated brand name to: {brand_name_override}")
+
+        if industry_override and industry_override != brand.industry:
+            brand.industry = industry_override
+            updated_brand = True
+            logger.info(f"Updated brand industry to: {industry_override}")
+
+        if updated_brand:
+            brand.save()
+
+        # Use the brand's current values (which may have just been updated)
+        brand_name = brand.name
+        industry = brand.industry or None
+
+        try:
+            # Initialize AI service
+            ai_generator = AITemplateGenerator()
+
+            # Step 1: Analyze brand
+            brand_analysis = ai_generator.analyze_brand(
+                brand_name=brand_name,
+                industry=industry
+            )
+
+            # Step 2: Generate templates
+            generated_templates = ai_generator.generate_templates(
+                brand_info=brand_analysis,
+                category=category,
+                count=count
+            )
+
+            # Step 3: Create template objects and save to database
+            created_templates = []
+            for template_data in generated_templates:
+                template = MicroCheckTemplate.objects.create(
+                    brand=brand,
+                    category=category,
+                    severity=template_data['severity'],
+                    title=template_data['title'],
+                    description=template_data['description'],
+                    success_criteria=template_data['success_criteria'],
+                    expected_completion_seconds=template_data['expected_completion_seconds'],
+                    default_photo_required=False,
+                    default_video_required=False,
+                    is_active=True,
+                    include_in_rotation=True,
+                    rotation_priority=50,
+                    is_local=True,  # AI-generated templates are local to the brand
+                    source='LOCAL',  # Mark as local/custom templates
+                    created_by=user,
+                    updated_by=user
+                )
+                created_templates.append(template)
+
+            logger.info(f"Generated {len(created_templates)} AI templates for brand {brand.id}, category {category}")
+
+            # Return created templates with brand analysis context
+            serializer = self.get_serializer(created_templates, many=True)
+            return Response({
+                'brand_analysis': brand_analysis,
+                'templates': serializer.data,
+                'count': len(created_templates)
+            }, status=status.HTTP_201_CREATED)
+
+        except Exception as e:
+            logger.error(f"AI template generation failed: {e}", exc_info=True)
+            return Response(
+                {'error': 'Failed to generate templates. Please try again or create templates manually.'},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
 
 
 class MicroCheckRunViewSet(viewsets.ModelViewSet):
