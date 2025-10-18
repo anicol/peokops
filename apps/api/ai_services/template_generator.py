@@ -23,9 +23,10 @@ class AITemplateGenerator:
                     aws_secret_access_key=settings.AWS_SECRET_ACCESS_KEY,
                     region_name=settings.AWS_S3_REGION_NAME
                 )
-                # Using Claude 3.5 Sonnet for better quality template generation
-                self.model_id = "anthropic.claude-3-5-sonnet-20241022-v2:0"
-                logger.info("AI Template Generator initialized with Claude 3.5 Sonnet")
+                # Use cross-region inference profile for Claude 3.5 Sonnet
+                # This is required for on-demand throughput
+                self.model_id = "us.anthropic.claude-3-5-sonnet-20241022-v2:0"
+                logger.info("AI Template Generator initialized with Claude 3.5 Sonnet (cross-region inference profile)")
             except Exception as e:
                 logger.warning(f"Failed to initialize Bedrock client: {e}")
                 self.enabled = False
