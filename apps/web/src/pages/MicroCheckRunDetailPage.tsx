@@ -251,7 +251,7 @@ export default function MicroCheckRunDetailPage() {
                                   </div>
                                   <div className="relative rounded-lg overflow-hidden border border-gray-200 bg-white">
                                     <img
-                                      src={correctiveAction?.before_media_url || response.media_url}
+                                      src={correctiveAction?.before_media_url || response.media_url || ''}
                                       alt="Check response"
                                       className="w-full h-auto max-h-96 object-contain"
                                       onError={(e) => {
