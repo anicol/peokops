@@ -4,7 +4,7 @@ import { featureRegistry, FeatureKey } from '@/config/featureRegistry';
 import { trackEvent } from '@/utils/telemetry';
 import { useAuth } from '@/hooks/useAuth';
 import ModalShell from './ModalShell';
-import { Lock, CheckCircle, Video, Sparkles, AlertCircle } from 'lucide-react';
+import { Lock, CheckCircle, Video, Sparkles, AlertCircle, TrendingUp } from 'lucide-react';
 
 export default function LockedFeatureView() {
   const { featureKey } = useParams<{ featureKey: string }>();
@@ -64,26 +64,128 @@ export default function LockedFeatureView() {
           <p className="text-xl text-gray-700 leading-relaxed">{feature.description}</p>
         </div>
 
-        {/* Preview */}
-        <div className="rounded-2xl overflow-hidden border-2 border-gray-200 bg-gray-50 shadow-lg">
-          {feature.previewUrl?.endsWith('.mp4') ? (
-            <video
-              src={feature.previewUrl}
-              autoPlay
-              loop
-              muted
-              playsInline
-              className="w-full"
-            />
-          ) : (
-            <div className="aspect-video flex items-center justify-center bg-gradient-to-br from-gray-100 to-gray-200">
-              <div className="text-center p-8">
-                <Lock className="h-16 w-16 text-gray-400 mx-auto mb-4" />
-                <p className="text-gray-500">Preview coming soon</p>
+        {/* Sample Report - AI Coach only */}
+        {featureKey === 'ai-coach' ? (
+          <div className="rounded-2xl overflow-hidden border-2 border-gray-200 bg-white shadow-lg">
+            {/* Header */}
+            <div className="bg-gradient-to-r from-teal-600 to-blue-600 text-white p-6">
+              <div className="flex justify-between items-center">
+                <div>
+                  <h3 className="text-2xl font-bold">Sample Coaching Report</h3>
+                  <p className="text-teal-100">Your private AI feedback in action</p>
+                </div>
+                <div className="text-right">
+                  <div className="text-4xl font-bold">88%</div>
+                  <div className="text-teal-100">Overall Score</div>
+                </div>
               </div>
             </div>
-          )}
-        </div>
+
+            {/* Scores */}
+            <div className="p-6 border-b border-gray-200">
+              <div className="grid grid-cols-3 gap-6">
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-green-600">92%</div>
+                  <div className="text-gray-600">Uniforms</div>
+                  <div className="w-full bg-gray-200 rounded-full h-2 mt-2">
+                    <div className="bg-green-600 h-2 rounded-full" style={{ width: '92%' }}></div>
+                  </div>
+                </div>
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-yellow-600">78%</div>
+                  <div className="text-gray-600">Cleanliness</div>
+                  <div className="w-full bg-gray-200 rounded-full h-2 mt-2">
+                    <div className="bg-yellow-600 h-2 rounded-full" style={{ width: '78%' }}></div>
+                  </div>
+                </div>
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-green-600">95%</div>
+                  <div className="text-gray-600">Safety</div>
+                  <div className="w-full bg-gray-200 rounded-full h-2 mt-2">
+                    <div className="bg-green-600 h-2 rounded-full" style={{ width: '95%' }}></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Action Items */}
+            <div className="p-6">
+              <h4 className="text-xl font-semibold text-gray-900 mb-4">Priority Action Items</h4>
+              <div className="space-y-4">
+                <div className="flex items-start space-x-3 p-4 bg-yellow-50 rounded-lg border border-yellow-200">
+                  <div className="bg-yellow-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm font-bold flex-shrink-0">
+                    1
+                  </div>
+                  <div className="flex-1">
+                    <div className="font-medium text-gray-900">Clean drink station area</div>
+                    <div className="text-sm text-gray-600">Timestamp: 1:23 - Visible spills detected</div>
+                    <div className="text-sm text-yellow-700 mt-1">Medium Priority</div>
+                  </div>
+                </div>
+
+                <div className="flex items-start space-x-3 p-4 bg-blue-50 rounded-lg border border-blue-200">
+                  <div className="bg-blue-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm font-bold flex-shrink-0">
+                    2
+                  </div>
+                  <div className="flex-1">
+                    <div className="font-medium text-gray-900">Straighten name tags</div>
+                    <div className="text-sm text-gray-600">Timestamp: 0:45 - Two team members</div>
+                    <div className="text-sm text-blue-700 mt-1">Low Priority</div>
+                  </div>
+                </div>
+
+                <div className="flex items-start space-x-3 p-4 bg-green-50 rounded-lg border border-green-200">
+                  <div className="bg-green-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm font-bold flex-shrink-0">
+                    ✓
+                  </div>
+                  <div className="flex-1">
+                    <div className="font-medium text-gray-900">Excellent safety compliance</div>
+                    <div className="text-sm text-gray-600">All equipment visible and accessible</div>
+                    <div className="text-sm text-green-700 mt-1">Keep up the great work!</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Privacy Notice */}
+            <div className="bg-gray-50 p-6 border-t border-gray-200">
+              <div className="space-y-2">
+                <div className="flex items-center justify-center space-x-2 text-sm text-gray-700">
+                  <CheckCircle className="w-4 h-4 text-green-600" />
+                  <span>Video deleted after analysis</span>
+                </div>
+                <div className="flex items-center justify-center space-x-2 text-sm text-gray-700">
+                  <CheckCircle className="w-4 h-4 text-green-600" />
+                  <span>Report stays local only</span>
+                </div>
+                <div className="flex items-center justify-center space-x-2 text-sm text-gray-700">
+                  <CheckCircle className="w-4 h-4 text-green-600" />
+                  <span>Action list ready for next shift</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        ) : (
+          <div className="rounded-2xl overflow-hidden border-2 border-gray-200 bg-gray-50 shadow-lg">
+            {feature.previewUrl?.endsWith('.mp4') ? (
+              <video
+                src={feature.previewUrl}
+                autoPlay
+                loop
+                muted
+                playsInline
+                className="w-full"
+              />
+            ) : (
+              <div className="aspect-video flex items-center justify-center bg-gradient-to-br from-gray-100 to-gray-200">
+                <div className="text-center p-8">
+                  <Lock className="h-16 w-16 text-gray-400 mx-auto mb-4" />
+                  <p className="text-gray-500">Preview coming soon</p>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Core Capabilities - AI Coach only */}
         {featureKey === 'ai-coach' && (
