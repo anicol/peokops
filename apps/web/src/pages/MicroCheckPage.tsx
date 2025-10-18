@@ -32,6 +32,7 @@ const MicroCheckPage = () => {
   const [capturedPhoto, setCapturedPhoto] = useState<string | null>(null);
   const [showNeedsFixCapture, setShowNeedsFixCapture] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [transitioningToNext, setTransitioningToNext] = useState(false); // Loading state when moving between checks
 
   // Inline fix tracking state
   const [showDecisionBanner, setShowDecisionBanner] = useState(false);
@@ -273,11 +274,18 @@ const MicroCheckPage = () => {
 
     console.log('moveToNextCheck called, current index:', currentCheckIndex);
 
+    // Show transition loading state
+    setTransitioningToNext(true);
+
+    // Clear the before photo data URL when moving to next check
+    setBeforePhotoDataUrl(null);
+
     if (currentCheckIndex < run.items.length - 1) {
       setTimeout(() => {
         console.log('Advancing from index', currentCheckIndex, 'to', currentCheckIndex + 1);
         setCurrentCheckIndex(currentCheckIndex + 1);
         setSubmitting(false);
+        setTransitioningToNext(false);
       }, 1000);
     } else {
       // Last check completed - fetch all responses and streak for summary
@@ -984,7 +992,16 @@ const MicroCheckPage = () => {
         )}
 
         {/* Check Card */}
-        <div className="bg-white rounded-2xl shadow-lg border border-gray-200 overflow-hidden flex flex-col">
+        <div className="bg-white rounded-2xl shadow-lg border border-gray-200 overflow-hidden flex flex-col relative">
+          {/* Transition Loading Overlay */}
+          {transitioningToNext && (
+            <div className="absolute inset-0 bg-white/95 z-50 flex flex-col items-center justify-center">
+              <Loader2 className="w-12 h-12 text-teal-600 mb-4 animate-spin" />
+              <p className="text-lg font-semibold text-gray-900">Loading next check...</p>
+              <p className="text-sm text-gray-600 mt-2">Check {currentCheckIndex + 2} of {run.items.length}</p>
+            </div>
+          )}
+
           {/* Header */}
           <div className="bg-gradient-to-r from-teal-500 to-blue-500 text-white p-6">
             <h1 className="text-xl font-bold mb-2">{currentItem.title_snapshot}</h1>

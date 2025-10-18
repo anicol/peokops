@@ -18,6 +18,8 @@ import {
   Users,
   Activity,
   Lock,
+  Store,
+  FileText,
 } from 'lucide-react';
 
 const navigationSections = [
@@ -33,9 +35,13 @@ const navigationSections = [
     ]
   },
   {
-    title: null, // Settings section
+    title: 'Settings', // Settings section
     items: [
-      { name: 'Settings', href: '/profile', icon: Settings, key: 'settings' },
+      { name: 'Profile', href: '/profile', icon: User, key: 'profile', roles: ['ADMIN', 'OWNER', 'TRIAL_ADMIN'] },
+      { name: 'Templates', href: '/micro-check-templates', icon: FileText, key: 'templates', roles: ['ADMIN', 'OWNER', 'TRIAL_ADMIN'] },
+      { name: 'Stores', href: '/stores', icon: Store, key: 'stores', roles: ['ADMIN', 'OWNER', 'TRIAL_ADMIN'] },
+      { name: 'Users', href: '/users', icon: Users, key: 'users', roles: ['ADMIN', 'OWNER', 'TRIAL_ADMIN'] },
+      { name: 'Account', href: '/brands', icon: Building2, key: 'account', roles: ['ADMIN', 'OWNER', 'TRIAL_ADMIN'] },
     ]
   },
   {
@@ -60,7 +66,15 @@ export default function Layout({ children }: { children: React.ReactNode }) {
     .map(section => {
       const filteredItems = section.items.filter(item => {
         const state = navState[item.key as keyof typeof navState];
-        return state !== 'hidden';
+        if (state === 'hidden') return false;
+
+        // Check role-based visibility
+        const itemWithRoles = item as any;
+        if (itemWithRoles.roles && user?.role) {
+          return itemWithRoles.roles.includes(user.role);
+        }
+
+        return true;
       });
 
       if (filteredItems.length === 0) return null;
