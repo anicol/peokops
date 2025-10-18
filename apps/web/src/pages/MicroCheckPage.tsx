@@ -997,8 +997,17 @@ const MicroCheckPage = () => {
           {transitioningToNext && (
             <div className="absolute inset-0 bg-white/95 z-50 flex flex-col items-center justify-center">
               <Loader2 className="w-12 h-12 text-teal-600 mb-4 animate-spin" />
-              <p className="text-lg font-semibold text-gray-900">Loading next check...</p>
-              <p className="text-sm text-gray-600 mt-2">Check {currentCheckIndex + 2} of {run.items.length}</p>
+              {currentCheckIndex < run.items.length - 1 ? (
+                <>
+                  <p className="text-lg font-semibold text-gray-900">Loading next check...</p>
+                  <p className="text-sm text-gray-600 mt-2">Check {currentCheckIndex + 2} of {run.items.length}</p>
+                </>
+              ) : (
+                <>
+                  <p className="text-lg font-semibold text-gray-900">Wrapping up...</p>
+                  <p className="text-sm text-gray-600 mt-2">Preparing your results</p>
+                </>
+              )}
             </div>
           )}
 

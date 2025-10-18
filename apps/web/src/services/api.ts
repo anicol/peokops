@@ -630,11 +630,12 @@ export const microCheckAPI = {
     severity?: string;
     is_active?: boolean;
     brand?: number;
-    is_local?: boolean;
+    is_local?: boolean | string;
     search?: string;
-  }): Promise<MicroCheckTemplate[]> => {
+    page?: number;
+  }): Promise<any> => {
     const response = await api.get('/micro-checks/templates/', { params });
-    return response.data.results || response.data;
+    return response.data;
   },
 
   // Get single template by ID
@@ -713,6 +714,15 @@ export const microCheckAPI = {
   getTemplateHistory: async (id: string): Promise<MicroCheckTemplate[]> => {
     const response = await api.get(`/micro-checks/templates/${id}/history/`);
     return response.data;
+  },
+
+  // Get unique categories available for current user
+  getTemplateCategories: async (params?: {
+    brand?: number;
+    is_local?: boolean | string;
+  }): Promise<string[]> => {
+    const response = await api.get('/micro-checks/templates/categories/', { params });
+    return response.data.categories;
   },
 };
 

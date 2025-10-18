@@ -47,6 +47,7 @@ export interface Brand {
   name: string;
   logo: string | null;
   description: string;
+  industry?: string;
   inspection_config: Record<string, any>;
   retention_config: Record<string, any>;
   is_active: boolean;
