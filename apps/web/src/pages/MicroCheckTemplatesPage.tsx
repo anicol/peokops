@@ -32,6 +32,7 @@ const MicroCheckTemplatesPage = () => {
   const [categoryFilter, setCategoryFilter] = useState<string>('');
   const [severityFilter, setSeverityFilter] = useState<string>('');
   const [showFilters, setShowFilters] = useState(false);
+  const [availableCategories, setAvailableCategories] = useState<Set<MicroCheckCategory>>(new Set());
   const [showModal, setShowModal] = useState(false);
   const [modalMode, setModalMode] = useState<'create' | 'edit'>('create');
   const [selectedTemplate, setSelectedTemplate] = useState<MicroCheckTemplate | null>(null);
@@ -81,6 +82,9 @@ const MicroCheckTemplatesPage = () => {
         setTemplates(prev => [...prev, ...data]);
       } else {
         setTemplates(data);
+        // Extract unique categories from templates (only on first page)
+        const categories = new Set<MicroCheckCategory>(data.map((t: MicroCheckTemplate) => t.category));
+        setAvailableCategories(categories);
       }
 
       setHasMore(hasNextPage);
@@ -252,6 +256,26 @@ const MicroCheckTemplatesPage = () => {
     fetchTemplates(currentPage + 1, true);
   };
 
+  // Category display names
+  const categoryDisplayNames: Record<MicroCheckCategory, string> = {
+    PPE: 'PPE',
+    SAFETY: 'Safety',
+    CLEANLINESS: 'Cleanliness',
+    FOOD_HANDLING: 'Food Handling',
+    FOOD_SAFETY: 'Food Safety',
+    EQUIPMENT: 'Equipment',
+    OPERATIONAL: 'Operational',
+    UNIFORM: 'Uniform',
+    STAFF_BEHAVIOR: 'Staff Behavior',
+    FOOD_QUALITY: 'Food Quality',
+    MENU_BOARD: 'Menu Board',
+    WASTE_MANAGEMENT: 'Waste Management',
+    PEST_CONTROL: 'Pest Control',
+    STORAGE: 'Storage',
+    DOCUMENTATION: 'Documentation',
+    FACILITY: 'Facility',
+  };
+
   const getCategoryBadgeColor = (category: MicroCheckCategory) => {
     const colors: Record<MicroCheckCategory, string> = {
       PPE: 'bg-purple-100 text-purple-700',
@@ -414,16 +438,11 @@ const MicroCheckTemplatesPage = () => {
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
                 >
                   <option value="">All Categories</option>
-                  <option value="PPE">PPE</option>
-                  <option value="SAFETY">Safety</option>
-                  <option value="CLEANLINESS">Cleanliness</option>
-                  <option value="FOOD_HANDLING">Food Handling</option>
-                  <option value="EQUIPMENT">Equipment</option>
-                  <option value="WASTE_MANAGEMENT">Waste Management</option>
-                  <option value="PEST_CONTROL">Pest Control</option>
-                  <option value="STORAGE">Storage</option>
-                  <option value="DOCUMENTATION">Documentation</option>
-                  <option value="FACILITY">Facility</option>
+                  {Array.from(availableCategories).sort().map((category) => (
+                    <option key={category} value={category}>
+                      {categoryDisplayNames[category]}
+                    </option>
+                  ))}
                 </select>
               </div>
               <div>
