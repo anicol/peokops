@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { X, Sparkles, Loader2, ChevronRight, Check, AlertCircle } from 'lucide-react';
 import { microCheckAPI } from '@/services/api';
+import { useAuth } from '@/hooks/useAuth';
 import type { MicroCheckTemplate, MicroCheckCategory } from '@/types/microCheck';
 
 interface AITemplateWizardProps {
@@ -24,6 +25,7 @@ const AITemplateWizard: React.FC<AITemplateWizardProps> = ({
   initialBrandName = '',
   initialIndustry = ''
 }) => {
+  const { refetchUser } = useAuth();
   const [currentStep, setCurrentStep] = useState<WizardStep>('brandInfo');
   const [brandName, setBrandName] = useState(initialBrandName);
   const [industry, setIndustry] = useState<string>(initialIndustry);
@@ -154,7 +156,9 @@ const AITemplateWizard: React.FC<AITemplateWizardProps> = ({
     setSelectedTemplates(newSelection);
   };
 
-  const handleComplete = () => {
+  const handleComplete = async () => {
+    // Refetch user profile to update brand name on Account page
+    await refetchUser();
     onComplete();
     onClose();
   };
