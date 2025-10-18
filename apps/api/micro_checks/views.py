@@ -338,6 +338,7 @@ class MicroCheckRunViewSet(viewsets.ModelViewSet):
     queryset = MicroCheckRun.objects.select_related('store', 'created_by').prefetch_related('items')
     serializer_class = MicroCheckRunSerializer
     permission_classes = [IsAuthenticated]
+    filter_backends = [DjangoFilterBackend, OrderingFilter]
     filterset_fields = ['store', 'status', 'scheduled_for']
     ordering_fields = ['scheduled_for', 'created_at']
     ordering = ['-scheduled_for']
