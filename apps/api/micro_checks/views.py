@@ -431,8 +431,27 @@ class MicroCheckTemplateViewSet(viewsets.ModelViewSet):
         count = max(1, min(10, count))  # Clamp between 1-10
 
         # Allow override of brand name and industry from request
-        brand_name = request.data.get('brand_name', brand.name)
-        industry = request.data.get('industry', brand.industry or None)
+        brand_name_override = request.data.get('brand_name')
+        industry_override = request.data.get('industry')
+
+        # Update brand with provided information if it's different
+        updated_brand = False
+        if brand_name_override and brand_name_override != brand.name:
+            brand.name = brand_name_override
+            updated_brand = True
+            logger.info(f"Updated brand name to: {brand_name_override}")
+
+        if industry_override and industry_override != brand.industry:
+            brand.industry = industry_override
+            updated_brand = True
+            logger.info(f"Updated brand industry to: {industry_override}")
+
+        if updated_brand:
+            brand.save()
+
+        # Use the brand's current values (which may have just been updated)
+        brand_name = brand.name
+        industry = brand.industry or None
 
         try:
             # Initialize AI service

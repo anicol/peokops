@@ -760,6 +760,7 @@ const MicroCheckTemplatesPage = () => {
           onComplete={() => {
             fetchTemplates();
           }}
+          initialBrandName={user?.brand_name || ''}
         />
       )}
     </div>

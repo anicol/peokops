@@ -6,6 +6,8 @@ import type { MicroCheckTemplate, MicroCheckCategory } from '@/types/microCheck'
 interface AITemplateWizardProps {
   onClose: () => void;
   onComplete: () => void;
+  initialBrandName?: string;
+  initialIndustry?: string;
 }
 
 type WizardStep = 'brandInfo' | 'analyzing' | 'category' | 'generating' | 'review';
@@ -16,10 +18,15 @@ interface BrandAnalysis {
   compliance_focus_areas: string[];
 }
 
-const AITemplateWizard: React.FC<AITemplateWizardProps> = ({ onClose, onComplete }) => {
+const AITemplateWizard: React.FC<AITemplateWizardProps> = ({
+  onClose,
+  onComplete,
+  initialBrandName = '',
+  initialIndustry = ''
+}) => {
   const [currentStep, setCurrentStep] = useState<WizardStep>('brandInfo');
-  const [brandName, setBrandName] = useState('');
-  const [industry, setIndustry] = useState<string>('');
+  const [brandName, setBrandName] = useState(initialBrandName);
+  const [industry, setIndustry] = useState<string>(initialIndustry);
   const [brandAnalysis, setBrandAnalysis] = useState<BrandAnalysis | null>(null);
   const [selectedCategory, setSelectedCategory] = useState<MicroCheckCategory | null>(null);
   const [generatedTemplates, setGeneratedTemplates] = useState<MicroCheckTemplate[]>([]);
