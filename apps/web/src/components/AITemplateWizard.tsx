@@ -8,7 +8,7 @@ interface AITemplateWizardProps {
   onComplete: () => void;
 }
 
-type WizardStep = 'analyzing' | 'category' | 'generating' | 'review';
+type WizardStep = 'brandInfo' | 'analyzing' | 'category' | 'generating' | 'review';
 
 interface BrandAnalysis {
   business_type: string;
@@ -17,7 +17,9 @@ interface BrandAnalysis {
 }
 
 const AITemplateWizard: React.FC<AITemplateWizardProps> = ({ onClose, onComplete }) => {
-  const [currentStep, setCurrentStep] = useState<WizardStep>('analyzing');
+  const [currentStep, setCurrentStep] = useState<WizardStep>('brandInfo');
+  const [brandName, setBrandName] = useState('');
+  const [industry, setIndustry] = useState<string>('');
   const [brandAnalysis, setBrandAnalysis] = useState<BrandAnalysis | null>(null);
   const [selectedCategory, setSelectedCategory] = useState<MicroCheckCategory | null>(null);
   const [generatedTemplates, setGeneratedTemplates] = useState<MicroCheckTemplate[]>([]);
@@ -25,20 +27,22 @@ const AITemplateWizard: React.FC<AITemplateWizardProps> = ({ onClose, onComplete
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
-  // Start by analyzing brand automatically
-  React.useEffect(() => {
-    if (currentStep === 'analyzing') {
-      analyzeBrand();
+  const handleBrandInfoSubmit = () => {
+    if (!brandName.trim()) {
+      setError('Please enter a brand name');
+      return;
     }
-  }, [currentStep]);
+    setError(null);
+    setCurrentStep('analyzing');
+    analyzeBrand();
+  };
 
   const analyzeBrand = async () => {
     setIsLoading(true);
     setError(null);
     try {
-      // We'll trigger analysis by attempting to generate 0 templates for a category
-      // This will give us the brand_analysis without creating templates
-      // For now, skip to category selection and do analysis when generating
+      // For now, skip to category selection
+      // Brand analysis will happen when generating templates
       setTimeout(() => {
         setCurrentStep('category');
         setIsLoading(false);
@@ -46,6 +50,7 @@ const AITemplateWizard: React.FC<AITemplateWizardProps> = ({ onClose, onComplete
     } catch (err: any) {
       console.error('Brand analysis failed:', err);
       setError('Failed to analyze brand. Please try again.');
+      setCurrentStep('brandInfo');
       setIsLoading(false);
     }
   };
@@ -144,14 +149,25 @@ const AITemplateWizard: React.FC<AITemplateWizardProps> = ({ onClose, onComplete
 
         {/* Progress Steps */}
         <div className="px-6 py-4 bg-gray-50 border-b border-gray-200">
-          <div className="flex items-center justify-between max-w-2xl mx-auto">
+          <div className="flex items-center justify-between max-w-3xl mx-auto">
             <div className="flex items-center">
               <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
-                currentStep === 'analyzing' ? 'bg-purple-600 text-white' : 'bg-green-600 text-white'
+                currentStep === 'brandInfo' ? 'bg-purple-600 text-white' : 'bg-green-600 text-white'
               }`}>
-                {currentStep === 'analyzing' ? '1' : <Check className="w-5 h-5" />}
+                {currentStep === 'brandInfo' ? '1' : <Check className="w-5 h-5" />}
               </div>
-              <span className="ml-2 text-sm font-medium text-gray-900">Analyze Brand</span>
+              <span className="ml-2 text-sm font-medium text-gray-900">Brand Info</span>
+            </div>
+            <ChevronRight className="w-5 h-5 text-gray-400" />
+            <div className="flex items-center">
+              <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
+                currentStep === 'analyzing' ? 'bg-purple-600 text-white' :
+                (currentStep === 'category' || currentStep === 'generating' || currentStep === 'review') ? 'bg-green-600 text-white' :
+                'bg-gray-300 text-gray-600'
+              }`}>
+                {(currentStep === 'category' || currentStep === 'generating' || currentStep === 'review') ? <Check className="w-5 h-5" /> : '2'}
+              </div>
+              <span className="ml-2 text-sm font-medium text-gray-900">Analyze</span>
             </div>
             <ChevronRight className="w-5 h-5 text-gray-400" />
             <div className="flex items-center">
@@ -160,18 +176,18 @@ const AITemplateWizard: React.FC<AITemplateWizardProps> = ({ onClose, onComplete
                   ? 'bg-purple-600 text-white'
                   : 'bg-gray-300 text-gray-600'
               }`}>
-                {currentStep === 'review' ? <Check className="w-5 h-5" /> : '2'}
+                {currentStep === 'review' ? <Check className="w-5 h-5" /> : '3'}
               </div>
-              <span className="ml-2 text-sm font-medium text-gray-900">Select Category</span>
+              <span className="ml-2 text-sm font-medium text-gray-900">Category</span>
             </div>
             <ChevronRight className="w-5 h-5 text-gray-400" />
             <div className="flex items-center">
               <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
                 currentStep === 'review' ? 'bg-purple-600 text-white' : 'bg-gray-300 text-gray-600'
               }`}>
-                3
+                4
               </div>
-              <span className="ml-2 text-sm font-medium text-gray-900">Review & Save</span>
+              <span className="ml-2 text-sm font-medium text-gray-900">Review</span>
             </div>
           </div>
         </div>
@@ -189,16 +205,81 @@ const AITemplateWizard: React.FC<AITemplateWizardProps> = ({ onClose, onComplete
             </div>
           )}
 
-          {/* Step 1: Analyzing Brand */}
+          {/* Step 1: Brand Information */}
+          {currentStep === 'brandInfo' && (
+            <div>
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">Tell Us About Your Brand</h3>
+              <p className="text-gray-600 mb-6">Provide information about your business to help our AI generate relevant templates.</p>
+
+              <div className="space-y-6 max-w-2xl">
+                <div>
+                  <label htmlFor="brandName" className="block text-sm font-medium text-gray-700 mb-2">
+                    Brand/Business Name <span className="text-red-600">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    id="brandName"
+                    value={brandName}
+                    onChange={(e) => setBrandName(e.target.value)}
+                    placeholder="e.g., Five Guys, Starbucks, Target"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+                  />
+                </div>
+
+                <div>
+                  <label htmlFor="industry" className="block text-sm font-medium text-gray-700 mb-2">
+                    Industry Type (Optional)
+                  </label>
+                  <select
+                    id="industry"
+                    value={industry}
+                    onChange={(e) => setIndustry(e.target.value)}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+                  >
+                    <option value="">Select an industry...</option>
+                    <option value="RESTAURANT">Restaurant/Food Service</option>
+                    <option value="RETAIL">Retail Store</option>
+                    <option value="HOSPITALITY">Hospitality/Hotel</option>
+                    <option value="HEALTHCARE">Healthcare Facility</option>
+                    <option value="MANUFACTURING">Manufacturing</option>
+                    <option value="OTHER">Other</option>
+                  </select>
+                </div>
+
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                  <h4 className="text-sm font-semibold text-blue-900 mb-2">Why do we need this?</h4>
+                  <p className="text-sm text-blue-800">
+                    Our AI will research your brand to understand your business type, typical operations,
+                    and compliance requirements. This helps generate templates that are specifically
+                    tailored to your business needs.
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex justify-end mt-6 pt-6 border-t border-gray-200">
+                <button
+                  onClick={handleBrandInfoSubmit}
+                  disabled={!brandName.trim()}
+                  className="px-6 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
+                >
+                  Continue to Analysis
+                  <ChevronRight className="w-4 h-4 ml-2" />
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Step 2: Analyzing Brand */}
           {currentStep === 'analyzing' && (
             <div className="text-center py-12">
               <Loader2 className="w-12 h-12 text-purple-600 animate-spin mx-auto mb-4" />
               <h3 className="text-lg font-semibold text-gray-900 mb-2">Analyzing Your Business</h3>
-              <p className="text-gray-600">Our AI is researching your brand to create custom templates...</p>
+              <p className="text-gray-600 mb-2">Our AI is researching <strong>{brandName}</strong> to create custom templates...</p>
+              {industry && <p className="text-sm text-gray-500">Industry: {industry}</p>}
             </div>
           )}
 
-          {/* Step 2: Category Selection */}
+          {/* Step 3: Category Selection */}
           {currentStep === 'category' && (
             <div>
               <h3 className="text-lg font-semibold text-gray-900 mb-4">Select a Category</h3>
@@ -234,7 +315,7 @@ const AITemplateWizard: React.FC<AITemplateWizardProps> = ({ onClose, onComplete
             </div>
           )}
 
-          {/* Step 3: Generating */}
+          {/* Step 4: Generating */}
           {currentStep === 'generating' && (
             <div className="text-center py-12">
               <Loader2 className="w-12 h-12 text-purple-600 animate-spin mx-auto mb-4" />
@@ -244,7 +325,7 @@ const AITemplateWizard: React.FC<AITemplateWizardProps> = ({ onClose, onComplete
             </div>
           )}
 
-          {/* Step 4: Review Generated Templates */}
+          {/* Step 5: Review Generated Templates */}
           {currentStep === 'review' && (
             <div>
               {brandAnalysis && (
@@ -306,12 +387,12 @@ const AITemplateWizard: React.FC<AITemplateWizardProps> = ({ onClose, onComplete
                 ))}
               </div>
 
-              <div className="flex justify-between items-center mt-6 pt-6 border-t border-gray-200">
+              <div className="flex justify-between items-center mt-6 pt-6 border-gray-200">
                 <button
-                  onClick={() => setCurrentStep('category')}
+                  onClick={() => setCurrentStep('brandInfo')}
                   className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors font-medium"
                 >
-                  Back to Categories
+                  Start Over
                 </button>
                 <button
                   onClick={handleComplete}
