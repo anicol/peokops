@@ -31,7 +31,7 @@ import {
 const ProfilePage = () => {
   const { user, refetchUser, logout } = useAuth();
   const queryClient = useQueryClient();
-  const [activeTab, setActiveTab] = useState<'profile' | 'password' | 'store' | 'stores' | 'trial' | 'privacy' | 'notifications' | 'help'>('profile');
+  const [activeTab, setActiveTab] = useState<'profile' | 'password' | 'store' | 'stores' | 'privacy' | 'notifications' | 'help'>('profile');
 
   // Profile form state
   const [profileData, setProfileData] = useState({
@@ -89,7 +89,6 @@ const ProfilePage = () => {
     { id: 'password', label: 'Password', icon: Key },
     { id: 'store', label: 'Store Info', icon: MapPin },
     { id: 'stores', label: 'Stores', icon: StoreIcon },
-    ...(user?.is_trial_user ? [{ id: 'trial' as const, label: 'Trial Status', icon: Crown }] : []),
     { id: 'privacy', label: 'Privacy', icon: Shield },
     { id: 'notifications', label: 'Notifications', icon: Bell },
     { id: 'help', label: 'Help & Support', icon: HelpCircle }
@@ -440,45 +439,6 @@ const ProfilePage = () => {
                       <p className="text-teal-800 text-sm">
                         <strong>Note:</strong> To update store information, please contact your administrator or visit the Settings page.
                       </p>
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {/* Trial Status Tab */}
-              {activeTab === 'trial' && user?.is_trial_user && (
-                <div className="p-6">
-                  <h2 className="text-xl font-semibold text-gray-900 mb-6">Trial Status</h2>
-
-                  <div className="space-y-6">
-                    <div className="bg-gradient-to-r from-teal-50 to-blue-50 rounded-xl border border-teal-200 p-6">
-                      <div className="flex items-center mb-4">
-                        <Crown className="w-8 h-8 text-teal-600 mr-3" />
-                        <h3 className="text-lg font-semibold text-gray-900">Free Trial Active</h3>
-                      </div>
-
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <div>
-                          <div className="text-3xl font-bold text-teal-600 mb-1">
-                            {user?.trial_status?.days_remaining || 0}
-                          </div>
-                          <div className="text-gray-600">Days remaining</div>
-                        </div>
-                        <div>
-                          <div className="text-lg font-semibold text-gray-900 mb-1">Full Access</div>
-                          <div className="text-gray-600">All features unlocked</div>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="bg-teal-600 text-white rounded-xl p-6">
-                      <h4 className="font-semibold mb-2">Ready to continue?</h4>
-                      <p className="text-teal-100 mb-4">
-                        Keep using PeakOps with unlimited micro-checks and unlock enterprise features.
-                      </p>
-                      <button className="px-4 py-2 bg-white text-teal-600 rounded-lg hover:bg-gray-100 transition-colors font-medium">
-                        View Plans
-                      </button>
                     </div>
                   </div>
                 </div>
