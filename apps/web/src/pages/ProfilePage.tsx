@@ -198,9 +198,9 @@ const ProfilePage = () => {
                 <div className="w-20 h-20 bg-teal-100 rounded-full flex items-center justify-center mx-auto mb-4">
                   <User className="w-10 h-10 text-teal-600" />
                 </div>
-                <h3 className="font-semibold text-gray-900 mb-1">{user?.full_name || user?.email}</h3>
+                <h3 className="font-semibold text-gray-900 mb-1 truncate px-2" title={user?.full_name || user?.email}>{user?.full_name || user?.email}</h3>
                 <p className="text-gray-600 text-sm mb-2">{user?.role}</p>
-                {user?.store_name && <p className="text-gray-500 text-xs">{user?.store_name}</p>}
+                {user?.store_name && <p className="text-gray-500 text-xs truncate px-2" title={user?.store_name}>{user?.store_name}</p>}
               </div>
             </div>
 
