@@ -651,7 +651,10 @@ export const microCheckAPI = {
 
   // Update template (ADMIN only)
   updateTemplate: async (id: string, data: Partial<MicroCheckTemplate> | FormData): Promise<MicroCheckTemplate> => {
-    const response = await api.patch(`/micro-checks/templates/${id}/`, data);
+    const config = data instanceof FormData ? {
+      headers: { 'Content-Type': 'multipart/form-data' }
+    } : {};
+    const response = await api.patch(`/micro-checks/templates/${id}/`, data, config);
     return response.data;
   },
 

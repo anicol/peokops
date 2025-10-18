@@ -47,16 +47,19 @@ const MicroCheckTemplatesPage = () => {
       setError(null);
       const params: any = {};
 
-      // Filter by source based on active tab
+      // Filter by source and brand based on active tab
       if (activeTab === 'starters') {
-        params.source = 'PEAKOPS';
+        // Starters: show global templates (brand__isnull=True)
+        params.is_local = 'false';
       } else {
-        params.source = 'LOCAL';
+        // My Templates: show only templates for user's brand
+        if (user?.brand_id) {
+          params.brand = user.brand_id;
+        }
       }
 
       if (categoryFilter) params.category = categoryFilter;
       if (severityFilter) params.severity = severityFilter;
-      if (user?.brand_id) params.brand = user.brand_id;
 
       const data = await microCheckAPI.getTemplates(params);
       setTemplates(data);
@@ -171,8 +174,15 @@ const MicroCheckTemplatesPage = () => {
       // Create FormData for file upload
       const submitData = new FormData();
 
-      // Append all form fields
-      Object.entries(formData).forEach(([key, value]) => {
+      // Only include editable fields (not read-only fields like version, created_by, etc.)
+      const editableFields = [
+        'category', 'severity', 'title', 'description', 'success_criteria',
+        'default_photo_required', 'expected_completion_seconds', 'is_active', 'rotation_priority'
+      ];
+
+      // Append editable form fields
+      editableFields.forEach(key => {
+        const value = formData[key as keyof typeof formData];
         if (value !== undefined && value !== null) {
           submitData.append(key, String(value));
         }
@@ -192,7 +202,12 @@ const MicroCheckTemplatesPage = () => {
       fetchTemplates();
     } catch (err: any) {
       console.error('Error submitting template:', err);
-      alert(err.response?.data?.message || 'Unable to save template');
+      console.error('Error response:', err.response?.data);
+      const errorMsg = err.response?.data?.detail ||
+                       err.response?.data?.message ||
+                       JSON.stringify(err.response?.data) ||
+                       'Unable to save template';
+      alert(errorMsg);
     } finally {
       setSubmitting(false);
     }
@@ -432,6 +447,18 @@ const MicroCheckTemplatesPage = () => {
                       )}
                     </div>
                     <p className="text-sm text-gray-600 mb-3">{template.description}</p>
+
+                    {/* Reference Image */}
+                    {template.visual_reference_image && (
+                      <div className="mb-3">
+                        <img
+                          src={template.visual_reference_image}
+                          alt={`Reference for ${template.title}`}
+                          className="w-full h-32 object-cover rounded-lg border border-gray-200"
+                        />
+                      </div>
+                    )}
+
                     <div className="flex flex-wrap gap-2 mb-3">
                       <span className={`px-2 py-1 rounded text-xs font-medium ${getCategoryBadgeColor(template.category)}`}>
                         {template.category_display}

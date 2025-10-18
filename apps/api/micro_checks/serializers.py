@@ -34,7 +34,7 @@ class MicroCheckTemplateSerializer(serializers.ModelSerializer):
             'visual_reference_image', 'is_active',
             'created_at', 'created_by', 'created_by_name', 'updated_at', 'updated_by'
         ]
-        read_only_fields = ['id', 'created_at', 'created_by', 'updated_at', 'updated_by']
+        read_only_fields = ['id', 'brand', 'version', 'parent_template', 'created_at', 'created_by', 'updated_at', 'updated_by']
 
 
 class MicroCheckRunItemSerializer(serializers.ModelSerializer):
