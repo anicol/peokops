@@ -14,7 +14,6 @@ import {
   Menu,
   LogOut,
   User,
-  ArrowRight,
   Building2,
   Users,
   Activity,
@@ -94,17 +93,6 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           </div>
           
           <div className="flex items-center space-x-4">
-            {/* Skip to Dashboard for trial users */}
-            {navState.showSkipToDashboard && (
-              <button
-                onClick={() => navigate('/')}
-                className="text-sm text-blue-600 hover:text-blue-700 font-medium flex items-center"
-              >
-                Skip to Dashboard
-                <ArrowRight className="w-4 h-4 ml-1" />
-              </button>
-            )}
-            
             {navState.showUserEmail && (
               <div className="flex items-center">
                 <div className="flex items-center justify-center w-8 h-8 bg-gray-200 rounded-full">

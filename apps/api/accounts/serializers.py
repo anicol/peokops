@@ -48,11 +48,68 @@ class UserCreateSerializer(serializers.ModelSerializer):
         return attrs
 
     def create(self, validated_data):
+        from rest_framework_simplejwt.tokens import RefreshToken
+        from django.core.mail import send_mail
+        from django.conf import settings
+
         validated_data.pop('password_confirm')
         password = validated_data.pop('password')
         user = User.objects.create_user(**validated_data)
         user.set_password(password)
         user.save()
+
+        # Get the inviting user from the request context
+        request = self.context.get('request')
+        invited_by = request.user if request and request.user.is_authenticated else None
+
+        # Generate a magic link token for the new user
+        refresh = RefreshToken.for_user(user)
+        access_token = str(refresh.access_token)
+
+        # Build the login link
+        app_url = settings.FRONTEND_URL if hasattr(settings, 'FRONTEND_URL') else 'http://localhost:3000'
+        login_link = f"{app_url}/login?token={access_token}"
+
+        # Send invitation email
+        if user.email and invited_by:
+            inviter_name = invited_by.get_full_name() or invited_by.email
+            store_name = user.store.name if user.store else 'your store'
+
+            subject = f"{inviter_name} invited you to PeakOps"
+            message = f"""
+Hi {user.first_name or user.email},
+
+{inviter_name} has invited you to join {store_name} on PeakOps!
+
+What is PeakOps?
+PeakOps helps your team maintain operational excellence through quick daily checks. Instead of lengthy inspections, you'll complete 3 quick checks each day (takes just 2 minutes) to keep your store running smoothly.
+
+Your Role: {user.get_role_display()}
+You'll receive daily check reminders via email and can complete them right from your phone or computer.
+
+Click here to get started:
+{login_link}
+
+This link will log you in automatically. Once you're in, you can run your first quick check from the dashboard.
+
+Welcome to the team,
+PeakOps
+            """
+
+            try:
+                send_mail(
+                    subject,
+                    message,
+                    settings.DEFAULT_FROM_EMAIL,
+                    [user.email],
+                    fail_silently=True,
+                )
+            except Exception as e:
+                # Log error but don't fail user creation
+                import logging
+                logger = logging.getLogger(__name__)
+                logger.error(f"Failed to send invitation email: {str(e)}")
+
         return user
 
 

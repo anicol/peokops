@@ -141,6 +141,73 @@ def change_password_view(request):
 
 
 @extend_schema(
+    responses={200: {"type": "object", "properties": {"detail": {"type": "string"}}}},
+    description="Resend invitation email to a user"
+)
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def reinvite_user_view(request, pk):
+    """Resend invitation email to a user"""
+    from django.core.mail import send_mail
+    from django.conf import settings
+
+    try:
+        user = User.objects.get(pk=pk)
+    except User.DoesNotExist:
+        return Response({'detail': 'User not found'}, status=status.HTTP_404_NOT_FOUND)
+
+    invited_by = request.user
+
+    # Generate a magic link token for the user
+    refresh = RefreshToken.for_user(user)
+    access_token = str(refresh.access_token)
+
+    # Build the login link
+    app_url = settings.FRONTEND_URL if hasattr(settings, 'FRONTEND_URL') else 'http://localhost:3000'
+    login_link = f"{app_url}/login?token={access_token}"
+
+    # Send invitation email
+    if user.email:
+        inviter_name = invited_by.get_full_name() or invited_by.email
+        store_name = user.store.name if user.store else 'your store'
+
+        subject = f"{inviter_name} invited you to PeakOps"
+        message = f"""
+Hi {user.first_name or user.email},
+
+{inviter_name} has invited you to join {store_name} on PeakOps!
+
+What is PeakOps?
+PeakOps helps your team maintain operational excellence through quick daily checks. Instead of lengthy inspections, you'll complete 3 quick checks each day (takes just 2 minutes) to keep your store running smoothly.
+
+Your Role: {user.get_role_display()}
+You'll receive daily check reminders via email and can complete them right from your phone or computer.
+
+Click here to get started:
+{login_link}
+
+This link will log you in automatically. Once you're in, you can run your first quick check from the dashboard.
+
+Welcome to the team,
+PeakOps
+        """
+
+        try:
+            send_mail(
+                subject,
+                message,
+                settings.DEFAULT_FROM_EMAIL,
+                [user.email],
+                fail_silently=False,
+            )
+            return Response({'detail': 'Invitation email sent successfully'}, status=status.HTTP_200_OK)
+        except Exception as e:
+            return Response({'detail': f'Failed to send email: {str(e)}'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+    return Response({'detail': 'User has no email address'}, status=status.HTTP_400_BAD_REQUEST)
+
+
+@extend_schema(
     request=QuickSignupSerializer,
     responses={201: UserSerializer, 400: None},
     description="Streamlined passwordless trial signup - creates account with phone + magic link"

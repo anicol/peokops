@@ -16,6 +16,7 @@ import {
   Building2,
   Shield,
   UserCheck,
+  Send,
 } from 'lucide-react';
 import { usersAPI, storesAPI } from '@/services/api';
 import type { User, Store } from '@/types';
@@ -48,6 +49,18 @@ export default function UsersPage() {
     }
   );
 
+  const reinviteMutation = useMutation(
+    (id: number) => usersAPI.reinviteUser(id),
+    {
+      onSuccess: () => {
+        alert('Invitation email sent successfully!');
+      },
+      onError: (error: any) => {
+        alert(error.response?.data?.detail || 'Failed to send invitation');
+      },
+    }
+  );
+
   const handleDelete = async (user: User) => {
     if (user.role === 'ADMIN') {
       alert('Cannot delete admin users');
@@ -59,6 +72,16 @@ export default function UsersPage() {
         await deleteMutation.mutateAsync(user.id);
       } catch (error: any) {
         alert(error.response?.data?.detail || 'Failed to delete user');
+      }
+    }
+  };
+
+  const handleReinvite = async (user: User) => {
+    if (window.confirm(`Send invitation email to ${user.email}?`)) {
+      try {
+        await reinviteMutation.mutateAsync(user.id);
+      } catch (error: any) {
+        // Error handled by mutation
       }
     }
   };
@@ -91,10 +114,11 @@ export default function UsersPage() {
   };
 
   const canManageRole = (role: string) => {
+    // TRIAL_ADMIN can manage GM, INSPECTOR (same as OWNER)
     // OWNER can manage OWNER, GM, INSPECTOR
     // GM can manage GM, INSPECTOR
-    if (currentUser?.role === 'OWNER') {
-      return ['OWNER', 'GM', 'INSPECTOR'].includes(role);
+    if (currentUser?.role === 'TRIAL_ADMIN' || currentUser?.role === 'OWNER') {
+      return ['OWNER', 'GM', 'INSPECTOR', 'TRIAL_ADMIN'].includes(role);
     }
     if (currentUser?.role === 'GM') {
       return ['GM', 'INSPECTOR'].includes(role);
@@ -159,7 +183,7 @@ export default function UsersPage() {
         >
           <option value="all">All Roles</option>
           {currentUser?.role === 'OWNER' && <option value="OWNER">Owner</option>}
-          <option value="GM">General Manager</option>
+          <option value="GM">Manager</option>
           <option value="INSPECTOR">Inspector</option>
         </select>
       </div>
@@ -300,10 +324,19 @@ export default function UsersPage() {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                       {canManageRole(user.role) && user.role !== 'ADMIN' && (
-                        <>
+                        <div className="flex items-center justify-end gap-3">
+                          <button
+                            onClick={() => handleReinvite(user)}
+                            className="text-teal-600 hover:text-teal-900"
+                            disabled={reinviteMutation.isLoading}
+                            title="Resend invitation email"
+                          >
+                            <Send className="h-4 w-4" />
+                          </button>
                           <button
                             onClick={() => setEditingUser(user)}
-                            className="text-indigo-600 hover:text-indigo-900 mr-4"
+                            className="text-indigo-600 hover:text-indigo-900"
+                            title="Edit user"
                           >
                             <Edit2 className="h-4 w-4" />
                           </button>
@@ -311,10 +344,11 @@ export default function UsersPage() {
                             onClick={() => handleDelete(user)}
                             className="text-red-600 hover:text-red-900"
                             disabled={deleteMutation.isLoading}
+                            title="Delete user"
                           >
                             <Trash2 className="h-4 w-4" />
                           </button>
-                        </>
+                        </div>
                       )}
                     </td>
                   </tr>
@@ -357,8 +391,8 @@ function UserFormModal({ user, stores, currentUserRole, onClose }: UserFormModal
     last_name: user?.last_name || '',
     password: '',
     password_confirm: '',
-    role: user?.role || 'INSPECTOR',
-    store: user?.store || null,
+    role: user?.role || 'GM',
+    store: user?.store || (stores.length === 1 ? stores[0].id : null),
     phone: user?.phone || '',
     is_active: user?.is_active ?? true,
   });
@@ -382,17 +416,29 @@ function UserFormModal({ user, stores, currentUserRole, onClose }: UserFormModal
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!user && formData.password !== formData.password_confirm) {
-      alert('Passwords do not match');
-      return;
+    // For new users, generate a random password on backend and send magic link
+    if (user) {
+      mutation.mutate(formData);
+    } else {
+      const randomPassword = Math.random().toString(36).slice(-16) + Math.random().toString(36).slice(-16);
+      mutation.mutate({
+        ...formData,
+        password: randomPassword,
+        password_confirm: randomPassword
+      });
     }
-
-    mutation.mutate(formData);
   };
 
   const availableRoles = currentUserRole === 'OWNER'
-    ? ['OWNER', 'GM', 'INSPECTOR']
-    : ['GM', 'INSPECTOR'];
+    ? [
+        { value: 'OWNER', label: 'Owner' },
+        { value: 'GM', label: 'Manager' },
+        { value: 'INSPECTOR', label: 'Inspector' }
+      ]
+    : [
+        { value: 'GM', label: 'Manager' },
+        { value: 'INSPECTOR', label: 'Inspector' }
+      ];
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
@@ -432,61 +478,21 @@ function UserFormModal({ user, stores, currentUserRole, onClose }: UserFormModal
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Username *
-            </label>
-            <input
-              type="text"
-              required
-              value={formData.username}
-              onChange={(e) => setFormData({ ...formData, username: e.target.value })}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
               Email *
             </label>
             <input
               type="email"
               required
               value={formData.email}
-              onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+              onChange={(e) => setFormData({ ...formData, email: e.target.value, username: e.target.value })}
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
             />
+            {!user && (
+              <p className="mt-2 text-sm text-gray-500">
+                A magic link will be sent to this email for login
+              </p>
+            )}
           </div>
-
-          {!user && (
-            <>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Password *
-                </label>
-                <input
-                  type="password"
-                  required
-                  minLength={8}
-                  value={formData.password}
-                  onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Confirm Password *
-                </label>
-                <input
-                  type="password"
-                  required
-                  minLength={8}
-                  value={formData.password_confirm}
-                  onChange={(e) => setFormData({ ...formData, password_confirm: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-                />
-              </div>
-            </>
-          )}
 
           <div className="grid grid-cols-2 gap-4">
             <div>
@@ -500,7 +506,7 @@ function UserFormModal({ user, stores, currentUserRole, onClose }: UserFormModal
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
               >
                 {availableRoles.map(role => (
-                  <option key={role} value={role}>{role}</option>
+                  <option key={role.value} value={role.value}>{role.label}</option>
                 ))}
               </select>
             </div>
@@ -533,19 +539,6 @@ function UserFormModal({ user, stores, currentUserRole, onClose }: UserFormModal
               onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
             />
-          </div>
-
-          <div className="flex items-center">
-            <input
-              type="checkbox"
-              id="is_active"
-              checked={formData.is_active}
-              onChange={(e) => setFormData({ ...formData, is_active: e.target.checked })}
-              className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
-            />
-            <label htmlFor="is_active" className="ml-2 block text-sm text-gray-900">
-              Active
-            </label>
           </div>
 
           {mutation.error ? (
