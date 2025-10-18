@@ -157,6 +157,23 @@ const AITemplateWizard: React.FC<AITemplateWizardProps> = ({
   };
 
   const handleComplete = async () => {
+    // Delete unselected templates
+    const unselectedTemplates = generatedTemplates.filter(t => !selectedTemplates.has(t.id));
+
+    if (unselectedTemplates.length > 0) {
+      try {
+        // Delete unselected templates in parallel
+        await Promise.all(
+          unselectedTemplates.map(template =>
+            microCheckAPI.deleteTemplate(template.id)
+          )
+        );
+      } catch (err) {
+        console.error('Error deleting unselected templates:', err);
+        // Continue anyway - user can delete them manually later
+      }
+    }
+
     // Refetch user profile to update brand name on Account page
     await refetchUser();
     onComplete();
