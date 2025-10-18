@@ -263,8 +263,8 @@ const MicroCheckTemplatesPage = () => {
             <div className="flex items-center">
               <Settings className="w-8 h-8 text-teal-600 mr-3" />
               <div>
-                <h1 className="text-2xl font-bold text-gray-900">Micro Check Templates</h1>
-                <p className="text-gray-600">Manage your Quick Check templates</p>
+                <h1 className="text-2xl font-bold text-gray-900">My Templates</h1>
+                <p className="text-gray-600">Manage your Micro Check templates</p>
               </div>
             </div>
           </div>
