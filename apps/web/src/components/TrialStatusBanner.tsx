@@ -94,7 +94,7 @@ export default function TrialStatusBanner({ className = '', onUpgradeClick }: Tr
           buttonStyle: 'bg-yellow-600 hover:bg-yellow-700 text-white'
         };
         
-      default:
+      default: {
         const hasCompletedChecks = (trial.videos_used || 0) > 0;
         return {
           bgColor: 'bg-blue-50 border-blue-200',
@@ -108,6 +108,7 @@ export default function TrialStatusBanner({ className = '', onUpgradeClick }: Tr
           buttonText: 'Learn More',
           buttonStyle: 'bg-blue-600 hover:bg-blue-700 text-white'
         };
+      }
     }
   };
 
