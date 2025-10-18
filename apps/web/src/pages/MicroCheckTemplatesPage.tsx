@@ -26,6 +26,8 @@ const MicroCheckTemplatesPage = () => {
   const [templates, setTemplates] = useState<MicroCheckTemplate[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [hasMore, setHasMore] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
   const [searchTerm, setSearchTerm] = useState('');
   const [categoryFilter, setCategoryFilter] = useState<string>('');
   const [severityFilter, setSeverityFilter] = useState<string>('');
@@ -43,11 +45,11 @@ const MicroCheckTemplatesPage = () => {
   const isOperator = user?.role === 'GM' || user?.role === 'OWNER' || user?.role === 'TRIAL_ADMIN';
   const canManage = isAdmin || isOperator;
 
-  const fetchTemplates = useCallback(async () => {
+  const fetchTemplates = useCallback(async (page: number = 1, append: boolean = false) => {
     try {
       setLoading(true);
       setError(null);
-      const params: any = {};
+      const params: any = { page };
 
       // Filter by source and brand based on active tab
       if (activeTab === 'starters') {
@@ -60,24 +62,52 @@ const MicroCheckTemplatesPage = () => {
         }
       }
 
+      // Backend filtering
       if (categoryFilter) params.category = categoryFilter;
       if (severityFilter) params.severity = severityFilter;
+      if (searchTerm) params.search = searchTerm;
 
-      const data = await microCheckAPI.getTemplates(params);
-      setTemplates(data);
+      const response = await microCheckAPI.getTemplates(params);
+
+      // API returns paginated response: { count, next, previous, results }
+      const data = response.results || response;
+      const hasNextPage = !!response.next;
+
+      console.log(`[MicroCheckTemplatesPage] Fetched ${data.length} templates (page ${page}), hasMore: ${hasNextPage}`);
+
+      if (append) {
+        setTemplates(prev => [...prev, ...data]);
+      } else {
+        setTemplates(data);
+      }
+
+      setHasMore(hasNextPage);
+      setCurrentPage(page);
     } catch (err: any) {
       console.error('Error fetching templates:', err);
       setError('Unable to load templates');
     } finally {
       setLoading(false);
     }
-  }, [activeTab, categoryFilter, severityFilter, user?.brand_id]);
+  }, [activeTab, categoryFilter, severityFilter, searchTerm, user?.brand_id]);
 
   useEffect(() => {
     if (canManage) {
       fetchTemplates();
     }
   }, [canManage, fetchTemplates]);
+
+  // Debounce search term changes
+  useEffect(() => {
+    if (!canManage) return;
+
+    const timer = setTimeout(() => {
+      // Reset to page 1 when search/filters change
+      fetchTemplates(1, false);
+    }, 500);
+
+    return () => clearTimeout(timer);
+  }, [searchTerm, categoryFilter, severityFilter]);
 
   const handleCreateTemplate = () => {
     setModalMode('create');
@@ -215,10 +245,12 @@ const MicroCheckTemplatesPage = () => {
     }
   };
 
-  const filteredTemplates = templates.filter((t) =>
-    t.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    t.description.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  // Search and filtering now handled by backend
+  const filteredTemplates = templates;
+
+  const handleLoadMore = () => {
+    fetchTemplates(currentPage + 1, true);
+  };
 
   const getCategoryBadgeColor = (category: MicroCheckCategory) => {
     const colors: Record<MicroCheckCategory, string> = {
@@ -545,6 +577,26 @@ const MicroCheckTemplatesPage = () => {
             ))}
           </div>
         )}
+
+        {/* Load More Button */}
+        {!loading && hasMore && filteredTemplates.length > 0 && (
+          <div className="flex justify-center mt-8">
+            <button
+              onClick={handleLoadMore}
+              disabled={loading}
+              className="px-6 py-3 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
+            >
+              {loading ? (
+                <>
+                  <Loader2 className="w-5 h-5 mr-2 animate-spin" />
+                  Loading...
+                </>
+              ) : (
+                'Load More Templates'
+              )}
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Modal for Create/Edit */}
@@ -758,6 +810,7 @@ const MicroCheckTemplatesPage = () => {
         <AITemplateWizard
           onClose={() => setShowAIWizard(false)}
           onComplete={() => {
+            console.log('[MicroCheckTemplatesPage] AI wizard completed, switching to My Templates tab');
             setActiveTab('my-templates');  // Switch to My Templates tab to see new templates
             fetchTemplates();
           }}

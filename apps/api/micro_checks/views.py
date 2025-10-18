@@ -63,7 +63,7 @@ class MicroCheckTemplateViewSet(viewsets.ModelViewSet):
     filterset_fields = ['category', 'severity', 'is_active', 'brand', 'is_local']
     search_fields = ['title', 'description', 'success_criteria']
     ordering_fields = ['created_at', 'category', 'severity', 'rotation_priority', 'title']
-    ordering = ['title']
+    ordering = ['-created_at']  # Show newest templates first
 
     def get_queryset(self):
         """Filter templates based on user role and brand access"""
