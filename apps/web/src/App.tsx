@@ -20,6 +20,7 @@ import InspectionsPage from '@/pages/InspectionsPage';
 import InspectionDetailPage from '@/pages/InspectionDetailPage';
 import ActionItemsPage from '@/pages/ActionItemsPage';
 import BrandsPage from '@/pages/BrandsPage';
+import AccountPage from '@/pages/AccountPage';
 import StoresPage from '@/pages/StoresPage';
 import UsersPage from '@/pages/UsersPage';
 import AdminUsersPage from '@/pages/AdminUsersPage';
@@ -180,10 +181,24 @@ function AppRoutes() {
           }
         />
         <Route
+          path="/account"
+          element={
+            isAuthenticated ? (
+              <Layout>
+                <AccountPage />
+              </Layout>
+            ) : (
+              <Navigate to="/login" replace />
+            )
+          }
+        />
+        <Route
           path="/stores"
           element={
             isAuthenticated ? (
-              <Navigate to="/profile" replace />
+              <Layout>
+                <StoresPage />
+              </Layout>
             ) : (
               <Navigate to="/login" replace />
             )
@@ -264,7 +279,7 @@ function AppRoutes() {
         <Route
           path="/micro-check-templates"
           element={
-            isAuthenticated && (user?.role === 'ADMIN' || user?.role === 'OWNER' || user?.role === 'GM') ? (
+            isAuthenticated && (user?.role === 'ADMIN' || user?.role === 'OWNER' || user?.role === 'TRIAL_ADMIN' || user?.role === 'GM') ? (
               <Layout>
                 <MicroCheckTemplatesPage />
               </Layout>

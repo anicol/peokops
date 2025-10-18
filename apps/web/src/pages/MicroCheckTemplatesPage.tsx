@@ -38,7 +38,7 @@ const MicroCheckTemplatesPage = () => {
   const [referenceImagePreview, setReferenceImagePreview] = useState<string | null>(null);
 
   const isAdmin = user?.role === 'ADMIN';
-  const isOperator = user?.role === 'GM' || user?.role === 'OWNER';
+  const isOperator = user?.role === 'GM' || user?.role === 'OWNER' || user?.role === 'TRIAL_ADMIN';
   const canManage = isAdmin || isOperator;
 
   const fetchTemplates = useCallback(async () => {
@@ -264,7 +264,7 @@ const MicroCheckTemplatesPage = () => {
               <Settings className="w-8 h-8 text-teal-600 mr-3" />
               <div>
                 <h1 className="text-2xl font-bold text-gray-900">My Templates</h1>
-                <p className="text-gray-600">Manage your Quick Check templates</p>
+                <p className="text-gray-600">Manage your Micro Check templates</p>
               </div>
             </div>
           </div>

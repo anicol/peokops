@@ -1,9 +1,8 @@
 import { useState } from 'react';
-import { useQuery, useMutation, useQueryClient } from 'react-query';
+import { useMutation, useQueryClient } from 'react-query';
 import { useAuth } from '@/hooks/useAuth';
 import { authAPI, storesAPI, brandsAPI } from '@/services/api';
 import type { Store, Brand } from '@/types';
-import { format } from 'date-fns';
 import {
   User,
   Save,
@@ -15,23 +14,13 @@ import {
   Bell,
   HelpCircle,
   LogOut,
-  Crown,
-  Store as StoreIcon,
-  Plus,
-  Edit2,
-  Trash2,
-  XCircle,
-  Search,
-  Building2,
-  Mail,
-  Phone,
   Loader2,
 } from 'lucide-react';
 
 const ProfilePage = () => {
   const { user, refetchUser, logout } = useAuth();
   const queryClient = useQueryClient();
-  const [activeTab, setActiveTab] = useState<'profile' | 'password' | 'store' | 'stores' | 'trial' | 'privacy' | 'notifications' | 'help'>('profile');
+  const [activeTab, setActiveTab] = useState<'profile' | 'password' | 'store' | 'privacy' | 'notifications' | 'help'>('profile');
 
   // Profile form state
   const [profileData, setProfileData] = useState({
@@ -54,42 +43,10 @@ const ProfilePage = () => {
   const [passwordError, setPasswordError] = useState('');
   const [passwordSuccess, setPasswordSuccess] = useState('');
 
-  // Stores management state
-  const [searchTerm, setSearchTerm] = useState('');
-  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
-  const [editingStore, setEditingStore] = useState<Store | null>(null);
-  const [brandFilter, setBrandFilter] = useState<string>('all');
-  const [stateFilter, setStateFilter] = useState<string>('all');
-
-  const { data: stores, isLoading: storesLoading, error: storesError } = useQuery<Store[]>(
-    'stores',
-    storesAPI.getStores
-  );
-
-  // Only fetch brands for admin users
-  const { data: brands } = useQuery<Brand[]>(
-    'brands',
-    brandsAPI.getBrands,
-    {
-      enabled: user?.role === 'ADMIN' || user?.role === 'SUPER_ADMIN',
-    }
-  );
-
-  const deleteMutation = useMutation(
-    (id: number) => storesAPI.deleteStore(id),
-    {
-      onSuccess: () => {
-        queryClient.invalidateQueries('stores');
-      },
-    }
-  );
-
   const tabs = [
     { id: 'profile', label: 'Profile', icon: User },
     { id: 'password', label: 'Password', icon: Key },
     { id: 'store', label: 'Store Info', icon: MapPin },
-    { id: 'stores', label: 'Stores', icon: StoreIcon },
-    ...(user?.is_trial_user ? [{ id: 'trial' as const, label: 'Trial Status', icon: Crown }] : []),
     { id: 'privacy', label: 'Privacy', icon: Shield },
     { id: 'notifications', label: 'Notifications', icon: Bell },
     { id: 'help', label: 'Help & Support', icon: HelpCircle }
@@ -141,36 +98,6 @@ const ProfilePage = () => {
       setPasswordSaving(false);
     }
   };
-
-  const handleDeleteStore = async (store: Store) => {
-    if (window.confirm(`Are you sure you want to delete ${store.name}?`)) {
-      try {
-        await deleteMutation.mutateAsync(store.id);
-      } catch (error: any) {
-        alert(error.response?.data?.detail || 'Failed to delete store');
-      }
-    }
-  };
-
-  const filteredStores = stores?.filter(store => {
-    // Non-admin users can only see stores for their brand
-    if (user?.role !== 'ADMIN' && user?.role !== 'SUPER_ADMIN' && user?.brand_id && store.brand !== user.brand_id) {
-      return false;
-    }
-
-    const matchesSearch =
-      store.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      store.code.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      store.city.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      store.address.toLowerCase().includes(searchTerm.toLowerCase());
-
-    const matchesBrand = brandFilter === 'all' || store.brand.toString() === brandFilter;
-    const matchesState = stateFilter === 'all' || store.state === stateFilter;
-
-    return matchesSearch && matchesBrand && matchesState;
-  }) || [];
-
-  const uniqueStates = [...new Set(stores?.map(s => s.state) || [])].sort();
 
   return (
     <div className="p-4 lg:p-8">
@@ -445,45 +372,6 @@ const ProfilePage = () => {
                 </div>
               )}
 
-              {/* Trial Status Tab */}
-              {activeTab === 'trial' && user?.is_trial_user && (
-                <div className="p-6">
-                  <h2 className="text-xl font-semibold text-gray-900 mb-6">Trial Status</h2>
-
-                  <div className="space-y-6">
-                    <div className="bg-gradient-to-r from-teal-50 to-blue-50 rounded-xl border border-teal-200 p-6">
-                      <div className="flex items-center mb-4">
-                        <Crown className="w-8 h-8 text-teal-600 mr-3" />
-                        <h3 className="text-lg font-semibold text-gray-900">Free Trial Active</h3>
-                      </div>
-
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <div>
-                          <div className="text-3xl font-bold text-teal-600 mb-1">
-                            {user?.trial_status?.days_remaining || 0}
-                          </div>
-                          <div className="text-gray-600">Days remaining</div>
-                        </div>
-                        <div>
-                          <div className="text-lg font-semibold text-gray-900 mb-1">Full Access</div>
-                          <div className="text-gray-600">All features unlocked</div>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="bg-teal-600 text-white rounded-xl p-6">
-                      <h4 className="font-semibold mb-2">Ready to continue?</h4>
-                      <p className="text-teal-100 mb-4">
-                        Keep using PeakOps with unlimited micro-checks and unlock enterprise features.
-                      </p>
-                      <button className="px-4 py-2 bg-white text-teal-600 rounded-lg hover:bg-gray-100 transition-colors font-medium">
-                        View Plans
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              )}
-
               {/* Privacy Tab */}
               {activeTab === 'privacy' && (
                 <div className="p-6">
@@ -573,336 +461,6 @@ const ProfilePage = () => {
                 </div>
               )}
 
-              {/* Stores Tab */}
-              {activeTab === 'stores' && (
-                <div className="p-6">
-                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
-                    <div>
-                      <h2 className="text-xl font-semibold text-gray-900">Stores</h2>
-                      <p className="text-gray-600 text-sm mt-1">Manage store locations and information</p>
-                    </div>
-                    <button
-                      onClick={() => setIsCreateModalOpen(true)}
-                      className="inline-flex items-center justify-center px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors"
-                    >
-                      <Plus className="w-4 h-4 mr-2" />
-                      <span className="whitespace-nowrap">Add Store</span>
-                    </button>
-                  </div>
-
-                  {/* Search and Filters */}
-                  <div className="flex flex-col sm:flex-row gap-3 md:gap-4 mb-6">
-                    <div className="relative flex-1">
-                      <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
-                      <input
-                        type="text"
-                        placeholder="Search stores..."
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                        className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
-                      />
-                    </div>
-                    {(user?.role === 'ADMIN' || user?.role === 'SUPER_ADMIN') && (
-                      <select
-                        value={brandFilter}
-                        onChange={(e) => setBrandFilter(e.target.value)}
-                        className="w-full sm:w-auto px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
-                      >
-                        <option value="all">All Brands</option>
-                        {brands?.map(brand => (
-                          <option key={brand.id} value={brand.id}>{brand.name}</option>
-                        ))}
-                      </select>
-                    )}
-                    <select
-                      value={stateFilter}
-                      onChange={(e) => setStateFilter(e.target.value)}
-                      className="w-full sm:w-auto px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
-                    >
-                      <option value="all">All States</option>
-                      {uniqueStates.map(state => (
-                        <option key={state} value={state}>{state}</option>
-                      ))}
-                    </select>
-                  </div>
-
-                  {/* Stats */}
-                  <div className={`grid grid-cols-2 gap-3 md:gap-4 mb-6 ${(user?.role === 'ADMIN' || user?.role === 'SUPER_ADMIN') ? 'md:grid-cols-4' : 'md:grid-cols-3'}`}>
-                    <div className="bg-gradient-to-br from-teal-50 to-white rounded-lg shadow-sm border border-teal-100 p-4 md:p-6">
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <p className="text-xs md:text-sm text-gray-600">Total Stores</p>
-                          <p className="text-xl md:text-2xl font-bold text-gray-900">{stores?.length || 0}</p>
-                        </div>
-                        <StoreIcon className="h-6 w-6 md:h-8 md:w-8 text-teal-600" />
-                      </div>
-                    </div>
-
-                    <div className="bg-gradient-to-br from-green-50 to-white rounded-lg shadow-sm border border-green-100 p-4 md:p-6">
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <p className="text-xs md:text-sm text-gray-600">Active Stores</p>
-                          <p className="text-xl md:text-2xl font-bold text-green-600">
-                            {stores?.filter(s => s.is_active).length || 0}
-                          </p>
-                        </div>
-                        <CheckCircle className="h-6 w-6 md:h-8 md:w-8 text-green-600" />
-                      </div>
-                    </div>
-
-                    <div className="bg-gradient-to-br from-blue-50 to-white rounded-lg shadow-sm border border-blue-100 p-4 md:p-6">
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <p className="text-xs md:text-sm text-gray-600">States</p>
-                          <p className="text-xl md:text-2xl font-bold text-gray-900">
-                            {uniqueStates.length}
-                          </p>
-                        </div>
-                        <MapPin className="h-6 w-6 md:h-8 md:w-8 text-blue-600" />
-                      </div>
-                    </div>
-
-                    {(user?.role === 'ADMIN' || user?.role === 'SUPER_ADMIN') && (
-                      <div className="bg-gradient-to-br from-purple-50 to-white rounded-lg shadow-sm border border-purple-100 p-4 md:p-6">
-                        <div className="flex items-center justify-between">
-                          <div>
-                            <p className="text-xs md:text-sm text-gray-600">Brands</p>
-                            <p className="text-xl md:text-2xl font-bold text-gray-900">
-                              {brands?.length || 0}
-                            </p>
-                          </div>
-                          <Building2 className="h-6 w-6 md:h-8 md:w-8 text-purple-600" />
-                        </div>
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Stores List */}
-                  {storesLoading ? (
-                    <div className="flex items-center justify-center min-h-96 bg-white rounded-lg shadow">
-                      <div className="text-center">
-                        <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4 text-teal-600" />
-                        <p className="text-gray-600">Loading stores...</p>
-                      </div>
-                    </div>
-                  ) : storesError ? (
-                    <div className="text-center py-12 bg-white rounded-lg shadow">
-                      <AlertCircle className="h-12 w-12 text-red-500 mx-auto mb-4" />
-                      <h3 className="text-xl font-semibold text-gray-900 mb-2">Failed to load stores</h3>
-                      <p className="text-gray-600">{(storesError as Error).message}</p>
-                    </div>
-                  ) : (
-                    <div className="bg-white rounded-lg shadow overflow-hidden">
-                      {filteredStores.length === 0 ? (
-                        <div className="text-center py-12">
-                          <StoreIcon className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                          <p className="text-gray-600">
-                            {searchTerm ? 'No stores found matching your search' : 'No stores yet'}
-                          </p>
-                        </div>
-                      ) : (
-                        <>
-                          {/* Mobile Card View */}
-                          <div className="block lg:hidden divide-y divide-gray-200">
-                            {filteredStores.map((store) => (
-                              <div key={store.id} className="p-4 hover:bg-gray-50">
-                                <div className="flex items-start justify-between mb-3">
-                                  <div className="flex-1">
-                                    <h3 className="text-base font-semibold text-gray-900">{store.name}</h3>
-                                    <p className="text-sm text-gray-500">Code: {store.code}</p>
-                                    {(user?.role === 'ADMIN' || user?.role === 'SUPER_ADMIN') && (
-                                      <div className="flex items-center text-sm text-gray-600 mt-1">
-                                        <Building2 className="h-3 w-3 mr-1 text-gray-400" />
-                                        {store.brand_name}
-                                      </div>
-                                    )}
-                                  </div>
-                                  <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium whitespace-nowrap ${
-                                    store.is_active
-                                      ? 'bg-green-100 text-green-800'
-                                      : 'bg-gray-100 text-gray-800'
-                                  }`}>
-                                    {store.is_active ? (
-                                      <>
-                                        <CheckCircle className="h-3 w-3 mr-1" />
-                                        Active
-                                      </>
-                                    ) : (
-                                      <>
-                                        <XCircle className="h-3 w-3 mr-1" />
-                                        Inactive
-                                      </>
-                                    )}
-                                  </span>
-                                </div>
-
-                                <div className="space-y-2 mb-3">
-                                  <div className="flex items-start text-sm text-gray-600">
-                                    <MapPin className="h-4 w-4 mr-2 text-gray-400 flex-shrink-0 mt-0.5" />
-                                    <div>
-                                      <div>{store.city}, {store.state} {store.zip_code}</div>
-                                    </div>
-                                  </div>
-
-                                  {store.phone && (
-                                    <div className="flex items-center text-sm text-gray-600">
-                                      <Phone className="h-4 w-4 mr-2 text-gray-400 flex-shrink-0" />
-                                      <a href={`tel:${store.phone}`} className="hover:text-teal-600">{store.phone}</a>
-                                    </div>
-                                  )}
-
-                                  {store.manager_email && (
-                                    <div className="flex items-center text-sm text-gray-600">
-                                      <Mail className="h-4 w-4 mr-2 text-gray-400 flex-shrink-0" />
-                                      <a href={`mailto:${store.manager_email}`} className="hover:text-teal-600 truncate">{store.manager_email}</a>
-                                    </div>
-                                  )}
-                                </div>
-
-                                <div className="flex items-center justify-between pt-3 border-t border-gray-100">
-                                  <span className="text-xs text-gray-500">
-                                    Created {store.created_at && !isNaN(new Date(store.created_at).getTime())
-                                      ? format(new Date(store.created_at), 'MMM d, yyyy')
-                                      : 'N/A'}
-                                  </span>
-                                  <div className="flex items-center gap-3">
-                                    <button
-                                      onClick={() => setEditingStore(store)}
-                                      className="text-teal-600 hover:text-teal-900"
-                                    >
-                                      <Edit2 className="h-5 w-5" />
-                                    </button>
-                                    <button
-                                      onClick={() => handleDeleteStore(store)}
-                                      className="text-red-600 hover:text-red-900"
-                                      disabled={deleteMutation.isLoading}
-                                    >
-                                      <Trash2 className="h-5 w-5" />
-                                    </button>
-                                  </div>
-                                </div>
-                              </div>
-                            ))}
-                          </div>
-
-                          {/* Desktop Table View */}
-                          <div className="hidden lg:block overflow-x-auto">
-                            <table className="min-w-full divide-y divide-gray-200">
-                              <thead className="bg-gray-50">
-                                <tr>
-                                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                    Store
-                                  </th>
-                                  {(user?.role === 'ADMIN' || user?.role === 'SUPER_ADMIN') && (
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                      Brand
-                                    </th>
-                                  )}
-                                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                    Location
-                                  </th>
-                                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                    Contact
-                                  </th>
-                                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                    Status
-                                  </th>
-                                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                    Created
-                                  </th>
-                                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                    Actions
-                                  </th>
-                                </tr>
-                              </thead>
-                              <tbody className="bg-white divide-y divide-gray-200">
-                                {filteredStores.map((store) => (
-                                  <tr key={store.id} className="hover:bg-gray-50">
-                                    <td className="px-6 py-4 whitespace-nowrap">
-                                      <div>
-                                        <div className="text-sm font-medium text-gray-900">{store.name}</div>
-                                        <div className="text-sm text-gray-500">Code: {store.code}</div>
-                                      </div>
-                                    </td>
-                                    {(user?.role === 'ADMIN' || user?.role === 'SUPER_ADMIN') && (
-                                      <td className="px-6 py-4 whitespace-nowrap">
-                                        <div className="flex items-center text-sm text-gray-900">
-                                          <Building2 className="h-4 w-4 mr-2 text-gray-400" />
-                                          {store.brand_name}
-                                        </div>
-                                      </td>
-                                    )}
-                                    <td className="px-6 py-4">
-                                      <div className="text-sm text-gray-900">{store.city}, {store.state}</div>
-                                      <div className="text-sm text-gray-500">{store.zip_code}</div>
-                                    </td>
-                                    <td className="px-6 py-4 whitespace-nowrap">
-                                      <div className="text-sm text-gray-900">
-                                        {store.phone && (
-                                          <div className="flex items-center mb-1">
-                                            <Phone className="h-3 w-3 mr-1 text-gray-400" />
-                                            {store.phone}
-                                          </div>
-                                        )}
-                                        {store.manager_email && (
-                                          <div className="flex items-center">
-                                            <Mail className="h-3 w-3 mr-1 text-gray-400" />
-                                            <span className="truncate max-w-xs">{store.manager_email}</span>
-                                          </div>
-                                        )}
-                                      </div>
-                                    </td>
-                                    <td className="px-6 py-4 whitespace-nowrap">
-                                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                                        store.is_active
-                                          ? 'bg-green-100 text-green-800'
-                                          : 'bg-gray-100 text-gray-800'
-                                      }`}>
-                                        {store.is_active ? (
-                                          <>
-                                            <CheckCircle className="h-3 w-3 mr-1" />
-                                            Active
-                                          </>
-                                        ) : (
-                                          <>
-                                            <XCircle className="h-3 w-3 mr-1" />
-                                            Inactive
-                                          </>
-                                        )}
-                                      </span>
-                                    </td>
-                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                                      {store.created_at && !isNaN(new Date(store.created_at).getTime())
-                                        ? format(new Date(store.created_at), 'MMM d, yyyy')
-                                        : 'N/A'}
-                                    </td>
-                                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                                      <button
-                                        onClick={() => setEditingStore(store)}
-                                        className="text-teal-600 hover:text-teal-900 mr-4"
-                                      >
-                                        <Edit2 className="h-4 w-4" />
-                                      </button>
-                                      <button
-                                        onClick={() => handleDeleteStore(store)}
-                                        className="text-red-600 hover:text-red-900"
-                                        disabled={deleteMutation.isLoading}
-                                      >
-                                        <Trash2 className="h-4 w-4" />
-                                      </button>
-                                    </td>
-                                  </tr>
-                                ))}
-                              </tbody>
-                            </table>
-                          </div>
-                        </>
-                      )}
-                    </div>
-                  )}
-                </div>
-              )}
-
               {/* Help & Support Tab */}
               {activeTab === 'help' && (
                 <div className="p-6">
@@ -960,19 +518,6 @@ const ProfilePage = () => {
           </div>
         </div>
       </div>
-
-      {/* Create/Edit Store Modal */}
-      {(isCreateModalOpen || editingStore) && (
-        <StoreFormModal
-          store={editingStore}
-          brands={brands || []}
-          currentUser={user}
-          onClose={() => {
-            setIsCreateModalOpen(false);
-            setEditingStore(null);
-          }}
-        />
-      )}
     </div>
   );
 };

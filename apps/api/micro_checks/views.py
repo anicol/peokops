@@ -73,8 +73,8 @@ class MicroCheckTemplateViewSet(viewsets.ModelViewSet):
         if user.role == 'ADMIN':
             return self.queryset
 
-        # OWNER sees templates for their brand + global templates
-        if user.role == 'OWNER':
+        # OWNER and TRIAL_ADMIN see templates for their brand + global templates
+        if user.role in ['OWNER', 'TRIAL_ADMIN']:
             if user.store and user.store.brand:
                 return self.queryset.filter(
                     Q(brand=user.store.brand) | Q(brand__isnull=True)
@@ -93,31 +93,67 @@ class MicroCheckTemplateViewSet(viewsets.ModelViewSet):
         return self.queryset.none()
 
     def perform_create(self, serializer):
-        """Only ADMIN can create templates"""
-        if self.request.user.role != 'ADMIN':
-            from rest_framework.exceptions import PermissionDenied
-            raise PermissionDenied("Only administrators can create templates.")
+        """ADMIN, OWNER, and TRIAL_ADMIN can create templates"""
+        from rest_framework.exceptions import PermissionDenied
+
+        user = self.request.user
+        if user.role not in ['ADMIN', 'OWNER', 'TRIAL_ADMIN']:
+            raise PermissionDenied("Only administrators and managers can create templates.")
 
         # Set brand and creator
         brand = self.request.data.get('brand')
+
+        # OWNER and TRIAL_ADMIN can only create templates for their own brand
+        if user.role in ['OWNER', 'TRIAL_ADMIN']:
+            if user.store and user.store.brand:
+                # If they try to create for a different brand, reject it
+                if brand and int(brand) != user.store.brand.id:
+                    raise PermissionDenied("You can only create templates for your own brand.")
+                brand = user.store.brand.id
+            else:
+                raise PermissionDenied("You must be associated with a brand to create templates.")
+
         serializer.save(
             created_by=self.request.user,
             brand_id=brand if brand else None
         )
 
     def perform_update(self, serializer):
-        """Only ADMIN can update templates"""
-        if self.request.user.role != 'ADMIN':
-            from rest_framework.exceptions import PermissionDenied
-            raise PermissionDenied("Only administrators can edit templates.")
+        """ADMIN, OWNER, and TRIAL_ADMIN can update templates"""
+        from rest_framework.exceptions import PermissionDenied
+
+        user = self.request.user
+        instance = self.get_object()
+
+        if user.role not in ['ADMIN', 'OWNER', 'TRIAL_ADMIN']:
+            raise PermissionDenied("Only administrators and managers can edit templates.")
+
+        # OWNER and TRIAL_ADMIN can only edit templates for their own brand
+        if user.role in ['OWNER', 'TRIAL_ADMIN']:
+            if user.store and user.store.brand:
+                if instance.brand != user.store.brand:
+                    raise PermissionDenied("You can only edit templates for your own brand.")
+            else:
+                raise PermissionDenied("You must be associated with a brand to edit templates.")
 
         serializer.save(updated_by=self.request.user)
 
     def perform_destroy(self, instance):
-        """Only ADMIN can delete templates"""
-        if self.request.user.role != 'ADMIN':
-            from rest_framework.exceptions import PermissionDenied
-            raise PermissionDenied("Only administrators can delete templates.")
+        """ADMIN, OWNER, and TRIAL_ADMIN can delete templates"""
+        from rest_framework.exceptions import PermissionDenied
+
+        user = self.request.user
+
+        if user.role not in ['ADMIN', 'OWNER', 'TRIAL_ADMIN']:
+            raise PermissionDenied("Only administrators and managers can delete templates.")
+
+        # OWNER and TRIAL_ADMIN can only delete templates for their own brand
+        if user.role in ['OWNER', 'TRIAL_ADMIN']:
+            if user.store and user.store.brand:
+                if instance.brand != user.store.brand:
+                    raise PermissionDenied("You can only delete templates for your own brand.")
+            else:
+                raise PermissionDenied("You must be associated with a brand to delete templates.")
 
         instance.delete()
 
