@@ -486,7 +486,8 @@ class MicroCheckTemplateViewSet(viewsets.ModelViewSet):
                     is_active=True,
                     include_in_rotation=True,
                     rotation_priority=50,
-                    is_local=False,
+                    is_local=True,  # AI-generated templates are local to the brand
+                    source='LOCAL',  # Mark as local/custom templates
                     created_by=user,
                     updated_by=user
                 )
