@@ -758,6 +758,7 @@ const MicroCheckTemplatesPage = () => {
         <AITemplateWizard
           onClose={() => setShowAIWizard(false)}
           onComplete={() => {
+            setActiveTab('my-templates');  // Switch to My Templates tab to see new templates
             fetchTemplates();
           }}
           initialBrandName={user?.brand_name || ''}
