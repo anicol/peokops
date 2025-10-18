@@ -183,7 +183,9 @@ function AppRoutes() {
           path="/stores"
           element={
             isAuthenticated ? (
-              <Navigate to="/profile" replace />
+              <Layout>
+                <StoresPage />
+              </Layout>
             ) : (
               <Navigate to="/login" replace />
             )
