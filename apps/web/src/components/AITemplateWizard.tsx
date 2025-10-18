@@ -26,6 +26,8 @@ const AITemplateWizard: React.FC<AITemplateWizardProps> = ({ onClose, onComplete
   const [selectedTemplates, setSelectedTemplates] = useState<Set<string>>(new Set());
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [analysisStatus, setAnalysisStatus] = useState<string>('');
+  const [generationStatus, setGenerationStatus] = useState<string>('');
 
   const handleBrandInfoSubmit = () => {
     if (!brandName.trim()) {
@@ -40,14 +42,35 @@ const AITemplateWizard: React.FC<AITemplateWizardProps> = ({ onClose, onComplete
   const analyzeBrand = async () => {
     setIsLoading(true);
     setError(null);
+
+    const statusMessages = [
+      `Researching ${brandName}...`,
+      'Analyzing business type and operations...',
+      'Identifying compliance requirements...',
+      'Understanding industry standards...',
+      'Preparing AI for template generation...'
+    ];
+
+    let currentMessageIndex = 0;
+    setAnalysisStatus(statusMessages[0]);
+
+    // Update status message every 400ms
+    const statusInterval = setInterval(() => {
+      currentMessageIndex++;
+      if (currentMessageIndex < statusMessages.length) {
+        setAnalysisStatus(statusMessages[currentMessageIndex]);
+      }
+    }, 400);
+
     try {
-      // For now, skip to category selection
-      // Brand analysis will happen when generating templates
-      setTimeout(() => {
-        setCurrentStep('category');
-        setIsLoading(false);
-      }, 1500); // Simulate analysis time
+      // Simulate analysis time
+      await new Promise(resolve => setTimeout(resolve, 2000));
+
+      clearInterval(statusInterval);
+      setCurrentStep('category');
+      setIsLoading(false);
     } catch (err: any) {
+      clearInterval(statusInterval);
       console.error('Brand analysis failed:', err);
       setError('Failed to analyze brand. Please try again.');
       setCurrentStep('brandInfo');
@@ -66,6 +89,26 @@ const AITemplateWizard: React.FC<AITemplateWizardProps> = ({ onClose, onComplete
     setIsLoading(true);
     setError(null);
 
+    const categoryName = categories.find(c => c.value === selectedCategory)?.label || selectedCategory;
+    const statusMessages = [
+      `Analyzing ${categoryName} requirements for ${brandName}...`,
+      'Consulting AI knowledge base...',
+      'Identifying industry-specific checks...',
+      'Crafting custom template recommendations...',
+      'Finalizing templates...'
+    ];
+
+    let currentMessageIndex = 0;
+    setGenerationStatus(statusMessages[0]);
+
+    // Update status message every 500ms
+    const statusInterval = setInterval(() => {
+      currentMessageIndex++;
+      if (currentMessageIndex < statusMessages.length) {
+        setGenerationStatus(statusMessages[currentMessageIndex]);
+      }
+    }, 500);
+
     try {
       const result = await microCheckAPI.generateTemplatesWithAI(
         selectedCategory,
@@ -73,6 +116,8 @@ const AITemplateWizard: React.FC<AITemplateWizardProps> = ({ onClose, onComplete
         brandName,
         industry || undefined
       );
+
+      clearInterval(statusInterval);
 
       setBrandAnalysis(result.brand_analysis);
       setGeneratedTemplates(result.templates);
@@ -83,6 +128,7 @@ const AITemplateWizard: React.FC<AITemplateWizardProps> = ({ onClose, onComplete
 
       setCurrentStep('review');
     } catch (err: any) {
+      clearInterval(statusInterval);
       console.error('Template generation failed:', err);
       setError(err.response?.data?.error || 'Failed to generate templates. Please try again.');
       setCurrentStep('category');
@@ -278,9 +324,25 @@ const AITemplateWizard: React.FC<AITemplateWizardProps> = ({ onClose, onComplete
           {currentStep === 'analyzing' && (
             <div className="text-center py-12">
               <Loader2 className="w-12 h-12 text-purple-600 animate-spin mx-auto mb-4" />
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">Analyzing Your Business</h3>
-              <p className="text-gray-600 mb-2">Our AI is researching <strong>{brandName}</strong> to create custom templates...</p>
-              {industry && <p className="text-sm text-gray-500">Industry: {industry}</p>}
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">Analyzing Your Business</h3>
+
+              {/* Dynamic status message */}
+              <div className="mb-4 min-h-[60px] flex items-center justify-center">
+                <p className="text-purple-600 font-medium text-base animate-pulse">
+                  {analysisStatus}
+                </p>
+              </div>
+
+              <div className="max-w-md mx-auto bg-blue-50 border border-blue-200 rounded-lg p-4">
+                <p className="text-sm text-blue-900 mb-2">
+                  <strong>Brand:</strong> {brandName}
+                </p>
+                {industry && (
+                  <p className="text-sm text-blue-900">
+                    <strong>Industry:</strong> {industry}
+                  </p>
+                )}
+              </div>
             </div>
           )}
 
@@ -324,9 +386,27 @@ const AITemplateWizard: React.FC<AITemplateWizardProps> = ({ onClose, onComplete
           {currentStep === 'generating' && (
             <div className="text-center py-12">
               <Loader2 className="w-12 h-12 text-purple-600 animate-spin mx-auto mb-4" />
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">Generating Custom Templates</h3>
-              <p className="text-gray-600">AI is creating templates tailored to your business...</p>
-              <p className="text-sm text-gray-500 mt-2">This may take 10-30 seconds</p>
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">Generating Custom Templates</h3>
+
+              {/* Dynamic status message */}
+              <div className="mb-4 min-h-[80px] flex items-center justify-center">
+                <p className="text-purple-600 font-medium text-base animate-pulse">
+                  {generationStatus}
+                </p>
+              </div>
+
+              <div className="max-w-md mx-auto space-y-3">
+                <div className="bg-gradient-to-r from-purple-50 to-pink-50 border border-purple-200 rounded-lg p-4">
+                  <p className="text-sm text-purple-900">
+                    <strong>Brand:</strong> {brandName}
+                  </p>
+                  <p className="text-sm text-purple-900 mt-1">
+                    <strong>Category:</strong> {categories.find(c => c.value === selectedCategory)?.label}
+                  </p>
+                </div>
+
+                <p className="text-xs text-gray-500">This may take 10-30 seconds</p>
+              </div>
             </div>
           )}
 

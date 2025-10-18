@@ -403,6 +403,8 @@ class MicroCheckTemplateViewSet(viewsets.ModelViewSet):
         logger = logging.getLogger(__name__)
         user = request.user
 
+        logger.info(f"[AI TEMPLATE GEN] Request received from user {user.email} with data: {request.data}")
+
         # Check permissions - only OWNER, TRIAL_ADMIN, and ADMIN can generate
         if user.role not in ['ADMIN', 'OWNER', 'TRIAL_ADMIN']:
             raise PermissionDenied("Only administrators and managers can generate templates with AI.")

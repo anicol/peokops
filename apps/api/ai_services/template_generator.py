@@ -80,18 +80,20 @@ class AITemplateGenerator:
                 - expected_completion_seconds: int
         """
         if not self.enabled:
+            logger.warning(f"AI template generation disabled, using fallback templates for {category}")
             return self._get_fallback_templates(category, count)
 
         try:
+            logger.info(f"Generating {count} AI templates for category {category} with brand info: {brand_info}")
             prompt = self._build_template_generation_prompt(brand_info, category, count)
             response = self._call_bedrock(prompt, max_tokens=2000)
             templates = self._parse_template_generation_response(response)
 
-            logger.info(f"Generated {len(templates)} templates for category {category}")
+            logger.info(f"Successfully generated {len(templates)} AI templates for category {category}")
             return templates[:count]  # Ensure we don't exceed requested count
 
         except Exception as e:
-            logger.warning(f"Template generation failed, using fallback: {e}")
+            logger.error(f"Template generation failed for category {category}, using fallback: {e}", exc_info=True)
             return self._get_fallback_templates(category, count)
 
     def _build_brand_analysis_prompt(self, brand_name, industry):
