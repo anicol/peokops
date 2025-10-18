@@ -67,13 +67,15 @@ const MicroCheckTemplatesPage = () => {
       if (severityFilter) params.severity = severityFilter;
       if (searchTerm) params.search = searchTerm;
 
+      console.log('[MicroCheckTemplatesPage] Fetching with params:', params);
+
       const response = await microCheckAPI.getTemplates(params);
 
       // API returns paginated response: { count, next, previous, results }
       const data = response.results || response;
       const hasNextPage = !!response.next;
 
-      console.log(`[MicroCheckTemplatesPage] Fetched ${data.length} templates (page ${page}), hasMore: ${hasNextPage}`);
+      console.log(`[MicroCheckTemplatesPage] Fetched ${data.length} templates (page ${page}), hasMore: ${hasNextPage}, total count: ${response.count}`);
 
       if (append) {
         setTemplates(prev => [...prev, ...data]);
@@ -91,23 +93,21 @@ const MicroCheckTemplatesPage = () => {
     }
   }, [activeTab, categoryFilter, severityFilter, searchTerm, user?.brand_id]);
 
-  useEffect(() => {
-    if (canManage) {
-      fetchTemplates();
-    }
-  }, [canManage, fetchTemplates]);
-
-  // Debounce search term changes
+  // Debounce search and trigger fetch on filter changes
   useEffect(() => {
     if (!canManage) return;
 
-    const timer = setTimeout(() => {
-      // Reset to page 1 when search/filters change
+    // Only debounce search, not category/severity filters
+    if (searchTerm) {
+      const timer = setTimeout(() => {
+        fetchTemplates(1, false);
+      }, 500);
+      return () => clearTimeout(timer);
+    } else {
+      // Immediately fetch for filter changes
       fetchTemplates(1, false);
-    }, 500);
-
-    return () => clearTimeout(timer);
-  }, [searchTerm, categoryFilter, severityFilter]);
+    }
+  }, [canManage, searchTerm, categoryFilter, severityFilter, activeTab, user?.brand_id]);
 
   const handleCreateTemplate = () => {
     setModalMode('create');
