@@ -726,4 +726,39 @@ export const microCheckAPI = {
   },
 };
 
+// Admin Analytics API (SUPER_ADMIN only)
+export const adminAnalyticsAPI = {
+  // Get high-level engagement overview
+  getOverview: async () => {
+    const response = await api.get('/micro-checks/admin/analytics/overview/');
+    return response.data;
+  },
+
+  // Get per-store engagement data
+  getStoresList: async () => {
+    const response = await api.get('/micro-checks/admin/analytics/stores/');
+    return response.data;
+  },
+
+  // Get detailed analytics for specific store
+  getStoreDetail: async (storeId: number) => {
+    const response = await api.get('/micro-checks/admin/analytics/store_detail/', {
+      params: { store_id: storeId },
+    });
+    return response.data;
+  },
+
+  // Get template usage and effectiveness insights
+  getTemplateInsights: async () => {
+    const response = await api.get('/micro-checks/admin/analytics/templates/');
+    return response.data;
+  },
+
+  // Get time-of-day activity patterns
+  getTimeOfDayActivity: async () => {
+    const response = await api.get('/micro-checks/admin/analytics/time_of_day/');
+    return response.data;
+  },
+};
+
 export default api;

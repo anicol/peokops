@@ -12,6 +12,7 @@ from .views import (
     get_today_checks,
     list_templates
 )
+from .admin_views import AdminAnalyticsViewSet
 
 router = DefaultRouter()
 router.register(r'templates', MicroCheckTemplateViewSet, basename='microcheck-template')
@@ -22,6 +23,7 @@ router.register(r'store-streaks', StoreStreakViewSet, basename='store-streak')
 router.register(r'actions', CorrectiveActionViewSet, basename='corrective-action')
 router.register(r'coverage', CheckCoverageViewSet, basename='check-coverage')
 router.register(r'media', MediaAssetViewSet, basename='media-asset')
+router.register(r'admin/analytics', AdminAnalyticsViewSet, basename='admin-analytics')
 
 app_name = 'micro_checks'
 
