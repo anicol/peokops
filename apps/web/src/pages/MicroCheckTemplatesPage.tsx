@@ -135,7 +135,7 @@ const MicroCheckTemplatesPage = () => {
       // Immediately fetch for filter changes
       fetchTemplates(1, false);
     }
-  }, [canManage, searchTerm, categoryFilter, severityFilter, activeTab, user?.brand_id]);
+  }, [canManage, searchTerm, categoryFilter, severityFilter, activeTab, user?.brand_id, fetchTemplates]);
 
   const handleCreateTemplate = () => {
     setModalMode('create');
