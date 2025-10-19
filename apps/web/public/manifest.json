@@ -1,0 +1,20 @@
+{
+  "name": "PeakOps Daily Checks",
+  "short_name": "PeakOps",
+  "description": "Complete your daily 3 micro-checks in under 2 minutes",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#4f46e5",
+  "orientation": "portrait-primary",
+  "categories": ["productivity", "business"],
+  "icons": [
+    {
+      "src": "/pwa-icon.svg",
+      "sizes": "192x192 512x512",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
