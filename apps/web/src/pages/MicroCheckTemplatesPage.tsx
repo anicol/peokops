@@ -26,10 +26,13 @@ const MicroCheckTemplatesPage = () => {
   const [templates, setTemplates] = useState<MicroCheckTemplate[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [hasMore, setHasMore] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
   const [searchTerm, setSearchTerm] = useState('');
   const [categoryFilter, setCategoryFilter] = useState<string>('');
   const [severityFilter, setSeverityFilter] = useState<string>('');
   const [showFilters, setShowFilters] = useState(false);
+  const [availableCategories, setAvailableCategories] = useState<Set<MicroCheckCategory>>(new Set());
   const [showModal, setShowModal] = useState(false);
   const [modalMode, setModalMode] = useState<'create' | 'edit'>('create');
   const [selectedTemplate, setSelectedTemplate] = useState<MicroCheckTemplate | null>(null);
@@ -43,11 +46,31 @@ const MicroCheckTemplatesPage = () => {
   const isOperator = user?.role === 'GM' || user?.role === 'OWNER' || user?.role === 'TRIAL_ADMIN';
   const canManage = isAdmin || isOperator;
 
-  const fetchTemplates = useCallback(async () => {
+  const fetchCategories = useCallback(async () => {
+    try {
+      const params: any = {};
+
+      // Filter by source and brand based on active tab
+      if (activeTab === 'starters') {
+        params.is_local = 'false';
+      } else {
+        if (user?.brand_id) {
+          params.brand = user.brand_id;
+        }
+      }
+
+      const categories = await microCheckAPI.getTemplateCategories(params);
+      setAvailableCategories(new Set(categories as MicroCheckCategory[]));
+    } catch (err) {
+      console.error('Error fetching categories:', err);
+    }
+  }, [activeTab, user?.brand_id]);
+
+  const fetchTemplates = useCallback(async (page: number = 1, append: boolean = false) => {
     try {
       setLoading(true);
       setError(null);
-      const params: any = {};
+      const params: any = { page };
 
       // Filter by source and brand based on active tab
       if (activeTab === 'starters') {
@@ -60,24 +83,59 @@ const MicroCheckTemplatesPage = () => {
         }
       }
 
+      // Backend filtering
       if (categoryFilter) params.category = categoryFilter;
       if (severityFilter) params.severity = severityFilter;
+      if (searchTerm) params.search = searchTerm;
 
-      const data = await microCheckAPI.getTemplates(params);
-      setTemplates(data);
+      console.log('[MicroCheckTemplatesPage] Fetching with params:', params);
+
+      const response = await microCheckAPI.getTemplates(params);
+
+      // API returns paginated response: { count, next, previous, results }
+      const data = response.results || response;
+      const hasNextPage = !!response.next;
+
+      console.log(`[MicroCheckTemplatesPage] Fetched ${data.length} templates (page ${page}), hasMore: ${hasNextPage}, total count: ${response.count}`);
+
+      if (append) {
+        setTemplates(prev => [...prev, ...data]);
+      } else {
+        setTemplates(data);
+      }
+
+      setHasMore(hasNextPage);
+      setCurrentPage(page);
     } catch (err: any) {
       console.error('Error fetching templates:', err);
       setError('Unable to load templates');
     } finally {
       setLoading(false);
     }
-  }, [activeTab, categoryFilter, severityFilter, user?.brand_id]);
+  }, [activeTab, categoryFilter, severityFilter, searchTerm, user?.brand_id]);
 
+  // Fetch categories when tab or user changes
   useEffect(() => {
     if (canManage) {
-      fetchTemplates();
+      fetchCategories();
     }
-  }, [canManage, fetchTemplates]);
+  }, [canManage, fetchCategories]);
+
+  // Debounce search and trigger fetch on filter changes
+  useEffect(() => {
+    if (!canManage) return;
+
+    // Only debounce search, not category/severity filters
+    if (searchTerm) {
+      const timer = setTimeout(() => {
+        fetchTemplates(1, false);
+      }, 500);
+      return () => clearTimeout(timer);
+    } else {
+      // Immediately fetch for filter changes
+      fetchTemplates(1, false);
+    }
+  }, [canManage, searchTerm, categoryFilter, severityFilter, activeTab, user?.brand_id, fetchTemplates]);
 
   const handleCreateTemplate = () => {
     setModalMode('create');
@@ -215,10 +273,32 @@ const MicroCheckTemplatesPage = () => {
     }
   };
 
-  const filteredTemplates = templates.filter((t) =>
-    t.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    t.description.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  // Search and filtering now handled by backend
+  const filteredTemplates = templates;
+
+  const handleLoadMore = () => {
+    fetchTemplates(currentPage + 1, true);
+  };
+
+  // Category display names
+  const categoryDisplayNames: Record<MicroCheckCategory, string> = {
+    PPE: 'PPE',
+    SAFETY: 'Safety',
+    CLEANLINESS: 'Cleanliness',
+    FOOD_HANDLING: 'Food Handling',
+    FOOD_SAFETY: 'Food Safety',
+    EQUIPMENT: 'Equipment',
+    OPERATIONAL: 'Operational',
+    UNIFORM: 'Uniform',
+    STAFF_BEHAVIOR: 'Staff Behavior',
+    FOOD_QUALITY: 'Food Quality',
+    MENU_BOARD: 'Menu Board',
+    WASTE_MANAGEMENT: 'Waste Management',
+    PEST_CONTROL: 'Pest Control',
+    STORAGE: 'Storage',
+    DOCUMENTATION: 'Documentation',
+    FACILITY: 'Facility',
+  };
 
   const getCategoryBadgeColor = (category: MicroCheckCategory) => {
     const colors: Record<MicroCheckCategory, string> = {
@@ -382,16 +462,11 @@ const MicroCheckTemplatesPage = () => {
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
                 >
                   <option value="">All Categories</option>
-                  <option value="PPE">PPE</option>
-                  <option value="SAFETY">Safety</option>
-                  <option value="CLEANLINESS">Cleanliness</option>
-                  <option value="FOOD_HANDLING">Food Handling</option>
-                  <option value="EQUIPMENT">Equipment</option>
-                  <option value="WASTE_MANAGEMENT">Waste Management</option>
-                  <option value="PEST_CONTROL">Pest Control</option>
-                  <option value="STORAGE">Storage</option>
-                  <option value="DOCUMENTATION">Documentation</option>
-                  <option value="FACILITY">Facility</option>
+                  {Array.from(availableCategories).sort().map((category) => (
+                    <option key={category} value={category}>
+                      {categoryDisplayNames[category]}
+                    </option>
+                  ))}
                 </select>
               </div>
               <div>
@@ -543,6 +618,26 @@ const MicroCheckTemplatesPage = () => {
                 </div>
               </div>
             ))}
+          </div>
+        )}
+
+        {/* Load More Button */}
+        {!loading && hasMore && filteredTemplates.length > 0 && (
+          <div className="flex justify-center mt-8">
+            <button
+              onClick={handleLoadMore}
+              disabled={loading}
+              className="px-6 py-3 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
+            >
+              {loading ? (
+                <>
+                  <Loader2 className="w-5 h-5 mr-2 animate-spin" />
+                  Loading...
+                </>
+              ) : (
+                'Load More Templates'
+              )}
+            </button>
           </div>
         )}
       </div>
@@ -758,6 +853,8 @@ const MicroCheckTemplatesPage = () => {
         <AITemplateWizard
           onClose={() => setShowAIWizard(false)}
           onComplete={() => {
+            console.log('[MicroCheckTemplatesPage] AI wizard completed, switching to My Templates tab');
+            setActiveTab('my-templates');  // Switch to My Templates tab to see new templates
             fetchTemplates();
           }}
           initialBrandName={user?.brand_name || ''}

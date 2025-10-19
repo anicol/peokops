@@ -192,8 +192,8 @@ const MicroCheckHistoryPage = () => {
   // Show simplified empty state when no sessions exist
   if (sessions.length === 0) {
     return (
-      <div className="p-4 lg:p-8">
-        <div className="flex flex-col lg:flex-row lg:justify-between lg:items-center mb-8 space-y-4 lg:space-y-0">
+      <div className="px-1 py-3 sm:p-4 lg:p-8">
+        <div className="flex flex-col lg:flex-row lg:justify-between lg:items-center mb-4 sm:mb-6 lg:mb-8 space-y-4 lg:space-y-0">
           <div>
             <h1 className="text-2xl font-bold text-gray-900 mb-2">Quick Checks</h1>
             <p className="text-gray-600">Track your daily quick checks and improvement streaks.</p>
@@ -209,7 +209,7 @@ const MicroCheckHistoryPage = () => {
         </div>
 
         <div className="max-w-2xl mx-auto">
-          <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-12 text-center">
+          <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-6 sm:p-12 text-center">
             <Target className="w-16 h-16 text-gray-300 mx-auto mb-4" />
             <h3 className="text-lg font-semibold text-gray-900 mb-2">No Check Sessions Yet</h3>
             <p className="text-gray-600 mb-6">
@@ -244,8 +244,8 @@ const MicroCheckHistoryPage = () => {
   }
 
   return (
-    <div className="p-4 lg:p-8">
-      <div className="flex flex-col lg:flex-row lg:justify-between lg:items-center mb-8 space-y-4 lg:space-y-0">
+    <div className="px-1 py-3 sm:p-4 lg:p-8">
+      <div className="flex flex-col lg:flex-row lg:justify-between lg:items-center mb-4 sm:mb-6 lg:mb-8 space-y-4 lg:space-y-0">
         <div>
           <h1 className="text-2xl font-bold text-gray-900 mb-2">Quick Checks</h1>
           <p className="text-gray-600">Track your daily quick checks and improvement streaks.</p>
@@ -277,11 +277,11 @@ const MicroCheckHistoryPage = () => {
       </div>
 
       <div className="max-w-7xl">
-        <div className="grid lg:grid-cols-4 gap-8">
+        <div className="grid lg:grid-cols-4 gap-4 sm:gap-6 lg:gap-8">
           {/* Sidebar */}
-          <div className="space-y-6 lg:order-1 order-2">
+          <div className="space-y-3 sm:space-y-4 lg:space-y-6 lg:order-1 order-2">
             {/* Performance Summary */}
-            <div className="bg-gradient-to-br from-teal-50 to-blue-50 rounded-2xl shadow-lg border border-teal-200 p-6">
+            <div className="bg-gradient-to-br from-teal-50 to-blue-50 rounded-2xl shadow-lg border border-teal-200 p-3 sm:p-4 lg:p-6">
               <div className="flex items-center mb-6">
                 <div className="w-10 h-10 bg-teal-600 rounded-lg flex items-center justify-center mr-3">
                   <Target className="w-5 h-5 text-white" />
@@ -311,7 +311,7 @@ const MicroCheckHistoryPage = () => {
             </div>
 
             {/* Streak Achievement */}
-            <div className="bg-gradient-to-br from-orange-50 to-red-50 rounded-2xl border border-orange-200 p-6">
+            <div className="bg-gradient-to-br from-orange-50 to-red-50 rounded-2xl border border-orange-200 p-3 sm:p-4 lg:p-6">
               <div className="flex items-center mb-4">
                 <Award className="w-6 h-6 text-orange-600 mr-2" />
                 <h3 className="font-semibold text-gray-900">Achievement</h3>
@@ -324,7 +324,7 @@ const MicroCheckHistoryPage = () => {
             </div>
 
             {/* Filters */}
-            <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-6">
+            <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-3 sm:p-4 lg:p-6">
               <div className="flex items-center mb-4">
                 <Filter className="w-5 h-5 text-gray-600 mr-2" />
                 <h3 className="font-semibold text-gray-900">Filters</h3>
@@ -346,7 +346,7 @@ const MicroCheckHistoryPage = () => {
             </div>
 
             {/* Tips */}
-            <div className="bg-gradient-to-br from-blue-50 to-teal-50 rounded-2xl border border-blue-200 p-6">
+            <div className="bg-gradient-to-br from-blue-50 to-teal-50 rounded-2xl border border-blue-200 p-3 sm:p-4 lg:p-6">
               <h3 className="font-semibold text-gray-900 mb-4">Micro-Check Tips</h3>
               <ul className="space-y-2 text-sm text-gray-700">
                 <li className="flex items-start">
@@ -368,7 +368,7 @@ const MicroCheckHistoryPage = () => {
           {/* Main Content */}
           <div className="lg:col-span-3 lg:order-2 order-1">
             <div className="bg-white rounded-2xl shadow-lg border border-gray-200">
-              <div className="p-6 border-b border-gray-200">
+              <div className="p-3 sm:p-4 lg:p-6 border-b border-gray-200">
                 <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center space-y-2 sm:space-y-0">
                   <h2 className="text-xl font-semibold text-gray-900">Micro-Check Runs</h2>
                   <div className="text-sm text-gray-600">{sessions.length} runs completed</div>
@@ -380,44 +380,44 @@ const MicroCheckHistoryPage = () => {
                   <Link
                     key={sessionIdx}
                     to={`/micro-check/run/${session.runId}`}
-                    className="block p-6 hover:bg-gray-50 transition-colors"
+                    className="block p-3 sm:p-4 lg:p-6 hover:bg-gray-50 transition-colors"
                   >
-                    <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between mb-4 space-y-4 lg:space-y-0">
-                      <div className="flex items-center space-x-4">
-                        <div className="w-12 h-12 bg-teal-100 rounded-lg flex items-center justify-center flex-shrink-0">
-                          <Target className="w-6 h-6 text-teal-600" />
+                    <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between mb-4 space-y-3 lg:space-y-0">
+                      <div className="flex items-center space-x-3">
+                        <div className="w-10 h-10 sm:w-12 sm:h-12 bg-teal-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                          <Target className="w-5 h-5 sm:w-6 sm:h-6 text-teal-600" />
                         </div>
-                        <div>
-                          <div className="font-semibold text-gray-900 mb-1">
+                        <div className="min-w-0 flex-1">
+                          <div className="font-semibold text-gray-900 text-sm sm:text-base mb-0.5">
                             {getRunLabel(session, sessionIdx)}
                           </div>
-                          <div className="flex items-center space-x-4 text-sm text-gray-600">
+                          <div className="flex items-center space-x-2 sm:space-x-4 text-xs sm:text-sm text-gray-600">
                             <div className="flex items-center">
-                              <Calendar className="w-4 h-4 mr-1" />
-                              {session.time}
+                              <Calendar className="w-3 h-3 sm:w-4 sm:h-4 mr-0.5 sm:mr-1" />
+                              <span>{session.time}</span>
                             </div>
                             <div className="flex items-center">
-                              <Clock className="w-4 h-4 mr-1" />
-                              ~2 min
+                              <Clock className="w-3 h-3 sm:w-4 sm:h-4 mr-0.5 sm:mr-1" />
+                              <span>~2 min</span>
                             </div>
                           </div>
                         </div>
                       </div>
 
-                      <div className="flex items-center justify-between lg:justify-end space-x-6">
-                        <div className="text-center">
-                          <div className="text-lg font-bold text-green-600">{session.passed}</div>
-                          <div className="text-xs text-gray-600">Passed</div>
+                      <div className="flex items-center justify-between lg:justify-end space-x-4 sm:space-x-6 pl-13 sm:pl-0">
+                        <div className="text-center min-w-[50px] sm:min-w-[60px]">
+                          <div className="text-base sm:text-lg font-bold text-green-600 tabular-nums">{session.passed}</div>
+                          <div className="text-[10px] sm:text-xs text-gray-600">Passed</div>
                         </div>
-                        <div className="text-center">
-                          <div className="text-lg font-bold text-orange-600">{session.fixed}</div>
-                          <div className="text-xs text-gray-600">Fixed</div>
+                        <div className="text-center min-w-[50px] sm:min-w-[60px]">
+                          <div className="text-base sm:text-lg font-bold text-orange-600 tabular-nums">{session.fixed}</div>
+                          <div className="text-[10px] sm:text-xs text-gray-600">Fixed</div>
                         </div>
-                        <div className="text-center">
-                          <div className="text-lg font-bold text-blue-600">
+                        <div className="text-center min-w-[50px] sm:min-w-[60px]">
+                          <div className="text-base sm:text-lg font-bold text-blue-600 tabular-nums">
                             {Math.round((session.passed / session.totalChecks) * 100)}%
                           </div>
-                          <div className="text-xs text-gray-600">Success</div>
+                          <div className="text-[10px] sm:text-xs text-gray-600">Success</div>
                         </div>
                       </div>
                     </div>

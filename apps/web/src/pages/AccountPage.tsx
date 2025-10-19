@@ -33,6 +33,7 @@ export default function AccountPage() {
   const [formData, setFormData] = useState({
     name: brand?.name || '',
     description: brand?.description || '',
+    industry: brand?.industry || '',
     logo: brand?.logo || null,
     is_active: brand?.is_active ?? true,
   });
@@ -43,6 +44,7 @@ export default function AccountPage() {
       setFormData({
         name: brand.name,
         description: brand.description,
+        industry: brand.industry || '',
         logo: brand.logo,
         is_active: brand.is_active,
       });
@@ -174,6 +176,23 @@ export default function AccountPage() {
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
                     placeholder="e.g. Acme Restaurants"
                   />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Industry
+                  </label>
+                  <select
+                    value={formData.industry}
+                    onChange={(e) => setFormData({ ...formData, industry: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
+                  >
+                    <option value="">Select an industry</option>
+                    <option value="RESTAURANT">Restaurant</option>
+                    <option value="RETAIL">Retail</option>
+                    <option value="HOSPITALITY">Hospitality</option>
+                    <option value="OTHER">Other</option>
+                  </select>
                 </div>
 
                 <div>

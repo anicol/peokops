@@ -63,7 +63,7 @@ class MicroCheckTemplateViewSet(viewsets.ModelViewSet):
     filterset_fields = ['category', 'severity', 'is_active', 'brand', 'is_local']
     search_fields = ['title', 'description', 'success_criteria']
     ordering_fields = ['created_at', 'category', 'severity', 'rotation_priority', 'title']
-    ordering = ['title']
+    ordering = ['-created_at']  # Show newest templates first
 
     def get_queryset(self):
         """Filter templates based on user role and brand access"""
@@ -393,6 +393,13 @@ class MicroCheckTemplateViewSet(viewsets.ModelViewSet):
             }
         }
     )
+    @action(detail=False, methods=['get'])
+    def categories(self, request):
+        """Get list of unique categories for templates available to this user"""
+        queryset = self.get_queryset()
+        categories = queryset.values_list('category', flat=True).distinct().order_by('category')
+        return Response({'categories': list(categories)})
+
     @action(detail=False, methods=['post'])
     def generate_with_ai(self, request):
         """Generate micro-check templates using AI based on brand context"""
@@ -487,7 +494,6 @@ class MicroCheckTemplateViewSet(viewsets.ModelViewSet):
                     include_in_rotation=True,
                     rotation_priority=50,
                     is_local=True,  # AI-generated templates are local to the brand
-                    source='LOCAL',  # Mark as local/custom templates
                     created_by=user,
                     updated_by=user
                 )
@@ -1445,7 +1451,7 @@ class CorrectiveActionViewSet(viewsets.ModelViewSet):
     )
     serializer_class = CorrectiveActionSerializer
     permission_classes = [IsAuthenticated]
-    filterset_fields = ['store', 'category', 'severity', 'assigned_to']
+    filterset_fields = ['store', 'category', 'status', 'assigned_to']
     ordering_fields = ['due_date', 'created_at', 'resolved_at']
     ordering = ['due_date']
 

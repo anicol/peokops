@@ -109,21 +109,21 @@ export default function MicroCheckRunDetailPage() {
                   })} Checks
                 </h1>
               </div>
-              <div className="flex flex-wrap items-center gap-4 text-sm text-gray-600">
+              <div className="flex flex-wrap items-center gap-2 sm:gap-4 text-xs sm:text-sm text-gray-600">
                 <div className="flex items-center">
-                  <Calendar className="w-4 h-4 mr-1" />
-                  {new Date(run.scheduled_for).toLocaleDateString()}
+                  <Calendar className="w-3 h-3 sm:w-4 sm:h-4 mr-1" />
+                  <span className="whitespace-nowrap">{new Date(run.scheduled_for).toLocaleDateString()}</span>
                 </div>
                 {run.completed_at && (
                   <div className="flex items-center">
-                    <Clock className="w-4 h-4 mr-1" />
-                    Completed {new Date(run.completed_at).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}
+                    <Clock className="w-3 h-3 sm:w-4 sm:h-4 mr-1" />
+                    <span className="whitespace-nowrap">Completed {new Date(run.completed_at).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}</span>
                   </div>
                 )}
                 {run.completed_by_name && (
                   <div className="flex items-center">
-                    <User className="w-4 h-4 mr-1" />
-                    {run.completed_by_name}
+                    <User className="w-3 h-3 sm:w-4 sm:h-4 mr-1" />
+                    <span className="truncate max-w-[150px]">{run.completed_by_name}</span>
                   </div>
                 )}
               </div>
@@ -137,18 +137,18 @@ export default function MicroCheckRunDetailPage() {
           </div>
 
           {/* Stats */}
-          <div className="grid grid-cols-3 gap-4 mt-6 pt-6 border-t border-gray-200">
+          <div className="grid grid-cols-3 gap-3 sm:gap-4 mt-6 pt-6 border-t border-gray-200">
             <div className="text-center">
-              <div className="text-2xl font-bold text-gray-900">{completedCount}/{totalItems}</div>
-              <div className="text-xs text-gray-600">Items Completed</div>
+              <div className="text-xl sm:text-2xl font-bold text-gray-900">{completedCount}/{totalItems}</div>
+              <div className="text-[10px] sm:text-xs text-gray-600 leading-tight">Items<br className="sm:hidden" /> Completed</div>
             </div>
             <div className="text-center">
-              <div className="text-2xl font-bold text-green-600">{passedCount}</div>
-              <div className="text-xs text-gray-600">Passed</div>
+              <div className="text-xl sm:text-2xl font-bold text-green-600">{passedCount}</div>
+              <div className="text-[10px] sm:text-xs text-gray-600">Passed</div>
             </div>
             <div className="text-center">
-              <div className="text-2xl font-bold text-red-600">{failedCount}</div>
-              <div className="text-xs text-gray-600">Failed</div>
+              <div className="text-xl sm:text-2xl font-bold text-red-600">{failedCount}</div>
+              <div className="text-[10px] sm:text-xs text-gray-600">Failed</div>
             </div>
           </div>
         </div>
