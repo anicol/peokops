@@ -8,7 +8,7 @@ export default defineConfig({
     react(),
     VitePWA({
       registerType: 'autoUpdate',
-      includeAssets: ['favicon.ico', 'pwa-icon.svg'],
+      includeAssets: ['favicon.ico', 'logo.png'],
       manifest: {
         name: 'PeakOps Daily Checks',
         short_name: 'PeakOps',
@@ -21,10 +21,16 @@ export default defineConfig({
         start_url: '/',
         icons: [
           {
-            src: '/pwa-icon.svg',
-            sizes: '192x192 512x512',
-            type: 'image/svg+xml',
-            purpose: 'any maskable'
+            src: '/logo.png',
+            sizes: '192x192',
+            type: 'image/png',
+            purpose: 'any'
+          },
+          {
+            src: '/logo.png',
+            sizes: '512x512',
+            type: 'image/png',
+            purpose: 'maskable'
           }
         ]
       },
