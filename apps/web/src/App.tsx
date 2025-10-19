@@ -37,6 +37,9 @@ import InsightsPage from '@/pages/InsightsPage';
 import ProfilePage from '@/pages/ProfilePage';
 import LockedFeatureView from '@/components/LockedFeatureView';
 import { MobileCaptureProvider } from '@/pages/MobileCaptureContext';
+import { AdminEngagementOverview } from '@/pages/admin/AdminEngagementOverview';
+import { AdminStoreDetailPage } from '@/pages/admin/AdminStoreDetailPage';
+import { AdminTemplateInsightsPage } from '@/pages/admin/AdminTemplateInsightsPage';
 function AppRoutes() {
   const { isAuthenticated, isLoading, user } = useAuth();
 
@@ -321,6 +324,44 @@ function AppRoutes() {
               </Layout>
             ) : (
               <Navigate to="/login" replace />
+            )
+          }
+        />
+
+        {/* Admin Analytics Routes (SUPER_ADMIN only) */}
+        <Route
+          path="/admin/engagement"
+          element={
+            isAuthenticated && user?.role === 'SUPER_ADMIN' ? (
+              <Layout>
+                <AdminEngagementOverview />
+              </Layout>
+            ) : (
+              <Navigate to="/" replace />
+            )
+          }
+        />
+        <Route
+          path="/admin/stores/:storeId"
+          element={
+            isAuthenticated && user?.role === 'SUPER_ADMIN' ? (
+              <Layout>
+                <AdminStoreDetailPage />
+              </Layout>
+            ) : (
+              <Navigate to="/" replace />
+            )
+          }
+        />
+        <Route
+          path="/admin/templates"
+          element={
+            isAuthenticated && user?.role === 'SUPER_ADMIN' ? (
+              <Layout>
+                <AdminTemplateInsightsPage />
+              </Layout>
+            ) : (
+              <Navigate to="/" replace />
             )
           }
         />
