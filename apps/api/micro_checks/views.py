@@ -1451,7 +1451,7 @@ class CorrectiveActionViewSet(viewsets.ModelViewSet):
     )
     serializer_class = CorrectiveActionSerializer
     permission_classes = [IsAuthenticated]
-    filterset_fields = ['store', 'category', 'severity', 'assigned_to']
+    filterset_fields = ['store', 'category', 'status', 'assigned_to']
     ordering_fields = ['due_date', 'created_at', 'resolved_at']
     ordering = ['due_date']
 

@@ -132,8 +132,8 @@ function TrialDashboard({ user, stats, dashboardStats, microCheckRuns, allRespon
   };
 
   return (
-    <div className="p-4 lg:p-8">
-      <div className="mb-8">
+    <div className="px-1 py-3 sm:p-4 lg:p-8 max-w-7xl mx-auto">
+      <div className="mb-4 sm:mb-6 lg:mb-8">
         <div className="bg-gradient-to-r from-blue-600 to-teal-600 rounded-2xl text-white p-6 lg:p-8">
           <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center">
             <div className="mb-6 lg:mb-0">
@@ -191,67 +191,67 @@ function TrialDashboard({ user, stats, dashboardStats, microCheckRuns, allRespon
         onUpgradeClick={() => console.log('Navigate to upgrade page')}
       />
 
-      <div className="grid lg:grid-cols-3 gap-8 mt-8">
+      <div className="grid lg:grid-cols-3 gap-4 sm:gap-6 lg:gap-8 mt-4 sm:mt-6 lg:mt-8">
         {/* Main Content */}
-        <div className="lg:col-span-2 space-y-8">
+        <div className="lg:col-span-2 space-y-4 sm:space-y-6 lg:space-y-8">
           {/* Quick Metrics */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 lg:gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
             {/* Streak Card - Duolingo Style */}
-            <div className="bg-gradient-to-br from-orange-50 to-amber-50 p-6 rounded-2xl shadow-lg border-2 border-orange-200">
-              <div className="flex items-center mb-3">
-                <div className="w-12 h-12 bg-gradient-to-br from-orange-500 to-orange-600 rounded-xl flex items-center justify-center shadow-md">
-                  <span className="text-2xl">🔥</span>
+            <div className="bg-gradient-to-br from-orange-50 to-amber-50 p-3 sm:p-4 lg:p-6 rounded-2xl shadow-lg border-2 border-orange-200">
+              <div className="flex items-center mb-2 sm:mb-3">
+                <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-br from-orange-500 to-orange-600 rounded-xl flex items-center justify-center shadow-md">
+                  <span className="text-xl sm:text-2xl">🔥</span>
                 </div>
-                <h3 className="ml-3 font-bold text-gray-900 text-lg">Streak</h3>
+                <h3 className="ml-2 sm:ml-3 font-bold text-gray-900 text-base sm:text-lg">Streak</h3>
               </div>
-              <div className="text-center mt-4">
-                <div className="text-5xl font-bold text-orange-600 mb-1">{streakDays}</div>
-                <div className="text-sm text-gray-700 font-medium">Days in a row</div>
-                <p className="text-xs text-gray-600 mt-3">
+              <div className="text-center mt-3 sm:mt-4">
+                <div className="text-4xl sm:text-5xl font-bold text-orange-600 mb-0.5 sm:mb-1">{streakDays}</div>
+                <div className="text-xs sm:text-sm text-gray-700 font-medium">Days in a row</div>
+                <p className="text-[10px] sm:text-xs text-gray-600 mt-2 sm:mt-3">
                   Keep it up! Daily checks build great habits.
                 </p>
               </div>
             </div>
 
-            <div className="bg-gradient-to-br from-blue-50 to-indigo-50 p-6 rounded-2xl shadow-lg border-2 border-blue-200">
-              <div className="flex items-center justify-between mb-4">
-                <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl flex items-center justify-center shadow-md">
-                  <BarChart3 className="w-6 h-6 text-white" />
+            <div className="bg-gradient-to-br from-blue-50 to-indigo-50 p-3 sm:p-4 lg:p-6 rounded-2xl shadow-lg border-2 border-blue-200">
+              <div className="flex items-center justify-between mb-2 sm:mb-4">
+                <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl flex items-center justify-center shadow-md">
+                  <BarChart3 className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
                 </div>
-                <span className="text-2xl font-bold text-blue-900">{runsThisWeek}</span>
+                <span className="text-xl sm:text-2xl font-bold text-blue-900 tabular-nums">{runsThisWeek}</span>
               </div>
-              <h3 className="font-semibold text-gray-900">Runs This Week</h3>
-              <p className="text-sm text-gray-700">+{runsThisWeek - runsLastWeek} from last week</p>
+              <h3 className="font-semibold text-gray-900 text-sm sm:text-base">Runs This Week</h3>
+              <p className="text-xs sm:text-sm text-gray-700">+{runsThisWeek - runsLastWeek} from last week</p>
             </div>
 
-            <div className="bg-gradient-to-br from-green-50 to-emerald-50 p-6 rounded-2xl shadow-lg border-2 border-green-200">
-              <div className="flex items-center justify-between mb-4">
-                <div className="w-12 h-12 bg-gradient-to-br from-green-500 to-green-600 rounded-xl flex items-center justify-center shadow-md">
-                  <CheckCircle className="w-6 h-6 text-white" />
+            <div className="bg-gradient-to-br from-green-50 to-emerald-50 p-3 sm:p-4 lg:p-6 rounded-2xl shadow-lg border-2 border-green-200">
+              <div className="flex items-center justify-between mb-2 sm:mb-4">
+                <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-br from-green-500 to-green-600 rounded-xl flex items-center justify-center shadow-md">
+                  <CheckCircle className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
                 </div>
-                <span className="text-2xl font-bold text-green-900">{issuesResolved}</span>
+                <span className="text-xl sm:text-2xl font-bold text-green-900 tabular-nums">{issuesResolved}</span>
               </div>
-              <h3 className="font-semibold text-gray-900">Issues Resolved</h3>
-              <p className="text-sm text-gray-700">This week</p>
+              <h3 className="font-semibold text-gray-900 text-sm sm:text-base">Issues Resolved</h3>
+              <p className="text-xs sm:text-sm text-gray-700">This week</p>
             </div>
 
-            <div className="bg-gradient-to-br from-purple-50 to-violet-50 p-6 rounded-2xl shadow-lg border-2 border-purple-200">
-              <div className="flex items-center justify-between mb-4">
-                <div className="w-12 h-12 bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl flex items-center justify-center shadow-md">
-                  <Target className="w-6 h-6 text-white" />
+            <div className="bg-gradient-to-br from-purple-50 to-violet-50 p-3 sm:p-4 lg:p-6 rounded-2xl shadow-lg border-2 border-purple-200">
+              <div className="flex items-center justify-between mb-2 sm:mb-4">
+                <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl flex items-center justify-center shadow-md">
+                  <Target className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
                 </div>
-                <span className="text-2xl font-bold text-purple-900">{avgScore}%</span>
+                <span className="text-xl sm:text-2xl font-bold text-purple-900 tabular-nums">{avgScore}%</span>
               </div>
-              <h3 className="font-semibold text-gray-900">Avg Score</h3>
-              <p className="text-sm text-gray-700">Last 7 days</p>
+              <h3 className="font-semibold text-gray-900 text-sm sm:text-base">Avg Score</h3>
+              <p className="text-xs sm:text-sm text-gray-700">Last 7 days</p>
             </div>
           </div>
 
           {/* Recent Checks */}
           <div className="bg-white rounded-2xl shadow-lg border border-gray-200">
-            <div className="p-6 border-b border-gray-200">
+            <div className="p-3 sm:p-4 lg:p-6 border-b border-gray-200">
               <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center space-y-2 sm:space-y-0">
-                <h3 className="text-xl font-semibold text-gray-900">Recent Checks</h3>
+                <h3 className="text-lg sm:text-xl font-semibold text-gray-900">Recent Checks</h3>
                 <Link to="/micro-check-history" className="text-blue-600 hover:text-blue-700 text-sm font-medium">
                   View All
                 </Link>
@@ -291,23 +291,23 @@ function TrialDashboard({ user, stats, dashboardStats, microCheckRuns, allRespon
                 };
 
                 return (
-                  <Link key={run.id} to={`/micro-check/run/${run.id}`} className="block p-6 hover:bg-gray-50 transition-colors">
+                  <Link key={run.id} to={`/micro-check/run/${run.id}`} className="block p-3 sm:p-4 lg:p-6 hover:bg-gray-50 transition-colors">
                     <div className="flex items-center justify-between">
-                      <div className="flex items-center space-x-4 flex-1">
-                        <div className={`w-12 h-12 ${isCompleted ? 'bg-green-100' : 'bg-blue-100'} rounded-lg flex items-center justify-center flex-shrink-0`}>
-                          <span className={`${isCompleted ? 'text-green-600' : 'text-blue-600'} font-bold text-lg`}>
+                      <div className="flex items-center space-x-3 sm:space-x-4 flex-1">
+                        <div className={`w-10 h-10 sm:w-12 sm:h-12 ${isCompleted ? 'bg-green-100' : 'bg-blue-100'} rounded-lg flex items-center justify-center flex-shrink-0`}>
+                          <span className={`${isCompleted ? 'text-green-600' : 'text-blue-600'} font-bold text-base sm:text-lg`}>
                             {isCompleted ? '✓' : itemCount}
                           </span>
                         </div>
                         <div className="flex-1 min-w-0">
-                          <div className="font-medium text-gray-900">
+                          <div className="font-medium text-gray-900 text-sm sm:text-base">
                             {new Date(completionDate).toLocaleDateString('en-US', {
                               weekday: 'short',
                               month: 'short',
                               day: 'numeric'
                             })} Checks
                           </div>
-                          <div className="text-sm text-gray-600">
+                          <div className="text-xs sm:text-sm text-gray-600">
                             {isCompleted ? getRelativeTime(run.completed_at) : `${completedCount}/${itemCount} items completed`}
                           </div>
                         </div>
@@ -315,20 +315,20 @@ function TrialDashboard({ user, stats, dashboardStats, microCheckRuns, allRespon
 
                       {/* Stats - Fixed width columns for alignment */}
                       {isCompleted && (
-                        <div className="flex items-center space-x-6 mr-4">
-                          <div className="text-center w-16">
-                            <div className="text-lg font-bold text-green-600 tabular-nums">{passedCount}</div>
-                            <div className="text-xs text-gray-500">Passed</div>
+                        <div className="flex items-center space-x-3 sm:space-x-6 mr-2 sm:mr-4">
+                          <div className="text-center w-12 sm:w-16">
+                            <div className="text-base sm:text-lg font-bold text-green-600 tabular-nums">{passedCount}</div>
+                            <div className="text-[10px] sm:text-xs text-gray-500">Passed</div>
                           </div>
-                          <div className="text-center w-16">
-                            <div className="text-lg font-bold text-red-600 tabular-nums">{failedCount}</div>
-                            <div className="text-xs text-gray-500">Failed</div>
+                          <div className="text-center w-12 sm:w-16">
+                            <div className="text-base sm:text-lg font-bold text-red-600 tabular-nums">{failedCount}</div>
+                            <div className="text-[10px] sm:text-xs text-gray-500">Failed</div>
                           </div>
-                          <div className="text-center w-16">
-                            <div className="text-lg font-bold text-blue-600 tabular-nums">
+                          <div className="text-center w-12 sm:w-16">
+                            <div className="text-base sm:text-lg font-bold text-blue-600 tabular-nums">
                               {Math.round((passedCount / (passedCount + failedCount)) * 100)}%
                             </div>
-                            <div className="text-xs text-gray-500">Score</div>
+                            <div className="text-[10px] sm:text-xs text-gray-500">Score</div>
                           </div>
                         </div>
                       )}
@@ -339,16 +339,16 @@ function TrialDashboard({ user, stats, dashboardStats, microCheckRuns, allRespon
                 );
               })}
               {(!microCheckRuns || microCheckRuns.length === 0) && (
-                <div className="p-6 text-center text-gray-500">No checks completed yet</div>
+                <div className="p-3 sm:p-4 lg:p-6 text-center text-gray-500 text-sm sm:text-base">No checks completed yet</div>
               )}
             </div>
           </div>
         </div>
 
         {/* Sidebar */}
-        <div className="space-y-6">
+        <div className="space-y-3 sm:space-y-4 lg:space-y-6">
           {/* Daily Tip */}
-          <div className="bg-gradient-to-br from-teal-50 to-blue-50 rounded-2xl border border-teal-200 p-6">
+          <div className="bg-gradient-to-br from-teal-50 to-blue-50 rounded-2xl border border-teal-200 p-3 sm:p-4 lg:p-6">
             <div className="flex items-center mb-4">
               <div className="w-10 h-10 bg-teal-600 rounded-lg flex items-center justify-center mr-3">
                 <Award className="w-5 h-5 text-white" />
@@ -364,57 +364,57 @@ function TrialDashboard({ user, stats, dashboardStats, microCheckRuns, allRespon
           </div>
 
           {/* Quick Actions */}
-          <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-6">
-            <h3 className="font-semibold text-gray-900 mb-4">Quick Actions</h3>
-            <div className="space-y-3">
+          <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-3 sm:p-4 lg:p-6">
+            <h3 className="font-semibold text-gray-900 text-sm sm:text-base mb-2 sm:mb-3 lg:mb-4">Quick Actions</h3>
+            <div className="space-y-2 sm:space-y-3">
               <button
                 onClick={handleRunCheck}
                 disabled={creatingRun}
-                className="flex items-center p-3 bg-blue-50 rounded-lg hover:bg-blue-100 transition-colors w-full disabled:opacity-50 disabled:cursor-not-allowed"
+                className="flex items-center p-2.5 sm:p-3 bg-blue-50 rounded-lg hover:bg-blue-100 transition-colors w-full disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {creatingRun ? (
                   <>
-                    <Clock className="w-5 h-5 text-blue-600 mr-3 animate-spin" />
-                    <span className="font-medium text-blue-900">Creating...</span>
+                    <Clock className="w-4 h-4 sm:w-5 sm:h-5 text-blue-600 mr-2 sm:mr-3 animate-spin" />
+                    <span className="font-medium text-blue-900 text-sm sm:text-base">Creating...</span>
                   </>
                 ) : (
                   <>
-                    <Play className="w-5 h-5 text-blue-600 mr-3" />
-                    <span className="font-medium text-blue-900">Run New Check</span>
+                    <Play className="w-4 h-4 sm:w-5 sm:h-5 text-blue-600 mr-2 sm:mr-3" />
+                    <span className="font-medium text-blue-900 text-sm sm:text-base">Run New Check</span>
                   </>
                 )}
               </button>
 
               <Link
                 to="/actions"
-                className="flex items-center p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
+                className="flex items-center p-2.5 sm:p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
               >
-                <CheckCircle className="w-5 h-5 text-gray-600 mr-3" />
-                <span className="font-medium text-gray-900">View Action Items</span>
+                <CheckCircle className="w-4 h-4 sm:w-5 sm:h-5 text-gray-600 mr-2 sm:mr-3" />
+                <span className="font-medium text-gray-900 text-sm sm:text-base">View Action Items</span>
               </Link>
 
               <Link
                 to="/micro-check-history"
-                className="flex items-center p-3 bg-teal-50 rounded-lg hover:bg-teal-100 transition-colors"
+                className="flex items-center p-2.5 sm:p-3 bg-teal-50 rounded-lg hover:bg-teal-100 transition-colors"
               >
-                <Target className="w-5 h-5 text-teal-600 mr-3" />
-                <span className="font-medium text-teal-900">Quick Checks</span>
+                <Target className="w-4 h-4 sm:w-5 sm:h-5 text-teal-600 mr-2 sm:mr-3" />
+                <span className="font-medium text-teal-900 text-sm sm:text-base">Quick Checks</span>
               </Link>
 
               <Link
                 to="/users"
-                className="flex items-center p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
+                className="flex items-center p-2.5 sm:p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
               >
-                <Users className="w-5 h-5 text-gray-600 mr-3" />
-                <span className="font-medium text-gray-900">Invite Team</span>
+                <Users className="w-4 h-4 sm:w-5 sm:h-5 text-gray-600 mr-2 sm:mr-3" />
+                <span className="font-medium text-gray-900 text-sm sm:text-base">Invite Team</span>
               </Link>
             </div>
           </div>
 
           {/* Trial Status */}
           {user?.trial_status && (
-            <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-6">
-              <h3 className="font-semibold text-gray-900 mb-4">Trial Status</h3>
+            <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-3 sm:p-4 lg:p-6">
+              <h3 className="font-semibold text-gray-900 text-sm sm:text-base mb-2 sm:mb-3 lg:mb-4">Trial Status</h3>
               <div className="space-y-4">
                 <div>
                   <div className="flex justify-between text-sm mb-2">
