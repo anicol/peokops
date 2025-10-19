@@ -1,4 +1,5 @@
 import { useQuery } from 'react-query';
+import { Link } from 'react-router-dom';
 import { adminAnalyticsAPI } from '@/services/api';
 import { KPICard } from '@/components/admin/KPICard';
 import {
@@ -22,6 +23,7 @@ import {
   BarChart3,
   Camera,
   Clock,
+  Store,
 } from 'lucide-react';
 
 export function AdminEngagementOverview() {
@@ -33,6 +35,11 @@ export function AdminEngagementOverview() {
   const { data: timeOfDay } = useQuery({
     queryKey: ['admin-analytics', 'time-of-day'],
     queryFn: adminAnalyticsAPI.getTimeOfDayActivity,
+  });
+
+  const { data: storesList } = useQuery({
+    queryKey: ['admin-analytics', 'stores'],
+    queryFn: adminAnalyticsAPI.getStoresList,
   });
 
   if (isLoading) {
@@ -194,6 +201,98 @@ export function AdminEngagementOverview() {
             </div>
           )}
         </div>
+
+        {/* Stores Table */}
+        {storesList && storesList.length > 0 && (
+          <div className="bg-white rounded-lg border border-gray-200 overflow-hidden mt-6">
+            <div className="p-4 sm:p-6 border-b border-gray-200">
+              <h2 className="text-lg font-semibold text-gray-900 flex items-center">
+                <Store className="w-5 h-5 mr-2" />
+                Store Performance
+              </h2>
+              <p className="text-sm text-gray-600 mt-1">
+                Click any store to view detailed analytics
+              </p>
+            </div>
+
+            <div className="overflow-x-auto">
+              <table className="min-w-full divide-y divide-gray-200">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                      Store
+                    </th>
+                    <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase">
+                      Status
+                    </th>
+                    <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">
+                      Streak
+                    </th>
+                    <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">
+                      Completion Rate (7d)
+                    </th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                      Last Activity
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-200">
+                  {storesList.map((store: any) => (
+                    <tr
+                      key={store.id}
+                      className="hover:bg-gray-50 cursor-pointer"
+                      onClick={() => window.location.href = `/admin/stores/${store.id}`}
+                    >
+                      <td className="px-4 py-3">
+                        <Link
+                          to={`/admin/stores/${store.id}`}
+                          className="text-sm font-medium text-indigo-600 hover:text-indigo-900"
+                        >
+                          {store.name}
+                        </Link>
+                        <p className="text-xs text-gray-500">{store.region}</p>
+                      </td>
+                      <td className="px-4 py-3 text-center">
+                        <span
+                          className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${
+                            store.status === 'active'
+                              ? 'bg-green-100 text-green-800'
+                              : store.status === 'sporadic'
+                              ? 'bg-yellow-100 text-yellow-800'
+                              : 'bg-red-100 text-red-800'
+                          }`}
+                        >
+                          {store.status === 'active' ? '🟢 Active' : store.status === 'sporadic' ? '🟡 Sporadic' : '🔴 Inactive'}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3 text-right">
+                        <div className="flex items-center justify-end">
+                          <Flame className="w-4 h-4 mr-1 text-orange-500" />
+                          <span className="text-sm font-medium text-gray-900">
+                            {store.current_streak}
+                          </span>
+                        </div>
+                      </td>
+                      <td className="px-4 py-3 text-right">
+                        <span className="text-sm text-gray-900">
+                          {store.completion_rate_7d}%
+                        </span>
+                        <p className="text-xs text-gray-500">
+                          {store.completed_runs_7d}/{store.total_runs_7d}
+                        </p>
+                      </td>
+                      <td className="px-4 py-3 text-sm text-gray-600">
+                        {store.last_completion_date
+                          ? new Date(store.last_completion_date).toLocaleDateString()
+                          : 'Never'}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
