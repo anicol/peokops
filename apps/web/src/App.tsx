@@ -12,6 +12,7 @@ import OnboardingStoreNamePage from '@/pages/OnboardingStoreNamePage';
 import OnboardingContactPage from '@/pages/OnboardingContactPage';
 import OnboardingFocusPage from '@/pages/OnboardingFocusPage';
 import ChecksSentPage from '@/pages/ChecksSentPage';
+import CheckoutPage from '@/pages/CheckoutPage';
 import Dashboard from '@/pages/Dashboard';
 import VideosPage from '@/pages/VideosPage';
 import VideoUploadPage from '@/pages/VideoUploadPage';
@@ -84,6 +85,10 @@ function AppRoutes() {
         <Route
           path="/processing/:uploadId"
           element={isAuthenticated ? <ProcessingPage /> : <Navigate to="/login" replace />}
+        />
+        <Route
+          path="/checkout"
+          element={isAuthenticated ? <CheckoutPage /> : <Navigate to="/login" replace />}
         />
 
         {/* Regular authenticated routes (with layout) */}

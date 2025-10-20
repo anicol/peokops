@@ -188,7 +188,7 @@ function TrialDashboard({ user, stats, dashboardStats, microCheckRuns, allRespon
       />
 
       <TrialStatusBanner
-        onUpgradeClick={() => console.log('Navigate to upgrade page')}
+        onUpgradeClick={() => navigate('/checkout')}
       />
 
       <div className="grid lg:grid-cols-3 gap-4 sm:gap-6 lg:gap-8 mt-4 sm:mt-6 lg:mt-8">

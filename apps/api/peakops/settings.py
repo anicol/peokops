@@ -55,6 +55,7 @@ LOCAL_APPS = [
     'inspections.apps.InspectionsConfig',
     'videos.apps.VideosConfig',
     'ai_services.apps.AiServicesConfig',
+    'billing.apps.BillingConfig',
     'marketing.apps.MarketingConfig',
     'micro_checks.apps.MicroChecksConfig',
 ]
@@ -293,6 +294,12 @@ TWILIO_PHONE_NUMBER = config('TWILIO_PHONE_NUMBER', default='')
 # Micro-check magic link base URL
 MICRO_CHECK_BASE_URL = config('MICRO_CHECK_BASE_URL', default='http://localhost:3001')
 ENABLE_BEDROCK_RECOMMENDATIONS = config('ENABLE_BEDROCK_RECOMMENDATIONS', default=False, cast=bool)
+
+# Stripe Settings
+STRIPE_SECRET_KEY = config('STRIPE_SECRET_KEY', default='')
+STRIPE_PUBLISHABLE_KEY = config('STRIPE_PUBLISHABLE_KEY', default='')
+STRIPE_WEBHOOK_SECRET = config('STRIPE_WEBHOOK_SECRET', default='')
+FRONTEND_URL = config('FRONTEND_URL', default='http://localhost:5174')
 
 # AWS Rekognition Configuration
 REKOGNITION_PPE_MIN_CONFIDENCE = config('REKOGNITION_PPE_MIN_CONFIDENCE', default=80, cast=int)

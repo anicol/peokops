@@ -1453,7 +1453,7 @@ class CorrectiveActionViewSet(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated]
     filterset_fields = ['store', 'category', 'status', 'assigned_to']
     ordering_fields = ['due_date', 'created_at', 'resolved_at']
-    ordering = ['due_date']
+    ordering = ['-created_at']  # Use created_at instead of due_date to avoid NULL issues
 
     def get_queryset(self):
         """Filter actions based on user's accessible stores"""

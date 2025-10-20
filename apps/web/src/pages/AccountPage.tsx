@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from 'react-query';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { brandsAPI } from '@/services/api';
 import type { Brand } from '@/types';
@@ -16,6 +17,7 @@ import {
 
 export default function AccountPage() {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -319,7 +321,10 @@ export default function AccountPage() {
                     <p className="text-teal-100 mb-4">
                       Keep using PeakOps with unlimited micro-checks and unlock enterprise features.
                     </p>
-                    <button className="px-4 py-2 bg-white text-teal-600 rounded-lg hover:bg-gray-100 transition-colors font-medium">
+                    <button
+                      onClick={() => navigate('/checkout')}
+                      className="px-4 py-2 bg-white text-teal-600 rounded-lg hover:bg-gray-100 transition-colors font-medium"
+                    >
                       View Plans
                     </button>
                   </div>
