@@ -104,13 +104,26 @@ def create_checkout_session(request):
         plan = SubscriptionPlan.objects.get(plan_type=plan_type, is_active=True)
 
         # Get or create Stripe customer
-        stripe_customer, created = StripeCustomer.objects.get_or_create(
-            user=user,
-            defaults={'stripe_customer_id': ''}
-        )
+        try:
+            stripe_customer = StripeCustomer.objects.get(user=user)
+        except StripeCustomer.DoesNotExist:
+            # Create Stripe customer first
+            customer = stripe.Customer.create(
+                email=user.email,
+                name=user.full_name,
+                metadata={
+                    'user_id': user.id,
+                    'is_trial_conversion': user.is_trial_user
+                }
+            )
+            # Then create the database record with the Stripe ID
+            stripe_customer = StripeCustomer.objects.create(
+                user=user,
+                stripe_customer_id=customer.id
+            )
 
-        if created or not stripe_customer.stripe_customer_id:
-            # Create Stripe customer
+        # If customer exists but has no stripe_customer_id, create one
+        if not stripe_customer.stripe_customer_id:
             customer = stripe.Customer.create(
                 email=user.email,
                 name=user.full_name,

@@ -85,8 +85,9 @@ def handle_subscription_created(event_data: dict, event_id: str):
         plan_type = metadata.get('plan_type')
         plan = SubscriptionPlan.objects.get(plan_type=plan_type, is_active=True)
 
-        # Get store count from metadata
-        store_count = int(metadata.get('store_count', 1))
+        # Get store count from metadata (handle None values)
+        store_count_raw = metadata.get('store_count', 1)
+        store_count = int(store_count_raw) if store_count_raw is not None else 1
         is_trial_conversion = metadata.get('is_trial_conversion') == 'True'
 
         # Map Stripe status to our status
