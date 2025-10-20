@@ -37,7 +37,6 @@ import MicroCheckTemplatesPage from '@/pages/MicroCheckTemplatesPage';
 import InsightsPage from '@/pages/InsightsPage';
 import ProfilePage from '@/pages/ProfilePage';
 import LockedFeatureView from '@/components/LockedFeatureView';
-import CheckoutPage from '@/pages/CheckoutPage';
 import { MobileCaptureProvider } from '@/pages/MobileCaptureContext';
 import { AdminEngagementOverview } from '@/pages/admin/AdminEngagementOverview';
 import { AdminStoreDetailPage } from '@/pages/admin/AdminStoreDetailPage';
@@ -51,41 +50,6 @@ function AppRoutes() {
       <div className="flex items-center justify-center min-h-screen">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
       </div>
-    );
-  }
-
-  return (
-    <MobileCaptureProvider>
-        <Routes>
-          {/* Mobile capture route - full screen without layout */}
-          <Route path="/capture" element={<MobileCapturePage />} />
-          
-          {/* Checkout route - full screen without sidebar */}
-          <Route path="/checkout" element={<CheckoutPage />} />
-
-          {/* Regular routes with layout */}
-          <Route path="/*" element={
-            <Layout>
-              <Routes>
-                <Route path="/" element={<Dashboard />} />
-                <Route path="/videos" element={<VideosPage />} />
-                <Route path="/videos/upload" element={<VideoUploadPage />} />
-                <Route path="/videos/:id" element={<VideoDetailPage />} />
-                <Route path="/inspections" element={<InspectionsPage />} />
-                <Route path="/inspections/:id" element={<InspectionDetailPage />} />
-                <Route path="/actions" element={<ActionItemsPage />} />
-                <Route path="/brands" element={<BrandsPage />} />
-                <Route path="/stores" element={<StoresPage />} />
-                <Route path="/users" element={<UsersPage />} />
-                <Route path="/inspector-queue" element={<InspectorQueuePage />} />
-                <Route path="/login" element={<Navigate to="/" replace />} />
-                <Route path="*" element={<Navigate to="/" replace />} />
-              </Routes>
-            </Layout>
-          } />
-        </Routes>
-      </MobileCaptureProvider>
->>>>>>> Stashed changes
     );
   }
 

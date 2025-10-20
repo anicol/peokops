@@ -18,8 +18,21 @@ const MicroCheckInvitePage = () => {
       return;
     }
 
-    const fetchRun = async () => {
+    const fetchRunAndLogin = async () => {
       try {
+        // First, try to authenticate using the magic link token
+        try {
+          const authTokens = await microCheckAPI.tokenLogin(token);
+          // Store the authentication tokens
+          localStorage.setItem('access_token', authTokens.access);
+          localStorage.setItem('refresh_token', authTokens.refresh);
+          console.log('Magic link authentication successful');
+        } catch (authErr) {
+          console.warn('Could not authenticate with magic link:', authErr);
+          // Continue anyway - magic links work without auth
+        }
+
+        // Fetch the run data
         const data = await microCheckAPI.getRunByToken(token);
         setRun(data);
       } catch (err: any) {
@@ -36,7 +49,7 @@ const MicroCheckInvitePage = () => {
       }
     };
 
-    fetchRun();
+    fetchRunAndLogin();
   }, [token]);
 
   const getTodaysDate = () => {

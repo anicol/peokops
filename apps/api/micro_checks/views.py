@@ -781,6 +781,49 @@ class MicroCheckRunViewSet(viewsets.ModelViewSet):
         return Response(serializer.data)
 
     @extend_schema(
+        summary="Exchange magic link token for authentication tokens",
+        request=None,
+        responses={200: {'access': 'string', 'refresh': 'string'}},
+    )
+    @action(detail=False, methods=['post'], permission_classes=[])
+    def token_login(self, request):
+        """Exchange a valid magic link token for JWT authentication tokens."""
+        from rest_framework_simplejwt.tokens import RefreshToken
+        from .utils import hash_token
+
+        token = request.data.get('token')
+        if not token:
+            return Response({'error': 'token required'}, status=400)
+
+        # Hash the token to look up assignment
+        token_hash = hash_token(token)
+
+        try:
+            assignment = MicroCheckAssignment.objects.select_related(
+                'run__store__brand',
+                'sent_to'
+            ).get(access_token_hash=token_hash)
+        except MicroCheckAssignment.DoesNotExist:
+            return Response({'error': 'Invalid token'}, status=404)
+
+        # Check if token is expired
+        if assignment.token_expires_at < timezone.now():
+            return Response({'error': 'Token expired'}, status=403)
+
+        # Get the user associated with this assignment
+        user = assignment.sent_to
+        if not user:
+            return Response({'error': 'No user associated with this token'}, status=400)
+
+        # Generate JWT tokens for this user
+        refresh = RefreshToken.for_user(user)
+
+        return Response({
+            'access': str(refresh.access_token),
+            'refresh': str(refresh),
+        })
+
+    @extend_schema(
         summary="Create an instant check run for current user",
         parameters=[
             OpenApiParameter(name='store_id', description='Store ID (optional, uses user store if not provided)', required=False, type=int)

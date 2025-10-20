@@ -292,7 +292,7 @@ TWILIO_AUTH_TOKEN = config('TWILIO_AUTH_TOKEN', default='')
 TWILIO_PHONE_NUMBER = config('TWILIO_PHONE_NUMBER', default='')
 
 # Micro-check magic link base URL
-MICRO_CHECK_BASE_URL = config('MICRO_CHECK_BASE_URL', default='http://localhost:3001')
+MICRO_CHECK_BASE_URL = config('MICRO_CHECK_BASE_URL', default='http://localhost:3000')
 ENABLE_BEDROCK_RECOMMENDATIONS = config('ENABLE_BEDROCK_RECOMMENDATIONS', default=False, cast=bool)
 
 # Stripe Settings

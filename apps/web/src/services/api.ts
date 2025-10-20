@@ -403,6 +403,15 @@ export const microCheckAPI = {
     return response.data;
   },
 
+  // Exchange magic link token for authentication tokens (no auth required)
+  tokenLogin: async (token: string): Promise<{ access: string; refresh: string }> => {
+    const response = await api.post('/micro-checks/runs/token_login/',
+      { token },
+      { headers: { Authorization: '' } } // Override auth for this request
+    );
+    return response.data;
+  },
+
   // Submit response via magic link (no auth required)
   submitResponseViaToken: async (data: SubmitResponseRequest): Promise<MicroCheckResponse> => {
     const response = await api.post('/micro-checks/responses/submit_via_magic_link/', data, {

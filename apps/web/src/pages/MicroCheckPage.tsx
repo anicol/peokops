@@ -515,6 +515,14 @@ const MicroCheckPage = () => {
 
     if (isAlreadyCompleted && run) {
       const handleViewResults = async () => {
+        // Check if user is authenticated
+        const hasToken = !!localStorage.getItem('access_token');
+        if (!hasToken) {
+          // Redirect to login to view results
+          window.location.href = '/login?message=view_results';
+          return;
+        }
+
         try {
           // Fetch all responses and streak data for summary
           console.log('Fetching responses for completed run:', run.id, 'store:', run.store);
@@ -556,6 +564,10 @@ const MicroCheckPage = () => {
           setCurrentScreen('summary');
         } catch (err) {
           console.error('Error loading results:', err);
+          // If still getting auth errors, redirect to login
+          if (err.response?.status === 401) {
+            window.location.href = '/login?message=view_results';
+          }
         }
       };
 
@@ -903,12 +915,16 @@ const MicroCheckPage = () => {
             </div>
 
             <div className="flex space-x-3">
-              <Link
-                to="/"
+              <button
+                onClick={() => {
+                  // Force full page reload to ensure AuthProvider picks up any stored tokens
+                  console.log('Done clicked - access_token exists:', !!localStorage.getItem('access_token'));
+                  window.location.href = '/';
+                }}
                 className="flex-1 px-4 py-3 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors font-medium text-center"
               >
                 Done
-              </Link>
+              </button>
             </div>
           </div>
         </div>
