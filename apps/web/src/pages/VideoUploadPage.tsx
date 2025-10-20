@@ -126,17 +126,11 @@ export default function VideoUploadPage() {
 
       {/* Trial Status Banner */}
       <TrialStatusBanner
-        onUpgradeClick={() => {
-          // TODO: Navigate to upgrade/pricing page
-          console.log('Navigate to upgrade page');
-        }}
+        onUpgradeClick={() => navigate('/checkout')}
       />
 
       <UploadLimitGuard
-        onUpgradeClick={() => {
-          // TODO: Navigate to upgrade/pricing page
-          console.log('Navigate to upgrade page');
-        }}
+        onUpgradeClick={() => navigate('/checkout')}
       >
         <form onSubmit={handleSubmit} className="space-y-6">
           {/* File Upload */}

@@ -370,3 +370,11 @@ else:
 
 # Email timeout settings
 EMAIL_TIMEOUT = config('EMAIL_TIMEOUT', default=30, cast=int)
+
+# Stripe configuration
+STRIPE_SECRET_KEY = config('STRIPE_SECRET_KEY', default='')
+STRIPE_PUBLISHABLE_KEY = config('STRIPE_PUBLISHABLE_KEY', default='')
+STRIPE_WEBHOOK_SECRET = config('STRIPE_WEBHOOK_SECRET', default='')
+
+# Frontend URL for Stripe redirects
+FRONTEND_URL = config('FRONTEND_URL', default='http://localhost:5174' if DEBUG else 'https://app.getpeakops.com')
