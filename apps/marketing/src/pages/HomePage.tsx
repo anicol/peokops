@@ -10,7 +10,7 @@ export default function HomePage() {
   return (
     <div className="min-h-screen">
       <SEO
-        title="PeakOps – Daily Micro-Checks for Operational Excellence | Build Better Habits"
+        title="PeakOps – AI Habits for Operational Excellence | Build Better Habits"
         description="Three quick questions a day. One minute. PeakOps helps multi-unit operators build daily habits that drive consistent operational excellence across every location."
         keywords="micro-checks, daily habits, operational excellence, restaurant operations, QSR management, habit formation, behavioral consistency, store operations, multi-unit management, frontline excellence"
         url="https://getpeakops.com"
@@ -40,20 +40,20 @@ export default function HomePage() {
 
             {/* Main Headline */}
             <h1 className="text-5xl md:text-7xl font-bold leading-tight mb-8 tracking-tight">
-              Operational Excellence, Made a Daily Habit.
+              AI That Builds Better Habits. Automatically!
             </h1>
 
             {/* Subhead */}
             <p className="text-2xl md:text-3xl text-blue-50 mb-8 leading-relaxed font-light">
-              PeakOps helps every location stay on standard through three quick micro-checks a day — no apps, no logins, no stress.
-              It turns consistency into a behavior, not a checklist.
+              PeakOps helps every location stay on standard with three personalized micro-checks a day.
+              No app. No login. Just a smart AI teammate that prompts, coaches, and keeps operations running right, in under two minutes.
             </p>
 
             {/* Supporting Paragraph */}
             <p className="text-lg md:text-xl text-blue-100 mb-10 leading-relaxed max-w-2xl" style={{ lineHeight: '1.6' }}>
-              Audits and training days fix problems too late. PeakOps builds the habits that prevent them.
-              Each day, managers get three quick checks that reinforce standards, spot issues early, and keep every location inspection-ready — all in under two minutes.
-              Simple, satisfying, and powered by AI for instant feedback.
+              Audits catch problems too late.
+              PeakOps prevents them. Using AI to deliver the right checks, validate photos or videos instantly, and even schedule rechecks automatically.
+              It's operational excellence that learns, adapts, and improves with you. One habit at a time.
             </p>
 
             {/* CTAs */}
@@ -62,7 +62,7 @@ export default function HomePage() {
                 href={TRIAL_SIGNUP_URL}
                 className="px-8 py-4 bg-teal-500 text-white rounded-lg hover:bg-teal-400 transition-all font-semibold text-lg shadow-xl hover:shadow-2xl hover:scale-105 transform duration-200"
               >
-                Try 3 Checks Free →
+                Try the 7-Day Pilot →
               </a>
               <Link
                 to="/demo"
@@ -124,12 +124,12 @@ export default function HomePage() {
 
               <div className="space-y-6 mb-12" style={{ lineHeight: '1.7' }}>
                 <p className="text-lg md:text-xl text-gray-700">
-                  If you've ever run a restaurant, you know the pattern:
+                  If you've ever run a restaurant, you know the pattern.
                   One great manager sets the bar high.
                   Then someone leaves, the next shift cuts corners, and standards start to slide.
                 </p>
                 <p className="text-lg md:text-xl text-gray-700">
-                  Before long, quality depends on who's on duty — not the brand.
+                  Before long, quality depends on who's on duty, not the brand.
                 </p>
                 <p className="text-lg md:text-xl text-gray-700">
                   Audits can't fix that. They show what's broken, not how to stay consistent.
@@ -140,7 +140,7 @@ export default function HomePage() {
               <div className="my-12">
                 <div className="bg-white px-6 py-8 border-l-4 border-blue-600">
                   <p className="text-2xl md:text-3xl font-bold text-gray-900 leading-tight">
-                    PeakOps was built to change that — creating a daily rhythm that builds habits, reinforces standards, and keeps every store steady in the chaos.
+                    PeakOps was built to change that by creating a daily rhythm that builds habits, reinforces standards, and keeps every store steady in the chaos.
                   </p>
                 </div>
               </div>
@@ -176,7 +176,7 @@ export default function HomePage() {
             {/* Intro paragraphs - Left-aligned with max width */}
             <div className="max-w-[640px] mx-auto space-y-4">
               <p className="text-lg md:text-xl text-gray-700 leading-relaxed text-left">
-                PeakOps builds consistency the same way great teams do — through simple, repeatable habits that add up over time.
+                PeakOps builds consistency the same way great teams do: through simple, repeatable habits that add up over time.
               </p>
               <p className="text-lg md:text-xl text-gray-700 leading-relaxed text-left">
                 Instead of one big audit day, PeakOps creates a daily rhythm of improvement through three connected agents, each reinforcing the next. Together, they form a continuous improvement loop that transforms everyday actions into lasting excellence.
@@ -207,13 +207,13 @@ export default function HomePage() {
                   Build excellence one habit at a time.
                 </p>
                 <p className="text-gray-700 text-sm mb-4 leading-relaxed opacity-85" style={{ lineHeight: '1.7' }}>
-                  The Guide delivers "Today's 3" — short, frictionless micro-checks that managers can complete in under two minutes. Each check reinforces standards, builds accountability, and keeps the team aligned without adding another system to manage.
+                  The Guide delivers "Today's 3": short, frictionless micro-checks that managers can complete in under two minutes. Each check reinforces standards, builds accountability, and keeps the team aligned without adding another system to manage.
                 </p>
               </div>
               <ul className="space-y-4 mb-6">
                 <li className="flex items-center">
                   <CheckCircle className="w-6 h-6 text-teal-600 mr-3 flex-shrink-0" />
-                  <span className="text-gray-700 opacity-85">Three quick checks a day — no apps, no logins</span>
+                  <span className="text-gray-700 opacity-85">Three quick checks a day (no apps, no logins)</span>
                 </li>
                 <li className="flex items-center">
                   <CheckCircle className="w-6 h-6 text-teal-600 mr-3 flex-shrink-0" />
@@ -253,7 +253,7 @@ export default function HomePage() {
                   Once daily habits are in place, The Coach helps managers grow with private, encouraging feedback.
                 </p>
                 <p className="text-gray-700 text-sm mb-4 leading-relaxed opacity-85" style={{ lineHeight: '1.7' }}>
-                  Managers record short walkthroughs; AI instantly highlights wins and small fixes — helping them stay confident and ready before audits or visits ever happen.
+                  Managers record short walkthroughs; AI instantly highlights wins and small fixes, helping them stay confident and ready before audits or visits ever happen.
                 </p>
               </div>
               <ul className="space-y-4 mb-6">
@@ -263,7 +263,7 @@ export default function HomePage() {
                 </li>
                 <li className="flex items-center">
                   <CheckCircle className="w-6 h-6 text-orange-600 mr-3 flex-shrink-0" />
-                  <span className="text-gray-700 opacity-85">Videos are deleted after analysis — privacy first</span>
+                  <span className="text-gray-700 opacity-85">Videos are deleted after analysis (privacy first)</span>
                 </li>
                 <li className="flex items-center">
                   <CheckCircle className="w-6 h-6 text-orange-600 mr-3 flex-shrink-0" />
@@ -299,7 +299,7 @@ export default function HomePage() {
                   For larger brands, The Inspector extends those same habits across hundreds of stores.
                 </p>
                 <p className="text-gray-700 text-sm mb-4 leading-relaxed opacity-85" style={{ lineHeight: '1.7' }}>
-                  It analyzes video and check data to create clear, objective insights — so leadership can see progress, not just problems.
+                  It analyzes video and check data to create clear, objective insights so leadership can see progress, not just problems.
                 </p>
               </div>
               <ul className="space-y-4 mb-6">
@@ -378,7 +378,7 @@ export default function HomePage() {
             </div>
             <p className="text-center text-lg text-gray-700 mt-8 leading-relaxed">
               From daily habits to brand-wide excellence, PeakOps helps every team get a little better, every day.<br />
-              Start small with The Guide, grow with The Coach, and scale with The Inspector — one habit at a time.
+              Start small with The Guide, grow with The Coach, and scale with The Inspector. One habit at a time.
             </p>
           </div>
         </div>
@@ -390,7 +390,7 @@ export default function HomePage() {
           {/* Header */}
           <div className="text-center mb-6">
             <h2 className="text-3xl md:text-5xl font-bold text-gray-900 mb-6 leading-tight">
-              From Capture to Confidence — in Three Simple Steps
+              From Capture to Confidence in Three Simple Steps
             </h2>
             <p className="text-xl text-gray-600 max-w-3xl mx-auto leading-relaxed">
               PeakOps makes daily improvement effortless. In just a few moments a day, managers capture what's happening, get instant coaching, and build lasting habits of excellence.
@@ -448,7 +448,7 @@ export default function HomePage() {
                   </p>
 
                   <p className="text-gray-600 text-center mb-4 leading-relaxed">
-                    Record a short walkthrough or complete your three quick checks — right from your phone.
+                    Record a short walkthrough or complete your three quick checks right from your phone.
                   </p>
 
                   <p className="text-gray-500 text-center mb-4 text-sm leading-relaxed">
@@ -486,7 +486,7 @@ export default function HomePage() {
                   </h3>
 
                   <p className="text-gray-600 text-center mb-4 leading-relaxed">
-                    AI reviews what you capture in seconds — highlighting what's working and where to improve next. It's not another report to read — it's a quick reflection that helps you adjust before problems grow.
+                    AI reviews what you capture in seconds, highlighting what's working and where to improve next. It's not another report to read. It's a quick reflection that helps you adjust before problems grow.
                   </p>
 
                   <p className="text-sm text-gray-600 text-center italic font-medium">
@@ -524,7 +524,7 @@ export default function HomePage() {
                   </p>
 
                   <p className="text-gray-600 text-center mb-4 leading-relaxed">
-                    Your Fix Flow shows what to address, celebrates what's working, and tracks your streaks over time. Every check builds momentum — transforming daily actions into habits that stick.
+                    Your Fix Flow shows what to address, celebrates what's working, and tracks your streaks over time. Every check builds momentum, transforming daily actions into habits that stick.
                   </p>
 
                   <p className="text-sm text-gray-600 text-center italic font-medium">
@@ -545,7 +545,7 @@ export default function HomePage() {
               The Impact
             </h2>
             <p className="text-xl text-gray-600 max-w-3xl mx-auto leading-relaxed">
-              PeakOps replaces stress and scramble with steady progress. Managers feel calm and in control. Brands see consistency take root — every day, across every store.
+              PeakOps replaces stress and scramble with steady progress. Managers feel calm and in control. Brands see consistency take root every day, across every store.
             </p>
           </div>
 
@@ -604,7 +604,7 @@ export default function HomePage() {
                 {/* Closing Statement */}
                 <div className="mt-8 bg-gradient-to-br from-blue-50 to-teal-50 p-6 rounded-xl border border-blue-200">
                   <p className="text-gray-700 text-lg leading-relaxed">
-                    From reactive audits to proactive habits — PeakOps keeps your brand on standard without adding complexity.
+                    From reactive audits to proactive habits: PeakOps keeps your brand on standard without adding complexity.
                   </p>
                 </div>
               </div>
@@ -626,12 +626,12 @@ export default function HomePage() {
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-12">
             <h2 className="text-3xl md:text-5xl font-bold text-gray-900 mb-8 leading-tight">
-              Start Building Better Habits — One Day at a Time
+              Start Building Better Habits, One Day at a Time
             </h2>
 
             <div className="space-y-6 text-xl text-gray-700 leading-relaxed mb-10">
               <p>
-                Operational excellence shouldn't depend on luck, inspections, or constant supervision. It should happen naturally — through small, repeatable actions that make every shift stronger than the last.
+                Operational excellence shouldn't depend on luck, inspections, or constant supervision. It should happen naturally through small, repeatable actions that make every shift stronger than the last.
               </p>
 
               <p className="font-semibold text-gray-900">
