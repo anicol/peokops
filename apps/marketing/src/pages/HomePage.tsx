@@ -10,7 +10,7 @@ export default function HomePage() {
   return (
     <div className="min-h-screen">
       <SEO
-        title="PeakOps – Daily Micro-Checks for Operational Excellence | Build Better Habits"
+        title="PeakOps – AI Habits for Operational Excellence | Build Better Habits"
         description="Three quick questions a day. One minute. PeakOps helps multi-unit operators build daily habits that drive consistent operational excellence across every location."
         keywords="micro-checks, daily habits, operational excellence, restaurant operations, QSR management, habit formation, behavioral consistency, store operations, multi-unit management, frontline excellence"
         url="https://getpeakops.com"
