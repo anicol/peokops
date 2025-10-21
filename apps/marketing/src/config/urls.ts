@@ -1,19 +1,19 @@
 // URL configuration for different environments
-const isDevelopment = import.meta.env.DEV;
+const isDevelopment = process.env.NODE_ENV === 'development';
 
 export const APP_URLS = {
   // Web app URLs
-  webApp: isDevelopment 
-    ? 'http://localhost:3000' 
+  webApp: isDevelopment
+    ? 'http://localhost:3000'
     : 'https://app.getpeakops.com',
-  
-  // Marketing site URLs  
-  marketing: isDevelopment 
+
+  // Marketing site URLs
+  marketing: isDevelopment
     ? 'http://localhost:3001' // adjust if marketing runs on different port
     : 'https://getpeakops.com',
-    
+
   // API URLs
-  api: isDevelopment 
+  api: isDevelopment
     ? 'http://localhost:8000/api'
     : 'https://api.getpeakops.com/api',
 };

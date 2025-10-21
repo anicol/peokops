@@ -4,10 +4,10 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "vite --port 5174",
-    "build": "tsc && vite build",
-    "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
-    "preview": "vite preview --port 5174",
+    "dev": "next dev -p 5174 --hostname 0.0.0.0",
+    "build": "next build",
+    "start": "next start -p 5174 --hostname 0.0.0.0",
+    "lint": "next lint",
     "test": "vitest"
   },
   "dependencies": {
@@ -19,9 +19,9 @@
     "class-variance-authority": "^0.7.0",
     "clsx": "^2.0.0",
     "lucide-react": "^0.288.0",
+    "next": "^14.2.33",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
-    "react-router-dom": "^6.16.0",
     "tailwind-merge": "^1.14.0"
   },
   "devDependencies": {
@@ -29,7 +29,6 @@
     "@types/react-dom": "^18.2.7",
     "@typescript-eslint/eslint-plugin": "^6.0.0",
     "@typescript-eslint/parser": "^6.0.0",
-    "@vitejs/plugin-react": "^4.0.3",
     "autoprefixer": "^10.4.16",
     "eslint": "^8.45.0",
     "eslint-plugin-react-hooks": "^4.6.0",
@@ -38,7 +37,6 @@
     "tailwindcss": "^3.3.0",
     "tailwindcss-animate": "^1.0.7",
     "typescript": "^5.0.2",
-    "vite": "^4.4.5",
     "vitest": "^0.34.6"
   }
 }
