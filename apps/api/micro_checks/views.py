@@ -1338,6 +1338,22 @@ class MicroCheckResponseViewSet(viewsets.ModelViewSet):
             run.completed_by = assignment.sent_to
             run.save(update_fields=['status', 'completed_at', 'completed_by'])
 
+            # Update streaks immediately (synchronous)
+            if assignment.sent_to and run.store:
+                from .utils import update_streak, update_store_streak, all_run_items_passed
+
+                all_passed = all_run_items_passed(run)
+                update_streak(
+                    store=run.store,
+                    manager=assignment.sent_to,
+                    completed_date=local_date,
+                    passed=all_passed
+                )
+                update_store_streak(
+                    store=run.store,
+                    completed_date=local_date
+                )
+
         return Response(
             MicroCheckResponseSerializer(response).data,
             status=status.HTTP_201_CREATED

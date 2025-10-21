@@ -22,7 +22,8 @@ from .utils import (
     select_templates_for_run,
     update_streak,
     update_store_streak,
-    create_corrective_action_for_failure
+    create_corrective_action_for_failure,
+    all_run_items_passed
 )
 
 User = get_user_model()
@@ -379,7 +380,7 @@ def process_micro_check_response(response_id):
 
         # Update streak for the user who completed the run
         if response.completed_by:
-            all_passed = _all_run_items_passed(run)
+            all_passed = all_run_items_passed(run)
             update_streak(
                 store=store,
                 manager=response.completed_by,
@@ -432,16 +433,6 @@ def _check_run_completion(run):
     ).count()
 
     return total_items == completed_items
-
-
-def _all_run_items_passed(run):
-    """Check if all items in a run passed (no failures)"""
-    has_failures = MicroCheckResponse.objects.filter(
-        run_item__run=run,
-        status='FAIL'
-    ).exists()
-
-    return not has_failures
 
 
 @shared_task(queue='maintenance')

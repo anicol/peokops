@@ -315,6 +315,26 @@ def update_store_streak(store, completed_date):
     return streak
 
 
+def all_run_items_passed(run):
+    """
+    Check if all items in a run passed (no failures).
+
+    Args:
+        run: MicroCheckRun instance
+
+    Returns:
+        bool: True if all items passed, False if any failed
+    """
+    from .models import MicroCheckResponse
+
+    has_failures = MicroCheckResponse.objects.filter(
+        run_item__run=run,
+        status='FAIL'
+    ).exists()
+
+    return not has_failures
+
+
 def create_corrective_action_for_failure(response, assigned_to=None):
     """
     Auto-create a corrective action when a check fails.

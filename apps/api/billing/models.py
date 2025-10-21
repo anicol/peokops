@@ -127,6 +127,47 @@ class Subscription(models.Model):
         self.user.save()
         self.save()
 
+    def update_store_count(self, new_count):
+        """Update subscription store count and sync with Stripe"""
+        from django.conf import settings
+        import logging
+
+        logger = logging.getLogger(__name__)
+
+        if new_count == self.store_count:
+            logger.info(f"Store count unchanged for subscription {self.id}: {new_count}")
+            return
+
+        try:
+            import stripe
+            stripe.api_key = settings.STRIPE_SECRET_KEY
+
+            # Get the Stripe subscription
+            stripe_sub = stripe.Subscription.retrieve(self.stripe_subscription_id)
+
+            # Update the quantity of the first line item (the subscription plan)
+            stripe.Subscription.modify(
+                self.stripe_subscription_id,
+                items=[{
+                    'id': stripe_sub['items']['data'][0].id,
+                    'quantity': new_count,
+                }],
+                proration_behavior='always_invoice',  # Bill immediately for the difference
+            )
+
+            # Update local record
+            old_count = self.store_count
+            self.store_count = new_count
+            self.save()
+
+            logger.info(f"Updated subscription {self.id} store count from {old_count} to {new_count}")
+
+        except Exception as e:
+            # Catch all stripe and other errors
+            error_type = type(e).__name__
+            logger.error(f"{error_type} updating subscription {self.id} store count: {str(e)}")
+            raise
+
 
 class PaymentEvent(models.Model):
     """Track payment events from Stripe webhooks"""

@@ -2,8 +2,8 @@ import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from 'react-query';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
-import { brandsAPI } from '@/services/api';
-import type { Brand } from '@/types';
+import { brandsAPI, billingAPI } from '@/services/api';
+import type { Brand, SubscriptionStatus } from '@/types';
 import {
   Building2,
   Save,
@@ -13,6 +13,8 @@ import {
   Shield,
   Settings,
   Crown,
+  CreditCard,
+  ExternalLink,
 } from 'lucide-react';
 
 export default function AccountPage() {
@@ -29,6 +31,15 @@ export default function AccountPage() {
     () => brandsAPI.getBrand(user!.brand_id!),
     {
       enabled: !!user?.brand_id,
+    }
+  );
+
+  // Fetch subscription status
+  const { data: subscriptionStatus, isLoading: isLoadingSubscription } = useQuery<SubscriptionStatus>(
+    'subscription-status',
+    billingAPI.getSubscriptionStatus,
+    {
+      enabled: !!user,
     }
   );
 
@@ -82,6 +93,27 @@ export default function AccountPage() {
     }
   };
 
+  const handleManageSubscription = async () => {
+    try {
+      const { portal_url } = await billingAPI.createPortalSession();
+      window.location.href = portal_url;
+    } catch (err: any) {
+      setError('Unable to open billing portal. Please try again.');
+    }
+  };
+
+  const getStatusBadge = (status: string) => {
+    const statusMap: Record<string, { color: string; label: string }> = {
+      ACTIVE: { color: 'green', label: 'Active' },
+      TRIALING: { color: 'blue', label: 'Trial' },
+      PAST_DUE: { color: 'yellow', label: 'Past Due' },
+      CANCELED: { color: 'red', label: 'Canceled' },
+      INCOMPLETE: { color: 'gray', label: 'Incomplete' },
+      UNPAID: { color: 'red', label: 'Unpaid' },
+    };
+    return statusMap[status] || { color: 'gray', label: status };
+  };
+
   if (!user?.brand_id) {
     return (
       <div className="p-4 lg:p-8">
@@ -94,7 +126,7 @@ export default function AccountPage() {
     );
   }
 
-  if (isLoading) {
+  if (isLoading || isLoadingSubscription) {
     return (
       <div className="p-4 lg:p-8">
         <div className="flex items-center justify-center min-h-96">
@@ -248,9 +280,11 @@ export default function AccountPage() {
                 <div className="bg-blue-50 rounded-lg p-4 border border-blue-100">
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-sm text-gray-600 mb-1">Plan</p>
+                      <p className="text-sm text-gray-600 mb-1">Subscription</p>
                       <p className="text-lg font-semibold text-gray-900">
-                        {brand?.has_enterprise_access ? 'Enterprise' : 'Standard'}
+                        {subscriptionStatus?.subscription?.plan_details.name ||
+                         (subscriptionStatus?.is_trial ? 'Trial' :
+                          (brand?.has_enterprise_access ? 'Enterprise' : 'Standard'))}
                       </p>
                     </div>
                     <Shield className="w-8 h-8 text-blue-600" />
@@ -264,13 +298,68 @@ export default function AccountPage() {
                       <div className="flex items-center">
                         <CheckCircle className="w-4 h-4 text-green-600 mr-1" />
                         <p className="text-lg font-semibold text-green-600">
-                          {formData.is_active ? 'Active' : 'Inactive'}
+                          {subscriptionStatus?.subscription
+                            ? getStatusBadge(subscriptionStatus.subscription.status).label
+                            : (formData.is_active ? 'Active' : 'Inactive')}
                         </p>
                       </div>
                     </div>
                   </div>
                 </div>
               </div>
+
+              {/* Subscription Details */}
+              {subscriptionStatus?.subscription && (
+                <div className="mt-6 pt-6 border-t border-gray-200">
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-sm font-semibold text-gray-900">Subscription Details</h3>
+                    <button
+                      onClick={handleManageSubscription}
+                      className="inline-flex items-center px-3 py-1.5 text-sm bg-white border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+                    >
+                      <CreditCard className="w-4 h-4 mr-1.5" />
+                      Manage Billing
+                      <ExternalLink className="w-3 h-3 ml-1.5" />
+                    </button>
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                    <div>
+                      <p className="text-gray-600">Store Count</p>
+                      <p className="font-medium text-gray-900">{subscriptionStatus.subscription.store_count}</p>
+                    </div>
+                    <div>
+                      <p className="text-gray-600">Price</p>
+                      <p className="font-medium text-gray-900">
+                        ${subscriptionStatus.subscription.plan_details.price_monthly}/month
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-gray-600">Current Period</p>
+                      <p className="font-medium text-gray-900">
+                        {new Date(subscriptionStatus.subscription.current_period_start).toLocaleDateString()} -{' '}
+                        {new Date(subscriptionStatus.subscription.current_period_end).toLocaleDateString()}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-gray-600">Next Billing Date</p>
+                      <p className="font-medium text-gray-900">
+                        {subscriptionStatus.subscription.cancel_at_period_end
+                          ? 'Cancels at period end'
+                          : new Date(subscriptionStatus.subscription.current_period_end).toLocaleDateString()}
+                      </p>
+                    </div>
+                  </div>
+                  {subscriptionStatus.subscription.cancel_at_period_end && (
+                    <div className="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+                      <p className="text-sm text-yellow-800">
+                        Your subscription will be canceled on{' '}
+                        {new Date(subscriptionStatus.subscription.current_period_end).toLocaleDateString()}.
+                        You can reactivate it anytime before then.
+                      </p>
+                    </div>
+                  )}
+                </div>
+              )}
 
               {brand?.created_at && (
                 <div className="mt-6 pt-6 border-t border-gray-200">

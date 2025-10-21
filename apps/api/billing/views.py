@@ -52,7 +52,7 @@ class SubscriptionViewSet(viewsets.ReadOnlyModelViewSet):
             subscription.save()
 
             return Response({'status': 'subscription_will_cancel'})
-        except stripe.error.StripeError as e:
+        except Exception as e:
             return Response(
                 {'error': str(e)},
                 status=status.HTTP_400_BAD_REQUEST
@@ -75,7 +75,7 @@ class SubscriptionViewSet(viewsets.ReadOnlyModelViewSet):
             subscription.save()
 
             return Response({'status': 'subscription_reactivated'})
-        except stripe.error.StripeError as e:
+        except Exception as e:
             return Response(
                 {'error': str(e)},
                 status=status.HTTP_400_BAD_REQUEST
@@ -183,7 +183,7 @@ def create_checkout_session(request):
             {'error': 'Plan not found'},
             status=status.HTTP_404_NOT_FOUND
         )
-    except stripe.error.StripeError as e:
+    except Exception as e:
         return Response(
             {'error': str(e)},
             status=status.HTTP_400_BAD_REQUEST
@@ -199,10 +199,11 @@ def create_portal_session(request):
     try:
         stripe_customer = StripeCustomer.objects.get(user=user)
 
-        # Create portal session
+        # Create portal session with configuration
         portal_session = stripe.billing_portal.Session.create(
             customer=stripe_customer.stripe_customer_id,
-            return_url=f"{settings.FRONTEND_URL}/dashboard"
+            return_url=f"{settings.FRONTEND_URL}/account",
+            configuration='bpc_1SKkP2BUcsvT46oA9wHzR8zE'
         )
 
         return Response({'portal_url': portal_session.url})
@@ -212,7 +213,7 @@ def create_portal_session(request):
             {'error': 'No Stripe customer found'},
             status=status.HTTP_404_NOT_FOUND
         )
-    except stripe.error.StripeError as e:
+    except Exception as e:
         return Response(
             {'error': str(e)},
             status=status.HTTP_400_BAD_REQUEST

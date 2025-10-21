@@ -258,3 +258,43 @@ export interface Upload {
   updated_at: string;
   created_by: number;
 }
+
+export interface SubscriptionPlan {
+  id: number;
+  name: string;
+  description: string;
+  plan_type: 'TRIAL' | 'STARTER_COACHING' | 'PRO_COACHING' | 'ENTERPRISE';
+  price_per_store: string;
+  billing_period: 'MONTHLY' | 'ANNUAL';
+  stripe_price_id: string;
+  features: Record<string, any>;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface Subscription {
+  id: number;
+  user: number;
+  user_email: string;
+  plan: number;
+  plan_details: SubscriptionPlan;
+  status: 'ACTIVE' | 'TRIALING' | 'PAST_DUE' | 'CANCELED' | 'INCOMPLETE' | 'UNPAID';
+  current_period_start: string;
+  current_period_end: string;
+  cancel_at_period_end: boolean;
+  canceled_at: string | null;
+  store_count: number;
+  trial_converted: boolean;
+  is_active: boolean;
+  days_until_renewal: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface SubscriptionStatus {
+  has_subscription: boolean;
+  is_trial: boolean;
+  subscription?: Subscription;
+  trial_status?: TrialStatus;
+}

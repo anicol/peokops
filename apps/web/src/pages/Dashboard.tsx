@@ -412,7 +412,7 @@ function TrialDashboard({ user, stats, dashboardStats, microCheckRuns, allRespon
           </div>
 
           {/* Trial Status */}
-          {user?.trial_status && (
+          {user?.trial_status?.is_trial && (
             <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-3 sm:p-4 lg:p-6">
               <h3 className="font-semibold text-gray-900 text-sm sm:text-base mb-2 sm:mb-3 lg:mb-4">Trial Status</h3>
               <div className="space-y-4">
