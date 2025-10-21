@@ -196,7 +196,7 @@ export interface ActionItem {
 }
 
 export interface LoginCredentials {
-  username: string;
+  email: string;
   password: string;
 }
 
@@ -257,4 +257,55 @@ export interface Upload {
   created_at: string;
   updated_at: string;
   created_by: number;
+}
+
+export interface SubscriptionPlan {
+  id: number;
+  name: string;
+  description: string;
+  plan_type: 'TRIAL' | 'STARTER_COACHING' | 'PRO_COACHING' | 'ENTERPRISE';
+  price_per_store?: string;
+  price_monthly: string;
+  billing_period?: 'MONTHLY' | 'ANNUAL';
+  stripe_price_id?: string;
+  unlimited_coaching_videos?: boolean;
+  inspection_mode_enabled?: boolean;
+  multi_manager_analytics?: boolean;
+  corporate_dashboards?: boolean;
+  advanced_analytics?: boolean;
+  priority_support?: boolean;
+  dedicated_success_manager?: boolean;
+  max_videos_per_month?: number | null;
+  max_stores?: number;
+  max_users?: number;
+  features?: Record<string, any>;
+  is_active: boolean;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface Subscription {
+  id: number;
+  user: number;
+  user_email: string;
+  plan: number;
+  plan_details: SubscriptionPlan;
+  status: 'ACTIVE' | 'TRIALING' | 'PAST_DUE' | 'CANCELED' | 'INCOMPLETE' | 'UNPAID';
+  current_period_start: string;
+  current_period_end: string;
+  cancel_at_period_end: boolean;
+  canceled_at: string | null;
+  store_count: number;
+  trial_converted: boolean;
+  is_active: boolean;
+  days_until_renewal: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface SubscriptionStatus {
+  has_subscription: boolean;
+  is_trial: boolean;
+  subscription?: Subscription;
+  trial_status?: TrialStatus;
 }

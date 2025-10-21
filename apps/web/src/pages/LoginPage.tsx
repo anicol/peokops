@@ -18,10 +18,10 @@ const Login = () => {
   const [password, setPassword] = useState('');
   const [isSignUp, setIsSignUp] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState('');
+  const [localError, setLocalError] = useState('');
   const [success, setSuccess] = useState(false);
   const navigate = useNavigate();
-  const { login } = useAuth();
+  const { login, error: authError } = useAuth();
 
   // Check for trial mode from URL parameters
   useEffect(() => {
@@ -57,7 +57,7 @@ const Login = () => {
         })
         .catch(err => {
           console.error('Magic link login failed:', err);
-          setError('Invalid or expired login link. Please try logging in with your credentials.');
+          setLocalError('Invalid or expired login link. Please try logging in with your credentials.');
           localStorage.removeItem('access_token');
         });
     }
@@ -66,7 +66,7 @@ const Login = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
-    setError('');
+    setLocalError('');
 
     try {
       if (isSignUp) {
@@ -94,14 +94,14 @@ const Login = () => {
             window.location.href = '/welcome';
           }, 1500);
         } else {
-          setError(data.email?.[0] || data.password?.[0] || 'Failed to create account');
+          setLocalError(data.email?.[0] || data.password?.[0] || 'Failed to create account');
         }
       } else {
         // Handle login
-        await login({ username: email, password });
+        await login({ email, password });
       }
     } catch (err) {
-      setError('Network error. Please try again.');
+      setLocalError('Network error. Please try again.');
     } finally {
       setIsLoading(false);
     }
@@ -135,6 +135,32 @@ const Login = () => {
             <span className="text-2xl font-bold text-gray-900">PeakOps</span>
           </Link>
         </div>
+
+        {/* Checks Complete Message */}
+        {searchParams.get('message') === 'checks_complete' && (
+          <div className="mb-6 bg-green-50 border-2 border-green-200 rounded-xl p-4">
+            <div className="flex items-center">
+              <CheckCircle className="w-6 h-6 text-green-600 mr-3" />
+              <div>
+                <p className="font-semibold text-green-900">Great job! Your checks are complete 🎉</p>
+                <p className="text-sm text-green-700 mt-1">Sign in to view your dashboard and track your progress</p>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* View Results Message */}
+        {searchParams.get('message') === 'view_results' && (
+          <div className="mb-6 bg-blue-50 border-2 border-blue-200 rounded-xl p-4">
+            <div className="flex items-center">
+              <AlertCircle className="w-6 h-6 text-blue-600 mr-3" />
+              <div>
+                <p className="font-semibold text-blue-900">Sign in to view results</p>
+                <p className="text-sm text-blue-700 mt-1">Login to see detailed check results and your progress</p>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Form */}
         <div className="bg-white rounded-2xl shadow-xl border border-gray-200 p-8">
@@ -216,10 +242,10 @@ const Login = () => {
               </div>
             )}
 
-            {error && (
+            {(authError || localError) && (
               <div className="bg-red-50 border border-red-200 rounded-lg p-3 flex items-center">
                 <AlertCircle className="h-5 w-5 text-red-400 mr-2" />
-                <span className="text-red-700 text-sm">{error}</span>
+                <span className="text-red-700 text-sm">{authError || localError}</span>
               </div>
             )}
 

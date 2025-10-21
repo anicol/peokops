@@ -55,6 +55,7 @@ LOCAL_APPS = [
     'inspections.apps.InspectionsConfig',
     'videos.apps.VideosConfig',
     'ai_services.apps.AiServicesConfig',
+    'billing.apps.BillingConfig',
     'marketing.apps.MarketingConfig',
     'micro_checks.apps.MicroChecksConfig',
 ]
@@ -291,8 +292,14 @@ TWILIO_AUTH_TOKEN = config('TWILIO_AUTH_TOKEN', default='')
 TWILIO_PHONE_NUMBER = config('TWILIO_PHONE_NUMBER', default='')
 
 # Micro-check magic link base URL
-MICRO_CHECK_BASE_URL = config('MICRO_CHECK_BASE_URL', default='http://localhost:3001')
+MICRO_CHECK_BASE_URL = config('MICRO_CHECK_BASE_URL', default='http://localhost:3000')
 ENABLE_BEDROCK_RECOMMENDATIONS = config('ENABLE_BEDROCK_RECOMMENDATIONS', default=False, cast=bool)
+
+# Stripe Settings
+STRIPE_SECRET_KEY = config('STRIPE_SECRET_KEY', default='')
+STRIPE_PUBLISHABLE_KEY = config('STRIPE_PUBLISHABLE_KEY', default='')
+STRIPE_WEBHOOK_SECRET = config('STRIPE_WEBHOOK_SECRET', default='')
+FRONTEND_URL = config('FRONTEND_URL', default='http://localhost:5174')
 
 # AWS Rekognition Configuration
 REKOGNITION_PPE_MIN_CONFIDENCE = config('REKOGNITION_PPE_MIN_CONFIDENCE', default=80, cast=int)
@@ -363,3 +370,11 @@ else:
 
 # Email timeout settings
 EMAIL_TIMEOUT = config('EMAIL_TIMEOUT', default=30, cast=int)
+
+# Stripe configuration
+STRIPE_SECRET_KEY = config('STRIPE_SECRET_KEY', default='')
+STRIPE_PUBLISHABLE_KEY = config('STRIPE_PUBLISHABLE_KEY', default='')
+STRIPE_WEBHOOK_SECRET = config('STRIPE_WEBHOOK_SECRET', default='')
+
+# Frontend URL for Stripe redirects
+FRONTEND_URL = config('FRONTEND_URL', default='http://localhost:5174' if DEBUG else 'https://app.getpeakops.com')

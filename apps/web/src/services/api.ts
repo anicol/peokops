@@ -12,6 +12,9 @@ import type {
   AuthResponse,
   InspectionStats,
   Upload,
+  SubscriptionPlan,
+  Subscription,
+  SubscriptionStatus,
 } from '@/types';
 import type {
   MicroCheckRun,
@@ -403,6 +406,15 @@ export const microCheckAPI = {
     return response.data;
   },
 
+  // Exchange magic link token for authentication tokens (no auth required)
+  tokenLogin: async (token: string): Promise<{ access: string; refresh: string }> => {
+    const response = await api.post('/micro-checks/runs/token_login/',
+      { token },
+      { headers: { Authorization: '' } } // Override auth for this request
+    );
+    return response.data;
+  },
+
   // Submit response via magic link (no auth required)
   submitResponseViaToken: async (data: SubmitResponseRequest): Promise<MicroCheckResponse> => {
     const response = await api.post('/micro-checks/responses/submit_via_magic_link/', data, {
@@ -758,6 +770,54 @@ export const adminAnalyticsAPI = {
   getTimeOfDayActivity: async () => {
     const response = await api.get('/micro-checks/admin/analytics/time_of_day/');
     return response.data;
+  },
+};
+
+// Billing API
+export const billingAPI = {
+  // Get all subscription plans
+  getPlans: async (): Promise<SubscriptionPlan[]> => {
+    const response = await api.get('/billing/plans/');
+    return response.data.results || response.data;
+  },
+
+  // Get current subscription status
+  getSubscriptionStatus: async (): Promise<SubscriptionStatus> => {
+    const response = await api.get('/billing/subscription-status/');
+    return response.data;
+  },
+
+  // Get user's subscriptions
+  getSubscriptions: async (): Promise<Subscription[]> => {
+    const response = await api.get('/billing/subscriptions/');
+    return response.data.results || response.data;
+  },
+
+  // Create checkout session
+  createCheckoutSession: async (data: {
+    plan_type: string;
+    store_count?: number;
+    success_url?: string;
+    cancel_url?: string;
+  }): Promise<{ checkout_session_id: string; checkout_url: string }> => {
+    const response = await api.post('/billing/create-checkout-session/', data);
+    return response.data;
+  },
+
+  // Create customer portal session
+  createPortalSession: async (): Promise<{ portal_url: string }> => {
+    const response = await api.post('/billing/create-portal-session/');
+    return response.data;
+  },
+
+  // Cancel subscription
+  cancelSubscription: async (subscriptionId: number): Promise<void> => {
+    await api.post(`/billing/subscriptions/${subscriptionId}/cancel/`);
+  },
+
+  // Reactivate subscription
+  reactivateSubscription: async (subscriptionId: number): Promise<void> => {
+    await api.post(`/billing/subscriptions/${subscriptionId}/reactivate/`);
   },
 };
 

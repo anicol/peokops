@@ -114,33 +114,29 @@ PeakOps
 
 
 class LoginSerializer(serializers.Serializer):
-    username = serializers.CharField()
+    email = serializers.EmailField()
     password = serializers.CharField()
 
     def validate(self, attrs):
-        username = attrs.get('username')
+        email = attrs.get('email')
         password = attrs.get('password')
 
-        if username and password:
-            # Try to authenticate with username
-            user = authenticate(username=username, password=password)
-
-            # If failed, check if it's an email and try to find the user
-            if not user and '@' in username:
-                try:
-                    user_obj = User.objects.get(email=username)
-                    user = authenticate(username=user_obj.username, password=password)
-                except User.DoesNotExist:
-                    pass
-
-            if not user:
+        if email and password:
+            # Try to find user by email and authenticate with username
+            try:
+                user = User.objects.get(email=email)
+                user = authenticate(username=user.username, password=password)
+                if not user:
+                    raise serializers.ValidationError('Invalid credentials')
+            except User.DoesNotExist:
                 raise serializers.ValidationError('Invalid credentials')
+
             if not user.is_active:
                 raise serializers.ValidationError('User account is disabled')
             attrs['user'] = user
             return attrs
         else:
-            raise serializers.ValidationError('Must include username and password')
+            raise serializers.ValidationError('Must include email and password')
 
 
 class TrialSignupSerializer(serializers.Serializer):

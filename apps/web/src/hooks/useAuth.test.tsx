@@ -84,10 +84,10 @@ describe('useAuth', () => {
     expect(result.current.user).toBeNull()
 
     await act(async () => {
-      await result.current.login({ username: 'testuser', password: 'password123' })
+      await result.current.login({ email: 'testuser@example.com', password: 'password123' })
     })
 
-    expect(mockAuthAPI.login).toHaveBeenCalledWith({ username: 'testuser', password: 'password123' })
+    expect(mockAuthAPI.login).toHaveBeenCalledWith({ email: 'testuser@example.com', password: 'password123' })
     
     // Wait for React state updates to complete
     await waitFor(() => {
@@ -107,7 +107,7 @@ describe('useAuth', () => {
 
     await expect(
       act(async () => {
-        await result.current.login({ username: 'testuser', password: 'wrongpassword' })
+        await result.current.login({ email: 'testuser@example.com', password: 'wrongpassword' })
       })
     ).rejects.toThrow('Invalid credentials')
 

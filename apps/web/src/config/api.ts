@@ -26,4 +26,11 @@ export const API_ENDPOINTS = {
   stores: '/stores/',
   videos: '/videos/',
   inspections: '/inspections/',
+  billing: {
+    plans: '/billing/plans/',
+    subscriptions: '/billing/subscriptions/',
+    createCheckout: '/billing/create-checkout-session/',
+    createPortal: '/billing/create-portal-session/',
+    subscriptionStatus: '/billing/subscription-status/',
+  },
 };

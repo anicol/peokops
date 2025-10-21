@@ -71,7 +71,7 @@ class AuthAPITest(TestCase):
 
     def test_login_success(self):
         data = {
-            'username': 'testuser',
+            'email': 'test@example.com',
             'password': 'testpass123'
         }
         response = self.client.post('/api/auth/login/', data)
@@ -82,7 +82,7 @@ class AuthAPITest(TestCase):
 
     def test_login_invalid_credentials(self):
         data = {
-            'username': 'testuser',
+            'email': 'test@example.com',
             'password': 'wrongpassword'
         }
         response = self.client.post('/api/auth/login/', data)

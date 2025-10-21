@@ -46,7 +46,30 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setError(null);
     },
     onError: (error: any) => {
-      setError(error.response?.data?.detail || 'Login failed');
+      const errorData = error.response?.data;
+      let errorMessage = 'Login failed';
+
+      if (errorData) {
+        // Handle different error response formats
+        if (errorData.non_field_errors) {
+          errorMessage = Array.isArray(errorData.non_field_errors)
+            ? errorData.non_field_errors[0]
+            : errorData.non_field_errors;
+        } else if (errorData.detail) {
+          errorMessage = errorData.detail;
+        } else if (errorData.email) {
+          errorMessage = Array.isArray(errorData.email) ? errorData.email[0] : errorData.email;
+        } else if (errorData.password) {
+          errorMessage = Array.isArray(errorData.password) ? errorData.password[0] : errorData.password;
+        }
+      }
+
+      // Make error message more user-friendly
+      if (errorMessage === 'Invalid credentials') {
+        errorMessage = 'Invalid email or password. Please try again.';
+      }
+
+      setError(errorMessage);
     },
   });
 
