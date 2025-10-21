@@ -264,13 +264,24 @@ export interface SubscriptionPlan {
   name: string;
   description: string;
   plan_type: 'TRIAL' | 'STARTER_COACHING' | 'PRO_COACHING' | 'ENTERPRISE';
-  price_per_store: string;
-  billing_period: 'MONTHLY' | 'ANNUAL';
-  stripe_price_id: string;
-  features: Record<string, any>;
+  price_per_store?: string;
+  price_monthly: string;
+  billing_period?: 'MONTHLY' | 'ANNUAL';
+  stripe_price_id?: string;
+  unlimited_coaching_videos?: boolean;
+  inspection_mode_enabled?: boolean;
+  multi_manager_analytics?: boolean;
+  corporate_dashboards?: boolean;
+  advanced_analytics?: boolean;
+  priority_support?: boolean;
+  dedicated_success_manager?: boolean;
+  max_videos_per_month?: number | null;
+  max_stores?: number;
+  max_users?: number;
+  features?: Record<string, any>;
   is_active: boolean;
-  created_at: string;
-  updated_at: string;
+  created_at?: string;
+  updated_at?: string;
 }
 
 export interface Subscription {

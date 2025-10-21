@@ -562,10 +562,10 @@ const MicroCheckPage = () => {
 
           setError(null); // Clear error to show summary
           setCurrentScreen('summary');
-        } catch (err) {
+        } catch (err: any) {
           console.error('Error loading results:', err);
           // If still getting auth errors, redirect to login
-          if (err.response?.status === 401) {
+          if (err?.response?.status === 401) {
             window.location.href = '/login?message=view_results';
           }
         }
