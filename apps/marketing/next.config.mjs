@@ -1,8 +1,8 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
-  // Enable static export for hosting on static servers (optional)
-  // output: 'export',
+  // Enable static export for hosting on static servers
+  output: 'export',
 
   // Customize image domains if needed
   images: {
