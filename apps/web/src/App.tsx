@@ -22,6 +22,7 @@ import InspectionDetailPage from '@/pages/InspectionDetailPage';
 import ActionItemsPage from '@/pages/ActionItemsPage';
 import BrandsPage from '@/pages/BrandsPage';
 import AccountPage from '@/pages/AccountPage';
+import IntegrationsPage from '@/pages/IntegrationsPage';
 import StoresPage from '@/pages/StoresPage';
 import UsersPage from '@/pages/UsersPage';
 import AdminUsersPage from '@/pages/AdminUsersPage';
@@ -194,6 +195,18 @@ function AppRoutes() {
             isAuthenticated ? (
               <Layout>
                 <AccountPage />
+              </Layout>
+            ) : (
+              <Navigate to="/login" replace />
+            )
+          }
+        />
+        <Route
+          path="/integrations"
+          element={
+            isAuthenticated ? (
+              <Layout>
+                <IntegrationsPage />
               </Layout>
             ) : (
               <Navigate to="/login" replace />
