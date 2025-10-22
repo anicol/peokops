@@ -28,6 +28,10 @@ twilio>=9.0,<10.0
 # Image processing (basic)
 Pillow>=10.1,<11.0
 
+# Integrations
+cryptography>=42.0,<43.0  # For 7shifts token encryption
+requests>=2.31,<3.0  # HTTP client for API integrations
+
 # Configuration and deployment
 python-decouple>=3.8,<4.0
 gunicorn>=21.2,<22.0
