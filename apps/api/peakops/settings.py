@@ -258,6 +258,35 @@ CELERY_BEAT_SCHEDULE = {
         'schedule': crontab(minute=5),  # Run at :05 past every hour
         'options': {'queue': 'default'}
     },
+    # 7shifts integration - Daily employee sync at 3 AM UTC
+    'sync-seven-shifts-employees': {
+        'task': 'integrations.sync_seven_shifts_employees',
+        'schedule': crontab(hour=3, minute=0),  # 3:00 AM UTC daily
+        'options': {'queue': 'default'}
+    },
+    # 7shifts integration - Shift sync twice daily (6 AM and 6 PM UTC)
+    'sync-seven-shifts-shifts-morning': {
+        'task': 'integrations.sync_seven_shifts_shifts',
+        'schedule': crontab(hour=6, minute=0),  # 6:00 AM UTC
+        'options': {'queue': 'default'}
+    },
+    'sync-seven-shifts-shifts-evening': {
+        'task': 'integrations.sync_seven_shifts_shifts',
+        'schedule': crontab(hour=18, minute=0),  # 6:00 PM UTC
+        'options': {'queue': 'default'}
+    },
+    # 7shifts integration - Weekly cleanup of old shifts (Sundays at 4 AM UTC)
+    'cleanup-old-seven-shifts-data': {
+        'task': 'integrations.cleanup_old_shifts',
+        'schedule': crontab(day_of_week=0, hour=4, minute=0),  # Sundays at 4 AM
+        'options': {'queue': 'maintenance'}
+    },
+    # 7shifts integration - Monthly cleanup of old sync logs (1st of month at 5 AM UTC)
+    'cleanup-old-sync-logs': {
+        'task': 'integrations.cleanup_old_sync_logs',
+        'schedule': crontab(day_of_month=1, hour=5, minute=0),  # 1st of month at 5 AM
+        'options': {'queue': 'maintenance'}
+    },
 }
 
 AWS_ACCESS_KEY_ID = config('AWS_ACCESS_KEY_ID', default='')

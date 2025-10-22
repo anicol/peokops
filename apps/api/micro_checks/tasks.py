@@ -26,6 +26,14 @@ from .utils import (
     all_run_items_passed
 )
 
+# Import shift checker for 7shifts integration
+try:
+    from integrations.shift_checker import ShiftChecker
+    SHIFT_CHECKER_AVAILABLE = True
+except ImportError:
+    SHIFT_CHECKER_AVAILABLE = False
+    logger.warning("7shifts integration not available - shift checking disabled")
+
 User = get_user_model()
 logger = logging.getLogger(__name__)
 
@@ -228,6 +236,8 @@ def send_micro_check_assignment(run_id, manager_id, delivery_method='SMS'):
     """
     Create and send a magic link assignment to a manager.
 
+    Checks 7shifts integration to ensure the employee is on shift before sending.
+
     Args:
         run_id: UUID of MicroCheckRun
         manager_id: ID of User (manager)
@@ -239,6 +249,29 @@ def send_micro_check_assignment(run_id, manager_id, delivery_method='SMS'):
     except (MicroCheckRun.DoesNotExist, User.DoesNotExist) as e:
         logger.error(f"Assignment creation failed: {str(e)}")
         return {'success': False, 'error': str(e)}
+
+    # Check 7shifts shift schedule if integration is enabled
+    if SHIFT_CHECKER_AVAILABLE and manager.email and manager.store:
+        shift_check = ShiftChecker.should_send_micro_check(
+            email=manager.email,
+            store=manager.store,
+            check_time=timezone.now()
+        )
+
+        if not shift_check['should_send']:
+            logger.info(
+                f"Skipping micro-check for {manager.email} - {shift_check['reason']}"
+            )
+            return {
+                'success': False,
+                'error': 'employee_not_on_shift',
+                'reason': shift_check['reason'],
+                'skipped': True
+            }
+
+        logger.info(
+            f"Sending micro-check to {manager.email} - {shift_check['reason']}"
+        )
 
     # Generate magic link token
     raw_token = generate_magic_link_token()
