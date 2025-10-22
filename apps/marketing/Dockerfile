@@ -6,7 +6,7 @@ WORKDIR /app
 COPY package*.json ./
 
 # Install dependencies
-RUN npm install
+RUN npm ci --legacy-peer-deps
 
 # Copy project files
 COPY . .
@@ -14,5 +14,5 @@ COPY . .
 # Expose port
 EXPOSE 5174
 
-# Start development server
-CMD ["npm", "run", "dev", "--", "--host", "0.0.0.0"]
+# Start Next.js development server
+CMD ["npm", "run", "dev"]
