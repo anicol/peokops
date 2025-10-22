@@ -58,6 +58,7 @@ LOCAL_APPS = [
     'billing.apps.BillingConfig',
     'marketing.apps.MarketingConfig',
     'micro_checks.apps.MicroChecksConfig',
+    'integrations.apps.IntegrationsConfig',
 ]
 
 INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + LOCAL_APPS
