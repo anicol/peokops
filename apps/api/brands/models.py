@@ -92,7 +92,10 @@ class Brand(models.Model):
 
 
 class Store(models.Model):
-    brand = models.ForeignKey(Brand, on_delete=models.CASCADE, related_name='stores')
+    account = models.ForeignKey('accounts.Account', on_delete=models.CASCADE, null=True, blank=True,
+                                related_name='stores', help_text="Franchisee account that operates this store")
+    brand = models.ForeignKey(Brand, on_delete=models.CASCADE, related_name='stores',
+                             help_text="Parent brand (for reporting and brand-level templates)")
     name = models.CharField(max_length=100)
     region = models.CharField(max_length=100, blank=True, help_text="Geographic region or district")
     code = models.CharField(max_length=20, unique=True)

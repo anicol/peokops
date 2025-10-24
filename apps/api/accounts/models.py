@@ -4,6 +4,42 @@ from django.utils import timezone
 from datetime import timedelta
 
 
+class Account(models.Model):
+    """Franchisee/Operator account - primary tenant for multi-brand support
+
+    Enables multiple franchisees to operate under the same brand,
+    each with their own stores, users, and integrations (e.g., 7shifts).
+    """
+
+    name = models.CharField(max_length=200, help_text="Franchisee/operator name (e.g., 'John's Franchise Group')")
+    brand = models.ForeignKey('brands.Brand', on_delete=models.PROTECT, related_name='accounts',
+                              help_text="Parent brand this account operates under")
+    owner = models.ForeignKey('User', on_delete=models.PROTECT, related_name='owned_accounts',
+                              help_text="Primary account owner (franchisee)")
+
+    # Contact and billing info
+    company_name = models.CharField(max_length=200, blank=True, help_text="Legal company name")
+    billing_email = models.EmailField(blank=True, help_text="Email for billing and invoices")
+    phone = models.CharField(max_length=20, blank=True)
+
+    # Status
+    is_active = models.BooleanField(default=True)
+
+    # Timestamps
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = 'accounts'
+        ordering = ['brand__name', 'name']
+        indexes = [
+            models.Index(fields=['brand', 'is_active']),
+        ]
+
+    def __str__(self):
+        return f"{self.brand.name} - {self.name}"
+
+
 class User(AbstractUser):
     class Role(models.TextChoices):
         SUPER_ADMIN = 'SUPER_ADMIN', 'Super Admin'  # System-wide authority
@@ -14,6 +50,8 @@ class User(AbstractUser):
         TRIAL_ADMIN = 'TRIAL_ADMIN', 'Trial Admin'  # Trial user admin
 
     role = models.CharField(max_length=20, choices=Role.choices, default=Role.INSPECTOR)
+    account = models.ForeignKey(Account, on_delete=models.CASCADE, null=True, blank=True,
+                                related_name='users', help_text="Franchisee account this user belongs to")
     store = models.ForeignKey('brands.Store', on_delete=models.CASCADE, null=True, blank=True)
     phone = models.CharField(max_length=20, blank=True)
     is_active = models.BooleanField(default=True)
