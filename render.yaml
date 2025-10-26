@@ -79,9 +79,9 @@ services:
       - key: AWS_SES_REGION_NAME
         value: us-east-1
       - key: DEFAULT_FROM_EMAIL
-        value: noreply@getpeakops.com
+        value: alistair@getpeakops.com
       - key: SERVER_EMAIL
-        value: admin@getpeakops.com
+        value: alistair@getpeakops.com
     healthCheckPath: /health/
 
   # Celery Worker
