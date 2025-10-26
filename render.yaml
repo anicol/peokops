@@ -237,9 +237,9 @@ services:
       - key: VITE_API_URL
         value: https://peakops-api.onrender.com
 
-  # Marketing Site (Next.js SSR)
+  # Marketing Site (Next.js SSR) - New service to replace static site
   - type: web
-    name: peakops-marketing
+    name: peakops-marketing-web
     env: node
     rootDir: apps/marketing
     buildCommand: npm install && npm run build
