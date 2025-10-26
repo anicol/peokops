@@ -210,10 +210,11 @@ else:
     CORS_ALLOWED_ORIGINS = [
         # Render default URLs
         'https://peakops-web.onrender.com',
-        'https://peakops-marketing.onrender.com',
+        'https://peakops-marketing.onrender.com',  # Old static site
+        'https://peakops-marketing-web.onrender.com',  # New Next.js SSR service
         # Custom subdomains for production
         'https://getpeakops.com',
-        'https://www.getpeakops.com', 
+        'https://www.getpeakops.com',
         'https://app.getpeakops.com',
         # Allow other subdomains if configured
         'https://marketing.getpeakops.com',
