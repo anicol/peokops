@@ -242,7 +242,7 @@ services:
     name: peakops-marketing-web
     env: node
     rootDir: apps/marketing
-    buildCommand: npm ci && npm run build
+    buildCommand: npm install --production=false && npm run build
     startCommand: npm run start
     plan: starter
 
