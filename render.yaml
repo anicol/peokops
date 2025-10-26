@@ -242,12 +242,9 @@ services:
     name: peakops-marketing-web
     env: node
     rootDir: apps/marketing
-    buildCommand: npm install && npm run build
+    buildCommand: npm ci && npm run build
     startCommand: npm run start
     plan: starter
-    envVars:
-      - key: NODE_ENV
-        value: production
 
   # Redis Cache/Queue
   - type: redis
