@@ -5,7 +5,7 @@ const nextConfig = {
   // Customize image domains if needed
   images: {
     domains: ['images.pexels.com', 'getpeakops.com'],
-    unoptimized: true, // Required for static export if needed later
+    unoptimized: true,
   },
 
   // Redirects for route aliases
