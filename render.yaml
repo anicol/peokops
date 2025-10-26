@@ -107,8 +107,8 @@ services:
         python3.11 -m pip install -r requirements.txt --break-system-packages --quiet
       }
       
-      echo "Starting Celery worker..."
-      python3.11 -m celery -A peakops worker -l info
+      echo "Starting Celery worker with memory optimizations..."
+      python3.11 -m celery -A peakops worker -l info --concurrency=1 --max-tasks-per-child=5 --max-memory-per-child=400000
     plan: starter
     envVars:
       - key: DJANGO_SETTINGS_MODULE
@@ -237,19 +237,17 @@ services:
       - key: VITE_API_URL
         value: https://peakops-api.onrender.com
 
-  # Marketing Site
+  # Marketing Site (Next.js SSR)
   - type: web
     name: peakops-marketing
-    env: static
-    buildCommand: |
-      cd apps/marketing &&
-      npm install &&
-      npm run build
-    staticPublishPath: ./apps/marketing/dist
-    routes:
-      - type: rewrite
-        source: /*
-        destination: /index.html
+    env: node
+    rootDir: apps/marketing
+    buildCommand: npm install && npm run build
+    startCommand: npm run start
+    plan: starter
+    envVars:
+      - key: NODE_ENV
+        value: production
 
   # Redis Cache/Queue
   - type: redis
