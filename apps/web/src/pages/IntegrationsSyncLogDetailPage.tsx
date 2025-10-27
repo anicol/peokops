@@ -24,6 +24,9 @@ interface SyncedEmployee {
   name: string;
   email: string;
   location_id?: number;
+  location_name?: string;
+  store_name?: string;
+  roles?: any[];
   data: any;
 }
 
@@ -52,6 +55,18 @@ interface SevenShiftsSyncLog {
     locations?: any[];
     location_map?: Record<string, string>;
     date_range?: { start: string; end: string };
+    removed_count?: number;
+    user_mapping?: {
+      total_unmapped?: number;
+      mapped?: number;
+      created?: number;
+      skipped?: number;
+      temp_email_count?: number;
+      created_details?: any[];
+      temp_email_details?: any[];
+      mapped_details?: any[];
+      skipped_details?: any[];
+    };
     summary?: {
       total_fetched: number;
       successfully_synced: number;
@@ -365,7 +380,7 @@ export default function IntegrationsSyncLogDetailPage() {
         )}
 
         {/* Removed Employees Notice */}
-        {log.sync_type === 'EMPLOYEES' && log.error_details.removed_count > 0 && (
+        {log.sync_type === 'EMPLOYEES' && (log.error_details.removed_count ?? 0) > 0 && (
           <div className="bg-blue-50 border border-blue-200 rounded-lg p-6 mt-6">
             <div className="flex items-start">
               <AlertTriangle className="w-6 h-6 text-blue-600 mr-3 flex-shrink-0 mt-0.5" />

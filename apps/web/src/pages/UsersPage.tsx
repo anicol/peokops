@@ -418,7 +418,18 @@ interface UserFormModalProps {
 
 function UserFormModal({ user, stores, currentUserRole, onClose }: UserFormModalProps) {
   const queryClient = useQueryClient();
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<{
+    username: string;
+    email: string;
+    first_name: string;
+    last_name: string;
+    password: string;
+    password_confirm: string;
+    role: 'SUPER_ADMIN' | 'ADMIN' | 'OWNER' | 'GM' | 'INSPECTOR' | 'TRIAL_ADMIN' | 'EMPLOYEE';
+    store: number | null;
+    phone: string;
+    is_active: boolean;
+  }>({
     username: user?.username || '',
     email: user?.email || '',
     first_name: user?.first_name || '',
@@ -543,7 +554,7 @@ function UserFormModal({ user, stores, currentUserRole, onClose }: UserFormModal
               <select
                 required
                 value={formData.role}
-                onChange={(e) => setFormData({ ...formData, role: e.target.value as 'ADMIN' | 'OWNER' | 'GM' | 'INSPECTOR' | 'EMPLOYEE' })}
+                onChange={(e) => setFormData({ ...formData, role: e.target.value as typeof formData.role })}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
               >
                 {availableRoles.map(role => (

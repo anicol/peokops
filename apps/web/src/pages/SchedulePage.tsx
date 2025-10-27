@@ -44,6 +44,11 @@ interface SevenShiftsConfig {
   is_configured: boolean;
   is_active: boolean;
   enforce_shift_schedule: boolean;
+  company_id?: string;
+  sync_employees_enabled?: boolean;
+  sync_shifts_enabled?: boolean;
+  sync_role_names?: string[];
+  create_users_without_email?: boolean;
 }
 
 interface EmployeeSchedule {

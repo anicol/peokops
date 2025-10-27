@@ -38,7 +38,7 @@ const getSyncLogs = async (): Promise<SevenShiftsSyncLog[]> => {
 export default function IntegrationsSyncLogsPage() {
   const navigate = useNavigate();
 
-  const { data: syncLogs, isLoading, error } = useQuery<SevenShiftsSyncLog[]>(
+  const { data: syncLogs, isLoading, error } = useQuery<SevenShiftsSyncLog[], Error>(
     '7shifts-sync-logs',
     getSyncLogs,
     {
@@ -78,6 +78,7 @@ export default function IntegrationsSyncLogsPage() {
             <div className="p-8 text-center">
               <XCircle className="w-12 h-12 text-red-500 mx-auto mb-2" />
               <p className="text-red-600">Failed to load sync logs</p>
+              <p className="text-sm text-gray-500 mt-1">{(error as Error).message}</p>
             </div>
           )}
 
@@ -120,7 +121,7 @@ export default function IntegrationsSyncLogsPage() {
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
-                  {syncLogs.map((log) => (
+                  {syncLogs.map((log: SevenShiftsSyncLog) => (
                     <tr
                       key={log.id}
                       onClick={() => navigate(`/integrations/sync-logs/${log.id}`)}
