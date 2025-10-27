@@ -52,11 +52,11 @@ const BlogPivotChroniclesStartingOver = () => {
           </p>
 
           <p className="mb-8">
-            Not because it wasn't good—but because it wasn't anchored.
+            Not because it wasn't good, but because it wasn't anchored.
           </p>
 
           <p className="mb-4">
-            I'd throw out 90% of the code, the architecture, the automation, the roadmap slides—all of it.
+            I'd throw out 90% of the code, the architecture, the automation, the roadmap slides. All of it.
           </p>
 
           <p className="mb-8">
@@ -72,7 +72,7 @@ const BlogPivotChroniclesStartingOver = () => {
           </h2>
 
           <p className="mb-4">
-            I'd open my laptop and make a list of 50 people who might care—not ideal personas, just real operators I know.
+            I'd open my laptop and make a list of 50 people who might care, not ideal personas, just real operators I know.
           </p>
 
           <p className="mb-8">
@@ -107,7 +107,7 @@ const BlogPivotChroniclesStartingOver = () => {
           </p>
 
           <p className="mb-8">
-            And when I heard the same complaint three times, I'd build the smallest thing possible to fix it—then call those same people back the next day.
+            And when I heard the same complaint three times, I'd build the smallest thing possible to fix it, then call those same people back the next day.
           </p>
 
           <p className="mb-8 font-semibold text-gray-900">
@@ -119,7 +119,7 @@ const BlogPivotChroniclesStartingOver = () => {
           </h2>
 
           <p className="mb-4">
-            If I'm honest, the biggest mistake across every version of PeakOps and Extenure wasn't bad strategy—it was building before proving demand.
+            If I'm honest, the biggest mistake across every version of PeakOps and Extenure wasn't bad strategy. It was building before proving demand.
           </p>
 
           <div className="bg-red-50 border-l-4 border-red-600 p-6 my-8">
@@ -156,7 +156,7 @@ const BlogPivotChroniclesStartingOver = () => {
               <strong>Week 1:</strong> Talk to 20 people. Identify 3 repeatable pain points.
             </p>
             <p className="mb-4">
-              <strong>Week 2:</strong> Build one low-tech solution—a form, a spreadsheet, a workflow. Deliver it manually.
+              <strong>Week 2:</strong> Build one low-tech solution: a form, a spreadsheet, a workflow. Deliver it manually.
             </p>
             <p className="mb-4">
               <strong>Week 3:</strong> Charge for it. Adjust until at least 3 people pay.
@@ -190,7 +190,7 @@ const BlogPivotChroniclesStartingOver = () => {
               <strong>You don't need scale; you need proof.</strong>
             </p>
             <p className="mb-4">
-              <strong>Selling early feels uncomfortable—but it's the only shortcut that works.</strong>
+              <strong>Selling early feels uncomfortable, but it's the only shortcut that works.</strong>
             </p>
             <p className="mb-0">
               <strong>If it's not worth paying for manually, it's not worth automating.</strong>
@@ -221,7 +221,7 @@ const BlogPivotChroniclesStartingOver = () => {
               The Engagement Gap: When Code Velocity Masks Business Stagnation
             </h4>
             <p className="text-gray-700">
-              Fast doesn't mean forward. We weren't shipping to customers—we were shipping to ourselves.
+              Fast doesn't mean forward. We weren't shipping to customers. We were shipping to ourselves.
             </p>
           </Link>
 
@@ -254,7 +254,7 @@ const BlogPivotChroniclesStartingOver = () => {
             The Journey Continues
           </h2>
           <p className="text-xl text-blue-100 mb-8 max-w-3xl mx-auto">
-            These lessons aren't theoretical—they're being applied right now. Join us as we figure out what actually works.
+            These lessons aren't theoretical. They're being applied right now. Join us as we figure out what actually works.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Link

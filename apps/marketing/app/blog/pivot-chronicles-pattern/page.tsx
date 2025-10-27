@@ -48,7 +48,7 @@ const BlogPivotChroniclesPattern = () => {
       <article className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         <div className="prose prose-lg max-w-none">
           <p className="text-xl text-gray-700 leading-relaxed mb-8">
-            At some point, I looked back at everything we'd built—Extenure, the engagement dashboards, AI video inspections, micro-checks—and realized there was a pattern.
+            At some point, I looked back at everything we'd built (Extenure, the engagement dashboards, AI video inspections, micro-checks) and realized there was a pattern.
           </p>
 
           <p className="mb-6">
@@ -77,7 +77,7 @@ const BlogPivotChroniclesPattern = () => {
           </p>
 
           <p className="mb-8">
-            But the truth was—we weren't getting closer to customers, just closer to what we thought customers wanted.
+            But the truth was, we weren't getting closer to customers, just closer to what we thought customers wanted.
           </p>
 
           <div className="bg-red-50 border-l-4 border-red-600 p-6 my-8">
@@ -95,7 +95,7 @@ const BlogPivotChroniclesPattern = () => {
           </p>
 
           <p className="mb-8 font-semibold text-gray-900">
-            We weren't learning from customers—we were learning from our own assumptions.
+            We weren't learning from customers. We were learning from our own assumptions.
           </p>
 
           <h2 className="text-2xl font-bold text-gray-900 mt-12 mb-6">
@@ -107,7 +107,7 @@ const BlogPivotChroniclesPattern = () => {
           </p>
 
           <p className="mb-6">
-            You can spend weeks polishing architecture, perfecting flows, optimizing friction away—all while avoiding the scariest part: talking to people who might not care.
+            You can spend weeks polishing architecture, perfecting flows, optimizing friction away, all while avoiding the scariest part: talking to people who might not care.
           </p>
 
           <div className="bg-gray-100 border-l-4 border-gray-600 p-6 my-8">
@@ -128,7 +128,7 @@ const BlogPivotChroniclesPattern = () => {
           </p>
 
           <p className="mb-8 font-semibold text-gray-900">
-            That cycle is comforting—and deadly.
+            That cycle is comforting and deadly.
           </p>
 
           <h2 className="text-2xl font-bold text-gray-900 mt-12 mb-6">
@@ -145,16 +145,16 @@ const BlogPivotChroniclesPattern = () => {
 
           <ul className="mb-8 space-y-4">
             <li>
-              <strong>Extenure</strong> had predictive models—but no conversations with HR managers.
+              <strong>Extenure</strong> had predictive models, but no conversations with HR managers.
             </li>
             <li>
-              <strong>The engagement platform</strong> had surveys—but no pilot feedback loops.
+              <strong>The engagement platform</strong> had surveys, but no pilot feedback loops.
             </li>
             <li>
-              <strong>PeakOps AI inspections</strong> had models—but no live stores testing them.
+              <strong>PeakOps AI inspections</strong> had models, but no live stores testing them.
             </li>
             <li>
-              <strong>Micro-checks</strong> had the perfect UX—but no daily users yet.
+              <strong>Micro-checks</strong> had the perfect UX, but no daily users yet.
             </li>
           </ul>
 
@@ -163,7 +163,7 @@ const BlogPivotChroniclesPattern = () => {
           </p>
 
           <p className="mb-8">
-            It's a classic founder trap—mistaking technical learning for customer learning.
+            It's a classic founder trap: mistaking technical learning for customer learning.
           </p>
 
           <h2 className="text-2xl font-bold text-gray-900 mt-12 mb-6">
@@ -186,7 +186,7 @@ const BlogPivotChroniclesPattern = () => {
           </div>
 
           <p className="mb-6">
-            Recognizing the pattern was painful—but also freeing.
+            Recognizing the pattern was painful, but also freeing.
           </p>
 
           <p className="mb-8">
@@ -211,7 +211,7 @@ const BlogPivotChroniclesPattern = () => {
               Part 8: What $0 in Revenue Teaches You (That $1M Can't)
             </p>
             <p className="text-gray-700 mt-2">
-              Silence is data. When there's no money coming in, you can't hide behind vanity metrics—just the truth.
+              Silence is data. When there's no money coming in, you can't hide behind vanity metrics. Just the truth.
             </p>
           </Link>
         </div>
@@ -290,7 +290,7 @@ const BlogPivotChroniclesPattern = () => {
             Brutal Honesty, Real Lessons
           </h2>
           <p className="text-xl text-blue-100 mb-8 max-w-3xl mx-auto">
-            These aren't success stories. They're lessons learned the hard way—shared in real-time as we figure out what actually works.
+            These aren't success stories. They're lessons learned the hard way, shared in real-time as we figure out what actually works.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Link

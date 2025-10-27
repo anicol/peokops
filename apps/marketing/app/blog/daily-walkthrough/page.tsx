@@ -49,7 +49,7 @@ const BlogDailyWalkthrough = () => {
           </p>
 
           <p className="mb-6">
-            The truth is, most issues that get flagged don't pop up overnight. They build up slowly — a blocked exit, a dirty counter, a missing sign, a team member without proper gear.
+            The truth is, most issues that get flagged don't pop up overnight. They build up slowly: a blocked exit, a dirty counter, a missing sign, a team member without proper gear.
           </p>
 
           <p className="mb-8">
@@ -75,7 +75,7 @@ const BlogDailyWalkthrough = () => {
           </ul>
 
           <p className="mb-8">
-            Think of it as brushing your teeth — small, daily action that prevents big problems later.
+            Think of it as brushing your teeth: a small, daily action that prevents big problems later.
           </p>
 
           <h2 className="text-2xl font-bold text-gray-900 mt-12 mb-6">
@@ -197,7 +197,7 @@ const BlogDailyWalkthrough = () => {
             <li>The big "gotchas" during inspections disappear.</li>
             <li>Employees catch issues before managers do.</li>
             <li>Standards rise naturally, without nagging.</li>
-            <li>Guests notice — cleaner stores, better service, smoother experiences.</li>
+            <li>Guests notice: cleaner stores, better service, smoother experiences.</li>
           </ul>
 
           <p className="mb-8">
@@ -214,11 +214,11 @@ const BlogDailyWalkthrough = () => {
           </p>
 
           <p className="mb-4">
-            Next time you grab your morning coffee, take a quick walk. Look at your store the way an inspector — or better yet, a guest — would.
+            Next time you grab your morning coffee, take a quick walk. Look at your store the way an inspector, or better yet, a guest, would.
           </p>
 
           <p className="mb-8">
-            Five minutes now will save you five hours later. And it'll build a culture where every day is inspection day — in the best possible way.
+            Five minutes now will save you five hours later. And it'll build a culture where every day is inspection day, in the best possible way.
           </p>
         </div>
 

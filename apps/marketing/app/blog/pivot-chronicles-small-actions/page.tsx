@@ -48,7 +48,7 @@ const BlogPivotChroniclesSmallActions = () => {
       <article className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         <div className="prose prose-lg max-w-none">
           <p className="text-xl text-gray-700 leading-relaxed mb-8">
-            After realizing our AI video system was too heavy for the real world, I knew the next version of PeakOps had to feel effortless—something a manager could use without breaking stride.
+            After realizing our AI video system was too heavy for the real world, I knew the next version of PeakOps had to feel effortless: something a manager could use without breaking stride.
           </p>
 
           <p className="mb-6">
@@ -69,7 +69,7 @@ const BlogPivotChroniclesSmallActions = () => {
           </p>
 
           <p className="mb-6">
-            Each question represented one observable standard of operational excellence—"Hand sink stocked?", "Front entry clean?", "Team in proper PPE?"
+            Each question represented one observable standard of operational excellence: "Hand sink stocked?", "Front entry clean?", "Team in proper PPE?"
           </p>
 
           <p className="mb-2">
@@ -83,7 +83,7 @@ const BlogPivotChroniclesSmallActions = () => {
 
           <div className="bg-blue-50 border border-blue-200 rounded-lg p-6 my-8 text-center">
             <p className="text-lg text-gray-800">
-              "Hey Jamie — your three quick checks for today are ready."
+              "Hey Jamie, your three quick checks for today are ready."
             </p>
           </div>
 
@@ -104,7 +104,7 @@ const BlogPivotChroniclesSmallActions = () => {
           </p>
 
           <p className="mb-6">
-            It didn't ask managers to stop what they were doing—it met them where they already were.
+            It didn't ask managers to stop what they were doing. It met them where they already were.
           </p>
 
           <p className="mb-4">
@@ -113,7 +113,7 @@ const BlogPivotChroniclesSmallActions = () => {
           </p>
 
           <p className="mb-8">
-            We started calling it "operational habit formation"—because it wasn't about auditing stores anymore; it was about reinforcing the right behaviors in small, repeatable ways.
+            We started calling it "operational habit formation" because it wasn't about auditing stores anymore; it was about reinforcing the right behaviors in small, repeatable ways.
           </p>
 
           <h2 className="text-2xl font-bold text-gray-900 mt-12 mb-6">
@@ -129,7 +129,7 @@ const BlogPivotChroniclesSmallActions = () => {
           </p>
 
           <p className="mb-4">
-            It's the same principle as fitness apps or learning streaks—make success simple, visible, and repeatable.
+            It's the same principle as fitness apps or learning streaks: make success simple, visible, and repeatable.
           </p>
 
           <p className="mb-8">
@@ -154,7 +154,7 @@ const BlogPivotChroniclesSmallActions = () => {
           </h2>
 
           <p className="mb-4">
-            As elegant as it felt, one big thing was still missing—customers actually using it at scale.
+            As elegant as it felt, one big thing was still missing: customers actually using it at scale.
           </p>
 
           <p className="mb-6">
@@ -186,13 +186,13 @@ const BlogPivotChroniclesSmallActions = () => {
           </div>
 
           <p className="mb-8 text-lg">
-            Micro-checks were the smallest thing we'd ever built—and probably the smartest.<br />
+            Micro-checks were the smallest thing we'd ever built, and probably the smartest.<br />
             They turned "operations software" into a daily ritual.
           </p>
 
           <p className="mb-8 text-lg font-semibold text-gray-900">
             But they also exposed the next uncomfortable truth: we were still building in isolation.<br />
-            That realization set up the next chapter—the pattern behind all these pivots.
+            That realization set up the next chapter: the pattern behind all these pivots.
           </p>
 
           <Link href="/blog/pivot-chronicles-pattern" className="block bg-gray-100 rounded-lg p-6 mt-12 hover:bg-gray-200 transition-colors">

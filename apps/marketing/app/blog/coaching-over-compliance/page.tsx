@@ -56,7 +56,7 @@ const BlogCoachingOverCompliance = () => {
 
           <p className="mb-8">
             <strong>But there's a better way.</strong><br />
-            What if inspections weren't just about compliance — what if they were about coaching?
+            What if inspections weren't just about compliance? What if they were about coaching?
           </p>
 
           <h2 className="text-2xl font-bold text-gray-900 mt-12 mb-6">
@@ -86,7 +86,7 @@ const BlogCoachingOverCompliance = () => {
           </p>
 
           <ul className="mb-6 space-y-2">
-            <li><strong>Learning improves.</strong> Employees understand why standards matter — not just what the rule is.</li>
+            <li><strong>Learning improves.</strong> Employees understand why standards matter, not just what the rule is.</li>
             <li><strong>Morale goes up.</strong> People respond better when they feel encouraged, not just corrected.</li>
             <li><strong>Retention improves.</strong> Staff who feel invested in are more likely to stay.</li>
             <li><strong>Managers build confidence.</strong> Instead of fearing the inspection, they use it to show leadership.</li>
@@ -110,7 +110,7 @@ const BlogCoachingOverCompliance = () => {
             <li><strong>Balance the feedback.</strong> Start by recognizing what's right before pointing out what's wrong.</li>
             <li><strong>Make standards visible.</strong> Use visual guides or quick checklists as everyday training tools.</li>
             <li><strong>Coach in the moment.</strong> When you see something off, ask: "What can we do differently next time?"</li>
-            <li><strong>Celebrate progress.</strong> Don't just record violations — recognize improvements, even small ones.</li>
+            <li><strong>Celebrate progress.</strong> Don't just record violations. Recognize improvements, even small ones.</li>
           </ul>
 
           <p className="mb-8">
@@ -139,7 +139,7 @@ const BlogCoachingOverCompliance = () => {
           </h2>
 
           <p className="mb-4">
-            This isn't just about feeling better — it drives results:
+            This isn't just about feeling better. It drives results:
           </p>
 
           <ul className="mb-8 space-y-2">
@@ -155,7 +155,7 @@ const BlogCoachingOverCompliance = () => {
 
           <p className="mb-4">
             Inspections will always be part of QSR life.<br />
-            The choice is whether they're moments of fear — or moments of growth.
+            The choice is whether they're moments of fear or moments of growth.
           </p>
 
           <p className="mb-4">

@@ -74,7 +74,7 @@ const BlogPivotChroniclesEngagementGap = () => {
           </p>
 
           <p className="mb-8 text-lg">
-            Because we weren't shipping to customers—we were shipping to ourselves.
+            Because we weren't shipping to customers. We were shipping to ourselves.
           </p>
 
           <h2 className="text-2xl font-bold text-gray-900 mt-12 mb-6">
@@ -86,7 +86,7 @@ const BlogPivotChroniclesEngagementGap = () => {
           </p>
 
           <p className="mb-8">
-            It feels like traction—something's happening, things are improving, momentum is building.
+            It feels like traction: something's happening, things are improving, momentum is building.
           </p>
 
           <p className="mb-4">
@@ -99,7 +99,7 @@ const BlogPivotChroniclesEngagementGap = () => {
 
           <div className="bg-red-50 border-l-4 border-red-600 p-6 my-8">
             <p className="mb-2 font-semibold text-gray-900">
-              That was the "engagement gap"—the widening distance between how fast we were building and how little the market cared.
+              That was the "engagement gap": the widening distance between how fast we were building and how little the market cared.
             </p>
             <p className="mb-0 text-gray-900">
               We were measuring engineering speed instead of business traction.
@@ -134,7 +134,7 @@ const BlogPivotChroniclesEngagementGap = () => {
           </p>
 
           <p className="mb-8">
-            It's also incredibly comfortable—because activity feels like control, and control feels safe.
+            It's also incredibly comfortable, because activity feels like control, and control feels safe.
           </p>
 
           <p className="mb-8 font-semibold text-gray-900">
@@ -150,7 +150,7 @@ const BlogPivotChroniclesEngagementGap = () => {
           </p>
 
           <p className="mb-8">
-            If you're iterating in isolation, you're not accelerating—you're orbiting.
+            If you're iterating in isolation, you're not accelerating. You're orbiting.
           </p>
 
           <p className="mb-6">
@@ -158,7 +158,7 @@ const BlogPivotChroniclesEngagementGap = () => {
           </p>
 
           <p className="mb-8">
-            Cleaner code, better architecture, fewer bugs—all things engineers love, but customers never see.
+            Cleaner code, better architecture, fewer bugs: all things engineers love, but customers never see.
           </p>
 
           <div className="bg-blue-50 border-l-4 border-blue-600 p-6 my-8">
@@ -178,7 +178,7 @@ const BlogPivotChroniclesEngagementGap = () => {
               <strong>Code velocity can hide business stagnation.</strong> Fast doesn't mean forward.
             </p>
             <p className="mb-4">
-              <strong>The only metric that matters early on is engagement—not commits.</strong>
+              <strong>The only metric that matters early on is engagement, not commits.</strong>
             </p>
             <p className="mb-4">
               <strong>You can't refactor your way to product-market fit.</strong>
@@ -193,7 +193,7 @@ const BlogPivotChroniclesEngagementGap = () => {
           </p>
 
           <p className="mb-8 text-lg">
-            But the real progress was the uncomfortable stuff—the emails, the outreach, the demos that might go nowhere.
+            But the real progress was the uncomfortable stuff: the emails, the outreach, the demos that might go nowhere.
           </p>
 
           <p className="mb-4 text-lg font-semibold text-gray-900">

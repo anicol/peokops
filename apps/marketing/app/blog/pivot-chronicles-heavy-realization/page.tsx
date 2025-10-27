@@ -49,7 +49,7 @@ const BlogPivotChroniclesHeavyRealization = () => {
         <div className="prose prose-lg max-w-none">
           <p className="text-xl text-gray-700 leading-relaxed mb-8">
             By the time the AI video version of PeakOps was running smoothly, I was proud of it.<br />
-            It worked exactly as designed—fast processing, accurate detections, full compliance reports.
+            It worked exactly as designed: fast processing, accurate detections, full compliance reports.
           </p>
 
           <p className="mb-8">
@@ -73,7 +73,7 @@ const BlogPivotChroniclesHeavyRealization = () => {
           </p>
 
           <blockquote className="border-l-4 border-blue-600 pl-6 my-8 text-xl text-gray-700 italic">
-            "Alistair, this is great—but my managers don't have time to be cinematographers."
+            "Alistair, this is great, but my managers don't have time to be cinematographers."
           </blockquote>
 
           <p className="mb-8">
@@ -81,7 +81,7 @@ const BlogPivotChroniclesHeavyRealization = () => {
           </p>
 
           <p className="mb-4">
-            We'd built this advanced AI system to make inspections easier—but in practice, it added steps.
+            We'd built this advanced AI system to make inspections easier, but in practice, it added steps.
           </p>
 
           <p className="mb-6">
@@ -94,7 +94,7 @@ const BlogPivotChroniclesHeavyRealization = () => {
 
           <div className="bg-red-50 border-l-4 border-red-600 p-6 my-8">
             <p className="mb-2">
-              It wasn't a technical failure—it was a usability failure.
+              It wasn't a technical failure. It was a usability failure.
             </p>
             <p className="mb-0 font-semibold text-gray-900">
               The product was heavier than the problem it was meant to fix.
@@ -115,7 +115,7 @@ const BlogPivotChroniclesHeavyRealization = () => {
           </p>
 
           <p className="mb-6">
-            We see potential ROI and think, "Of course they'll do this—it's worth it."
+            We see potential ROI and think, "Of course they'll do this. It's worth it."
           </p>
 
           <p className="mb-8">
@@ -159,7 +159,7 @@ const BlogPivotChroniclesHeavyRealization = () => {
           </p>
 
           <p className="mb-8">
-            Just three micro-checks a day—delivered via text message, completed in under two minutes.
+            Just three micro-checks a day, delivered via text message, completed in under two minutes.
           </p>
 
           <p className="mb-8">
@@ -192,7 +192,7 @@ const BlogPivotChroniclesHeavyRealization = () => {
           </p>
 
           <p className="mb-12 text-lg font-semibold text-gray-900">
-            And that's what led to the simplest version yet—micro-checks, the lightest thing we could build that might still create real change.
+            And that's what led to the simplest version yet: micro-checks, the lightest thing we could build that might still create real change.
           </p>
 
           <Link href="/blog/pivot-chronicles-micro-checks" className="block bg-gray-100 rounded-lg p-6 mt-12 hover:bg-gray-200 transition-colors">

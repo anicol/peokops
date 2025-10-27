@@ -49,7 +49,7 @@ const BlogPivotChroniclesZeroRevenue = () => {
         <div className="prose prose-lg max-w-none">
           <p className="text-xl text-gray-700 leading-relaxed mb-8">
             $0 in revenue is a gift.<br />
-            It doesn't feel like one when you're living it—but it tells the truth in a way numbers never can.
+            It doesn't feel like one when you're living it, but it tells the truth in a way numbers never can.
           </p>
 
           <p className="mb-4">
@@ -83,8 +83,7 @@ const BlogPivotChroniclesZeroRevenue = () => {
           </ul>
 
           <p className="mb-8">
-            But "almost" became a way to protect my ego.<br />
-            As long as the product wasn't done, I didn't have to test whether anyone actually wanted it.
+            But "almost" became a way to protect my ego. As long as the product wasn't done, I didn't have to test whether anyone actually wanted it.
           </p>
 
           <p className="mb-4">
@@ -92,8 +91,8 @@ const BlogPivotChroniclesZeroRevenue = () => {
           </p>
 
           <p className="mb-8">
-            You can point to code commits, new designs, cleaner architecture—all progress that feels real.<br />
-            But until someone pays, it's not validation—it's rehearsal.
+            You can point to code commits, new designs, cleaner architecture. All progress that feels real.<br />
+            But until someone pays, it's not validation. It's rehearsal.
           </p>
 
           <p className="mb-8 font-semibold text-gray-900">
@@ -113,8 +112,7 @@ const BlogPivotChroniclesZeroRevenue = () => {
           </p>
 
           <p className="mb-8">
-            It doesn't care how many hours you've spent, how elegant your stack is, or how "cool" the idea sounds on LinkedIn.<br />
-            Revenue is the only external signal that cuts through founder delusion.
+            It doesn't care how many hours you've spent, how elegant your stack is, or how "cool" the idea sounds on LinkedIn. Revenue is the only external signal that cuts through founder delusion.
           </p>
 
           <div className="bg-blue-50 border-l-4 border-blue-600 p-6 my-8">
@@ -122,7 +120,7 @@ const BlogPivotChroniclesZeroRevenue = () => {
               $0 tells you you're still guessing.
             </p>
             <p className="mb-0 font-semibold text-gray-900">
-              And that's valuable—because guessing is the stage where you can still change everything.
+              And that's valuable because guessing is the stage where you can still change everything.
             </p>
           </div>
 
@@ -139,7 +137,7 @@ const BlogPivotChroniclesZeroRevenue = () => {
           </p>
 
           <p className="mb-4">
-            You tell yourself you're being strategic by waiting—but really, you're being protective.
+            You tell yourself you're being strategic by waiting, but really, you're being protective.
           </p>
 
           <p className="mb-8">
@@ -156,16 +154,16 @@ const BlogPivotChroniclesZeroRevenue = () => {
 
           <div className="bg-red-50 border-l-4 border-red-600 p-6 my-8">
             <p className="mb-4">
-              <strong>Activity ≠ traction.</strong> Code, designs, docs—they're not progress until they touch a customer.
+              <strong>Activity ≠ traction.</strong> Code, designs, docs are not progress until they touch a customer.
             </p>
             <p className="mb-4">
-              <strong>Silence is feedback.</strong> If no one's asking for it, that's a signal—not bad luck.
+              <strong>Silence is feedback.</strong> If no one's asking for it, that's a signal, not bad luck.
             </p>
             <p className="mb-4">
               <strong>Validation starts with conversation, not code.</strong>
             </p>
             <p className="mb-0">
-              <strong>Selling early is scary—but so is wasting a year building alone.</strong>
+              <strong>Selling early is scary, but so is wasting a year building alone.</strong>
             </p>
           </div>
 
@@ -188,7 +186,7 @@ const BlogPivotChroniclesZeroRevenue = () => {
               Part 9: The Engagement Gap: When Code Velocity Masks Business Stagnation
             </p>
             <p className="text-gray-700 mt-2">
-              We were shipping fast and it felt amazing. The only problem? None of it mattered. We weren't shipping to customers—we were shipping to ourselves.
+              We were shipping fast and it felt amazing. The only problem? None of it mattered. We weren't shipping to customers. We were shipping to ourselves.
             </p>
           </Link>
         </div>
