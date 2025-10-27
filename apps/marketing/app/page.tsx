@@ -36,9 +36,9 @@ export default function HomePage() {
 
             {/* Subhead */}
             <p className="text-xl md:text-2xl text-blue-50 mb-10 leading-relaxed font-light max-w-3xl">
-              PeakOps helps every location stay on standard through three quick micro-checks a day — no apps, no logins, no stress.
+              PeakOps helps every location stay on standard through three quick micro-checks a day. No apps. No logins. No stress.
               <br /><br />
-              AI behind the scenes analyzes photos, predicts issues, and personalizes what's next — so habits form effortlessly.
+              AI behind the scenes analyzes photos, predicts issues, and personalizes what's next so habits form effortlessly.
             </p>
 
             {/* CTAs */}
