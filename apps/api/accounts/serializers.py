@@ -4,7 +4,7 @@ from django.utils import timezone
 from datetime import timedelta, time
 import secrets
 import string
-from .models import User, SmartNudge, UserBehaviorEvent
+from .models import User, SmartNudge, UserBehaviorEvent, MicroCheckDeliveryConfig
 from brands.models import Brand, Store
 from .demo_data import create_demo_videos_and_inspections
 
@@ -488,3 +488,36 @@ class QuickSignupSerializer(serializers.Serializer):
         }
 
         return user
+
+
+class MicroCheckDeliveryConfigSerializer(serializers.ModelSerializer):
+    """Serializer for micro-check delivery configuration"""
+
+    class Meta:
+        model = MicroCheckDeliveryConfig
+        fields = ('id', 'account', 'send_to_recipients', 'cadence_mode',
+                 'min_day_gap', 'max_day_gap', 'randomize_recipients',
+                 'recipient_percentage', 'last_sent_date', 'next_send_date',
+                 'created_at', 'updated_at')
+        read_only_fields = ('id', 'account', 'created_at', 'updated_at')
+
+    def validate(self, attrs):
+        # Validate day gap values
+        if 'min_day_gap' in attrs and 'max_day_gap' in attrs:
+            if attrs['min_day_gap'] > attrs['max_day_gap']:
+                raise serializers.ValidationError(
+                    "Minimum day gap cannot be greater than maximum day gap"
+                )
+            if attrs['min_day_gap'] < 1 or attrs['max_day_gap'] > 7:
+                raise serializers.ValidationError(
+                    "Day gaps must be between 1 and 7 days"
+                )
+
+        # Validate recipient percentage
+        if 'recipient_percentage' in attrs:
+            if attrs['recipient_percentage'] < 1 or attrs['recipient_percentage'] > 100:
+                raise serializers.ValidationError(
+                    "Recipient percentage must be between 1 and 100"
+                )
+
+        return attrs

@@ -22,6 +22,10 @@ import InspectionDetailPage from '@/pages/InspectionDetailPage';
 import ActionItemsPage from '@/pages/ActionItemsPage';
 import BrandsPage from '@/pages/BrandsPage';
 import AccountPage from '@/pages/AccountPage';
+import IntegrationsPage from '@/pages/IntegrationsPage';
+import IntegrationsSyncLogsPage from '@/pages/IntegrationsSyncLogsPage';
+import IntegrationsSyncLogDetailPage from '@/pages/IntegrationsSyncLogDetailPage';
+import SchedulePage from '@/pages/SchedulePage';
 import StoresPage from '@/pages/StoresPage';
 import UsersPage from '@/pages/UsersPage';
 import AdminUsersPage from '@/pages/AdminUsersPage';
@@ -194,6 +198,54 @@ function AppRoutes() {
             isAuthenticated ? (
               <Layout>
                 <AccountPage />
+              </Layout>
+            ) : (
+              <Navigate to="/login" replace />
+            )
+          }
+        />
+        <Route
+          path="/integrations"
+          element={
+            isAuthenticated ? (
+              <Layout>
+                <IntegrationsPage />
+              </Layout>
+            ) : (
+              <Navigate to="/login" replace />
+            )
+          }
+        />
+        <Route
+          path="/integrations/sync-logs"
+          element={
+            isAuthenticated ? (
+              <Layout>
+                <IntegrationsSyncLogsPage />
+              </Layout>
+            ) : (
+              <Navigate to="/login" replace />
+            )
+          }
+        />
+        <Route
+          path="/integrations/sync-logs/:id"
+          element={
+            isAuthenticated ? (
+              <Layout>
+                <IntegrationsSyncLogDetailPage />
+              </Layout>
+            ) : (
+              <Navigate to="/login" replace />
+            )
+          }
+        />
+        <Route
+          path="/schedule"
+          element={
+            isAuthenticated ? (
+              <Layout>
+                <SchedulePage />
               </Layout>
             ) : (
               <Navigate to="/login" replace />

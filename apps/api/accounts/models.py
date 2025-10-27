@@ -4,6 +4,124 @@ from django.utils import timezone
 from datetime import timedelta
 
 
+class Account(models.Model):
+    """Franchisee/Operator account - primary tenant for multi-brand support
+
+    Enables multiple franchisees to operate under the same brand,
+    each with their own stores, users, and integrations (e.g., 7shifts).
+    """
+
+    name = models.CharField(max_length=200, help_text="Franchisee/operator name (e.g., 'John's Franchise Group')")
+    brand = models.ForeignKey('brands.Brand', on_delete=models.PROTECT, related_name='accounts',
+                              help_text="Parent brand this account operates under")
+    owner = models.ForeignKey('User', on_delete=models.PROTECT, related_name='owned_accounts',
+                              help_text="Primary account owner (franchisee)")
+
+    # Contact and billing info
+    company_name = models.CharField(max_length=200, blank=True, help_text="Legal company name")
+    billing_email = models.EmailField(blank=True, help_text="Email for billing and invoices")
+    phone = models.CharField(max_length=20, blank=True)
+
+    # Status
+    is_active = models.BooleanField(default=True)
+
+    # Timestamps
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = 'accounts'
+        ordering = ['brand__name', 'name']
+        indexes = [
+            models.Index(fields=['brand', 'is_active']),
+        ]
+
+    def __str__(self):
+        return f"{self.brand.name} - {self.name}"
+
+
+class MicroCheckDeliveryConfig(models.Model):
+    """Configuration for how micro-checks are delivered to an account
+
+    Controls cadence, recipients, and randomization of micro-check delivery.
+    """
+
+    class RecipientType(models.TextChoices):
+        MANAGERS_ONLY = 'MANAGERS_ONLY', 'Managers Only'
+        ALL_EMPLOYEES = 'ALL_EMPLOYEES', 'All Employees'
+
+    class CadenceMode(models.TextChoices):
+        DAILY = 'DAILY', 'Daily'
+        RANDOMIZED = 'RANDOMIZED', 'Randomized Schedule'
+
+    account = models.OneToOneField(
+        Account,
+        on_delete=models.CASCADE,
+        related_name='micro_check_delivery_config',
+        help_text="Account this configuration belongs to"
+    )
+
+    # Recipient configuration
+    send_to_recipients = models.CharField(
+        max_length=20,
+        choices=RecipientType.choices,
+        default=RecipientType.MANAGERS_ONLY,
+        help_text="Who should receive micro-checks"
+    )
+
+    # Cadence configuration
+    cadence_mode = models.CharField(
+        max_length=20,
+        choices=CadenceMode.choices,
+        default=CadenceMode.DAILY,
+        help_text="How often to send micro-checks"
+    )
+
+    # Randomization settings (for RANDOMIZED mode)
+    min_day_gap = models.PositiveSmallIntegerField(
+        default=1,
+        help_text="Minimum days between micro-checks (1-7)"
+    )
+    max_day_gap = models.PositiveSmallIntegerField(
+        default=3,
+        help_text="Maximum days between micro-checks (1-7)"
+    )
+
+    # Recipient sampling
+    randomize_recipients = models.BooleanField(
+        default=False,
+        help_text="Randomly select a percentage of eligible recipients"
+    )
+    recipient_percentage = models.PositiveSmallIntegerField(
+        default=100,
+        help_text="Percentage of eligible recipients to send to (1-100)"
+    )
+
+    # Tracking for randomized scheduling
+    last_sent_date = models.DateField(
+        null=True,
+        blank=True,
+        help_text="Last date a micro-check was sent (for calculating next send)"
+    )
+    next_send_date = models.DateField(
+        null=True,
+        blank=True,
+        help_text="Next scheduled send date (calculated for randomized mode)"
+    )
+
+    # Timestamps
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = 'micro_check_delivery_configs'
+        verbose_name = 'Micro-Check Delivery Configuration'
+        verbose_name_plural = 'Micro-Check Delivery Configurations'
+
+    def __str__(self):
+        return f"Delivery Config for {self.account.name}"
+
+
 class User(AbstractUser):
     class Role(models.TextChoices):
         SUPER_ADMIN = 'SUPER_ADMIN', 'Super Admin'  # System-wide authority
@@ -11,9 +129,12 @@ class User(AbstractUser):
         OWNER = 'OWNER', 'Owner'  # Regional/Franchisee
         GM = 'GM', 'General Manager'  # Store manager
         INSPECTOR = 'INSPECTOR', 'Inspector'  # Store inspector
+        EMPLOYEE = 'EMPLOYEE', 'Employee'  # Store employee (servers, cooks, hosts, etc.)
         TRIAL_ADMIN = 'TRIAL_ADMIN', 'Trial Admin'  # Trial user admin
 
-    role = models.CharField(max_length=20, choices=Role.choices, default=Role.INSPECTOR)
+    role = models.CharField(max_length=20, choices=Role.choices, default=Role.EMPLOYEE)
+    account = models.ForeignKey(Account, on_delete=models.CASCADE, null=True, blank=True,
+                                related_name='users', help_text="Franchisee account this user belongs to")
     store = models.ForeignKey('brands.Store', on_delete=models.CASCADE, null=True, blank=True)
     phone = models.CharField(max_length=20, blank=True)
     is_active = models.BooleanField(default=True)
@@ -44,6 +165,10 @@ class User(AbstractUser):
 
     # Onboarding tracking
     onboarding_completed_at = models.DateTimeField(null=True, blank=True, help_text="When user completed onboarding flow")
+
+    # Micro-check scheduling (per-employee randomization)
+    micro_check_last_sent_date = models.DateField(null=True, blank=True, help_text="Last date this employee received a micro-check")
+    micro_check_next_send_date = models.DateField(null=True, blank=True, help_text="Next scheduled date for this employee's micro-check")
 
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)

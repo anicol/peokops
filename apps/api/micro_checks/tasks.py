@@ -26,6 +26,14 @@ from .utils import (
     all_run_items_passed
 )
 
+# Import shift checker for 7shifts integration
+try:
+    from integrations.shift_checker import ShiftChecker
+    SHIFT_CHECKER_AVAILABLE = True
+except ImportError:
+    SHIFT_CHECKER_AVAILABLE = False
+    logger.warning("7shifts integration not available - shift checking disabled")
+
 User = get_user_model()
 logger = logging.getLogger(__name__)
 
@@ -93,14 +101,12 @@ def _should_create_run_for_store(store, local_date):
     """
     Determine if a run should be created for this store on this date.
 
-    This is where you'd implement cadence logic:
-    - Daily (always True)
-    - Every 2 days (check last run date)
-    - Weekdays only (check day of week)
-    - Custom schedule (check store settings)
+    Checks delivery configuration for cadence settings:
+    - DAILY mode: create run every day
+    - RANDOMIZED mode: create run based on random day gaps
     """
-    # For now, create daily runs for all stores
-    # You can extend this to check store.micro_check_cadence field
+    from accounts.models import MicroCheckDeliveryConfig
+    import random
 
     # Check if run already exists for today
     existing = MicroCheckRun.objects.filter(
@@ -108,7 +114,37 @@ def _should_create_run_for_store(store, local_date):
         scheduled_for=local_date
     ).exists()
 
-    return not existing
+    if existing:
+        return False
+
+    # Get account delivery config if available
+    if not store.account:
+        return True  # Default to daily if no account
+
+    try:
+        config = MicroCheckDeliveryConfig.objects.get(account=store.account)
+    except MicroCheckDeliveryConfig.DoesNotExist:
+        return True  # Default to daily if no config
+
+    # Handle cadence modes
+    if config.cadence_mode == 'DAILY':
+        return True
+
+    elif config.cadence_mode == 'RANDOMIZED':
+        # Check if we should send based on randomized schedule
+        if config.next_send_date:
+            # Use pre-calculated next send date
+            return local_date >= config.next_send_date
+        elif config.last_sent_date:
+            # Calculate if enough time has passed
+            days_since_last = (local_date - config.last_sent_date).days
+            min_gap = config.min_day_gap or 1
+            return days_since_last >= min_gap
+        else:
+            # First time sending - send it
+            return True
+
+    return True  # Default to sending
 
 
 @transaction.atomic
@@ -167,27 +203,126 @@ def _create_run_for_store(store, scheduled_date):
         # Coverage tracking is updated when responses are submitted
         # For now, we just create the run items
 
+    # Update delivery config if using randomized cadence
+    if store.account:
+        from accounts.models import MicroCheckDeliveryConfig
+        import random
+        from datetime import timedelta
+
+        try:
+            config = MicroCheckDeliveryConfig.objects.get(account=store.account)
+            if config.cadence_mode == 'RANDOMIZED':
+                # Update last sent date
+                config.last_sent_date = scheduled_date
+
+                # Calculate next send date with random gap
+                min_gap = config.min_day_gap or 1
+                max_gap = config.max_day_gap or 3
+                random_gap = random.randint(min_gap, max_gap)
+                config.next_send_date = scheduled_date + timedelta(days=random_gap)
+
+                config.save()
+                logger.info(f"Updated delivery config: next send in {random_gap} days ({config.next_send_date})")
+        except MicroCheckDeliveryConfig.DoesNotExist:
+            pass  # No config, continue
+
     logger.info(f"Created run {run.id} with {len(selected)} items for store {store.id}")
     return run
 
 
 def _send_run_to_managers(run, store):
     """
-    Send magic link emails to all managers at this store.
+    Send magic link emails to eligible recipients based on delivery configuration.
+
+    Handles:
+    - Manager-only vs all-employee delivery
+    - 7shifts shift-based filtering (if enabled)
+    - Random recipient sampling (if enabled)
 
     Returns the number of emails sent.
     """
     from .utils import send_magic_link_email
+    from accounts.models import MicroCheckDeliveryConfig
+    import random
 
-    # Get all managers for this store
-    managers = User.objects.filter(
-        store=store,
-        role='GM',
-        is_active=True
-    )
+    # Get delivery config
+    delivery_config = None
+    if store.account:
+        try:
+            delivery_config = MicroCheckDeliveryConfig.objects.get(account=store.account)
+        except MicroCheckDeliveryConfig.DoesNotExist:
+            pass
 
+    # Determine eligible recipients based on config
+    if delivery_config and delivery_config.send_to_recipients == 'ALL_EMPLOYEES':
+        # Send to all active employees at this store
+        recipients = User.objects.filter(
+            store=store,
+            is_active=True,
+            role__in=['GM', 'EMPLOYEE']
+        )
+    else:
+        # Default: send only to managers
+        recipients = User.objects.filter(
+            store=store,
+            role='GM',
+            is_active=True
+        )
+
+    # Convert to list for manipulation
+    recipients_list = list(recipients)
+
+    # Filter by per-employee scheduling (for randomized mode)
+    if delivery_config and delivery_config.cadence_mode == 'RANDOMIZED':
+        from datetime import date
+        today = date.today()
+
+        # Only send to employees whose next_send_date is today or earlier
+        recipients_list = [
+            r for r in recipients_list
+            if r.micro_check_next_send_date is None or r.micro_check_next_send_date <= today
+        ]
+        logger.info(f"Filtered to {len(recipients_list)} employees due for randomized check today")
+
+    # Check 7shifts integration for shift-based filtering
+    if SHIFT_CHECKER_AVAILABLE and store.account:
+        from integrations.models import SevenShiftsConfig
+        try:
+            shifts_config = SevenShiftsConfig.objects.get(
+                account=store.account,
+                is_active=True
+            )
+            if shifts_config.enforce_shift_schedule:
+                # Filter to only employees currently on shift
+                shift_checker = ShiftChecker()
+                on_shift_employees = shift_checker.get_employees_on_shift_at_store(
+                    store=store,
+                    check_time=timezone.now()
+                )
+                on_shift_emails = {emp['email'].lower() for emp in on_shift_employees}
+
+                # Filter recipients to those on shift
+                recipients_list = [
+                    r for r in recipients_list
+                    if r.email.lower() in on_shift_emails
+                ]
+                logger.info(f"Filtered to {len(recipients_list)} employees on shift")
+        except:
+            pass  # No 7shifts config or error, continue with all recipients
+
+    # Apply recipient randomization if enabled
+    if delivery_config and delivery_config.randomize_recipients:
+        percentage = delivery_config.recipient_percentage or 100
+        if percentage < 100:
+            # Calculate how many to send to
+            num_to_send = max(1, int(len(recipients_list) * (percentage / 100.0)))
+            # Randomly sample
+            recipients_list = random.sample(recipients_list, num_to_send)
+            logger.info(f"Randomly selected {num_to_send} of {len(recipients)} recipients ({percentage}%)")
+
+    # Send to all selected recipients
     sent_count = 0
-    for manager in managers:
+    for recipient in recipients_list:
         try:
             # Generate magic link token
             raw_token = generate_magic_link_token()
@@ -196,7 +331,7 @@ def _send_run_to_managers(run, store):
             # Create assignment
             assignment = MicroCheckAssignment.objects.create(
                 run=run,
-                manager=manager,
+                manager=recipient,
                 token_hash=token_hash,
                 delivery_method='EMAIL',
                 sent_at=timezone.now()
@@ -204,20 +339,36 @@ def _send_run_to_managers(run, store):
 
             # Send email with magic link
             success = send_magic_link_email(
-                email=manager.email,
+                email=recipient.email,
                 token=raw_token,
                 store_name=store.name,
-                recipient_name=manager.first_name or manager.username
+                recipient_name=recipient.first_name or recipient.username
             )
 
             if success:
                 sent_count += 1
-                logger.info(f"Sent micro-check email to {manager.email} for run {run.id}")
+                logger.info(f"Sent micro-check email to {recipient.email} for run {run.id}")
+
+                # Update per-employee scheduling
+                if delivery_config and delivery_config.cadence_mode == 'RANDOMIZED':
+                    from datetime import date, timedelta
+                    import random
+
+                    recipient.micro_check_last_sent_date = date.today()
+
+                    # Calculate next send date with random gap
+                    min_gap = delivery_config.min_day_gap or 1
+                    max_gap = delivery_config.max_day_gap or 3
+                    random_gap = random.randint(min_gap, max_gap)
+                    recipient.micro_check_next_send_date = date.today() + timedelta(days=random_gap)
+
+                    recipient.save(update_fields=['micro_check_last_sent_date', 'micro_check_next_send_date'])
+                    logger.info(f"Updated {recipient.email} schedule: next check in {random_gap} days")
             else:
-                logger.warning(f"Failed to send email to {manager.email} for run {run.id}")
+                logger.warning(f"Failed to send email to {recipient.email} for run {run.id}")
 
         except Exception as e:
-            logger.error(f"Error sending to manager {manager.id}: {str(e)}")
+            logger.error(f"Error sending to recipient {recipient.id}: {str(e)}")
             continue
 
     return sent_count
@@ -227,6 +378,8 @@ def _send_run_to_managers(run, store):
 def send_micro_check_assignment(run_id, manager_id, delivery_method='SMS'):
     """
     Create and send a magic link assignment to a manager.
+
+    Checks 7shifts integration to ensure the employee is on shift before sending.
 
     Args:
         run_id: UUID of MicroCheckRun
@@ -239,6 +392,29 @@ def send_micro_check_assignment(run_id, manager_id, delivery_method='SMS'):
     except (MicroCheckRun.DoesNotExist, User.DoesNotExist) as e:
         logger.error(f"Assignment creation failed: {str(e)}")
         return {'success': False, 'error': str(e)}
+
+    # Check 7shifts shift schedule if integration is enabled
+    if SHIFT_CHECKER_AVAILABLE and manager.email and manager.store:
+        shift_check = ShiftChecker.should_send_micro_check(
+            email=manager.email,
+            store=manager.store,
+            check_time=timezone.now()
+        )
+
+        if not shift_check['should_send']:
+            logger.info(
+                f"Skipping micro-check for {manager.email} - {shift_check['reason']}"
+            )
+            return {
+                'success': False,
+                'error': 'employee_not_on_shift',
+                'reason': shift_check['reason'],
+                'skipped': True
+            }
+
+        logger.info(
+            f"Sending micro-check to {manager.email} - {shift_check['reason']}"
+        )
 
     # Generate magic link token
     raw_token = generate_magic_link_token()
