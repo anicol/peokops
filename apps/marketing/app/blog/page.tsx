@@ -10,7 +10,7 @@ const Blog = () => {
     {
       id: '7shifts-integration-milestone',
       title: 'Peak Ops Now Integrates with 7shifts: Zero Setup, Maximum Impact',
-      excerpt: 'Delivering daily micro-checks to the manager currently on shift—no extra logins, no new apps, just operational excellence built into your existing workflow. This unlocks the most-requested feature from early pilots.',
+      excerpt: 'Delivering daily micro-checks to the manager currently on shift. No extra logins, no new apps, just operational excellence built into your existing workflow. This unlocks the most-requested feature from early pilots.',
       author: 'Alistair Nicol',
       date: '2025-10-27',
       readTime: '5 min read',

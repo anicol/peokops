@@ -22,7 +22,7 @@ const Blog7ShiftsIntegration = () => {
             Peak Ops Now Integrates with 7shifts: Zero Setup, Maximum Impact
           </h1>
           <p className="text-xl text-blue-100">
-            Delivering daily micro-checks to the manager currently on shift—no extra logins, no new apps, just operational excellence built into your existing workflow.
+            Delivering daily micro-checks to the manager currently on shift. No extra logins, no new apps, just operational excellence built into your existing workflow.
           </p>
         </div>
       </div>
@@ -53,7 +53,7 @@ const Blog7ShiftsIntegration = () => {
           </p>
 
           <p className="mb-6">
-            This wasn't just a technical integration—it unlocked the most-requested feature from our early pilot conversations: <strong>automatically delivering daily micro-checks to the manager currently on shift.</strong>
+            This wasn't just a technical integration. It unlocked the most-requested feature from our early pilot conversations: <strong>automatically delivering daily micro-checks to the manager currently on shift.</strong>
           </p>
 
           <p className="mb-8">
@@ -65,7 +65,7 @@ const Blog7ShiftsIntegration = () => {
             <ul className="space-y-2 text-gray-700">
               <li className="flex items-start">
                 <CheckCircle className="w-5 h-5 mr-2 text-green-600 flex-shrink-0 mt-1" />
-                <span>Start Peak Ops with zero setup—we sync your shifts, locations, and team automatically</span>
+                <span>Start Peak Ops with zero setup. We sync your shifts, locations, and team automatically</span>
               </li>
               <li className="flex items-start">
                 <CheckCircle className="w-5 h-5 mr-2 text-green-600 flex-shrink-0 mt-1" />
@@ -73,7 +73,7 @@ const Blog7ShiftsIntegration = () => {
               </li>
               <li className="flex items-start">
                 <CheckCircle className="w-5 h-5 mr-2 text-green-600 flex-shrink-0 mt-1" />
-                <span>No duplicate systems—Peak Ops works alongside the tools you already use</span>
+                <span>No duplicate systems. Peak Ops works alongside the tools you already use</span>
               </li>
             </ul>
           </div>
@@ -147,7 +147,7 @@ const Blog7ShiftsIntegration = () => {
           </p>
 
           <p className="mb-8">
-            We don't replace any of those. We fit into the gaps—delivering accountability at the right moment, to the right person, without adding overhead.
+            We don't replace any of those. We fit into the gaps. Delivering accountability at the right moment, to the right person, without adding overhead.
           </p>
 
           <h2 className="text-2xl font-bold text-gray-900 mt-12 mb-6">
@@ -176,7 +176,7 @@ const Blog7ShiftsIntegration = () => {
               <strong>Our guiding principle:</strong>
             </p>
             <p className="text-gray-700">
-              Peak Ops should be the easiest thing you add to your operations stack—not another platform to manage, but a system that makes everything else work better.
+              Peak Ops should be the easiest thing you add to your operations stack. Not another platform to manage, but a system that makes everything else work better.
             </p>
           </div>
 
@@ -193,7 +193,7 @@ const Blog7ShiftsIntegration = () => {
           </blockquote>
 
           <blockquote className="border-l-4 border-blue-600 pl-6 my-8 text-lg text-gray-700 italic">
-            "Before, our managers would forget to do the check if they came in early or got pulled into firefighting mode. Now the check shows up exactly when they need it—30 minutes after they clock in. Game changer."
+            "Before, our managers would forget to do the check if they came in early or got pulled into firefighting mode. Now the check shows up exactly when they need it. 30 minutes after they clock in. Game changer."
           </blockquote>
 
           <p className="mb-8">
@@ -209,14 +209,14 @@ const Blog7ShiftsIntegration = () => {
           </p>
 
           <ul className="mb-6 space-y-2">
-            <li><strong>Multi-location filtering</strong> – Configure different check schedules for different store types</li>
-            <li><strong>Shift handoff summaries</strong> – Automatically send a summary of the day's findings to the closing manager</li>
-            <li><strong>Role-based micro-checks</strong> – Send different checks to opening vs. closing managers</li>
-            <li><strong>More integrations</strong> – Toast POS, HotSchedules, Homebase, and more</li>
+            <li><strong>Multi-location filtering</strong> - Configure different check schedules for different store types</li>
+            <li><strong>Shift handoff summaries</strong> - Automatically send a summary of the day's findings to the closing manager</li>
+            <li><strong>Role-based micro-checks</strong> - Send different checks to opening vs. closing managers</li>
+            <li><strong>More integrations</strong> - Toast POS, HotSchedules, Homebase, and more</li>
           </ul>
 
           <p className="mb-8">
-            The vision remains the same: <strong>build daily operational habits without adding overhead.</strong>
+            The vision remains the same. <strong>Build daily operational habits without adding overhead.</strong>
           </p>
 
           <h2 className="text-2xl font-bold text-gray-900 mt-12 mb-6">
@@ -236,7 +236,7 @@ const Blog7ShiftsIntegration = () => {
           </p>
 
           <p className="mb-8">
-            That's the kind of product we're committed to building—one that runs alongside the tools you already use, that builds better habits instead of more overhead, and that turns daily ops into something managers actually want to do.
+            That's the kind of product we're committed to building. One that runs alongside the tools you already use, that builds better habits instead of more overhead, and that turns daily ops into something managers actually want to do.
           </p>
 
           <div className="bg-gradient-to-r from-blue-600 to-teal-600 text-white rounded-lg p-8 my-12">
