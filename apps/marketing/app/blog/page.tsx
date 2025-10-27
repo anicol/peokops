@@ -8,6 +8,16 @@ import NewsletterSignup from '../../components/NewsletterSignup';
 const Blog = () => {
   const blogPosts = [
     {
+      id: '7shifts-integration-milestone',
+      title: 'Peak Ops Now Integrates with 7shifts: Zero Setup, Maximum Impact',
+      excerpt: 'Delivering daily micro-checks to the manager currently on shift—no extra logins, no new apps, just operational excellence built into your existing workflow. This unlocks the most-requested feature from early pilots.',
+      author: 'Alistair Nicol',
+      date: '2025-10-27',
+      readTime: '5 min read',
+      category: 'Product Update',
+      slug: '/blog/7shifts-integration-milestone'
+    },
+    {
       id: 'pivot-chronicles-starting-over',
       title: 'Starting Over (Again): What Would Change With 10 Real Customers',
       excerpt: 'Part 10 of The Pivot Chronicles: If I had to start over tomorrow and get 10 paying customers in 30 days, almost everything I\'ve built so far would be irrelevant. Not because it wasn\'t good—but because it wasn\'t anchored.',
