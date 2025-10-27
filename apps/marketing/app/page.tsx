@@ -31,20 +31,14 @@ export default function HomePage() {
 
             {/* Main Headline */}
             <h1 className="text-5xl md:text-7xl font-bold leading-tight mb-8 tracking-tight">
-              AI That Builds Better Habits. Automatically!
+              Operational Excellence, Made a Daily Habit
             </h1>
 
             {/* Subhead */}
-            <p className="text-2xl md:text-3xl text-blue-50 mb-8 leading-relaxed font-light">
-              PeakOps helps every location stay on standard with three personalized micro-checks a day.
-              No app. No login. Just a smart AI teammate that prompts, coaches, and keeps operations running right, in under two minutes.
-            </p>
-
-            {/* Supporting Paragraph */}
-            <p className="text-lg md:text-xl text-blue-100 mb-10 leading-relaxed max-w-2xl" style={{ lineHeight: '1.6' }}>
-              Audits catch problems too late.
-              PeakOps prevents them. Using AI to deliver the right checks, validate photos or videos instantly, and even schedule rechecks automatically.
-              It's operational excellence that learns, adapts, and improves with you. One habit at a time.
+            <p className="text-xl md:text-2xl text-blue-50 mb-10 leading-relaxed font-light max-w-3xl">
+              PeakOps helps every location stay on standard through three quick micro-checks a day — no apps, no logins, no stress.
+              <br /><br />
+              AI behind the scenes analyzes photos, predicts issues, and personalizes what's next — so habits form effortlessly.
             </p>
 
             {/* CTAs */}
@@ -53,23 +47,15 @@ export default function HomePage() {
                 href={TRIAL_SIGNUP_URL}
                 className="px-8 py-4 bg-teal-500 text-white rounded-lg hover:bg-teal-400 transition-all font-semibold text-lg shadow-xl hover:shadow-2xl hover:scale-105 transform duration-200"
               >
-                Try the 7-Day Pilot →
+                Start Free Trial
               </a>
               <Link
                 href="/demo"
-                className="px-8 py-4 text-white hover:text-blue-100 transition-colors font-medium text-lg group flex items-center"
+                className="px-8 py-4 bg-white/10 backdrop-blur-sm text-white rounded-lg hover:bg-white/20 transition-all font-semibold text-lg border border-white/20"
               >
-                <span className="border-b-2 border-white/40 group-hover:border-white/80 transition-colors">
-                  See How Habits Build Consistency
-                </span>
-                <span className="ml-2 group-hover:translate-x-1 transition-transform">→</span>
+                See How It Works
               </Link>
             </div>
-
-            {/* Supporting Tagline */}
-            <p className="mt-6 text-base md:text-lg text-blue-100/90 italic font-light">
-              Three checks. Two minutes. One habit that keeps your business running right.
-            </p>
           </div>
 
           {/* Visual - Right Side */}
