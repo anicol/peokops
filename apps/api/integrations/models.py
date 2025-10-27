@@ -33,6 +33,19 @@ class SevenShiftsConfig(models.Model):
     enforce_shift_schedule = models.BooleanField(default=True,
                                                  help_text="Only send checks when employee is on shift")
 
+    # Role filtering
+    sync_role_names = models.JSONField(
+        default=list,
+        blank=True,
+        help_text="List of 7shifts role names to sync (e.g., ['Server', 'Manager']). Empty means sync all roles."
+    )
+
+    # User creation for employees without email
+    create_users_without_email = models.BooleanField(
+        default=True,
+        help_text="Create user accounts for employees without email addresses using temporary emails"
+    )
+
     # Audit fields
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -63,6 +76,12 @@ class SevenShiftsEmployee(models.Model):
                              related_name='seven_shifts_employees',
                              help_text="Store this employee works at (mapped from location_id)")
 
+    # Link to PeakOps user account
+    user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL,
+                                null=True, blank=True,
+                                related_name='seven_shifts_employee',
+                                help_text="Linked PeakOps user account")
+
     # 7shifts IDs
     seven_shifts_id = models.CharField(max_length=100, unique=True, db_index=True,
                                        help_text="7shifts user ID")
@@ -77,6 +96,9 @@ class SevenShiftsEmployee(models.Model):
 
     # Status
     is_active = models.BooleanField(default=True, help_text="Employee is active in 7shifts")
+
+    # Roles from 7shifts
+    roles = models.JSONField(default=list, blank=True, help_text="List of role names from 7shifts")
 
     # Sync tracking
     synced_at = models.DateTimeField(auto_now=True, help_text="Last sync from 7shifts")
@@ -177,3 +199,44 @@ class SevenShiftsSyncLog(models.Model):
 
     def __str__(self):
         return f"{self.sync_type} sync for {self.account.name} - {self.status}"
+
+
+class SevenShiftsLocationMapping(models.Model):
+    """Manual mapping between 7shifts locations and PeakOps stores
+
+    Allows users to explicitly map 7shifts locations to stores
+    when automatic name matching doesn't work.
+    """
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    account = models.ForeignKey('accounts.Account', on_delete=models.CASCADE,
+                                related_name='seven_shifts_location_mappings')
+
+    # 7shifts location info
+    seven_shifts_location_id = models.CharField(max_length=100, db_index=True,
+                                                help_text="7shifts location ID")
+    seven_shifts_location_name = models.CharField(max_length=200,
+                                                  help_text="7shifts location name (for display)")
+
+    # PeakOps store mapping
+    store = models.ForeignKey('brands.Store', on_delete=models.CASCADE,
+                             related_name='seven_shifts_location_mappings',
+                             help_text="PeakOps store this location maps to")
+
+    # Audit fields
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    created_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True,
+                                   related_name='created_seven_shifts_location_mappings')
+
+    class Meta:
+        db_table = 'seven_shifts_location_mappings'
+        verbose_name = '7shifts Location Mapping'
+        verbose_name_plural = '7shifts Location Mappings'
+        unique_together = [('account', 'seven_shifts_location_id')]
+        indexes = [
+            models.Index(fields=['account', 'seven_shifts_location_id']),
+        ]
+
+    def __str__(self):
+        return f"{self.seven_shifts_location_name} → {self.store.name}"

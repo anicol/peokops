@@ -8,11 +8,11 @@ from django.utils import timezone
 from django.db.models import Q
 from django_filters.rest_framework import DjangoFilterBackend
 from drf_spectacular.utils import extend_schema
-from .models import User, SmartNudge, UserBehaviorEvent
+from .models import User, SmartNudge, UserBehaviorEvent, MicroCheckDeliveryConfig
 from .serializers import (
     UserSerializer, UserCreateSerializer, LoginSerializer, TrialSignupSerializer,
     SmartNudgeSerializer, BehaviorEventCreateSerializer, ProfileUpdateSerializer,
-    PasswordChangeSerializer, QuickSignupSerializer
+    PasswordChangeSerializer, QuickSignupSerializer, MicroCheckDeliveryConfigSerializer
 )
 from .nudge_engine import BehaviorTracker, NudgeEngine
 
@@ -27,18 +27,18 @@ class UserListCreateView(generics.ListCreateAPIView):
     ordering = ['-created_at']
 
     def get_queryset(self):
-        """Filter users based on role - SUPER_ADMIN/ADMIN sees all, OWNER/GM/TRIAL_ADMIN see only their brand"""
+        """Filter users based on role - SUPER_ADMIN/ADMIN sees all, OWNER/GM/TRIAL_ADMIN see only their account"""
         user = self.request.user
 
         # SUPER_ADMIN and ADMIN see all users across all tenants
         if user.role in [User.Role.SUPER_ADMIN, User.Role.ADMIN]:
             return User.objects.all()
 
-        # OWNER, GM, and TRIAL_ADMIN see users in their brand
+        # OWNER, GM, and TRIAL_ADMIN see users in their account
         if user.role in [User.Role.OWNER, User.Role.GM, User.Role.TRIAL_ADMIN]:
-            if user.store and user.store.brand:
-                # Get all users whose store belongs to the same brand
-                return User.objects.filter(store__brand=user.store.brand)
+            if user.account:
+                # Get all users in the same account (tenant)
+                return User.objects.filter(account=user.account)
             return User.objects.none()
 
         # Other roles cannot list users
@@ -581,3 +581,103 @@ class AdminUserViewSet(viewsets.ModelViewSet):
             'status': 'success',
             'message': f'Password reset successfully for {user.email}'
         })
+
+
+@api_view(['GET', 'PUT'])
+@permission_classes([IsAuthenticated])
+def micro_check_delivery_config_view(request):
+    """
+    GET /api/accounts/micro-check-config/
+    Get or update micro-check delivery configuration for the user's account.
+
+    PUT /api/accounts/micro-check-config/
+    Update the configuration.
+    """
+    # Get user's account
+    if not request.user.account:
+        return Response(
+            {'error': 'User not associated with an account'},
+            status=status.HTTP_400_BAD_REQUEST
+        )
+
+    account = request.user.account
+
+    if request.method == 'GET':
+        # Get or create config for this account
+        config, created = MicroCheckDeliveryConfig.objects.get_or_create(
+            account=account
+        )
+        serializer = MicroCheckDeliveryConfigSerializer(config)
+        return Response(serializer.data)
+
+    elif request.method == 'PUT':
+        # Update config
+        config, created = MicroCheckDeliveryConfig.objects.get_or_create(
+            account=account
+        )
+        serializer = MicroCheckDeliveryConfigSerializer(
+            config,
+            data=request.data,
+            partial=True
+        )
+
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def micro_check_schedule_preview_view(request):
+    """
+    GET /api/accounts/micro-check-schedule/
+    Get per-employee schedule preview showing who gets checks when.
+
+    Returns list of employees with their next scheduled check date.
+    """
+    if not request.user.account:
+        return Response(
+            {'error': 'User not associated with an account'},
+            status=status.HTTP_400_BAD_REQUEST
+        )
+
+    account = request.user.account
+
+    # Get delivery config
+    try:
+        config = MicroCheckDeliveryConfig.objects.get(account=account)
+    except MicroCheckDeliveryConfig.DoesNotExist:
+        config = None
+
+    # Get all potential employees (frontend will filter based on current selection)
+    # Return both managers and employees so frontend can preview either mode
+    employees = User.objects.filter(
+        account=account,
+        is_active=True,
+        role__in=['GM', 'EMPLOYEE']
+    ).select_related('store', 'seven_shifts_employee').order_by('micro_check_next_send_date', 'last_name', 'first_name')
+
+    # Build schedule data
+    schedule_data = []
+    for employee in employees:
+        # Get the 7shifts employee ID if linked
+        seven_shifts_employee_id = None
+        if hasattr(employee, 'seven_shifts_employee') and employee.seven_shifts_employee:
+            seven_shifts_employee_id = str(employee.seven_shifts_employee.id)
+
+        schedule_data.append({
+            'id': employee.id,
+            'name': employee.full_name,
+            'email': employee.email,
+            'role': employee.role,
+            'store_name': employee.store.name if employee.store else None,
+            'last_sent_date': employee.micro_check_last_sent_date.isoformat() if employee.micro_check_last_sent_date else None,
+            'next_send_date': employee.micro_check_next_send_date.isoformat() if employee.micro_check_next_send_date else None,
+            'seven_shifts_employee_id': seven_shifts_employee_id,
+        })
+
+    return Response({
+        'cadence_mode': config.cadence_mode if config else 'DAILY',
+        'employees': schedule_data
+    })

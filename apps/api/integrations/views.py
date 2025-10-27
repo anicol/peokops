@@ -10,12 +10,13 @@ import logging
 from accounts.models import Account
 from .models import (
     SevenShiftsConfig, SevenShiftsEmployee, SevenShiftsShift,
-    SevenShiftsSyncLog
+    SevenShiftsSyncLog, SevenShiftsLocationMapping
 )
 from .serializers import (
     SevenShiftsConfigSerializer, SevenShiftsEmployeeSerializer,
     SevenShiftsShiftSerializer, SevenShiftsSyncLogSerializer,
-    SevenShiftsConfigureRequestSerializer, SevenShiftsSyncRequestSerializer
+    SevenShiftsConfigureRequestSerializer, SevenShiftsSyncRequestSerializer,
+    SevenShiftsLocationMappingSerializer, SevenShiftsLocationSerializer
 )
 from .seven_shifts_client import SevenShiftsClient
 from .sync_service import SevenShiftsSyncService
@@ -64,6 +65,7 @@ class SevenShiftsIntegrationViewSet(viewsets.GenericViewSet):
 
             # Add employee and shift counts
             data = serializer.data
+            data['is_configured'] = True
             data['employee_count'] = SevenShiftsEmployee.objects.filter(
                 account=request.user.account,
                 is_active=True
@@ -94,7 +96,8 @@ class SevenShiftsIntegrationViewSet(viewsets.GenericViewSet):
             "company_id": "company_123",
             "sync_employees_enabled": true,
             "sync_shifts_enabled": true,
-            "enforce_shift_schedule": true
+            "enforce_shift_schedule": true,
+            "sync_role_names": ["Server", "Manager"]
         }
         """
         if not request.user.account:
@@ -106,31 +109,55 @@ class SevenShiftsIntegrationViewSet(viewsets.GenericViewSet):
         serializer = SevenShiftsConfigureRequestSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
-        access_token = serializer.validated_data['access_token']
+        access_token = serializer.validated_data.get('access_token')
+        company_id = serializer.validated_data.get('company_id')
 
-        # Test the connection first
-        client = SevenShiftsClient(access_token)
-        if not client.test_connection():
-            return Response(
-                {'error': 'Invalid 7shifts credentials or connection failed'},
-                status=status.HTTP_400_BAD_REQUEST
-            )
+        # Prepare defaults for update_or_create
+        defaults = {
+            'company_id': company_id,
+            'is_active': True,
+            'sync_employees_enabled': serializer.validated_data.get('sync_employees_enabled', True),
+            'sync_shifts_enabled': serializer.validated_data.get('sync_shifts_enabled', True),
+            'enforce_shift_schedule': serializer.validated_data.get('enforce_shift_schedule', True),
+            'sync_role_names': serializer.validated_data.get('sync_role_names', []),
+            'create_users_without_email': serializer.validated_data.get('create_users_without_email', True),
+        }
 
-        # Encrypt the token
-        encrypted_token = SevenShiftsClient.encrypt_token(access_token)
+        # If access_token is provided, test connection and encrypt it
+        if access_token:
+            # Test the connection first
+            client = SevenShiftsClient(access_token, company_id=company_id)
+            is_valid, error_message = client.test_connection()
+            if not is_valid:
+                return Response(
+                    {'error': error_message or 'Invalid 7shifts credentials or connection failed'},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+
+            # Encrypt the token
+            encrypted_token = SevenShiftsClient.encrypt_token(access_token)
+            defaults['access_token_encrypted'] = encrypted_token
+
+        # Check if this is an update and access_token is required for create
+        try:
+            existing_config = SevenShiftsConfig.objects.get(account=request.user.account)
+            # This is an update - access_token is optional
+        except SevenShiftsConfig.DoesNotExist:
+            # This is a create - access_token is required
+            if not access_token:
+                return Response(
+                    {'error': 'access_token is required when creating a new configuration'},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+
+        # Set created_by only for new configs
+        if not SevenShiftsConfig.objects.filter(account=request.user.account).exists():
+            defaults['created_by'] = request.user
 
         # Create or update configuration
         config, created = SevenShiftsConfig.objects.update_or_create(
             account=request.user.account,
-            defaults={
-                'access_token_encrypted': encrypted_token,
-                'company_id': serializer.validated_data['company_id'],
-                'is_active': True,
-                'sync_employees_enabled': serializer.validated_data.get('sync_employees_enabled', True),
-                'sync_shifts_enabled': serializer.validated_data.get('sync_shifts_enabled', True),
-                'enforce_shift_schedule': serializer.validated_data.get('enforce_shift_schedule', True),
-                'created_by': request.user
-            }
+            defaults=defaults
         )
 
         # Trigger initial sync
@@ -166,8 +193,9 @@ class SevenShiftsIntegrationViewSet(viewsets.GenericViewSet):
                 status=status.HTTP_400_BAD_REQUEST
             )
 
-        client = SevenShiftsClient(access_token)
-        is_valid = client.test_connection()
+        company_id = request.data.get('company_id')
+        client = SevenShiftsClient(access_token, company_id=company_id)
+        is_valid, error_message = client.test_connection()
 
         if is_valid:
             try:
@@ -185,7 +213,7 @@ class SevenShiftsIntegrationViewSet(viewsets.GenericViewSet):
                 })
         else:
             return Response(
-                {'success': False, 'error': 'Connection failed'},
+                {'success': False, 'error': error_message or 'Connection failed'},
                 status=status.HTTP_400_BAD_REQUEST
             )
 
@@ -365,3 +393,193 @@ class SevenShiftsIntegrationViewSet(viewsets.GenericViewSet):
 
         serializer = SevenShiftsSyncLogSerializer(logs, many=True)
         return Response(serializer.data)
+
+    @action(detail=False, methods=['get'], url_path='locations')
+    def list_locations(self, request):
+        """
+        GET /api/integrations/7shifts/locations
+
+        List all 7shifts locations with their mapping status.
+        """
+        if not request.user.account:
+            return Response(
+                {'error': 'User not associated with an account'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        try:
+            config = SevenShiftsConfig.objects.get(account=request.user.account)
+        except SevenShiftsConfig.DoesNotExist:
+            return Response(
+                {'error': '7shifts integration not configured'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        # Fetch locations from 7shifts
+        try:
+            access_token = SevenShiftsClient.decrypt_token(config.access_token_encrypted)
+            client = SevenShiftsClient(access_token, company_id=config.company_id)
+            locations = client.list_locations()
+        except Exception as e:
+            logger.error(f"Failed to fetch locations: {str(e)}")
+            return Response(
+                {'error': f'Failed to fetch locations from 7shifts: {str(e)}'},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
+        # Get existing mappings
+        mappings = SevenShiftsLocationMapping.objects.filter(
+            account=request.user.account
+        ).select_related('store')
+        mapping_dict = {m.seven_shifts_location_id: m for m in mappings}
+
+        # Build response with mapping status
+        locations_with_status = []
+        for location in locations:
+            location_id = str(location.get('id'))
+            mapping = mapping_dict.get(location_id)
+
+            locations_with_status.append({
+                'id': location_id,
+                'name': location.get('name'),
+                'is_mapped': mapping is not None,
+                'mapped_store_id': mapping.store.id if mapping else None,
+                'mapped_store_name': mapping.store.name if mapping else None,
+            })
+
+        serializer = SevenShiftsLocationSerializer(locations_with_status, many=True)
+        return Response(serializer.data)
+
+    @action(detail=False, methods=['get'], url_path='roles')
+    def list_roles(self, request):
+        """
+        GET /api/integrations/7shifts/roles
+
+        List all 7shifts roles from the company.
+        """
+        if not request.user.account:
+            return Response(
+                {'error': 'User not associated with an account'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        try:
+            config = SevenShiftsConfig.objects.get(account=request.user.account)
+        except SevenShiftsConfig.DoesNotExist:
+            return Response(
+                {'error': '7shifts integration not configured'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        # Fetch roles from 7shifts
+        try:
+            access_token = SevenShiftsClient.decrypt_token(config.access_token_encrypted)
+            client = SevenShiftsClient(access_token, company_id=config.company_id)
+            roles = client.list_roles()
+        except Exception as e:
+            logger.error(f"Failed to fetch roles: {str(e)}")
+            return Response(
+                {'error': f'Failed to fetch roles from 7shifts: {str(e)}'},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
+        # Extract just id and name from roles
+        roles_data = [
+            {
+                'id': str(role.get('id')),
+                'name': role.get('name', role.get('title', 'Unknown'))
+            }
+            for role in roles
+        ]
+
+        return Response(roles_data)
+
+    @action(detail=False, methods=['post'], url_path='locations/map')
+    def map_location(self, request):
+        """
+        POST /api/integrations/7shifts/locations/map
+
+        Create or update a location mapping.
+
+        Body:
+        {
+            "seven_shifts_location_id": "12345",
+            "seven_shifts_location_name": "Downtown",
+            "store_id": "uuid"
+        }
+        """
+        if not request.user.account:
+            return Response(
+                {'error': 'User not associated with an account'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        location_id = request.data.get('seven_shifts_location_id')
+        location_name = request.data.get('seven_shifts_location_name')
+        store_id = request.data.get('store_id')
+
+        if not all([location_id, location_name, store_id]):
+            return Response(
+                {'error': 'seven_shifts_location_id, seven_shifts_location_name, and store_id are required'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        # Verify store belongs to user's account
+        from brands.models import Store
+        try:
+            store = Store.objects.get(id=store_id, account=request.user.account)
+        except Store.DoesNotExist:
+            return Response(
+                {'error': 'Store not found or does not belong to your account'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        # Create or update mapping
+        mapping, created = SevenShiftsLocationMapping.objects.update_or_create(
+            account=request.user.account,
+            seven_shifts_location_id=location_id,
+            defaults={
+                'seven_shifts_location_name': location_name,
+                'store': store,
+            }
+        )
+
+        # Set created_by only on new mappings
+        if created and not mapping.created_by:
+            mapping.created_by = request.user
+            mapping.save()
+
+        serializer = SevenShiftsLocationMappingSerializer(mapping)
+        return Response(
+            serializer.data,
+            status=status.HTTP_201_CREATED if created else status.HTTP_200_OK
+        )
+
+    @action(detail=False, methods=['delete'], url_path='locations/(?P<location_id>[^/.]+)/unmap')
+    def unmap_location(self, request, location_id=None):
+        """
+        DELETE /api/integrations/7shifts/locations/{location_id}/unmap
+
+        Remove a location mapping.
+        """
+        if not request.user.account:
+            return Response(
+                {'error': 'User not associated with an account'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        try:
+            mapping = SevenShiftsLocationMapping.objects.get(
+                account=request.user.account,
+                seven_shifts_location_id=location_id
+            )
+            mapping.delete()
+            return Response(
+                {'success': True, 'message': 'Location mapping removed'},
+                status=status.HTTP_200_OK
+            )
+        except SevenShiftsLocationMapping.DoesNotExist:
+            return Response(
+                {'error': 'Location mapping not found'},
+                status=status.HTTP_404_NOT_FOUND
+            )

@@ -1,5 +1,8 @@
 from rest_framework import serializers
-from .models import SevenShiftsConfig, SevenShiftsEmployee, SevenShiftsShift, SevenShiftsSyncLog
+from .models import (
+    SevenShiftsConfig, SevenShiftsEmployee, SevenShiftsShift,
+    SevenShiftsSyncLog, SevenShiftsLocationMapping
+)
 
 
 class SevenShiftsConfigSerializer(serializers.ModelSerializer):
@@ -14,7 +17,8 @@ class SevenShiftsConfigSerializer(serializers.ModelSerializer):
         model = SevenShiftsConfig
         fields = ('id', 'account', 'company_id', 'is_active', 'last_sync_at',
                  'sync_employees_enabled', 'sync_shifts_enabled', 'enforce_shift_schedule',
-                 'created_at', 'updated_at', 'access_token', 'is_configured', 'last_sync_status')
+                 'sync_role_names', 'create_users_without_email', 'created_at', 'updated_at',
+                 'access_token', 'is_configured', 'last_sync_status')
         read_only_fields = ('id', 'created_at', 'updated_at', 'last_sync_at',
                            'is_configured', 'last_sync_status')
 
@@ -81,15 +85,25 @@ class SevenShiftsSyncLogSerializer(serializers.ModelSerializer):
 
 
 class SevenShiftsConfigureRequestSerializer(serializers.Serializer):
-    """Serializer for initial configuration request"""
+    """Serializer for configuration request (create or update)"""
 
-    access_token = serializers.CharField(required=True, write_only=True,
-                                        help_text="7shifts API access token")
+    access_token = serializers.CharField(required=False, write_only=True,
+                                        help_text="7shifts API access token (optional for updates)")
     company_id = serializers.CharField(required=True,
                                       help_text="7shifts company ID")
     sync_employees_enabled = serializers.BooleanField(default=True)
     sync_shifts_enabled = serializers.BooleanField(default=True)
     enforce_shift_schedule = serializers.BooleanField(default=True)
+    sync_role_names = serializers.ListField(
+        child=serializers.CharField(),
+        default=list,
+        required=False,
+        help_text="List of role names to sync (e.g., ['Server', 'Manager']). Empty means sync all roles."
+    )
+    create_users_without_email = serializers.BooleanField(
+        default=True,
+        help_text="Create user accounts for employees without email addresses using temporary emails"
+    )
 
 
 class SevenShiftsSyncRequestSerializer(serializers.Serializer):
@@ -100,3 +114,27 @@ class SevenShiftsSyncRequestSerializer(serializers.Serializer):
         default='full',
         help_text="Type of data to sync"
     )
+
+
+class SevenShiftsLocationMappingSerializer(serializers.ModelSerializer):
+    """Serializer for location mappings"""
+
+    store_name = serializers.CharField(source='store.name', read_only=True)
+
+    class Meta:
+        model = SevenShiftsLocationMapping
+        fields = ('id', 'account', 'seven_shifts_location_id', 'seven_shifts_location_name',
+                 'store', 'store_name', 'created_at', 'updated_at')
+        read_only_fields = ('id', 'account', 'created_at', 'updated_at')
+
+
+class SevenShiftsLocationSerializer(serializers.Serializer):
+    """Serializer for 7shifts locations (from API)"""
+
+    id = serializers.CharField(help_text="7shifts location ID")
+    name = serializers.CharField(help_text="Location name")
+    is_mapped = serializers.BooleanField(default=False, help_text="Whether this location has a mapping")
+    mapped_store_id = serializers.UUIDField(required=False, allow_null=True,
+                                            help_text="PeakOps store ID if mapped")
+    mapped_store_name = serializers.CharField(required=False, allow_null=True,
+                                              help_text="PeakOps store name if mapped")

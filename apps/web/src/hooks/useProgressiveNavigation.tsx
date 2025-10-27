@@ -17,6 +17,7 @@ export interface NavigationState {
   insights: 'hidden' | 'visible-disabled' | 'enabled' | 'teaser';
   profile: 'hidden' | 'enabled';
   settings: 'hidden' | 'enabled';
+  integrations: 'hidden' | 'enabled';
 
   // System Administration navigation items
   systemBrands: 'hidden' | 'enabled';
@@ -52,6 +53,7 @@ export function useProgressiveNavigation(): NavigationState {
     const isSuperAdmin = role === 'SUPER_ADMIN';
     const isAdmin = role === 'ADMIN'; // Enterprise User (Corporate/Brand HQ)
     const isOwner = role === 'OWNER'; // Multi-Store Manager
+    const isTrialAdmin = role === 'TRIAL_ADMIN'; // Trial administrator
     const isGM = role === 'GM'; // Store Manager
     const isInspector = role === 'INSPECTOR';
 
@@ -73,6 +75,7 @@ export function useProgressiveNavigation(): NavigationState {
           insights: 'enabled',
           profile: 'enabled',
           settings: 'enabled',
+          integrations: 'enabled',
 
           // System Administration
           systemBrands: 'enabled',
@@ -98,6 +101,48 @@ export function useProgressiveNavigation(): NavigationState {
         };
       }
 
+      // Trial Admin - Full access for trial accounts
+      if (isTrialAdmin) {
+        return {
+          showLogo: true,
+          showUserEmail: true,
+          showSkipToDashboard: false,
+
+          // Main navigation
+          home: 'enabled',
+          microChecks: 'enabled',
+          aiCoach: isUnlocked('ai-coach') ? 'enabled' : 'teaser',
+          inspections: isUnlocked('inspections') ? 'enabled' : 'teaser',
+          actions: 'enabled',
+          insights: isUnlocked('insights') ? 'enabled' : 'teaser',
+          profile: 'enabled',
+          settings: 'enabled',
+          integrations: 'enabled',
+
+          // System Administration
+          systemBrands: 'hidden',
+          systemUsers: 'hidden',
+          systemQueue: 'hidden',
+
+          // Legacy navigation
+          dashboard: 'enabled',
+          checks: 'enabled',
+          walkthroughs: 'enabled',
+          templates: 'enabled',
+          videos: 'enabled',
+          actionItems: 'enabled',
+          stores: 'enabled',
+          users: 'enabled',
+          brands: 'hidden',
+          inspectorQueue: 'hidden',
+          adminQueue: 'hidden',
+          adminUsers: 'hidden',
+          billing: 'hidden',
+          teamManagement: 'hidden',
+          apiAccess: 'hidden',
+        };
+      }
+
       // Enterprise User (ADMIN) - Corporate/Brand HQ
       if (isAdmin) {
         return {
@@ -114,6 +159,7 @@ export function useProgressiveNavigation(): NavigationState {
           insights: 'enabled', // Heatmaps, regions
           profile: 'enabled',
           settings: 'enabled', // Manage inspectors, standards
+          integrations: 'enabled',
 
           // System Administration
           systemBrands: 'enabled',
@@ -155,6 +201,7 @@ export function useProgressiveNavigation(): NavigationState {
           insights: 'enabled', // Personal stats
           profile: 'enabled',
           settings: 'enabled', // Profile, notifications
+          integrations: 'hidden',
 
           // System Administration
           systemBrands: 'hidden',
@@ -196,6 +243,7 @@ export function useProgressiveNavigation(): NavigationState {
           insights: isUnlocked('insights') ? 'enabled' : 'teaser', // Store comparisons
           profile: 'enabled',
           settings: 'enabled', // Add/remove stores, manage users
+          integrations: 'enabled',
 
           // System Administration
           systemBrands: 'hidden',
@@ -237,6 +285,7 @@ export function useProgressiveNavigation(): NavigationState {
           insights: isUnlocked('insights') ? 'enabled' : 'teaser',
           profile: 'enabled',
           settings: 'enabled',
+          integrations: 'enabled',
 
           // System Administration
           systemBrands: 'hidden',
@@ -275,6 +324,7 @@ export function useProgressiveNavigation(): NavigationState {
         insights: 'hidden',
         profile: 'enabled',
         settings: 'enabled',
+        integrations: 'enabled',
         systemBrands: 'hidden',
         systemUsers: 'hidden',
         systemQueue: 'hidden',
@@ -318,6 +368,7 @@ export function useProgressiveNavigation(): NavigationState {
       insights: isUnlocked('insights') ? 'enabled' : 'hidden', // Hidden during trial
       profile: 'enabled',
       settings: 'enabled', // Profile, store info, upgrade
+      integrations: 'hidden',
 
       // System Administration - Hidden for trial
       systemBrands: 'hidden',

@@ -23,14 +23,16 @@ class SevenShiftsClient:
 
     BASE_URL = "https://api.7shifts.com/v2"
 
-    def __init__(self, access_token: str):
+    def __init__(self, access_token: str, company_id: Optional[str] = None):
         """
         Initialize 7shifts client with access token.
 
         Args:
             access_token: 7shifts API access token (will be encrypted when stored)
+            company_id: 7shifts company ID (required for most API calls)
         """
         self.access_token = access_token
+        self.company_id = company_id
         self.session = requests.Session()
         self.session.headers.update({
             'Authorization': f'Bearer {access_token}',
@@ -49,6 +51,10 @@ class SevenShiftsClient:
     @staticmethod
     def decrypt_token(encrypted_token: bytes) -> str:
         """Decrypt access token from storage"""
+        # Convert memoryview to bytes if needed (Django BinaryField returns memoryview)
+        if isinstance(encrypted_token, memoryview):
+            encrypted_token = bytes(encrypted_token)
+
         key = base64.urlsafe_b64encode(settings.SECRET_KEY[:32].encode().ljust(32)[:32])
         f = Fernet(key)
         return f.decrypt(encrypted_token).decode()
@@ -81,19 +87,32 @@ class SevenShiftsClient:
             logger.error(f"7shifts API request failed: {str(e)}")
             raise
 
-    def test_connection(self) -> bool:
+    def test_connection(self) -> tuple[bool, Optional[str]]:
         """
         Test if API credentials are valid.
 
         Returns:
-            True if connection successful, False otherwise
+            Tuple of (success: bool, error_message: Optional[str])
         """
         try:
             self._request('GET', '/whoami')
-            return True
+            return (True, None)
+        except requests.HTTPError as e:
+            error_msg = f"7shifts API error: {e.response.status_code}"
+            try:
+                error_data = e.response.json()
+                if 'error_description' in error_data:
+                    error_msg = error_data['error_description']
+                elif 'error' in error_data:
+                    error_msg = error_data['error']
+            except:
+                error_msg = e.response.text[:200] if e.response.text else error_msg
+            logger.error(f"7shifts connection test failed: {error_msg}")
+            return (False, error_msg)
         except Exception as e:
-            logger.error(f"7shifts connection test failed: {str(e)}")
-            return False
+            error_msg = str(e)
+            logger.error(f"7shifts connection test failed: {error_msg}")
+            return (False, error_msg)
 
     def get_company_info(self) -> Dict[str, Any]:
         """Get company information"""
@@ -112,17 +131,36 @@ class SevenShiftsClient:
             List of user dictionaries
         """
         params = {}
+        if self.company_id:
+            params['company_id'] = self.company_id
         if location_id:
             params['location_id'] = location_id
         if active_only:
             params['active'] = 1
 
         response = self._request('GET', '/users', params=params)
-        return response.get('data', [])
+        return response.get('results', [])
 
     def get_user(self, user_id: str) -> Dict[str, Any]:
         """Get specific user by ID"""
-        response = self._request('GET', f'/users/{user_id}')
+        params = {}
+        if self.company_id:
+            params['company_id'] = self.company_id
+
+        response = self._request('GET', f'/users/{user_id}', params=params)
+        return response.get('data', {})
+
+    def get_user_assignments(self, user_id: str) -> Dict[str, Any]:
+        """
+        Get user's location, department, and role assignments.
+
+        Returns:
+            Dict with 'locations', 'departments', and 'roles' arrays
+        """
+        if not self.company_id:
+            raise ValueError("company_id is required to get user assignments")
+
+        response = self._request('GET', f'/company/{self.company_id}/users/{user_id}/assignments')
         return response.get('data', {})
 
     def list_locations(self) -> List[Dict[str, Any]]:
@@ -132,36 +170,75 @@ class SevenShiftsClient:
         Returns:
             List of location dictionaries
         """
-        response = self._request('GET', '/locations')
+        if not self.company_id:
+            raise ValueError("company_id is required to list locations")
+
+        # Use company-scoped endpoint: /company/{company_id}/locations
+        response = self._request('GET', f'/company/{self.company_id}/locations')
         return response.get('data', [])
 
-    def list_shifts(self, start_date: datetime, end_date: datetime,
+    def list_roles(self) -> List[Dict[str, Any]]:
+        """
+        List all roles from 7shifts company.
+
+        Returns:
+            List of role dictionaries with 'id' and 'name' fields
+        """
+        if not self.company_id:
+            raise ValueError("company_id is required to list roles")
+
+        # Use company-scoped endpoint: /company/{company_id}/roles
+        response = self._request('GET', f'/company/{self.company_id}/roles')
+        return response.get('data', [])
+
+    def list_shifts(self, start_date: Optional[datetime] = None, end_date: Optional[datetime] = None,
                     location_id: Optional[str] = None,
                     user_id: Optional[str] = None) -> List[Dict[str, Any]]:
         """
         List shifts within a date range.
 
         Args:
-            start_date: Start of date range (inclusive)
-            end_date: End of date range (inclusive)
+            start_date: Start of date range (inclusive) - optional, fetches all if not provided
+            end_date: End of date range (inclusive) - optional, fetches all if not provided
             location_id: Filter by location (optional)
             user_id: Filter by user (optional)
 
         Returns:
             List of shift dictionaries
         """
-        params = {
-            'start': start_date.strftime('%Y-%m-%d'),
-            'end': end_date.strftime('%Y-%m-%d')
-        }
+        if not self.company_id:
+            raise ValueError("company_id is required to list shifts")
+
+        params = {}
+
+        # Note: 7shifts API has issues with date filtering, so we fetch all shifts
+        # and filter client-side. This appears to be an API limitation.
+        # When start/end params are provided, the API returns empty results.
 
         if location_id:
             params['location_id'] = location_id
         if user_id:
             params['user_id'] = user_id
 
-        response = self._request('GET', '/shifts', params=params)
-        return response.get('data', [])
+        # Use company-scoped endpoint: /company/{company_id}/shifts
+        response = self._request('GET', f'/company/{self.company_id}/shifts', params=params)
+        shifts = response.get('data', [])
+
+        # Filter client-side if date range provided
+        if start_date or end_date:
+            filtered_shifts = []
+            for shift in shifts:
+                shift_start = datetime.fromisoformat(shift['start'].replace('Z', '+00:00'))
+
+                if start_date and shift_start < start_date:
+                    continue
+                if end_date and shift_start > end_date:
+                    continue
+
+                filtered_shifts.append(shift)
+            return filtered_shifts
+
+        return shifts
 
     def get_employee_shifts_for_date(self, user_id: str,
                                      date: datetime) -> List[Dict[str, Any]]:

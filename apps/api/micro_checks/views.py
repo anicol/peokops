@@ -641,16 +641,13 @@ class MicroCheckRunViewSet(viewsets.ModelViewSet):
         # Get runs for this store
         runs = self.get_queryset().filter(store_id=store_id)
 
-        # User-specific streak
+        # User-specific streak (using serializer for real-time calculation)
         user_streak = None
         try:
             user_streak_obj = MicroCheckStreak.objects.get(user=user, store_id=store_id)
-            user_streak = {
-                'current_streak': user_streak_obj.current_streak,
-                'longest_streak': user_streak_obj.longest_streak,
-                'total_completions': user_streak_obj.total_completions,
-                'last_completion_date': user_streak_obj.last_completion_date,
-            }
+            from .serializers import MicroCheckStreakSerializer
+            serializer = MicroCheckStreakSerializer(user_streak_obj)
+            user_streak = serializer.data
         except MicroCheckStreak.DoesNotExist:
             user_streak = {
                 'current_streak': 0,
@@ -659,16 +656,13 @@ class MicroCheckRunViewSet(viewsets.ModelViewSet):
                 'last_completion_date': None,
             }
 
-        # Store-level streak
+        # Store-level streak (using serializer for real-time calculation)
         store_streak = None
         try:
             store_streak_obj = StoreStreak.objects.get(store_id=store_id)
-            store_streak = {
-                'current_streak': store_streak_obj.current_streak,
-                'longest_streak': store_streak_obj.longest_streak,
-                'total_completions': store_streak_obj.total_completions,
-                'last_completion_date': store_streak_obj.last_completion_date,
-            }
+            from .serializers import StoreStreakSerializer
+            serializer = StoreStreakSerializer(store_streak_obj)
+            store_streak = serializer.data
         except StoreStreak.DoesNotExist:
             store_streak = {
                 'current_streak': 0,

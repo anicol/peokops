@@ -21,6 +21,7 @@ import {
 import { usersAPI, storesAPI } from '@/services/api';
 import type { User, Store } from '@/types';
 import { useAuth } from '@/hooks/useAuth';
+import { formatPhoneNumber, formatPhoneInput } from '@/utils/phone';
 
 export default function UsersPage() {
   const { user: currentUser } = useAuth();
@@ -108,20 +109,39 @@ export default function UsersPage() {
         return 'bg-green-100 text-green-800';
       case 'INSPECTOR':
         return 'bg-gray-100 text-gray-800';
+      case 'EMPLOYEE':
+        return 'bg-yellow-100 text-yellow-800';
       default:
         return 'bg-gray-100 text-gray-800';
     }
   };
 
+  const getRoleDisplayName = (role: string) => {
+    switch (role) {
+      case 'ADMIN':
+        return 'Admin';
+      case 'OWNER':
+        return 'Owner';
+      case 'GM':
+        return 'Manager';
+      case 'INSPECTOR':
+        return 'Inspector';
+      case 'EMPLOYEE':
+        return 'Employee';
+      default:
+        return role;
+    }
+  };
+
   const canManageRole = (role: string) => {
-    // TRIAL_ADMIN can manage GM, INSPECTOR (same as OWNER)
-    // OWNER can manage OWNER, GM, INSPECTOR
-    // GM can manage GM, INSPECTOR
+    // TRIAL_ADMIN can manage GM, INSPECTOR, EMPLOYEE (same as OWNER)
+    // OWNER can manage OWNER, GM, INSPECTOR, EMPLOYEE
+    // GM can manage GM, INSPECTOR, EMPLOYEE
     if (currentUser?.role === 'TRIAL_ADMIN' || currentUser?.role === 'OWNER') {
-      return ['OWNER', 'GM', 'INSPECTOR', 'TRIAL_ADMIN'].includes(role);
+      return ['OWNER', 'GM', 'INSPECTOR', 'EMPLOYEE', 'TRIAL_ADMIN'].includes(role);
     }
     if (currentUser?.role === 'GM') {
-      return ['GM', 'INSPECTOR'].includes(role);
+      return ['GM', 'INSPECTOR', 'EMPLOYEE'].includes(role);
     }
     return false;
   };
@@ -185,6 +205,7 @@ export default function UsersPage() {
           {currentUser?.role === 'OWNER' && <option value="OWNER">Owner</option>}
           <option value="GM">Manager</option>
           <option value="INSPECTOR">Inspector</option>
+          <option value="EMPLOYEE">Employee</option>
         </select>
       </div>
 
@@ -261,6 +282,9 @@ export default function UsersPage() {
                     Store
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Phone
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Status
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -291,7 +315,7 @@ export default function UsersPage() {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getRoleBadgeColor(user.role)}`}>
-                        {user.role}
+                        {getRoleDisplayName(user.role)}
                       </span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
@@ -299,6 +323,16 @@ export default function UsersPage() {
                         <Building2 className="h-4 w-4 mr-1 text-gray-400" />
                         {user.store_name || '-'}
                       </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      {user.phone ? (
+                        <div className="flex items-center text-sm text-gray-900">
+                          <Phone className="h-4 w-4 mr-1 text-gray-400" />
+                          {formatPhoneNumber(user.phone)}
+                        </div>
+                      ) : (
+                        <span className="text-sm text-gray-400">-</span>
+                      )}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
@@ -393,7 +427,7 @@ function UserFormModal({ user, stores, currentUserRole, onClose }: UserFormModal
     password_confirm: '',
     role: user?.role || 'GM',
     store: user?.store || (stores.length === 1 ? stores[0].id : null),
-    phone: user?.phone || '',
+    phone: formatPhoneInput(user?.phone || ''),
     is_active: user?.is_active ?? true,
   });
 
@@ -433,11 +467,13 @@ function UserFormModal({ user, stores, currentUserRole, onClose }: UserFormModal
     ? [
         { value: 'OWNER', label: 'Owner' },
         { value: 'GM', label: 'Manager' },
-        { value: 'INSPECTOR', label: 'Inspector' }
+        { value: 'INSPECTOR', label: 'Inspector' },
+        { value: 'EMPLOYEE', label: 'Employee' }
       ]
     : [
         { value: 'GM', label: 'Manager' },
-        { value: 'INSPECTOR', label: 'Inspector' }
+        { value: 'INSPECTOR', label: 'Inspector' },
+        { value: 'EMPLOYEE', label: 'Employee' }
       ];
 
   return (
@@ -480,13 +516,18 @@ function UserFormModal({ user, stores, currentUserRole, onClose }: UserFormModal
             <label className="block text-sm font-medium text-gray-700 mb-2">
               Email *
             </label>
-            <input
-              type="email"
-              required
-              value={formData.email}
-              onChange={(e) => setFormData({ ...formData, email: e.target.value, username: e.target.value })}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-            />
+            <div className="relative">
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <Mail className="h-4 w-4 text-gray-400" />
+              </div>
+              <input
+                type="email"
+                required
+                value={formData.email}
+                onChange={(e) => setFormData({ ...formData, email: e.target.value, username: e.target.value })}
+                className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+              />
+            </div>
             {!user && (
               <p className="mt-2 text-sm text-gray-500">
                 A magic link will be sent to this email for login
@@ -502,7 +543,7 @@ function UserFormModal({ user, stores, currentUserRole, onClose }: UserFormModal
               <select
                 required
                 value={formData.role}
-                onChange={(e) => setFormData({ ...formData, role: e.target.value as 'ADMIN' | 'OWNER' | 'GM' | 'INSPECTOR' })}
+                onChange={(e) => setFormData({ ...formData, role: e.target.value as 'ADMIN' | 'OWNER' | 'GM' | 'INSPECTOR' | 'EMPLOYEE' })}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
               >
                 {availableRoles.map(role => (
@@ -533,12 +574,24 @@ function UserFormModal({ user, stores, currentUserRole, onClose }: UserFormModal
             <label className="block text-sm font-medium text-gray-700 mb-2">
               Phone
             </label>
-            <input
-              type="tel"
-              value={formData.phone}
-              onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-            />
+            <div className="relative">
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <Phone className="h-4 w-4 text-gray-400" />
+              </div>
+              <input
+                type="tel"
+                value={formData.phone}
+                onChange={(e) => {
+                  const formatted = formatPhoneInput(e.target.value);
+                  setFormData({ ...formData, phone: formatted });
+                }}
+                placeholder="(555) 123-4567"
+                className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+              />
+            </div>
+            <p className="mt-1 text-xs text-gray-500">
+              {user && formData.phone ? 'Synced from 7shifts - formats automatically' : 'Formats automatically as you type'}
+            </p>
           </div>
 
           {mutation.error ? (

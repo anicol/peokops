@@ -20,6 +20,8 @@ import {
   Lock,
   Store,
   FileText,
+  Plug,
+  Calendar,
 } from 'lucide-react';
 
 const navigationSections = [
@@ -39,8 +41,10 @@ const navigationSections = [
     items: [
       { name: 'Profile', href: '/profile', icon: User, key: 'profile', roles: ['ADMIN', 'OWNER', 'TRIAL_ADMIN'] },
       { name: 'Templates', href: '/micro-check-templates', icon: FileText, key: 'templates', roles: ['ADMIN', 'OWNER', 'TRIAL_ADMIN'] },
+      { name: 'Schedule', href: '/schedule', icon: Calendar, key: 'schedule', roles: ['ADMIN', 'OWNER', 'TRIAL_ADMIN', 'GM'] },
       { name: 'Stores', href: '/stores', icon: Store, key: 'stores', roles: ['ADMIN', 'OWNER', 'TRIAL_ADMIN'] },
       { name: 'Users', href: '/users', icon: Users, key: 'users', roles: ['ADMIN', 'OWNER', 'TRIAL_ADMIN'] },
+      { name: 'Integrations', href: '/integrations', icon: Plug, key: 'integrations', roles: ['ADMIN', 'OWNER', 'TRIAL_ADMIN'] },
       { name: 'Account', href: '/account', icon: Building2, key: 'account', roles: ['ADMIN', 'OWNER', 'TRIAL_ADMIN'] },
     ]
   },

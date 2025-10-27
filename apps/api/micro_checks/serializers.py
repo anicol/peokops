@@ -226,6 +226,7 @@ class MicroCheckStreakSerializer(serializers.ModelSerializer):
     """Streak tracking for gamification"""
     store_name = serializers.CharField(source='store.name', read_only=True)
     user_name = serializers.CharField(source='user.get_full_name', read_only=True)
+    current_streak = serializers.SerializerMethodField()
 
     class Meta:
         model = MicroCheckStreak
@@ -241,10 +242,34 @@ class MicroCheckStreakSerializer(serializers.ModelSerializer):
             'created_at', 'updated_at'
         ]
 
+    def get_current_streak(self, obj):
+        """
+        Calculate real-time streak status.
+        If last completion was more than 1 day ago, streak is broken (return 0).
+        """
+        if not obj.last_completion_date:
+            return 0
+
+        from django.utils import timezone
+        from .utils import get_store_local_date
+
+        # Get today's date in the store's timezone
+        today = get_store_local_date(obj.store)
+
+        # Calculate days since last completion
+        days_since_last = (today - obj.last_completion_date).days
+
+        # If more than 1 day has passed, streak is broken
+        if days_since_last > 1:
+            return 0
+
+        return obj.current_streak
+
 
 class StoreStreakSerializer(serializers.ModelSerializer):
     """Store-level streak tracking"""
     store_name = serializers.CharField(source='store.name', read_only=True)
+    current_streak = serializers.SerializerMethodField()
 
     class Meta:
         model = StoreStreak
@@ -259,6 +284,29 @@ class StoreStreakSerializer(serializers.ModelSerializer):
             'total_completions',
             'created_at', 'updated_at'
         ]
+
+    def get_current_streak(self, obj):
+        """
+        Calculate real-time streak status.
+        If last completion was more than 1 day ago, streak is broken (return 0).
+        """
+        if not obj.last_completion_date:
+            return 0
+
+        from django.utils import timezone
+        from .utils import get_store_local_date
+
+        # Get today's date in the store's timezone
+        today = get_store_local_date(obj.store)
+
+        # Calculate days since last completion
+        days_since_last = (today - obj.last_completion_date).days
+
+        # If more than 1 day has passed, streak is broken
+        if days_since_last > 1:
+            return 0
+
+        return obj.current_streak
 
 
 class CorrectiveActionSerializer(serializers.ModelSerializer):
