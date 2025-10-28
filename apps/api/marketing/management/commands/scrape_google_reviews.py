@@ -76,12 +76,17 @@ class Command(BaseCommand):
         with sync_playwright() as p:
             # Launch browser
             self.stdout.write('Launching browser...')
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.info("Starting Playwright browser...")
+
             browser = p.chromium.launch(headless=headless)
             context = browser.new_context(
                 viewport={'width': 1920, 'height': 1080},
                 user_agent='Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36'
             )
             page = context.new_page()
+            logger.info("Browser launched successfully")
 
             try:
                 # Search for the business on Google Maps
@@ -96,11 +101,14 @@ class Command(BaseCommand):
                 try:
                     # Wait for search results to appear
                     self.stdout.write('Waiting for search results...')
+                    logger.info(f"Waiting for search results to load...")
                     page.wait_for_selector('div[role="feed"], div[role="main"]', timeout=20000)
+                    logger.info("Search results loaded")
                     time.sleep(3)
 
                     # Try multiple selectors to find clickable business listings
                     self.stdout.write('Looking for business listings...')
+                    logger.info("Searching for clickable business listings...")
                     first_result = None
 
                     # Try different selectors for search results
@@ -115,22 +123,35 @@ class Command(BaseCommand):
                         first_result = page.query_selector(selector)
                         if first_result:
                             self.stdout.write(f'Found result with selector: {selector}')
+                            logger.info(f"Found clickable business with selector: {selector}")
                             break
+                        else:
+                            logger.debug(f"Selector '{selector}' didn't match any elements")
 
                     if first_result:
                         self.stdout.write('Clicking on first search result...')
+                        logger.info("Clicking on first search result...")
                         first_result.click()
                         time.sleep(4)  # Wait for business page to load
+                        logger.info("Clicked successfully, waiting for page to load...")
                     else:
                         self.stdout.write(self.style.WARNING('No clickable result found - checking if already on business page...'))
+                        logger.warning("No clickable business found with any selector")
 
                     # Get business info
+                    logger.info("Extracting business information...")
                     business_info = self.extract_business_info(page)
+                    logger.info(f"Extracted business info: {business_info}")
 
                     # Validate we found a real business
                     if business_info["name"] == "Unknown" or business_info["total_reviews"] == 0:
                         self.stdout.write(self.style.ERROR('❌ Could not find valid business information'))
                         self.stdout.write(f'Debug: name={business_info["name"]}, reviews={business_info["total_reviews"]}')
+                        logger.error(f"Failed to extract valid business info: name={business_info['name']}, reviews={business_info['total_reviews']}, rating={business_info['rating']}")
+
+                        # Log the page URL for debugging
+                        current_url = page.url
+                        logger.error(f"Current page URL: {current_url}")
 
                         # Take a screenshot for debugging (if not headless)
                         if not headless:

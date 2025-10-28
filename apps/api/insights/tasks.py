@@ -44,16 +44,30 @@ def process_review_analysis(self, analysis_id):
                 max_reviews=100,  # Limit to 100 for speed
                 headless=True
             )
+
+            logger.info(f"Scraper returned: {type(scraped_data)}")
+            if scraped_data:
+                logger.info(f"Business found: {scraped_data.get('business_info', {}).get('name', 'Unknown')}")
+                logger.info(f"Reviews scraped: {len(scraped_data.get('reviews', []))}")
+
         except Exception as e:
-            logger.error(f"Scraping failed for {analysis_id}: {str(e)}")
+            logger.error(f"Scraping exception for {analysis_id}: {str(e)}", exc_info=True)
             analysis.status = ReviewAnalysis.Status.FAILED
             analysis.error_message = f"Could not find business or scrape reviews: {str(e)}"
             analysis.save()
             return
 
-        if not scraped_data or not scraped_data.get('reviews'):
+        if not scraped_data:
+            logger.error(f"Scraper returned None for {analysis.business_name} in {analysis.location}")
             analysis.status = ReviewAnalysis.Status.FAILED
-            analysis.error_message = 'No reviews found. Please check business name and location.'
+            analysis.error_message = f'Could not find "{analysis.business_name}" on Google Maps. Please check the business name and try adding the city/state.'
+            analysis.save()
+            return
+
+        if not scraped_data.get('reviews'):
+            logger.warning(f"Found business but no reviews: {scraped_data.get('business_info', {})}")
+            analysis.status = ReviewAnalysis.Status.FAILED
+            analysis.error_message = f'Found business but no reviews were available. The business may not have any public reviews yet.'
             analysis.save()
             return
 
