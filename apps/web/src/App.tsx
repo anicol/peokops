@@ -38,6 +38,7 @@ import MicroCheckPage from '@/pages/MicroCheckPage';
 import MicroCheckHistoryPage from '@/pages/MicroCheckHistoryPage';
 import MicroCheckRunDetailPage from '@/pages/MicroCheckRunDetailPage';
 import MicroCheckTemplatesPage from '@/pages/MicroCheckTemplatesPage';
+import ReviewAnalysisPage from '@/pages/ReviewAnalysisPage';
 import InsightsPage from '@/pages/InsightsPage';
 import ProfilePage from '@/pages/ProfilePage';
 import LockedFeatureView from '@/components/LockedFeatureView';
@@ -63,6 +64,10 @@ function AppRoutes() {
         {/* Magic link routes - no auth required */}
         <Route path="/check/:token" element={<MicroCheckInvitePage />} />
         <Route path="/micro-check" element={<MicroCheckPage />} />
+
+        {/* Review Analysis - public, no auth required */}
+        <Route path="/review-analysis" element={<ReviewAnalysisPage />} />
+        <Route path="/review-analysis/:analysisId" element={<ReviewAnalysisPage />} />
 
         {/* Auth routes */}
         <Route path="/login" element={isAuthenticated ? <Navigate to="/" replace /> : <LoginPage />} />

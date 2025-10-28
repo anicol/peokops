@@ -831,4 +831,52 @@ export const billingAPI = {
   },
 };
 
+// Review Insights API (public endpoints, no auth required)
+export const insightsAPI = {
+  // Start new review analysis
+  startAnalysis: async (data: {
+    business_name: string;
+    location: string;
+    source?: string;
+  }): Promise<{ id: string; status: string; message: string }> => {
+    const response = await api.post('/insights/start/', data, {
+      headers: { Authorization: '' }, // Override auth for public endpoint
+    });
+    return response.data;
+  },
+
+  // Poll for analysis status
+  getStatus: async (analysisId: string): Promise<{
+    id: string;
+    status: string;
+    progress_message: string;
+    progress_percentage: number;
+    error_message?: string;
+  }> => {
+    const response = await api.get(`/insights/status/${analysisId}/`, {
+      headers: { Authorization: '' },
+    });
+    return response.data;
+  },
+
+  // Get full analysis results
+  getResults: async (analysisId: string): Promise<any> => {
+    const response = await api.get(`/insights/results/${analysisId}/`, {
+      headers: { Authorization: '' },
+    });
+    return response.data;
+  },
+
+  // Capture email during processing
+  captureEmail: async (
+    analysisId: string,
+    data: { contact_email: string; contact_name?: string }
+  ): Promise<{ message: string }> => {
+    const response = await api.post(`/insights/capture-email/${analysisId}/`, data, {
+      headers: { Authorization: '' },
+    });
+    return response.data;
+  },
+};
+
 export default api;

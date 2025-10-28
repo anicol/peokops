@@ -1,0 +1,351 @@
+"""
+Scrape ALL Google Reviews for a business using browser automation.
+
+Usage:
+    python manage.py scrape_google_reviews "BalanceGrille" --location "Toledo, OH"
+    python manage.py scrape_google_reviews "Restaurant Name" --max-reviews 500
+"""
+import json
+import time
+import re
+from datetime import datetime
+from django.core.management.base import BaseCommand
+from playwright.sync_api import sync_playwright, TimeoutError as PlaywrightTimeout
+
+
+class Command(BaseCommand):
+    help = 'Scrape all Google Reviews for a business using browser automation'
+
+    def add_arguments(self, parser):
+        parser.add_argument('business_name', type=str, help='Name of the business')
+        parser.add_argument('--location', type=str, default='', help='Location (e.g., "Toledo, OH")')
+        parser.add_argument('--max-reviews', type=int, default=1000, help='Maximum reviews to scrape')
+        parser.add_argument('--output', type=str, help='Output JSON file path')
+        parser.add_argument('--headless', action='store_true', default=True, help='Run browser in headless mode')
+        parser.add_argument('--visible', action='store_true', help='Show browser (for debugging)')
+
+    def handle(self, *args, **options):
+        business_name = options['business_name']
+        location = options['location']
+        max_reviews = options['max_reviews']
+        headless = options['headless'] and not options['visible']
+
+        self.stdout.write(self.style.SUCCESS(f'\n=== Scraping Google Reviews for "{business_name}" ===\n'))
+
+        # Scrape reviews
+        reviews_data = self.scrape_reviews(business_name, location, max_reviews, headless)
+
+        if not reviews_data:
+            self.stdout.write(self.style.ERROR('No reviews found.'))
+            return
+
+        # Display summary
+        self.display_summary(business_name, reviews_data)
+
+        # Save to file if requested
+        if options['output']:
+            with open(options['output'], 'w') as f:
+                json.dump(reviews_data, f, indent=2)
+            self.stdout.write(self.style.SUCCESS(f'\n✓ Data saved to {options["output"]}'))
+
+            # Also run the analysis
+            self.stdout.write('\nRunning analysis on scraped reviews...')
+            from marketing.management.commands.research_google_reviews import Command as AnalysisCommand
+            analyzer = AnalysisCommand()
+
+            reviews_formatted = reviews_data.get('reviews', [])
+            insights = analyzer.analyze_reviews(reviews_formatted)
+            micro_check_suggestions = analyzer.generate_microcheck_suggestions(insights)
+
+            analyzer.display_results(business_name, reviews_formatted, insights, micro_check_suggestions)
+
+            # Save full analysis
+            analysis_output = options['output'].replace('.json', '_analysis.json')
+            full_data = {
+                **reviews_data,
+                'insights': insights,
+                'micro_check_suggestions': micro_check_suggestions
+            }
+            with open(analysis_output, 'w') as f:
+                json.dump(full_data, f, indent=2)
+            self.stdout.write(self.style.SUCCESS(f'✓ Full analysis saved to {analysis_output}'))
+
+    def scrape_reviews(self, business_name, location, max_reviews, headless):
+        """Scrape reviews using Playwright browser automation"""
+
+        with sync_playwright() as p:
+            # Launch browser
+            self.stdout.write('Launching browser...')
+            browser = p.chromium.launch(headless=headless)
+            context = browser.new_context(
+                viewport={'width': 1920, 'height': 1080},
+                user_agent='Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36'
+            )
+            page = context.new_page()
+
+            try:
+                # Search for the business on Google Maps
+                search_query = f"{business_name} {location}".strip()
+                self.stdout.write(f'Searching for: {search_query}')
+
+                search_url = f"https://www.google.com/maps/search/{search_query.replace(' ', '+')}"
+                page.goto(search_url, timeout=60000)  # 60 second timeout
+                time.sleep(5)  # Wait for page to fully load
+
+                # Check if we found results
+                try:
+                    # Wait for search results to appear
+                    self.stdout.write('Waiting for search results...')
+                    page.wait_for_selector('div[role="feed"], div[role="main"]', timeout=15000)
+                    time.sleep(2)
+
+                    # Click on the first result (it might auto-select, so this is optional)
+                    first_result = page.query_selector('a[href*="/maps/place/"], div[role="article"] a')
+                    if first_result:
+                        self.stdout.write('Clicking on first result...')
+                        first_result.click()
+                        time.sleep(3)
+
+                    # Get business info
+                    business_info = self.extract_business_info(page)
+                    self.stdout.write(self.style.SUCCESS(f'✓ Found: {business_info["name"]}'))
+                    self.stdout.write(f'  Rating: {business_info["rating"]} ({business_info["total_reviews"]} reviews)')
+
+                    # Click on reviews tab
+                    self.stdout.write('\nNavigating to reviews...')
+                    reviews_button = page.query_selector('button[aria-label*="reviews" i], button:has-text("Reviews")')
+                    if reviews_button:
+                        reviews_button.click()
+                        time.sleep(2)
+
+                    # Sort by newest (optional but helpful)
+                    try:
+                        sort_button = page.query_selector('button[aria-label*="Sort" i]')
+                        if sort_button:
+                            sort_button.click()
+                            time.sleep(1)
+                            newest_option = page.query_selector('div[role="menuitemradio"]:has-text("Newest")')
+                            if newest_option:
+                                newest_option.click()
+                                time.sleep(2)
+                    except:
+                        pass
+
+                    # Scrape reviews
+                    self.stdout.write(f'Scrolling to load reviews (max {max_reviews})...')
+                    reviews = self.scroll_and_extract_reviews(page, max_reviews)
+
+                    browser.close()
+
+                    return {
+                        'business_name': business_name,
+                        'location': location,
+                        'scraped_at': datetime.now().isoformat(),
+                        'business_info': business_info,
+                        'total_reviews_scraped': len(reviews),
+                        'reviews': reviews
+                    }
+
+                except PlaywrightTimeout:
+                    self.stdout.write(self.style.WARNING('Timeout waiting for results'))
+                    browser.close()
+                    return None
+
+            except Exception as e:
+                self.stdout.write(self.style.ERROR(f'Error: {str(e)}'))
+                browser.close()
+                return None
+
+    def extract_business_info(self, page):
+        """Extract business information from the page"""
+        try:
+            name = page.query_selector('h1')
+            name_text = name.inner_text() if name else 'Unknown'
+
+            rating_elem = page.query_selector('[aria-label*="stars" i]')
+            rating = 0
+            total_reviews = 0
+
+            if rating_elem:
+                aria_label = rating_elem.get_attribute('aria-label')
+                rating_match = re.search(r'([\d.]+)\s*stars?', aria_label, re.IGNORECASE)
+                reviews_match = re.search(r'(\d+(?:,\d+)*)\s*reviews?', aria_label, re.IGNORECASE)
+
+                if rating_match:
+                    rating = float(rating_match.group(1))
+                if reviews_match:
+                    total_reviews = int(reviews_match.group(1).replace(',', ''))
+
+            address_elem = page.query_selector('button[data-item-id="address"]')
+            address = address_elem.inner_text() if address_elem else ''
+
+            return {
+                'name': name_text,
+                'rating': rating,
+                'total_reviews': total_reviews,
+                'address': address
+            }
+        except:
+            return {
+                'name': 'Unknown',
+                'rating': 0,
+                'total_reviews': 0,
+                'address': ''
+            }
+
+    def scroll_and_extract_reviews(self, page, max_reviews):
+        """Scroll through reviews and extract data"""
+        reviews = []
+        seen_review_texts = set()  # Avoid duplicates
+        last_review_count = 0
+        no_new_reviews_count = 0
+
+        # Find the scrollable reviews container
+        reviews_container = page.query_selector('[role="main"] div[role="feed"], div[aria-label*="Reviews" i]')
+        if not reviews_container:
+            # Try alternative selector
+            reviews_container = page.query_selector('div[class*="review" i]')
+
+        scroll_attempts = 0
+        max_scroll_attempts = 100
+
+        while len(reviews) < max_reviews and scroll_attempts < max_scroll_attempts:
+            # Extract current reviews on page
+            review_elements = page.query_selector_all('[data-review-id], div[data-review-id]')
+
+            if not review_elements:
+                # Try alternative selector for review elements
+                review_elements = page.query_selector_all('div[jslog*="review"]')
+
+            for elem in review_elements:
+                if len(reviews) >= max_reviews:
+                    break
+
+                try:
+                    review_data = self.extract_review_data(elem, page)
+
+                    # Avoid duplicates
+                    review_text_signature = f"{review_data['author']}_{review_data['text'][:50]}"
+                    if review_text_signature not in seen_review_texts:
+                        reviews.append(review_data)
+                        seen_review_texts.add(review_text_signature)
+                except Exception as e:
+                    continue
+
+            # Check if we got new reviews
+            if len(reviews) == last_review_count:
+                no_new_reviews_count += 1
+                if no_new_reviews_count >= 3:
+                    self.stdout.write(f'\nNo new reviews found after {no_new_reviews_count} scroll attempts')
+                    break
+            else:
+                no_new_reviews_count = 0
+                self.stdout.write(f'\rScraped {len(reviews)} reviews...', ending='')
+
+            last_review_count = len(reviews)
+
+            # Scroll down - find the scrollable element fresh each time to avoid stale handles
+            try:
+                # Re-query the scrollable container to avoid stale element references
+                fresh_container = page.query_selector('[role="main"] div[role="feed"], div[aria-label*="Reviews" i]')
+                if fresh_container:
+                    page.evaluate('(element) => element.scrollBy(0, 1000)', fresh_container)
+                else:
+                    page.evaluate('window.scrollBy(0, 1000)')
+            except Exception as e:
+                # If scrolling fails, try window scroll as fallback
+                page.evaluate('window.scrollBy(0, 1000)')
+
+            time.sleep(1.5)  # Be respectful with rate limiting
+            scroll_attempts += 1
+
+        self.stdout.write(f'\n✓ Scraped {len(reviews)} reviews')
+        return reviews
+
+    def extract_review_data(self, elem, page):
+        """Extract data from a single review element"""
+
+        # Author
+        author_elem = elem.query_selector('[aria-label*="Photo of" i], div[class*="author" i]')
+        author = 'Anonymous'
+        if author_elem:
+            aria_label = author_elem.get_attribute('aria-label')
+            if aria_label:
+                author = aria_label.replace('Photo of ', '').strip()
+        else:
+            # Try alternative selector
+            author_elem = elem.query_selector('button[aria-label]')
+            if author_elem:
+                author = author_elem.inner_text().strip()
+
+        # Rating
+        rating_elem = elem.query_selector('[role="img"][aria-label*="star" i]')
+        rating = 0
+        if rating_elem:
+            aria_label = rating_elem.get_attribute('aria-label')
+            rating_match = re.search(r'(\d+)', aria_label)
+            if rating_match:
+                rating = int(rating_match.group(1))
+
+        # Review text
+        text_elem = elem.query_selector('span[data-review-id], span[class*="review" i], div[class*="review-text" i]')
+        if not text_elem:
+            # Try to find "More" button and click it to expand full text
+            more_button = elem.query_selector('button[aria-label*="See more" i], button:has-text("More")')
+            if more_button:
+                try:
+                    more_button.click()
+                    time.sleep(0.3)
+                except:
+                    pass
+
+            # Try finding text in span tags
+            text_spans = elem.query_selector_all('span')
+            text_parts = []
+            for span in text_spans:
+                text_content = span.inner_text().strip()
+                if len(text_content) > 20 and text_content not in text_parts:  # Likely review text
+                    text_parts.append(text_content)
+            text = ' '.join(text_parts) if text_parts else ''
+        else:
+            text = text_elem.inner_text().strip()
+
+        # Time
+        time_elem = elem.query_selector('span[class*="date" i], span:has-text(" ago")')
+        time_text = time_elem.inner_text() if time_elem else 'Unknown'
+
+        return {
+            'author': author,
+            'rating': rating,
+            'text': text,
+            'time': time_text,
+            'timestamp': int(time.time())  # Approximate
+        }
+
+    def display_summary(self, business_name, data):
+        """Display scraping summary"""
+        self.stdout.write(self.style.SUCCESS(f'\n\n{"="*80}'))
+        self.stdout.write(self.style.SUCCESS(f'SCRAPING SUMMARY: {business_name}'))
+        self.stdout.write(self.style.SUCCESS(f'{"="*80}\n'))
+
+        business_info = data.get('business_info', {})
+        self.stdout.write(f'Business: {business_info.get("name", "Unknown")}')
+        self.stdout.write(f'Address: {business_info.get("address", "Unknown")}')
+        self.stdout.write(f'Overall Rating: {business_info.get("rating", 0)} stars')
+        self.stdout.write(f'Total Reviews on Google: {business_info.get("total_reviews", 0)}')
+        self.stdout.write(f'Reviews Scraped: {len(data.get("reviews", []))}')
+
+        # Rating distribution
+        reviews = data.get('reviews', [])
+        if reviews:
+            from collections import Counter
+            rating_dist = Counter([r['rating'] for r in reviews])
+            self.stdout.write('\nRating Distribution (scraped):')
+            for rating in sorted(rating_dist.keys(), reverse=True):
+                count = rating_dist[rating]
+                percentage = (count / len(reviews) * 100)
+                stars = '⭐' * rating
+                bar = '█' * int(percentage / 2)
+                self.stdout.write(f'  {stars} ({rating}): {count:4d} reviews {bar} {percentage:.1f}%')
+
+        self.stdout.write(f'\n{"="*80}\n')

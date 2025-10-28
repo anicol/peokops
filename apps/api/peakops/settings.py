@@ -59,6 +59,7 @@ LOCAL_APPS = [
     'marketing.apps.MarketingConfig',
     'micro_checks.apps.MicroChecksConfig',
     'integrations.apps.IntegrationsConfig',
+    'insights.apps.InsightsConfig',
 ]
 
 INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + LOCAL_APPS
