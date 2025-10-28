@@ -48,6 +48,13 @@ class MicroCheckTemplate(models.Model):
     rotation_priority = models.IntegerField(default=50,
                                            help_text="Priority for selection (0-100, higher = more likely)")
 
+    # Industry/subtype filtering
+    applicable_subtypes = models.JSONField(
+        default=list,
+        blank=True,
+        help_text="Array of brand subtypes this template applies to (e.g., ['QSR', 'FAST_CASUAL']). Empty = applies to all."
+    )
+
     # Visual reference
     visual_reference_image = models.ImageField(upload_to='micro_checks/references/',
                                               blank=True, null=True,

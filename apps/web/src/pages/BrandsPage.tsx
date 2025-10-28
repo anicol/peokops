@@ -17,6 +17,29 @@ import {
 import { brandsAPI } from '@/services/api';
 import type { Brand } from '@/types';
 
+const getSubtypeLabel = (subtype: string | undefined): string => {
+  if (!subtype) return '-';
+
+  const subtypeLabels: Record<string, string> = {
+    'QSR': 'QSR',
+    'FAST_CASUAL': 'Fast Casual',
+    'CASUAL_DINING': 'Casual Dining',
+    'FINE_DINING': 'Fine Dining',
+    'CAFE': 'Cafe',
+    'BAR_PUB': 'Bar/Pub',
+    'FOOD_TRUCK': 'Food Truck',
+    'CATERING': 'Catering',
+    'BAKERY': 'Bakery',
+    'GROCERY': 'Grocery',
+    'CONVENIENCE': 'Convenience',
+    'FASHION': 'Fashion',
+    'HOTEL': 'Hotel',
+    'OTHER_SUBTYPE': 'Other',
+  };
+
+  return subtypeLabels[subtype] || subtype;
+};
+
 export default function BrandsPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
@@ -174,7 +197,7 @@ export default function BrandsPage() {
                     Brand
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Description
+                    Type
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Stores
@@ -214,10 +237,15 @@ export default function BrandsPage() {
                         </div>
                       </div>
                     </td>
-                    <td className="px-6 py-4">
-                      <div className="text-sm text-gray-900 max-w-xs truncate">
-                        {brand.description || '-'}
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="text-sm text-gray-900">
+                        {getSubtypeLabel(brand.subtype)}
                       </div>
+                      {brand.industry && (
+                        <div className="text-xs text-gray-500">
+                          {brand.industry.charAt(0) + brand.industry.slice(1).toLowerCase()}
+                        </div>
+                      )}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex items-center text-sm text-gray-900">
@@ -310,6 +338,8 @@ function BrandFormModal({ brand, onClose }: BrandFormModalProps) {
   const [formData, setFormData] = useState({
     name: brand?.name || '',
     description: brand?.description || '',
+    industry: brand?.industry || '',
+    subtype: brand?.subtype || '',
     is_active: brand?.is_active ?? true,
     has_enterprise_access: brand?.has_enterprise_access ?? false,
   });
@@ -355,6 +385,68 @@ function BrandFormModal({ brand, onClose }: BrandFormModalProps) {
               placeholder="e.g. FastBite"
             />
           </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Industry
+            </label>
+            <select
+              value={formData.industry}
+              onChange={(e) => setFormData({ ...formData, industry: e.target.value, subtype: '' })}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+            >
+              <option value="">Select an industry</option>
+              <option value="RESTAURANT">Restaurant</option>
+              <option value="RETAIL">Retail</option>
+              <option value="HOSPITALITY">Hospitality</option>
+              <option value="OTHER">Other</option>
+            </select>
+          </div>
+
+          {formData.industry && (
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Business Type
+              </label>
+              <select
+                value={formData.subtype}
+                onChange={(e) => setFormData({ ...formData, subtype: e.target.value })}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+              >
+                <option value="">Select a business type</option>
+                {formData.industry === 'RESTAURANT' && (
+                  <>
+                    <option value="QSR">Quick Service / Fast Food</option>
+                    <option value="FAST_CASUAL">Fast Casual</option>
+                    <option value="CASUAL_DINING">Casual Dining</option>
+                    <option value="FINE_DINING">Fine Dining</option>
+                    <option value="CAFE">Cafe / Coffee Shop</option>
+                    <option value="BAR_PUB">Bar / Pub</option>
+                    <option value="FOOD_TRUCK">Food Truck</option>
+                    <option value="CATERING">Catering</option>
+                    <option value="BAKERY">Bakery / Dessert Shop</option>
+                  </>
+                )}
+                {formData.industry === 'RETAIL' && (
+                  <>
+                    <option value="GROCERY">Grocery Store</option>
+                    <option value="CONVENIENCE">Convenience Store</option>
+                    <option value="FASHION">Fashion Retail</option>
+                    <option value="OTHER_SUBTYPE">Other Retail</option>
+                  </>
+                )}
+                {formData.industry === 'HOSPITALITY' && (
+                  <>
+                    <option value="HOTEL">Hotel</option>
+                    <option value="OTHER_SUBTYPE">Other Hospitality</option>
+                  </>
+                )}
+                {formData.industry === 'OTHER' && (
+                  <option value="OTHER_SUBTYPE">Other</option>
+                )}
+              </select>
+            </div>
+          )}
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">

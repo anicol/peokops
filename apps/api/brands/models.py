@@ -8,6 +8,26 @@ class Brand(models.Model):
         HOSPITALITY = 'HOSPITALITY', 'Hospitality'
         OTHER = 'OTHER', 'Other'
 
+    class Subtype(models.TextChoices):
+        # Restaurant subtypes
+        QSR = 'QSR', 'Quick Service / Fast Food'
+        FAST_CASUAL = 'FAST_CASUAL', 'Fast Casual'
+        CASUAL_DINING = 'CASUAL_DINING', 'Casual Dining'
+        FINE_DINING = 'FINE_DINING', 'Fine Dining'
+        CAFE = 'CAFE', 'Cafe / Coffee Shop'
+        BAR_PUB = 'BAR_PUB', 'Bar / Pub'
+        FOOD_TRUCK = 'FOOD_TRUCK', 'Food Truck'
+        CATERING = 'CATERING', 'Catering'
+        BAKERY = 'BAKERY', 'Bakery / Dessert Shop'
+        # Retail subtypes (for future)
+        GROCERY = 'GROCERY', 'Grocery Store'
+        CONVENIENCE = 'CONVENIENCE', 'Convenience Store'
+        FASHION = 'FASHION', 'Fashion Retail'
+        # Hospitality subtypes (for future)
+        HOTEL = 'HOTEL', 'Hotel'
+        # Generic
+        OTHER_SUBTYPE = 'OTHER_SUBTYPE', 'Other'
+
     name = models.CharField(max_length=100, unique=True)
     logo = models.ImageField(upload_to='brands/logos/', blank=True, null=True)
     description = models.TextField(blank=True)
@@ -27,6 +47,7 @@ class Brand(models.Model):
 
     # Onboarding and profiling
     industry = models.CharField(max_length=50, choices=Industry.choices, blank=True, null=True, help_text="Primary industry vertical")
+    subtype = models.CharField(max_length=50, choices=Subtype.choices, blank=True, null=True, help_text="Industry subtype (e.g., QSR, Fine Dining for restaurants)")
     store_count_range = models.CharField(max_length=50, blank=True, null=True, help_text="Number of locations (flexible format for industry-specific ranges)")
     focus_areas = models.JSONField(default=list, blank=True, help_text="Array of operational focus areas (food_safety, cleanliness, etc)")
     onboarding_completed_at = models.DateTimeField(null=True, blank=True, help_text="When brand profile was completed")

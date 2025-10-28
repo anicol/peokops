@@ -394,9 +394,12 @@ def seed_default_templates(brand, created_by=None):
     """
     Seed default coaching templates for a new brand.
 
-    This function automatically creates 15 industry-standard micro-check
+    This function automatically creates industry-standard micro-check
     templates when a brand is created, providing an immediate "batteries included"
     experience where managers can start running Micro-Checks on day 1.
+
+    Templates are filtered by the brand's subtype (e.g., QSR, Fine Dining) to ensure
+    only relevant templates are created.
 
     Args:
         brand: Brand instance to associate templates with
@@ -412,6 +415,16 @@ def seed_default_templates(brand, created_by=None):
     default_templates = get_default_templates()
 
     for template_data in default_templates:
+        # Filter templates by brand subtype
+        applicable_subtypes = template_data.get('applicable_subtypes', [])
+
+        # If template has no subtype restrictions (empty list), include it for all brands
+        # If brand has no subtype set, include all templates
+        # Otherwise, only include if brand's subtype is in the applicable list
+        if applicable_subtypes and brand.subtype and brand.subtype not in applicable_subtypes:
+            # Skip this template - not applicable to this brand's subtype
+            continue
+
         template = MicroCheckTemplate.objects.create(
             brand=brand,
             is_local=False,

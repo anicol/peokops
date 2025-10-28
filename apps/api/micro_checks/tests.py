@@ -25,14 +25,15 @@ class TemplateSeedingTests(TestCase):
         )
 
     def test_seed_default_templates_creates_15_templates(self):
-        """Test that seed_default_templates creates exactly 15 templates"""
+        """Test that seed_default_templates creates 100 templates for brands without subtype"""
         # Create trial brand to avoid signal auto-seeding
         brand = Brand.objects.create(name='Test Brand', is_trial=True)
 
         templates = seed_default_templates(brand, created_by=self.admin_user)
 
-        self.assertEqual(len(templates), 15)
-        self.assertEqual(MicroCheckTemplate.objects.filter(brand=brand).count(), 15)
+        # Brands without subtype get all 100 templates
+        self.assertEqual(len(templates), 100)
+        self.assertEqual(MicroCheckTemplate.objects.filter(brand=brand).count(), 100)
 
     def test_seeded_templates_have_correct_fields(self):
         """Test that seeded templates have all required fields populated"""
@@ -74,8 +75,46 @@ class TemplateSeedingTests(TestCase):
 
         templates = MicroCheckTemplate.objects.filter(brand=brand)
 
-        self.assertEqual(templates.count(), 15)
+        # Trial brands without subtype get all 100 templates
+        self.assertEqual(templates.count(), 100)
         self.assertTrue(brand.is_trial)
+
+    def test_subtype_filtering_qsr_brand(self):
+        """Test that QSR brands get filtered templates"""
+        brand = Brand.objects.create(
+            name='QSR Brand',
+            industry='RESTAURANT',
+            subtype='QSR',
+            is_trial=True
+        )
+
+        templates = seed_default_templates(brand, created_by=self.admin_user)
+
+        # QSR brands should get 98 templates (filtered out 2 non-QSR templates)
+        self.assertEqual(len(templates), 98)
+        # Verify all templates have empty applicable_subtypes or include 'QSR'
+        for template in templates:
+            if template.applicable_subtypes:
+                self.assertIn('QSR', template.applicable_subtypes)
+
+    def test_subtype_filtering_fine_dining_brand(self):
+        """Test that Fine Dining brands get filtered templates"""
+        brand = Brand.objects.create(
+            name='Fine Dining Brand',
+            industry='RESTAURANT',
+            subtype='FINE_DINING',
+            is_trial=True
+        )
+
+        templates = seed_default_templates(brand, created_by=self.admin_user)
+
+        # Fine Dining brands should get fewer templates (no QSR-specific checks)
+        self.assertLess(len(templates), 100)
+        self.assertGreater(len(templates), 80)
+        # Verify all templates have empty applicable_subtypes or include 'FINE_DINING'
+        for template in templates:
+            if template.applicable_subtypes:
+                self.assertIn('FINE_DINING', template.applicable_subtypes)
 
 
 class TemplateSelectionTests(TestCase):
@@ -519,9 +558,9 @@ class FirstTrialRunCreationTests(APITestCase):
         """Test that first run uses templates seeded during signup"""
         self.client.force_authenticate(user=self.trial_user)
 
-        # Verify templates were seeded
+        # Verify templates were seeded (100 templates for brands without subtype)
         templates = MicroCheckTemplate.objects.filter(brand=self.trial_brand)
-        self.assertEqual(templates.count(), 15)
+        self.assertEqual(templates.count(), 100)
 
         response = self.client.post('/api/micro-checks/runs/create_instant_run/')
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)

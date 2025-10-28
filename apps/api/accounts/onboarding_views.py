@@ -27,6 +27,11 @@ from brands.models import Brand
                     'enum': ['RESTAURANT', 'RETAIL', 'HOSPITALITY', 'OTHER'],
                     'description': 'Brand industry vertical'
                 },
+                'subtype': {
+                    'type': 'string',
+                    'enum': ['QSR', 'FAST_CASUAL', 'CASUAL_DINING', 'FINE_DINING', 'CAFE', 'BAR_PUB', 'FOOD_TRUCK', 'CATERING', 'BAKERY', 'GROCERY', 'CONVENIENCE', 'FASHION', 'HOTEL', 'OTHER_SUBTYPE'],
+                    'description': 'Industry subtype (e.g., QSR, Fine Dining for restaurants)'
+                },
                 'store_count_range': {
                     'type': 'string',
                     'enum': ['1-2', '3-10', '10+', 'CORPORATE'],
@@ -59,6 +64,7 @@ from brands.models import Brand
                     'properties': {
                         'id': {'type': 'integer'},
                         'industry': {'type': 'string'},
+                        'subtype': {'type': 'string'},
                         'store_count_range': {'type': 'string'},
                         'focus_areas': {'type': 'array', 'items': {'type': 'string'}},
                         'onboarding_completed_at': {'type': 'string', 'format': 'date-time'}
@@ -88,6 +94,7 @@ def complete_onboarding(request):
     # Validate request data
     role = request.data.get('role')
     industry = request.data.get('industry')
+    subtype = request.data.get('subtype')
     store_count_range = request.data.get('store_count_range')
     focus_areas = request.data.get('focus_areas', [])
 
@@ -114,6 +121,15 @@ def complete_onboarding(request):
             status=status.HTTP_400_BAD_REQUEST
         )
 
+    # Validate subtype choice (optional but must be valid if provided)
+    if subtype:
+        valid_subtypes = [choice[0] for choice in Brand.Subtype.choices]
+        if subtype not in valid_subtypes:
+            return Response(
+                {'error': f'Invalid subtype. Must be one of: {", ".join(valid_subtypes)}'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
     # Validate store_count_range is provided (flexible format)
     if not store_count_range:
         return Response(
@@ -137,6 +153,7 @@ def complete_onboarding(request):
 
     # Update brand profile
     brand.industry = industry
+    brand.subtype = subtype
     brand.store_count_range = store_count_range
     brand.focus_areas = focus_areas if isinstance(focus_areas, list) else []
     brand.onboarding_completed_at = timezone.now()
@@ -152,6 +169,7 @@ def complete_onboarding(request):
         'brand': {
             'id': brand.id,
             'industry': brand.industry,
+            'subtype': brand.subtype,
             'store_count_range': brand.store_count_range,
             'focus_areas': brand.focus_areas,
             'onboarding_completed_at': brand.onboarding_completed_at
