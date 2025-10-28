@@ -230,9 +230,9 @@ class TrialSignupTest(TestCase):
         self.assertEqual(store.code, f"TRIAL-{user.id}")
         self.assertEqual(store.brand, brand)
 
-        # Verify 15 templates seeded
+        # Verify 100 templates seeded (brands without subtype get all templates)
         templates = MicroCheckTemplate.objects.filter(brand=brand)
-        self.assertEqual(templates.count(), 15)
+        self.assertEqual(templates.count(), 100)
 
         # Verify trial usage counters
         self.assertEqual(user.trial_stores_used, 1)  # Demo store counted

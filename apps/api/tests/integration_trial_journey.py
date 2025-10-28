@@ -57,9 +57,9 @@ class TrialUserCompleteJourneyTest(TransactionTestCase):
         brand = user.store.brand
         self.assertIsNotNone(brand)
 
-        # Verify templates seeded
+        # Verify templates seeded (100 templates for brands without subtype)
         templates = MicroCheckTemplate.objects.filter(brand=brand)
-        self.assertEqual(templates.count(), 15)
+        self.assertEqual(templates.count(), 100)
 
         # Step 2: Complete Onboarding
         self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {response.data['access']}")
