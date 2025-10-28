@@ -886,7 +886,7 @@ def request_magic_link_view(request):
     login_token = PasswordlessLoginToken.generate_token(user, expires_in_minutes=15)
 
     # Build magic link URL
-    web_url = getattr(settings, 'WEB_APP_URL', 'http://localhost:5173')
+    web_url = getattr(settings, 'FRONTEND_URL', 'http://localhost:5174')
     magic_link = f"{web_url}/login?token={login_token.token}"
 
     # Send email
