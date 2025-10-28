@@ -190,7 +190,7 @@ export default function HomePage() {
               <ul className="space-y-4 mb-6">
                 <li className="flex items-center">
                   <CheckCircle className="w-6 h-6 text-teal-600 mr-3 flex-shrink-0" />
-                  <span className="text-gray-700 opacity-85">Three quick checks a day (no apps, no logins)</span>
+                  <span className="text-gray-700 opacity-85">Three micro-checks a day (no apps, no logins)</span>
                 </li>
                 <li className="flex items-center">
                   <CheckCircle className="w-6 h-6 text-teal-600 mr-3 flex-shrink-0" />
@@ -425,7 +425,7 @@ export default function HomePage() {
                   </p>
 
                   <p className="text-gray-600 text-center mb-4 leading-relaxed">
-                    Record a short walkthrough or complete your three quick checks right from your phone.
+                    Record a short walkthrough or complete your three micro-checks right from your phone.
                   </p>
 
                   <p className="text-gray-500 text-center mb-4 text-sm leading-relaxed">

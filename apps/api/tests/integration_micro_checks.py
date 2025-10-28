@@ -1,5 +1,5 @@
 """
-Integration tests for Micro-Check (Quick Check) workflows.
+Integration tests for Micro-Check (Micro-Check) workflows.
 
 Tests critical multi-step user journeys including:
 - Complete run lifecycle (creation → execution → completion)

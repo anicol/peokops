@@ -359,7 +359,7 @@ function TrialDashboard({ user, stats, dashboardStats, microCheckRuns, allRespon
               "2-minute checks = never fail an audit."
             </p>
             <p className="text-xs text-gray-600">
-              Daily quick checks help you catch issues before they become problems during official inspections.
+              Daily micro-checks help you catch issues before they become problems during official inspections.
             </p>
           </div>
 
@@ -398,7 +398,7 @@ function TrialDashboard({ user, stats, dashboardStats, microCheckRuns, allRespon
                 className="flex items-center p-2.5 sm:p-3 bg-teal-50 rounded-lg hover:bg-teal-100 transition-colors"
               >
                 <Target className="w-4 h-4 sm:w-5 sm:h-5 text-teal-600 mr-2 sm:mr-3" />
-                <span className="font-medium text-teal-900 text-sm sm:text-base">Quick Checks</span>
+                <span className="font-medium text-teal-900 text-sm sm:text-base">Micro-Checks</span>
               </Link>
 
               <Link

@@ -3,7 +3,7 @@ Default micro-check templates for coaching mode.
 
 These templates are automatically seeded when a new brand is created,
 providing an immediate "batteries included" experience where managers
-can start running Quick Checks on day 1.
+can start running Micro-Checks on day 1.
 
 Templates cover industry-standard operational checks across key categories:
 - Food Safety

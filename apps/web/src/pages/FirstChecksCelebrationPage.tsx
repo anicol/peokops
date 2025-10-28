@@ -37,7 +37,7 @@ export default function FirstChecksCelebrationPage() {
 
         {/* Description */}
         <p className="text-base sm:text-lg text-gray-600 mb-6 sm:mb-8 max-w-md mx-auto leading-relaxed">
-          You just completed 3 quick checks focused on{' '}
+          You just completed 3 micro-checks focused on{' '}
           <span className="font-semibold text-emerald-700">{focusAreas}</span>.
           <br />
           <br />

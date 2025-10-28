@@ -377,7 +377,7 @@ const MicroCheckTemplatesPage = () => {
             <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mt-4">
               <p className="text-sm text-blue-800">
                 <Sparkles className="w-4 h-4 inline mr-2" />
-                You can customize our starter templates or create your own quick checks for your team
+                You can customize our starter templates or create your own micro-checks for your team
               </p>
             </div>
           )}

@@ -145,7 +145,7 @@ export default function BlogPivotChroniclesSmallActions() {
 
           <div className="bg-blue-50 border border-blue-200 rounded-lg p-6 my-8 text-center">
             <p className="text-lg text-gray-800">
-              "Hey Jamie, your three quick checks for today are ready."
+              "Hey Jamie, your three micro-checks for today are ready."
             </p>
           </div>
 

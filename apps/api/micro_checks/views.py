@@ -869,7 +869,7 @@ class MicroCheckRunViewSet(viewsets.ModelViewSet):
         if not selected_templates:
             return Response({
                 'error': 'NO_TEMPLATES',
-                'message': 'No active templates available for Quick Checks. Please configure templates first.',
+                'message': 'No active templates available for Micro-Checks. Please configure templates first.',
                 'user_role': user.role,
                 'can_configure': user.role in ['ADMIN', 'OWNER']
             }, status=status.HTTP_400_BAD_REQUEST)

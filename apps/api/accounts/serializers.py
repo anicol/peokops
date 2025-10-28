@@ -4,7 +4,7 @@ from django.utils import timezone
 from datetime import timedelta, time
 import secrets
 import string
-from .models import User, SmartNudge, UserBehaviorEvent, MicroCheckDeliveryConfig
+from .models import User, SmartNudge, UserBehaviorEvent, MicroCheckDeliveryConfig, Account
 from brands.models import Brand, Store
 from .demo_data import create_demo_videos_and_inspections
 
@@ -119,7 +119,7 @@ Hi {user.first_name or user.email},
 {inviter_name} has invited you to join {store_name} on PeakOps!
 
 What is PeakOps?
-PeakOps helps your team maintain operational excellence through quick daily checks. Instead of lengthy inspections, you'll complete 3 quick checks each day (takes just 2 minutes) to keep your store running smoothly.
+PeakOps helps your team maintain operational excellence through quick daily checks. Instead of lengthy inspections, you'll complete 3 micro-checks each day (takes just 2 minutes) to keep your store running smoothly.
 
 Your Role: {user.get_role_display()}
 You'll receive daily check reminders via email and can complete them right from your phone or computer.
@@ -127,7 +127,7 @@ You'll receive daily check reminders via email and can complete them right from 
 Click here to get started:
 {login_link}
 
-This link will log you in automatically. Once you're in, you can run your first quick check from the dashboard.
+This link will log you in automatically. Once you're in, you can run your first micro-check from the dashboard.
 
 Welcome to the team,
 PeakOps
@@ -432,8 +432,38 @@ class QuickSignupSerializer(serializers.Serializer):
                         raise
                     continue
 
+        # Create or get Account for multi-tenancy
+        # Check if user already has an account
+        existing_account = Account.objects.filter(owner=user, brand=brand).first()
+
+        if existing_account:
+            # Reuse existing account
+            account = existing_account
+        else:
+            # Create new account for this trial user
+            account_name = f"{user.first_name or user.username}'s Account"
+            if user.email and '@' in user.email:
+                # Use email domain for more personalized name
+                email_name = user.email.split('@')[0]
+                account_name = f"{email_name}'s Account"
+
+            account = Account.objects.create(
+                name=account_name,
+                brand=brand,
+                owner=user,
+                company_name=store_name if store_name else '',
+                billing_email=email if email else '',
+                phone=phone if phone and phone != '+10000000000' else '',
+                is_active=True
+            )
+
+        # Link user to account
+        user.account = account
+        user.save()
+
         # Auto-create store with provided name
         store = Store.objects.create(
+            account=account,
             brand=brand,
             name=store_name,
             code=f"TRIAL-{user.id}-{int(time.time())}",  # Make unique with timestamp
@@ -453,6 +483,40 @@ class QuickSignupSerializer(serializers.Serializer):
         # Mark onboarding completed
         user.onboarding_completed_at = timezone.now()
         user.save()
+
+        # Create MicroCheckDeliveryConfig with randomized cadence for better trial experience
+        import random
+        from datetime import date
+
+        today = date.today()
+
+        # Calculate next send date (1-3 days from now)
+        random_gap = random.randint(1, 3)
+        next_send = today + timedelta(days=random_gap)
+
+        # Create or update delivery config
+        delivery_config, created = MicroCheckDeliveryConfig.objects.get_or_create(
+            account=account,
+            defaults={
+                'send_to_recipients': 'MANAGERS_ONLY',
+                'cadence_mode': 'RANDOMIZED',
+                'min_day_gap': 1,
+                'max_day_gap': 3,
+                'randomize_recipients': False,
+                'recipient_percentage': 100,
+                'last_sent_date': today,
+                'next_send_date': next_send
+            }
+        )
+
+        if not created:
+            # Update existing config to randomized mode
+            delivery_config.cadence_mode = 'RANDOMIZED'
+            delivery_config.min_day_gap = 1
+            delivery_config.max_day_gap = 3
+            delivery_config.last_sent_date = today
+            delivery_config.next_send_date = next_send
+            delivery_config.save()
 
         # Create first MicroCheckRun with magic link
         from micro_checks.models import MicroCheckRun, MicroCheckRunItem, MicroCheckAssignment

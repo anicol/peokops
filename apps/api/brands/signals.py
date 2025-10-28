@@ -1,7 +1,7 @@
 """
 Signal handlers for Brand model.
 
-Auto-seeds Quick Check templates when brands are created.
+Auto-seeds Micro-Check templates when brands are created.
 """
 from django.db.models.signals import post_save
 from django.dispatch import receiver
@@ -11,7 +11,7 @@ from .models import Brand
 @receiver(post_save, sender=Brand)
 def seed_templates_on_brand_creation(sender, instance, created, **kwargs):
     """
-    Auto-seed default Quick Check templates when a new brand is created.
+    Auto-seed default Micro-Check templates when a new brand is created.
 
     This ensures all brands (trial and non-trial) get the standard library
     of 15 coaching templates immediately, providing an out-of-the-box experience.

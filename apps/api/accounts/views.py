@@ -180,7 +180,7 @@ Hi {user.first_name or user.email},
 {inviter_name} has invited you to join {store_name} on PeakOps!
 
 What is PeakOps?
-PeakOps helps your team maintain operational excellence through quick daily checks. Instead of lengthy inspections, you'll complete 3 quick checks each day (takes just 2 minutes) to keep your store running smoothly.
+PeakOps helps your team maintain operational excellence through quick daily checks. Instead of lengthy inspections, you'll complete 3 micro-checks each day (takes just 2 minutes) to keep your store running smoothly.
 
 Your Role: {user.get_role_display()}
 You'll receive daily check reminders via email and can complete them right from your phone or computer.
@@ -188,7 +188,7 @@ You'll receive daily check reminders via email and can complete them right from 
 Click here to get started:
 {login_link}
 
-This link will log you in automatically. Once you're in, you can run your first quick check from the dashboard.
+This link will log you in automatically. Once you're in, you can run your first micro-check from the dashboard.
 
 Welcome to the team,
 PeakOps

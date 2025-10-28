@@ -396,7 +396,7 @@ def seed_default_templates(brand, created_by=None):
 
     This function automatically creates 15 industry-standard micro-check
     templates when a brand is created, providing an immediate "batteries included"
-    experience where managers can start running Quick Checks on day 1.
+    experience where managers can start running Micro-Checks on day 1.
 
     Args:
         brand: Brand instance to associate templates with
@@ -463,7 +463,7 @@ def send_magic_link_sms(phone, token, store_name="Your Store"):
         # Craft message
         message_body = (
             f"✨ Your first {store_name} checks are ready!\n\n"
-            f"Complete 3 quick checks (under 2 min):\n"
+            f"Complete 3 micro-checks (under 2 min):\n"
             f"{magic_link}\n\n"
             f"No login required - just tap the link!"
         )
@@ -510,12 +510,12 @@ def send_magic_link_email(email, token, store_name="Your Store", recipient_name=
         greeting = f"Hi {recipient_name}," if recipient_name else "Hi there,"
 
         # Craft email subject
-        subject = f"Your {store_name} Quick Checks Are Ready! 🎯"
+        subject = f"Your {store_name} Micro-Checks Are Ready! 🎯"
 
         # Plain text version (no markdown)
         text_content = f"""{greeting}
 
-Welcome to PeakOps! Your first 3 quick checks are ready to complete.
+Welcome to PeakOps! Your first 3 micro-checks are ready to complete.
 
 GET STARTED IN 2 MINUTES
 
@@ -549,7 +549,7 @@ This link is valid for 30 days, but we recommend completing your checks today to
 <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
     <p style="font-size: 16px; margin-bottom: 20px;">{greeting}</p>
 
-    <p style="font-size: 16px; margin-bottom: 20px;">Welcome to <strong>PeakOps</strong>! Your first 3 quick checks are ready to complete.</p>
+    <p style="font-size: 16px; margin-bottom: 20px;">Welcome to <strong>PeakOps</strong>! Your first 3 micro-checks are ready to complete.</p>
 
     <div style="background: linear-gradient(135deg, #0d9488 0%, #06b6d4 100%); border-radius: 12px; padding: 24px; margin: 24px 0; text-align: center;">
         <h2 style="color: white; margin: 0 0 16px 0; font-size: 20px;">✨ Get Started in 2 Minutes</h2>
