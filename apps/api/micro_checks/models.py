@@ -60,6 +60,18 @@ class MicroCheckTemplate(models.Model):
                                               blank=True, null=True,
                                               help_text="Optional reference image showing 'what good looks like'")
 
+    # Source tracking
+    source = models.CharField(
+        max_length=50,
+        default='manual',
+        help_text="Source of this template (e.g., 'manual', 'google_reviews', 'ai_generated')"
+    )
+    metadata = models.JSONField(
+        default=dict,
+        blank=True,
+        help_text="Additional metadata about this template (e.g., review counts, generation params)"
+    )
+
     is_active = models.BooleanField(default=True)
 
     # Auditing
