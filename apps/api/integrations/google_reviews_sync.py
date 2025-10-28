@@ -218,6 +218,17 @@ class GoogleReviewsSyncService:
                         if (timezone.now() - parsed_review['review_created_at']).days > days_back:
                             continue
 
+                        # Check if a scraped version exists (deduplication)
+                        # Try to find by exact google_review_id or by content match
+                        existing_scraped = GoogleReview.objects.filter(
+                            account=self.account,
+                            location=location,
+                            source='scraped',
+                            reviewer_name=parsed_review['reviewer_name'],
+                            rating=parsed_review['rating'],
+                            review_text__icontains=parsed_review['review_text'][:50]  # Match first 50 chars
+                        ).first()
+
                         # Create or update review
                         review, created = GoogleReview.objects.update_or_create(
                             google_review_id=parsed_review['google_review_id'],
@@ -229,6 +240,9 @@ class GoogleReviewsSyncService:
                                 'review_text': parsed_review['review_text'],
                                 'review_reply': parsed_review['review_reply'],
                                 'review_created_at': parsed_review['review_created_at'],
+                                # Mark as OAuth source (verified) - upgrades scraped reviews
+                                'source': 'oauth',
+                                'is_verified': True,
                                 # Mark as needing analysis if newly created or text changed
                                 'needs_analysis': created or (
                                     not created and
@@ -236,6 +250,10 @@ class GoogleReviewsSyncService:
                                 )
                             }
                         )
+
+                        # If we upgraded a scraped review, log it
+                        if not created and existing_scraped:
+                            logger.info(f"Upgraded scraped review to verified: {review.google_review_id}")
 
                         total_reviews += 1
                         if created:

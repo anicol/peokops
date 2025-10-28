@@ -386,6 +386,23 @@ class GoogleReview(models.Model):
     analyzed_at = models.DateTimeField(null=True, blank=True,
                                       help_text="When AI analysis was completed")
 
+    # Source tracking (unified storage for scraped + OAuth)
+    source = models.CharField(
+        max_length=20,
+        choices=[
+            ('oauth', 'OAuth Sync'),
+            ('scraped', 'Public Scrape')
+        ],
+        default='oauth',
+        db_index=True,
+        help_text="Where this review came from"
+    )
+    is_verified = models.BooleanField(
+        default=False,
+        db_index=True,
+        help_text="True if from authenticated OAuth, False if from public scrape"
+    )
+
     class Meta:
         db_table = 'google_reviews'
         verbose_name = 'Google Review'
@@ -395,6 +412,8 @@ class GoogleReview(models.Model):
             models.Index(fields=['location', 'rating', '-review_created_at']),
             models.Index(fields=['account', '-review_created_at']),
             models.Index(fields=['needs_analysis', 'rating']),
+            models.Index(fields=['source', 'is_verified']),
+            models.Index(fields=['account', 'source', '-review_created_at']),
         ]
 
     def __str__(self):

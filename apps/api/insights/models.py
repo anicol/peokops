@@ -88,13 +88,117 @@ class ReviewAnalysis(models.Model):
             self.viewed_at = timezone.now()
             self.save(update_fields=['viewed_at'])
 
-    def mark_converted(self, account):
-        """Mark as converted to trial and link to account"""
+    def mark_converted(self, brand):
+        """
+        Mark as converted to trial and link to brand.
+
+        Args:
+            brand: Brand instance (note: stored in self.account field for historical reasons)
+        """
         if not self.converted_to_trial:
             self.converted_to_trial = True
             self.converted_at = timezone.now()
-            self.account = account
+            self.account = brand
             self.save(update_fields=['converted_to_trial', 'converted_at', 'account'])
+
+            # Automatically migrate scraped reviews to integrations
+            self.migrate_reviews_to_integrations()
+
+    def migrate_reviews_to_integrations(self):
+        """
+        Migrate scraped reviews from JSON to GoogleReview table (unified storage).
+        Called automatically when prospect converts to customer.
+        """
+        from integrations.models import GoogleLocation, GoogleReview, GoogleReviewAnalysis as IntegrationAnalysis
+        from ai_services.bedrock_service import BedrockRecommendationService
+        import logging
+
+        logger = logging.getLogger(__name__)
+
+        if not self.account or not self.scraped_data:
+            return
+
+        # Note: self.account is actually a Brand instance (confusing naming)
+        # We need to get an Account from the Brand
+        brand = self.account
+        account = brand.accounts.first()
+
+        if not account:
+            logger.error(f"No Account found for Brand {brand.id} during review migration")
+            return
+
+        logger.info(f"Migrating scraped reviews for {self.business_name} to account {account.id}")
+
+        # Create or get location for this business
+        business_info = self.scraped_data.get('business_info', {})
+        location, created = GoogleLocation.objects.get_or_create(
+            account=account,
+            google_location_name=self.business_name,
+            defaults={
+                'google_location_id': f'scraped_{self.id}',  # Temporary ID until OAuth connects
+                'address': business_info.get('address', self.location),
+                'average_rating': business_info.get('rating'),
+                'total_review_count': business_info.get('total_reviews', 0),
+                'is_active': True
+            }
+        )
+
+        # Migrate each scraped review to GoogleReview table
+        reviews_migrated = 0
+        bedrock_service = BedrockRecommendationService()
+
+        for review_data in self.scraped_data.get('reviews', []):
+            try:
+                # Create Google review with source='scraped'
+                review, created = GoogleReview.objects.get_or_create(
+                    google_review_id=f"scraped_{self.id}_{review_data.get('author', '')}_{review_data.get('timestamp', '')}",
+                    defaults={
+                        'location': location,
+                        'account': account,
+                        'reviewer_name': review_data.get('author', 'Anonymous'),
+                        'rating': review_data.get('rating', 0),
+                        'review_text': review_data.get('text', ''),
+                        'review_reply': '',
+                        'review_created_at': timezone.now() - timezone.timedelta(days=30),  # Approximate
+                        'source': 'scraped',
+                        'is_verified': False,
+                        'needs_analysis': True
+                    }
+                )
+
+                if created:
+                    reviews_migrated += 1
+
+                    # Run AI analysis if we have review text
+                    if review.review_text:
+                        try:
+                            analysis_result = bedrock_service.analyze_review(
+                                review_text=review.review_text,
+                                rating=review.rating
+                            )
+
+                            IntegrationAnalysis.objects.create(
+                                review=review,
+                                topics=analysis_result['topics'],
+                                sentiment_score=analysis_result['sentiment_score'],
+                                actionable_issues=analysis_result['actionable_issues'],
+                                suggested_category=analysis_result['suggested_category'],
+                                confidence=analysis_result.get('confidence', 0.5),
+                                model_used='bedrock' if bedrock_service.enabled else 'fallback'
+                            )
+
+                            review.needs_analysis = False
+                            review.analyzed_at = timezone.now()
+                            review.save()
+                        except Exception as e:
+                            logger.error(f"Failed to analyze migrated review: {e}")
+
+            except Exception as e:
+                logger.error(f"Failed to migrate review: {e}")
+                continue
+
+        logger.info(f"Migrated {reviews_migrated} scraped reviews to GoogleReview table")
+        return reviews_migrated
 
     @property
     def is_processing(self):
