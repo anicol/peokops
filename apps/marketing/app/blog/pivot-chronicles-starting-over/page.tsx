@@ -1,12 +1,74 @@
-'use client';
-
 import React from 'react';
 import Link from 'next/link';
 import { ArrowLeft, Clock, User, Calendar } from 'lucide-react';
+import type { Metadata } from 'next';
 
-const BlogPivotChroniclesStartingOver = () => {
+export const metadata: Metadata = {
+  title: 'Starting Over (Again): What Would Change With 10 Real Customers | The Pivot Chronicles',
+  description: 'If I had to start over tomorrow and get 10 paying customers in 30 days, almost everything I\'ve built so far would be irrelevant. Not because it wasn\'t good, but because it wasn\'t anchored.',
+  openGraph: {
+    title: 'Starting Over (Again): What Would Change With 10 Real Customers',
+    description: 'Proof before perfection. Part 10 of The Pivot Chronicles.',
+    url: 'https://getpeakops.com/blog/pivot-chronicles-starting-over',
+    siteName: 'PeakOps',
+    type: 'article',
+    publishedTime: '2025-09-16T00:00:00Z',
+    authors: ['Alistair Nicol'],
+    images: [
+      {
+        url: '/og-image.jpg',
+        width: 1200,
+        height: 630,
+        alt: 'Starting Over Again',
+      },
+    ],
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Starting Over (Again): What Would Change With 10 Real Customers',
+    description: 'If I had 30 days to get 10 paying customers, I\'d throw out 90% of what I\'ve built. Here\'s what I\'d do instead.',
+    images: ['/og-image.jpg'],
+  },
+  alternates: {
+    canonical: 'https://getpeakops.com/blog/pivot-chronicles-starting-over',
+  },
+};
+
+export default function BlogPivotChroniclesStartingOver() {
+  const jsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'Article',
+    headline: 'Starting Over (Again): What Would Change With 10 Real Customers',
+    description: 'If I had 30 days to get 10 paying customers, I\'d throw out 90% of what I\'ve built. Proof before perfection.',
+    image: 'https://getpeakops.com/og-image.jpg',
+    datePublished: '2025-09-16T00:00:00Z',
+    dateModified: '2025-09-16T00:00:00Z',
+    author: {
+      '@type': 'Person',
+      name: 'Alistair Nicol',
+      url: 'https://getpeakops.com',
+    },
+    publisher: {
+      '@type': 'Organization',
+      name: 'PeakOps',
+      logo: {
+        '@type': 'ImageObject',
+        url: 'https://getpeakops.com/logo.png',
+      },
+    },
+    mainEntityOfPage: {
+      '@type': 'WebPage',
+      '@id': 'https://getpeakops.com/blog/pivot-chronicles-starting-over',
+    },
+  };
+
   return (
-    <div className="min-h-screen bg-white">      {/* Header */}
+    <div className="min-h-screen bg-white">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
+      {/* Header */}
       <div className="bg-gray-50 border-b border-gray-200">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
           <Link
@@ -52,11 +114,11 @@ const BlogPivotChroniclesStartingOver = () => {
           </p>
 
           <p className="mb-8">
-            Not because it wasn't good—but because it wasn't anchored.
+            Not because it wasn't good, but because it wasn't anchored.
           </p>
 
           <p className="mb-4">
-            I'd throw out 90% of the code, the architecture, the automation, the roadmap slides—all of it.
+            I'd throw out 90% of the code, the architecture, the automation, the roadmap slides. All of it.
           </p>
 
           <p className="mb-8">
@@ -72,7 +134,7 @@ const BlogPivotChroniclesStartingOver = () => {
           </h2>
 
           <p className="mb-4">
-            I'd open my laptop and make a list of 50 people who might care—not ideal personas, just real operators I know.
+            I'd open my laptop and make a list of 50 people who might care, not ideal personas, just real operators I know.
           </p>
 
           <p className="mb-8">
@@ -107,7 +169,7 @@ const BlogPivotChroniclesStartingOver = () => {
           </p>
 
           <p className="mb-8">
-            And when I heard the same complaint three times, I'd build the smallest thing possible to fix it—then call those same people back the next day.
+            And when I heard the same complaint three times, I'd build the smallest thing possible to fix it, then call those same people back the next day.
           </p>
 
           <p className="mb-8 font-semibold text-gray-900">
@@ -119,7 +181,7 @@ const BlogPivotChroniclesStartingOver = () => {
           </h2>
 
           <p className="mb-4">
-            If I'm honest, the biggest mistake across every version of PeakOps and Extenure wasn't bad strategy—it was building before proving demand.
+            If I'm honest, the biggest mistake across every version of PeakOps and Extenure wasn't bad strategy. It was building before proving demand.
           </p>
 
           <div className="bg-red-50 border-l-4 border-red-600 p-6 my-8">
@@ -156,7 +218,7 @@ const BlogPivotChroniclesStartingOver = () => {
               <strong>Week 1:</strong> Talk to 20 people. Identify 3 repeatable pain points.
             </p>
             <p className="mb-4">
-              <strong>Week 2:</strong> Build one low-tech solution—a form, a spreadsheet, a workflow. Deliver it manually.
+              <strong>Week 2:</strong> Build one low-tech solution: a form, a spreadsheet, a workflow. Deliver it manually.
             </p>
             <p className="mb-4">
               <strong>Week 3:</strong> Charge for it. Adjust until at least 3 people pay.
@@ -190,7 +252,7 @@ const BlogPivotChroniclesStartingOver = () => {
               <strong>You don't need scale; you need proof.</strong>
             </p>
             <p className="mb-4">
-              <strong>Selling early feels uncomfortable—but it's the only shortcut that works.</strong>
+              <strong>Selling early feels uncomfortable, but it's the only shortcut that works.</strong>
             </p>
             <p className="mb-0">
               <strong>If it's not worth paying for manually, it's not worth automating.</strong>
@@ -221,7 +283,7 @@ const BlogPivotChroniclesStartingOver = () => {
               The Engagement Gap: When Code Velocity Masks Business Stagnation
             </h4>
             <p className="text-gray-700">
-              Fast doesn't mean forward. We weren't shipping to customers—we were shipping to ourselves.
+              Fast doesn't mean forward. We weren't shipping to customers. We were shipping to ourselves.
             </p>
           </Link>
 
@@ -254,7 +316,7 @@ const BlogPivotChroniclesStartingOver = () => {
             The Journey Continues
           </h2>
           <p className="text-xl text-blue-100 mb-8 max-w-3xl mx-auto">
-            These lessons aren't theoretical—they're being applied right now. Join us as we figure out what actually works.
+            These lessons aren't theoretical. They're being applied right now. Join us as we figure out what actually works.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Link
@@ -274,6 +336,4 @@ const BlogPivotChroniclesStartingOver = () => {
       </section>
     </div>
   );
-};
-
-export default BlogPivotChroniclesStartingOver;
+}

@@ -1,12 +1,74 @@
-'use client';
-
 import React from 'react';
 import Link from 'next/link';
 import { ArrowLeft, Clock, User, Calendar } from 'lucide-react';
+import type { Metadata } from 'next';
 
-const BlogPivotChroniclesMicroChecks = () => {
+export const metadata: Metadata = {
+  title: 'Micro-Checks: Simplifying to 3 Questions a Day | The Pivot Chronicles',
+  description: 'After PeakOps, I realized something painful: Every time I added sophistication, I killed adoption. So I stripped everything away. What if we just asked three questions a day?',
+  openGraph: {
+    title: 'Micro-Checks: Simplifying to 3 Questions a Day',
+    description: 'Trading AI sophistication for behavioral consistency. Part 5 of The Pivot Chronicles.',
+    url: 'https://getpeakops.com/blog/pivot-chronicles-micro-checks',
+    siteName: 'PeakOps',
+    type: 'article',
+    publishedTime: '2025-08-12T00:00:00Z',
+    authors: ['Alistair Nicol'],
+    images: [
+      {
+        url: '/og-image.jpg',
+        width: 1200,
+        height: 630,
+        alt: 'Micro-Checks: Simplifying to 3 Questions a Day',
+      },
+    ],
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Micro-Checks: Simplifying to 3 Questions a Day',
+    description: 'Trading AI sophistication for behavioral consistency. How we landed on the micro-check model.',
+    images: ['/og-image.jpg'],
+  },
+  alternates: {
+    canonical: 'https://getpeakops.com/blog/pivot-chronicles-micro-checks',
+  },
+};
+
+export default function BlogPivotChroniclesMicroChecks() {
+  const jsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'Article',
+    headline: 'Micro-Checks: Simplifying to 3 Questions a Day',
+    description: 'After realizing sophistication kills adoption, we stripped everything away. What if restaurant managers just answered three critical questions every morning?',
+    image: 'https://getpeakops.com/og-image.jpg',
+    datePublished: '2025-08-12T00:00:00Z',
+    dateModified: '2025-08-12T00:00:00Z',
+    author: {
+      '@type': 'Person',
+      name: 'Alistair Nicol',
+      url: 'https://getpeakops.com',
+    },
+    publisher: {
+      '@type': 'Organization',
+      name: 'PeakOps',
+      logo: {
+        '@type': 'ImageObject',
+        url: 'https://getpeakops.com/logo.png',
+      },
+    },
+    mainEntityOfPage: {
+      '@type': 'WebPage',
+      '@id': 'https://getpeakops.com/blog/pivot-chronicles-micro-checks',
+    },
+  };
+
   return (
-    <div className="min-h-screen bg-white">      {/* Header */}
+    <div className="min-h-screen bg-white">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
+      {/* Header */}
       <div className="bg-gray-50 border-b border-gray-200">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
           <Link
@@ -390,6 +452,4 @@ const BlogPivotChroniclesMicroChecks = () => {
       </section>
     </div>
   );
-};
-
-export default BlogPivotChroniclesMicroChecks;
+}

@@ -1,12 +1,74 @@
-'use client';
-
 import React from 'react';
 import Link from 'next/link';
 import { ArrowLeft, Clock, User, Calendar } from 'lucide-react';
+import type { Metadata } from 'next';
 
-const BlogPivotChroniclesEngagement = () => {
+export const metadata: Metadata = {
+  title: 'From Predictions to Engagement: Missing the Real Problem Again | The Pivot Chronicles',
+  description: 'After learning from Extenure, I thought I\'d figured it out. Retention wasn\'t the problem. Engagement was. So we built engagement analytics. And once again, nobody cared.',
+  openGraph: {
+    title: 'From Predictions to Engagement: Missing the Real Problem Again',
+    description: 'Building a SaaS in Search of Product-Market Fit. Part 2 of The Pivot Chronicles.',
+    url: 'https://getpeakops.com/blog/pivot-chronicles-engagement',
+    siteName: 'PeakOps',
+    type: 'article',
+    publishedTime: '2025-07-22T00:00:00Z',
+    authors: ['Alistair Nicol'],
+    images: [
+      {
+        url: '/og-image.jpg',
+        width: 1200,
+        height: 630,
+        alt: 'From Predictions to Engagement',
+      },
+    ],
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'From Predictions to Engagement: Missing the Real Problem Again',
+    description: 'How we pivoted from retention to engagement and learned that another analytics dashboard wasn\'t going to win.',
+    images: ['/og-image.jpg'],
+  },
+  alternates: {
+    canonical: 'https://getpeakops.com/blog/pivot-chronicles-engagement',
+  },
+};
+
+export default function BlogPivotChroniclesEngagement() {
+  const jsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'Article',
+    headline: 'From Predictions to Engagement: Missing the Real Problem Again',
+    description: 'After Extenure, I thought engagement was the answer. We built analytics, dashboards, and insights. Once again, nobody cared.',
+    image: 'https://getpeakops.com/og-image.jpg',
+    datePublished: '2025-07-22T00:00:00Z',
+    dateModified: '2025-07-22T00:00:00Z',
+    author: {
+      '@type': 'Person',
+      name: 'Alistair Nicol',
+      url: 'https://getpeakops.com',
+    },
+    publisher: {
+      '@type': 'Organization',
+      name: 'PeakOps',
+      logo: {
+        '@type': 'ImageObject',
+        url: 'https://getpeakops.com/logo.png',
+      },
+    },
+    mainEntityOfPage: {
+      '@type': 'WebPage',
+      '@id': 'https://getpeakops.com/blog/pivot-chronicles-engagement',
+    },
+  };
+
   return (
-    <div className="min-h-screen bg-white">      {/* Header */}
+    <div className="min-h-screen bg-white">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
+      {/* Header */}
       <div className="bg-gray-50 border-b border-gray-200">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
           <Link
@@ -301,6 +363,4 @@ const BlogPivotChroniclesEngagement = () => {
       </section>
     </div>
   );
-};
-
-export default BlogPivotChroniclesEngagement;
+}

@@ -1,12 +1,73 @@
-'use client';
-
 import React from 'react';
 import Link from 'next/link';
 import { ArrowLeft, Clock, User, Calendar } from 'lucide-react';
+import type { Metadata } from 'next';
 
-const BlogCoachingOverCompliance = () => {
+export const metadata: Metadata = {
+  title: 'Coaching Over Compliance: How QSR Managers Can Turn Inspections Into Growth Moments | PeakOps',
+  description: 'Most managers in quick service restaurants dread inspections. They feel like high-stakes tests where the goal is simple: don\'t fail. Discover a better way: coaching.',
+  openGraph: {
+    title: 'Coaching Over Compliance: How QSR Managers Can Turn Inspections Into Growth Moments',
+    description: 'What if inspections weren\'t just about compliance? What if they were about coaching? Learn how to transform your inspection process.',
+    url: 'https://getpeakops.com/blog/coaching-over-compliance',
+    siteName: 'PeakOps',
+    type: 'article',
+    publishedTime: '2024-03-15T00:00:00Z',
+    authors: ['PeakOps Team'],
+    images: [
+      {
+        url: '/og-image.jpg',
+        width: 1200,
+        height: 630,
+        alt: 'Coaching Over Compliance',
+      },
+    ],
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Coaching Over Compliance: Turn Inspections Into Growth Moments',
+    description: 'Learn how to transform your QSR inspection process from compliance-only thinking to coaching moments.',
+    images: ['/og-image.jpg'],
+  },
+  alternates: {
+    canonical: 'https://getpeakops.com/blog/coaching-over-compliance',
+  },
+};
+
+export default function BlogCoachingOverCompliance() {
+  const jsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'Article',
+    headline: 'Coaching Over Compliance: How QSR Managers Can Turn Inspections Into Growth Moments',
+    description: 'Most managers in quick service restaurants dread inspections. Discover how to treat inspections as coaching moments instead of pass/fail tests.',
+    image: 'https://getpeakops.com/og-image.jpg',
+    datePublished: '2024-03-15T00:00:00Z',
+    dateModified: '2024-03-15T00:00:00Z',
+    author: {
+      '@type': 'Organization',
+      name: 'PeakOps Team',
+      url: 'https://getpeakops.com',
+    },
+    publisher: {
+      '@type': 'Organization',
+      name: 'PeakOps',
+      logo: {
+        '@type': 'ImageObject',
+        url: 'https://getpeakops.com/logo.png',
+      },
+    },
+    mainEntityOfPage: {
+      '@type': 'WebPage',
+      '@id': 'https://getpeakops.com/blog/coaching-over-compliance',
+    },
+  };
+
   return (
     <div className="min-h-screen bg-white">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
       {/* Header */}
       <div className="bg-gray-50 border-b border-gray-200">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
@@ -56,7 +117,7 @@ const BlogCoachingOverCompliance = () => {
 
           <p className="mb-8">
             <strong>But there's a better way.</strong><br />
-            What if inspections weren't just about compliance — what if they were about coaching?
+            What if inspections weren't just about compliance? What if they were about coaching?
           </p>
 
           <h2 className="text-2xl font-bold text-gray-900 mt-12 mb-6">
@@ -86,7 +147,7 @@ const BlogCoachingOverCompliance = () => {
           </p>
 
           <ul className="mb-6 space-y-2">
-            <li><strong>Learning improves.</strong> Employees understand why standards matter — not just what the rule is.</li>
+            <li><strong>Learning improves.</strong> Employees understand why standards matter, not just what the rule is.</li>
             <li><strong>Morale goes up.</strong> People respond better when they feel encouraged, not just corrected.</li>
             <li><strong>Retention improves.</strong> Staff who feel invested in are more likely to stay.</li>
             <li><strong>Managers build confidence.</strong> Instead of fearing the inspection, they use it to show leadership.</li>
@@ -110,7 +171,7 @@ const BlogCoachingOverCompliance = () => {
             <li><strong>Balance the feedback.</strong> Start by recognizing what's right before pointing out what's wrong.</li>
             <li><strong>Make standards visible.</strong> Use visual guides or quick checklists as everyday training tools.</li>
             <li><strong>Coach in the moment.</strong> When you see something off, ask: "What can we do differently next time?"</li>
-            <li><strong>Celebrate progress.</strong> Don't just record violations — recognize improvements, even small ones.</li>
+            <li><strong>Celebrate progress.</strong> Don't just record violations. Recognize improvements, even small ones.</li>
           </ul>
 
           <p className="mb-8">
@@ -139,7 +200,7 @@ const BlogCoachingOverCompliance = () => {
           </h2>
 
           <p className="mb-4">
-            This isn't just about feeling better — it drives results:
+            This isn't just about feeling better. It drives results:
           </p>
 
           <ul className="mb-8 space-y-2">
@@ -155,7 +216,7 @@ const BlogCoachingOverCompliance = () => {
 
           <p className="mb-4">
             Inspections will always be part of QSR life.<br />
-            The choice is whether they're moments of fear — or moments of growth.
+            The choice is whether they're moments of fear or moments of growth.
           </p>
 
           <p className="mb-4">
@@ -193,6 +254,4 @@ const BlogCoachingOverCompliance = () => {
       </article>
     </div>
   );
-};
-
-export default BlogCoachingOverCompliance;
+}

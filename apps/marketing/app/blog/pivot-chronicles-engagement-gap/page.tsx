@@ -1,12 +1,74 @@
-'use client';
-
 import React from 'react';
 import Link from 'next/link';
 import { ArrowLeft, Clock, User, Calendar } from 'lucide-react';
+import type { Metadata } from 'next';
 
-const BlogPivotChroniclesEngagementGap = () => {
+export const metadata: Metadata = {
+  title: 'The Engagement Gap: When Code Velocity Masks Business Stagnation | The Pivot Chronicles',
+  description: 'If you walked into our Slack back then, you\'d think we were crushing it. New commits every day. CI/CD pipelines green. The only problem? None of it mattered.',
+  openGraph: {
+    title: 'The Engagement Gap: When Code Velocity Masks Business Stagnation',
+    description: 'Fast doesn\'t mean forward. Part 9 of The Pivot Chronicles.',
+    url: 'https://getpeakops.com/blog/pivot-chronicles-engagement-gap',
+    siteName: 'PeakOps',
+    type: 'article',
+    publishedTime: '2025-09-09T00:00:00Z',
+    authors: ['Alistair Nicol'],
+    images: [
+      {
+        url: '/og-image.jpg',
+        width: 1200,
+        height: 630,
+        alt: 'The Engagement Gap',
+      },
+    ],
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'The Engagement Gap: When Code Velocity Masks Business Stagnation',
+    description: 'We were shipping fast. None of it mattered. We weren\'t shipping to customers. We were shipping to ourselves.',
+    images: ['/og-image.jpg'],
+  },
+  alternates: {
+    canonical: 'https://getpeakops.com/blog/pivot-chronicles-engagement-gap',
+  },
+};
+
+export default function BlogPivotChroniclesEngagementGap() {
+  const jsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'Article',
+    headline: 'The Engagement Gap: When Code Velocity Masks Business Stagnation',
+    description: 'We were shipping fast and it felt amazing. The only problem? None of it mattered. We weren\'t shipping to customers.',
+    image: 'https://getpeakops.com/og-image.jpg',
+    datePublished: '2025-09-09T00:00:00Z',
+    dateModified: '2025-09-09T00:00:00Z',
+    author: {
+      '@type': 'Person',
+      name: 'Alistair Nicol',
+      url: 'https://getpeakops.com',
+    },
+    publisher: {
+      '@type': 'Organization',
+      name: 'PeakOps',
+      logo: {
+        '@type': 'ImageObject',
+        url: 'https://getpeakops.com/logo.png',
+      },
+    },
+    mainEntityOfPage: {
+      '@type': 'WebPage',
+      '@id': 'https://getpeakops.com/blog/pivot-chronicles-engagement-gap',
+    },
+  };
+
   return (
-    <div className="min-h-screen bg-white">      {/* Header */}
+    <div className="min-h-screen bg-white">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
+      {/* Header */}
       <div className="bg-gray-50 border-b border-gray-200">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
           <Link
@@ -74,7 +136,7 @@ const BlogPivotChroniclesEngagementGap = () => {
           </p>
 
           <p className="mb-8 text-lg">
-            Because we weren't shipping to customers—we were shipping to ourselves.
+            Because we weren't shipping to customers. We were shipping to ourselves.
           </p>
 
           <h2 className="text-2xl font-bold text-gray-900 mt-12 mb-6">
@@ -86,7 +148,7 @@ const BlogPivotChroniclesEngagementGap = () => {
           </p>
 
           <p className="mb-8">
-            It feels like traction—something's happening, things are improving, momentum is building.
+            It feels like traction: something's happening, things are improving, momentum is building.
           </p>
 
           <p className="mb-4">
@@ -99,7 +161,7 @@ const BlogPivotChroniclesEngagementGap = () => {
 
           <div className="bg-red-50 border-l-4 border-red-600 p-6 my-8">
             <p className="mb-2 font-semibold text-gray-900">
-              That was the "engagement gap"—the widening distance between how fast we were building and how little the market cared.
+              That was the "engagement gap": the widening distance between how fast we were building and how little the market cared.
             </p>
             <p className="mb-0 text-gray-900">
               We were measuring engineering speed instead of business traction.
@@ -134,7 +196,7 @@ const BlogPivotChroniclesEngagementGap = () => {
           </p>
 
           <p className="mb-8">
-            It's also incredibly comfortable—because activity feels like control, and control feels safe.
+            It's also incredibly comfortable, because activity feels like control, and control feels safe.
           </p>
 
           <p className="mb-8 font-semibold text-gray-900">
@@ -150,7 +212,7 @@ const BlogPivotChroniclesEngagementGap = () => {
           </p>
 
           <p className="mb-8">
-            If you're iterating in isolation, you're not accelerating—you're orbiting.
+            If you're iterating in isolation, you're not accelerating. You're orbiting.
           </p>
 
           <p className="mb-6">
@@ -158,7 +220,7 @@ const BlogPivotChroniclesEngagementGap = () => {
           </p>
 
           <p className="mb-8">
-            Cleaner code, better architecture, fewer bugs—all things engineers love, but customers never see.
+            Cleaner code, better architecture, fewer bugs: all things engineers love, but customers never see.
           </p>
 
           <div className="bg-blue-50 border-l-4 border-blue-600 p-6 my-8">
@@ -178,7 +240,7 @@ const BlogPivotChroniclesEngagementGap = () => {
               <strong>Code velocity can hide business stagnation.</strong> Fast doesn't mean forward.
             </p>
             <p className="mb-4">
-              <strong>The only metric that matters early on is engagement—not commits.</strong>
+              <strong>The only metric that matters early on is engagement, not commits.</strong>
             </p>
             <p className="mb-4">
               <strong>You can't refactor your way to product-market fit.</strong>
@@ -193,7 +255,7 @@ const BlogPivotChroniclesEngagementGap = () => {
           </p>
 
           <p className="mb-8 text-lg">
-            But the real progress was the uncomfortable stuff—the emails, the outreach, the demos that might go nowhere.
+            But the real progress was the uncomfortable stuff: the emails, the outreach, the demos that might go nowhere.
           </p>
 
           <p className="mb-4 text-lg font-semibold text-gray-900">
@@ -283,6 +345,4 @@ const BlogPivotChroniclesEngagementGap = () => {
       </section>
     </div>
   );
-};
-
-export default BlogPivotChroniclesEngagementGap;
+}

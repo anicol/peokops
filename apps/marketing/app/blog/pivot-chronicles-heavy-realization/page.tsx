@@ -1,12 +1,74 @@
-'use client';
-
 import React from 'react';
 import Link from 'next/link';
 import { ArrowLeft, Clock, User, Calendar } from 'lucide-react';
+import type { Metadata } from 'next';
 
-const BlogPivotChroniclesHeavyRealization = () => {
+export const metadata: Metadata = {
+  title: 'The "Too Heavy" Realization: When Your Solution Is Harder Than the Problem | The Pivot Chronicles',
+  description: 'By the time the AI video version of PeakOps was running smoothly, I was proud of it. It worked exactly as designed. The problem was... no one wanted to use it.',
+  openGraph: {
+    title: 'The "Too Heavy" Realization: When Your Solution Is Harder Than the Problem',
+    description: 'Innovation isn\'t about what\'s possible. It\'s about what\'s easy. Part 4 of The Pivot Chronicles.',
+    url: 'https://getpeakops.com/blog/pivot-chronicles-heavy-realization',
+    siteName: 'PeakOps',
+    type: 'article',
+    publishedTime: '2025-08-05T00:00:00Z',
+    authors: ['Alistair Nicol'],
+    images: [
+      {
+        url: '/og-image.jpg',
+        width: 1200,
+        height: 630,
+        alt: 'The Too Heavy Realization',
+      },
+    ],
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'The "Too Heavy" Realization: When Your Solution Is Harder Than the Problem',
+    description: 'The product was heavier than the problem it was meant to fix. Innovation isn\'t about what\'s possible. It\'s about what\'s easy.',
+    images: ['/og-image.jpg'],
+  },
+  alternates: {
+    canonical: 'https://getpeakops.com/blog/pivot-chronicles-heavy-realization',
+  },
+};
+
+export default function BlogPivotChroniclesHeavyRealization() {
+  const jsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'Article',
+    headline: 'The "Too Heavy" Realization: When Your Solution Is Harder Than the Problem',
+    description: 'We built advanced AI to make inspections easier, but in practice, it added steps. The product was heavier than the problem it was meant to fix.',
+    image: 'https://getpeakops.com/og-image.jpg',
+    datePublished: '2025-08-05T00:00:00Z',
+    dateModified: '2025-08-05T00:00:00Z',
+    author: {
+      '@type': 'Person',
+      name: 'Alistair Nicol',
+      url: 'https://getpeakops.com',
+    },
+    publisher: {
+      '@type': 'Organization',
+      name: 'PeakOps',
+      logo: {
+        '@type': 'ImageObject',
+        url: 'https://getpeakops.com/logo.png',
+      },
+    },
+    mainEntityOfPage: {
+      '@type': 'WebPage',
+      '@id': 'https://getpeakops.com/blog/pivot-chronicles-heavy-realization',
+    },
+  };
+
   return (
-    <div className="min-h-screen bg-white">      {/* Header */}
+    <div className="min-h-screen bg-white">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
+      {/* Header */}
       <div className="bg-gray-50 border-b border-gray-200">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
           <Link
@@ -49,7 +111,7 @@ const BlogPivotChroniclesHeavyRealization = () => {
         <div className="prose prose-lg max-w-none">
           <p className="text-xl text-gray-700 leading-relaxed mb-8">
             By the time the AI video version of PeakOps was running smoothly, I was proud of it.<br />
-            It worked exactly as designed—fast processing, accurate detections, full compliance reports.
+            It worked exactly as designed: fast processing, accurate detections, full compliance reports.
           </p>
 
           <p className="mb-8">
@@ -73,7 +135,7 @@ const BlogPivotChroniclesHeavyRealization = () => {
           </p>
 
           <blockquote className="border-l-4 border-blue-600 pl-6 my-8 text-xl text-gray-700 italic">
-            "Alistair, this is great—but my managers don't have time to be cinematographers."
+            "Alistair, this is great, but my managers don't have time to be cinematographers."
           </blockquote>
 
           <p className="mb-8">
@@ -81,7 +143,7 @@ const BlogPivotChroniclesHeavyRealization = () => {
           </p>
 
           <p className="mb-4">
-            We'd built this advanced AI system to make inspections easier—but in practice, it added steps.
+            We'd built this advanced AI system to make inspections easier, but in practice, it added steps.
           </p>
 
           <p className="mb-6">
@@ -94,7 +156,7 @@ const BlogPivotChroniclesHeavyRealization = () => {
 
           <div className="bg-red-50 border-l-4 border-red-600 p-6 my-8">
             <p className="mb-2">
-              It wasn't a technical failure—it was a usability failure.
+              It wasn't a technical failure. It was a usability failure.
             </p>
             <p className="mb-0 font-semibold text-gray-900">
               The product was heavier than the problem it was meant to fix.
@@ -115,7 +177,7 @@ const BlogPivotChroniclesHeavyRealization = () => {
           </p>
 
           <p className="mb-6">
-            We see potential ROI and think, "Of course they'll do this—it's worth it."
+            We see potential ROI and think, "Of course they'll do this. It's worth it."
           </p>
 
           <p className="mb-8">
@@ -159,7 +221,7 @@ const BlogPivotChroniclesHeavyRealization = () => {
           </p>
 
           <p className="mb-8">
-            Just three micro-checks a day—delivered via text message, completed in under two minutes.
+            Just three micro-checks a day, delivered via text message, completed in under two minutes.
           </p>
 
           <p className="mb-8">
@@ -192,7 +254,7 @@ const BlogPivotChroniclesHeavyRealization = () => {
           </p>
 
           <p className="mb-12 text-lg font-semibold text-gray-900">
-            And that's what led to the simplest version yet—micro-checks, the lightest thing we could build that might still create real change.
+            And that's what led to the simplest version yet: micro-checks, the lightest thing we could build that might still create real change.
           </p>
 
           <Link href="/blog/pivot-chronicles-micro-checks" className="block bg-gray-100 rounded-lg p-6 mt-12 hover:bg-gray-200 transition-colors">
@@ -270,6 +332,4 @@ const BlogPivotChroniclesHeavyRealization = () => {
       </section>
     </div>
   );
-};
-
-export default BlogPivotChroniclesHeavyRealization;
+}

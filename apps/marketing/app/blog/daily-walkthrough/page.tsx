@@ -1,12 +1,74 @@
-'use client';
-
 import React from 'react';
 import Link from 'next/link';
 import { ArrowLeft, Clock, User, Calendar, CheckCircle } from 'lucide-react';
+import type { Metadata } from 'next';
 
-const BlogDailyWalkthrough = () => {
+export const metadata: Metadata = {
+  title: 'The Manager\'s Daily Five-Minute Walkthrough | PeakOps',
+  description: 'If you\'ve ever been through a surprise inspection, you know the feeling: the scramble, the stress. Learn how a simple five-minute routine can catch almost all issues.',
+  openGraph: {
+    title: 'The Manager\'s Daily Five-Minute Walkthrough',
+    description: 'A daily walkthrough works because it\'s short enough to be consistent. Learn the five-minute routine that prevents inspection surprises.',
+    url: 'https://getpeakops.com/blog/daily-walkthrough',
+    siteName: 'PeakOps',
+    type: 'article',
+    publishedTime: '2024-03-12T00:00:00Z',
+    authors: ['PeakOps Team'],
+    images: [
+      {
+        url: '/og-image.jpg',
+        width: 1200,
+        height: 630,
+        alt: 'Daily Five-Minute Walkthrough',
+      },
+    ],
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'The Manager\'s Daily Five-Minute Walkthrough',
+    description: 'Five minutes a day prevents inspection surprises. Learn the daily routine that builds inspection readiness.',
+    images: ['/og-image.jpg'],
+  },
+  alternates: {
+    canonical: 'https://getpeakops.com/blog/daily-walkthrough',
+  },
+};
+
+export default function BlogDailyWalkthrough() {
+  const jsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'Article',
+    headline: 'The Manager\'s Daily Five-Minute Walkthrough',
+    description: 'Learn how a simple five-minute daily routine can prevent inspection surprises and build lasting operational habits.',
+    image: 'https://getpeakops.com/og-image.jpg',
+    datePublished: '2024-03-12T00:00:00Z',
+    dateModified: '2024-03-12T00:00:00Z',
+    author: {
+      '@type': 'Organization',
+      name: 'PeakOps Team',
+      url: 'https://getpeakops.com',
+    },
+    publisher: {
+      '@type': 'Organization',
+      name: 'PeakOps',
+      logo: {
+        '@type': 'ImageObject',
+        url: 'https://getpeakops.com/logo.png',
+      },
+    },
+    mainEntityOfPage: {
+      '@type': 'WebPage',
+      '@id': 'https://getpeakops.com/blog/daily-walkthrough',
+    },
+  };
+
   return (
-    <div className="min-h-screen bg-white">      {/* Header */}
+    <div className="min-h-screen bg-white">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
+      {/* Header */}
       <div className="bg-gray-50 border-b border-gray-200">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
           <Link
@@ -49,7 +111,7 @@ const BlogDailyWalkthrough = () => {
           </p>
 
           <p className="mb-6">
-            The truth is, most issues that get flagged don't pop up overnight. They build up slowly — a blocked exit, a dirty counter, a missing sign, a team member without proper gear.
+            The truth is, most issues that get flagged don't pop up overnight. They build up slowly: a blocked exit, a dirty counter, a missing sign, a team member without proper gear.
           </p>
 
           <p className="mb-8">
@@ -75,7 +137,7 @@ const BlogDailyWalkthrough = () => {
           </ul>
 
           <p className="mb-8">
-            Think of it as brushing your teeth — small, daily action that prevents big problems later.
+            Think of it as brushing your teeth: a small, daily action that prevents big problems later.
           </p>
 
           <h2 className="text-2xl font-bold text-gray-900 mt-12 mb-6">
@@ -197,7 +259,7 @@ const BlogDailyWalkthrough = () => {
             <li>The big "gotchas" during inspections disappear.</li>
             <li>Employees catch issues before managers do.</li>
             <li>Standards rise naturally, without nagging.</li>
-            <li>Guests notice — cleaner stores, better service, smoother experiences.</li>
+            <li>Guests notice: cleaner stores, better service, smoother experiences.</li>
           </ul>
 
           <p className="mb-8">
@@ -214,11 +276,11 @@ const BlogDailyWalkthrough = () => {
           </p>
 
           <p className="mb-4">
-            Next time you grab your morning coffee, take a quick walk. Look at your store the way an inspector — or better yet, a guest — would.
+            Next time you grab your morning coffee, take a quick walk. Look at your store the way an inspector, or better yet, a guest, would.
           </p>
 
           <p className="mb-8">
-            Five minutes now will save you five hours later. And it'll build a culture where every day is inspection day — in the best possible way.
+            Five minutes now will save you five hours later. And it'll build a culture where every day is inspection day, in the best possible way.
           </p>
         </div>
 
@@ -248,6 +310,4 @@ const BlogDailyWalkthrough = () => {
       </article>
     </div>
   );
-};
-
-export default BlogDailyWalkthrough;
+}

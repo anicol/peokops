@@ -1,12 +1,74 @@
-'use client';
-
 import React from 'react';
 import Link from 'next/link';
 import { ArrowLeft, Clock, User, Calendar } from 'lucide-react';
+import type { Metadata } from 'next';
 
-const BlogPivotChroniclesZeroRevenue = () => {
+export const metadata: Metadata = {
+  title: 'What $0 in Revenue Teaches You (That $1M Can\'t) | The Pivot Chronicles',
+  description: '$0 in revenue is a gift. It doesn\'t feel like one when you\'re living it, but it tells the truth in a way numbers never can. When there\'s no money, you can\'t hide behind vanity metrics.',
+  openGraph: {
+    title: 'What $0 in Revenue Teaches You (That $1M Can\'t)',
+    description: 'Silence is data. Part 8 of The Pivot Chronicles.',
+    url: 'https://getpeakops.com/blog/pivot-chronicles-zero-revenue',
+    siteName: 'PeakOps',
+    type: 'article',
+    publishedTime: '2025-09-02T00:00:00Z',
+    authors: ['Alistair Nicol'],
+    images: [
+      {
+        url: '/og-image.jpg',
+        width: 1200,
+        height: 630,
+        alt: 'What $0 in Revenue Teaches You',
+      },
+    ],
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'What $0 in Revenue Teaches You (That $1M Can\'t)',
+    description: 'Silence is data. The purest mirror you\'ll ever get as a founder.',
+    images: ['/og-image.jpg'],
+  },
+  alternates: {
+    canonical: 'https://getpeakops.com/blog/pivot-chronicles-zero-revenue',
+  },
+};
+
+export default function BlogPivotChroniclesZeroRevenue() {
+  const jsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'Article',
+    headline: 'What $0 in Revenue Teaches You (That $1M Can\'t)',
+    description: '$0 in revenue is a gift. When there\'s no money coming in, you can\'t hide behind vanity metrics. Just silence. And silence is data.',
+    image: 'https://getpeakops.com/og-image.jpg',
+    datePublished: '2025-09-02T00:00:00Z',
+    dateModified: '2025-09-02T00:00:00Z',
+    author: {
+      '@type': 'Person',
+      name: 'Alistair Nicol',
+      url: 'https://getpeakops.com',
+    },
+    publisher: {
+      '@type': 'Organization',
+      name: 'PeakOps',
+      logo: {
+        '@type': 'ImageObject',
+        url: 'https://getpeakops.com/logo.png',
+      },
+    },
+    mainEntityOfPage: {
+      '@type': 'WebPage',
+      '@id': 'https://getpeakops.com/blog/pivot-chronicles-zero-revenue',
+    },
+  };
+
   return (
-    <div className="min-h-screen bg-white">      {/* Header */}
+    <div className="min-h-screen bg-white">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
+      {/* Header */}
       <div className="bg-gray-50 border-b border-gray-200">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
           <Link
@@ -49,7 +111,7 @@ const BlogPivotChroniclesZeroRevenue = () => {
         <div className="prose prose-lg max-w-none">
           <p className="text-xl text-gray-700 leading-relaxed mb-8">
             $0 in revenue is a gift.<br />
-            It doesn't feel like one when you're living it—but it tells the truth in a way numbers never can.
+            It doesn't feel like one when you're living it, but it tells the truth in a way numbers never can.
           </p>
 
           <p className="mb-4">
@@ -83,8 +145,7 @@ const BlogPivotChroniclesZeroRevenue = () => {
           </ul>
 
           <p className="mb-8">
-            But "almost" became a way to protect my ego.<br />
-            As long as the product wasn't done, I didn't have to test whether anyone actually wanted it.
+            But "almost" became a way to protect my ego. As long as the product wasn't done, I didn't have to test whether anyone actually wanted it.
           </p>
 
           <p className="mb-4">
@@ -92,8 +153,8 @@ const BlogPivotChroniclesZeroRevenue = () => {
           </p>
 
           <p className="mb-8">
-            You can point to code commits, new designs, cleaner architecture—all progress that feels real.<br />
-            But until someone pays, it's not validation—it's rehearsal.
+            You can point to code commits, new designs, cleaner architecture. All progress that feels real.<br />
+            But until someone pays, it's not validation. It's rehearsal.
           </p>
 
           <p className="mb-8 font-semibold text-gray-900">
@@ -113,8 +174,7 @@ const BlogPivotChroniclesZeroRevenue = () => {
           </p>
 
           <p className="mb-8">
-            It doesn't care how many hours you've spent, how elegant your stack is, or how "cool" the idea sounds on LinkedIn.<br />
-            Revenue is the only external signal that cuts through founder delusion.
+            It doesn't care how many hours you've spent, how elegant your stack is, or how "cool" the idea sounds on LinkedIn. Revenue is the only external signal that cuts through founder delusion.
           </p>
 
           <div className="bg-blue-50 border-l-4 border-blue-600 p-6 my-8">
@@ -122,7 +182,7 @@ const BlogPivotChroniclesZeroRevenue = () => {
               $0 tells you you're still guessing.
             </p>
             <p className="mb-0 font-semibold text-gray-900">
-              And that's valuable—because guessing is the stage where you can still change everything.
+              And that's valuable because guessing is the stage where you can still change everything.
             </p>
           </div>
 
@@ -139,7 +199,7 @@ const BlogPivotChroniclesZeroRevenue = () => {
           </p>
 
           <p className="mb-4">
-            You tell yourself you're being strategic by waiting—but really, you're being protective.
+            You tell yourself you're being strategic by waiting, but really, you're being protective.
           </p>
 
           <p className="mb-8">
@@ -156,16 +216,16 @@ const BlogPivotChroniclesZeroRevenue = () => {
 
           <div className="bg-red-50 border-l-4 border-red-600 p-6 my-8">
             <p className="mb-4">
-              <strong>Activity ≠ traction.</strong> Code, designs, docs—they're not progress until they touch a customer.
+              <strong>Activity ≠ traction.</strong> Code, designs, docs are not progress until they touch a customer.
             </p>
             <p className="mb-4">
-              <strong>Silence is feedback.</strong> If no one's asking for it, that's a signal—not bad luck.
+              <strong>Silence is feedback.</strong> If no one's asking for it, that's a signal, not bad luck.
             </p>
             <p className="mb-4">
               <strong>Validation starts with conversation, not code.</strong>
             </p>
             <p className="mb-0">
-              <strong>Selling early is scary—but so is wasting a year building alone.</strong>
+              <strong>Selling early is scary, but so is wasting a year building alone.</strong>
             </p>
           </div>
 
@@ -188,7 +248,7 @@ const BlogPivotChroniclesZeroRevenue = () => {
               Part 9: The Engagement Gap: When Code Velocity Masks Business Stagnation
             </p>
             <p className="text-gray-700 mt-2">
-              We were shipping fast and it felt amazing. The only problem? None of it mattered. We weren't shipping to customers—we were shipping to ourselves.
+              We were shipping fast and it felt amazing. The only problem? None of it mattered. We weren't shipping to customers. We were shipping to ourselves.
             </p>
           </Link>
         </div>
@@ -257,6 +317,4 @@ const BlogPivotChroniclesZeroRevenue = () => {
       </section>
     </div>
   );
-};
-
-export default BlogPivotChroniclesZeroRevenue;
+}
