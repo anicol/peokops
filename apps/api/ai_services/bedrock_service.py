@@ -193,3 +193,165 @@ Respond ONLY with a JSON object in this exact format:
             'recommended_action': action,
             'estimated_minutes': estimated_minutes
         }
+
+    def analyze_review(self, review_text, rating):
+        """
+        Analyze a Google review to extract topics, sentiment, and actionable insights.
+
+        Args:
+            review_text: The review comment text
+            rating: Star rating (1-5)
+
+        Returns:
+            dict: {
+                'topics': list of topics (e.g., ['cleanliness', 'service']),
+                'sentiment_score': float from -1.0 (negative) to 1.0 (positive),
+                'actionable_issues': list of specific problems to address,
+                'suggested_category': str (cleanliness, service, food_quality, etc.),
+                'confidence': float (0.0-1.0)
+            }
+        """
+        # If Bedrock is disabled, use fallback
+        if not self.enabled:
+            return self._get_fallback_analysis(review_text, rating)
+
+        try:
+            # Build analysis prompt
+            prompt = self._build_review_analysis_prompt(review_text, rating)
+
+            # Call Bedrock
+            response = self._call_bedrock(prompt)
+
+            # Parse and validate response
+            result = self._parse_review_analysis(response)
+
+            logger.info(f"Analyzed review (rating: {rating}): {len(result['topics'])} topics, {result['suggested_category']}")
+            return result
+
+        except Exception as e:
+            logger.warning(f"Bedrock review analysis failed, using fallback: {e}")
+            return self._get_fallback_analysis(review_text, rating)
+
+    def _build_review_analysis_prompt(self, review_text, rating):
+        """Build the Claude prompt for review analysis"""
+
+        prompt = f"""You are an AI assistant analyzing customer reviews for restaurants and retail stores.
+
+Analyze this customer review:
+Rating: {rating}/5 stars
+Review: "{review_text}"
+
+Extract the following information:
+1. Topics mentioned (e.g., cleanliness, service, food quality, wait time, staff attitude, atmosphere)
+2. Sentiment score from -1.0 (very negative) to 1.0 (very positive) - consider both rating and text
+3. Specific actionable issues that staff can address (concrete problems, not vague complaints)
+4. Primary category this review relates to (choose ONE):
+   - cleanliness
+   - service
+   - food_quality
+   - wait_time
+   - staff_attitude
+   - atmosphere
+   - pricing
+   - other
+
+Guidelines:
+- Topics should be lowercase, underscore-separated keywords (e.g., "food_quality", "wait_time")
+- Actionable issues should be specific (e.g., "tables not cleaned promptly" not "bad service")
+- If review mentions multiple issues, list all of them
+- Sentiment should align with rating but also consider text tone
+- Focus on operational issues that can be improved, not one-time incidents
+
+Respond ONLY with a JSON object in this exact format:
+{{
+    "topics": ["topic1", "topic2"],
+    "sentiment_score": -0.5,
+    "actionable_issues": ["specific issue 1", "specific issue 2"],
+    "suggested_category": "service",
+    "confidence": 0.85
+}}"""
+
+        return prompt
+
+    def _parse_review_analysis(self, response_text):
+        """Parse and validate the review analysis response"""
+        try:
+            # Claude might wrap JSON in markdown
+            response_text = response_text.strip()
+            if response_text.startswith('```json'):
+                response_text = response_text.split('```json')[1].split('```')[0].strip()
+            elif response_text.startswith('```'):
+                response_text = response_text.split('```')[1].split('```')[0].strip()
+
+            result = json.loads(response_text)
+
+            # Validate required fields
+            required_fields = ['topics', 'sentiment_score', 'actionable_issues', 'suggested_category']
+            for field in required_fields:
+                if field not in result:
+                    raise ValueError(f"Missing required field: {field}")
+
+            # Validate and normalize data
+            result['topics'] = result['topics'] if isinstance(result['topics'], list) else []
+            result['sentiment_score'] = float(result['sentiment_score'])
+            result['sentiment_score'] = max(-1.0, min(1.0, result['sentiment_score']))
+            result['actionable_issues'] = result['actionable_issues'] if isinstance(result['actionable_issues'], list) else []
+            result['confidence'] = float(result.get('confidence', 0.5))
+            result['confidence'] = max(0.0, min(1.0, result['confidence']))
+
+            return result
+
+        except Exception as e:
+            logger.error(f"Error parsing review analysis response: {e}\nResponse: {response_text}")
+            raise
+
+    def _get_fallback_analysis(self, review_text, rating):
+        """Fallback review analysis if Bedrock fails"""
+
+        # Basic sentiment based on rating
+        sentiment_map = {
+            1: -0.9,
+            2: -0.5,
+            3: 0.0,
+            4: 0.5,
+            5: 0.9
+        }
+        sentiment_score = sentiment_map.get(rating, 0.0)
+
+        # Simple keyword-based topic detection
+        topics = []
+        text_lower = review_text.lower()
+
+        topic_keywords = {
+            'cleanliness': ['clean', 'dirty', 'messy', 'filth', 'sanitize'],
+            'service': ['service', 'server', 'waiter', 'staff', 'employee', 'rude', 'friendly'],
+            'food_quality': ['food', 'taste', 'delicious', 'bland', 'quality', 'fresh', 'stale'],
+            'wait_time': ['wait', 'slow', 'fast', 'quick', 'long time'],
+            'atmosphere': ['atmosphere', 'ambiance', 'noise', 'loud', 'comfortable'],
+            'pricing': ['price', 'expensive', 'cheap', 'value', 'cost']
+        }
+
+        for topic, keywords in topic_keywords.items():
+            if any(keyword in text_lower for keyword in keywords):
+                topics.append(topic)
+
+        # If no topics found, use 'other'
+        if not topics:
+            topics = ['other']
+
+        # Use first detected topic as category
+        suggested_category = topics[0] if topics else 'other'
+
+        # Extract simple actionable issues for low ratings
+        actionable_issues = []
+        if rating <= 3 and review_text:
+            # Just use the review text as an issue for fallback
+            actionable_issues = [review_text[:100]]  # First 100 chars
+
+        return {
+            'topics': topics,
+            'sentiment_score': sentiment_score,
+            'actionable_issues': actionable_issues,
+            'suggested_category': suggested_category,
+            'confidence': 0.5  # Low confidence for fallback
+        }
