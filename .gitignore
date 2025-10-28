@@ -19,6 +19,8 @@ eggs/
 .eggs/
 lib/
 lib64/
+# But include Next.js lib directories
+!apps/marketing/lib/
 parts/
 sdist/
 var/

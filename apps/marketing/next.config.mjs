@@ -1,12 +1,11 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
-  // Enable static export for hosting on static servers (optional)
-  // output: 'export',
 
   // Customize image domains if needed
   images: {
     domains: ['images.pexels.com', 'getpeakops.com'],
+    unoptimized: true,
   },
 
   // Redirects for route aliases
