@@ -128,7 +128,7 @@ export default function GuidePage() {
                 <div>
                   <h4 className="text-xl font-semibold text-gray-900 mb-2">Get Your Daily "3"</h4>
                   <p className="text-gray-600">
-                    Receive three quick checks — simple, targeted questions based on your brand standards.
+                    Receive three micro-checks — simple, targeted questions based on your brand standards.
                   </p>
                 </div>
               </div>

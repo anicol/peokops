@@ -669,7 +669,7 @@ const MicroCheckPage = () => {
           {/* Main Card */}
           <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-6 mb-6">
             <h2 className="text-xl font-bold text-gray-900 mb-4 text-center">
-              Let's keep things sharp — three quick checks for today
+              Let's keep things sharp — three micro-checks for today
             </h2>
 
             {/* Progress */}

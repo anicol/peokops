@@ -170,7 +170,7 @@ export default function BlogPivotChroniclesMicroChecks() {
             <p className="mb-4"><strong>Subject:</strong> Your Daily Micro-Check for Main Street Location</p>
             <p className="mb-4"><strong>Body:</strong></p>
             <p className="mb-4">Good morning Sarah,</p>
-            <p className="mb-4">Time for today's quick check. Just 3 questions, takes less than a minute:</p>
+            <p className="mb-4">Time for today's micro-check. Just 3 questions, takes less than a minute:</p>
             <p className="mb-4 text-blue-600">[Click here to complete today's micro-check]</p>
             <p>Thanks,<br />PeakOps</p>
           </div>

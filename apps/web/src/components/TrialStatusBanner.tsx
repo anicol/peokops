@@ -103,8 +103,8 @@ export default function TrialStatusBanner({ className = '', onUpgradeClick }: Tr
           icon: Upload,
           title: '🚀 Welcome to your trial!',
           message: hasCompletedChecks
-            ? `${daysLeft} days to explore AI-powered quick checks. Keep checking daily to build your streak!`
-            : `${daysLeft} days to explore AI-powered quick checks. Complete your first check to get started.`,
+            ? `${daysLeft} days to explore AI-powered micro-checks. Keep checking daily to build your streak!`
+            : `${daysLeft} days to explore AI-powered micro-checks. Complete your first check to get started.`,
           buttonText: 'Learn More',
           buttonStyle: 'bg-blue-600 hover:bg-blue-700 text-white'
         };

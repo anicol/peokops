@@ -41,7 +41,7 @@ class Brand(models.Model):
     
     @classmethod
     def create_trial_brand(cls, user):
-        """Create a trial brand with smart defaults and seeded Quick Check templates"""
+        """Create a trial brand with smart defaults and seeded Micro-Check templates"""
         brand = cls.objects.create(
             name=f"{user.first_name or user.username}'s Trial",
             is_trial=True,
@@ -50,7 +50,7 @@ class Brand(models.Model):
             inspection_config=cls.get_default_trial_config()
         )
 
-        # Auto-seed default Quick Check templates for immediate use
+        # Auto-seed default Micro-Check templates for immediate use
         from micro_checks.utils import seed_default_templates
         seed_default_templates(brand, created_by=user)
 

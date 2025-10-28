@@ -38,7 +38,7 @@ const SHOT_LIST = [
   {
     id: 'restrooms',
     title: 'Restrooms',
-    description: 'Quick check of restroom facilities',
+    description: 'Micro-check of restroom facilities',
     tips: ['Verify cleanliness standards', 'Check supply levels', 'Ensure proper signage'],
     duration: 20
   },

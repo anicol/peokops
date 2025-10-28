@@ -24,7 +24,7 @@ export default function TrialWelcomePage() {
 
         {/* Description */}
         <p className="text-base sm:text-lg text-gray-600 mb-8 sm:mb-12 max-w-md mx-auto">
-          You'll get three quick checks a day to keep every shift consistent.
+          You'll get three micro-checks a day to keep every shift consistent.
         </p>
 
         {/* CTA Button */}

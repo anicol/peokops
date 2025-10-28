@@ -169,7 +169,7 @@ export default function BlogCoachingOverCompliance() {
 
           <ul className="mb-6 space-y-3">
             <li><strong>Balance the feedback.</strong> Start by recognizing what's right before pointing out what's wrong.</li>
-            <li><strong>Make standards visible.</strong> Use visual guides or quick checklists as everyday training tools.</li>
+            <li><strong>Make standards visible.</strong> Use visual guides or micro-checklists as everyday training tools.</li>
             <li><strong>Coach in the moment.</strong> When you see something off, ask: "What can we do differently next time?"</li>
             <li><strong>Celebrate progress.</strong> Don't just record violations. Recognize improvements, even small ones.</li>
           </ul>

@@ -147,9 +147,9 @@ const MicroCheckHistoryPage = () => {
       if (err.response?.data?.error === 'NO_TEMPLATES') {
         const data = err.response.data;
         if (data.can_configure) {
-          setError('No Quick Check templates configured yet. Click "Configure Templates" below to set them up.');
+          setError('No Micro-Check templates configured yet. Click "Configure Templates" below to set them up.');
         } else {
-          setError('No Quick Check templates available. Please contact your administrator to configure templates.');
+          setError('No Micro-Check templates available. Please contact your administrator to configure templates.');
         }
       } else {
         setError('Unable to create check run. Please try again.');
@@ -195,8 +195,8 @@ const MicroCheckHistoryPage = () => {
       <div className="px-1 py-3 sm:p-4 lg:p-8">
         <div className="flex flex-col lg:flex-row lg:justify-between lg:items-center mb-4 sm:mb-6 lg:mb-8 space-y-4 lg:space-y-0">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900 mb-2">Quick Checks</h1>
-            <p className="text-gray-600">Track your daily quick checks and improvement streaks.</p>
+            <h1 className="text-2xl font-bold text-gray-900 mb-2">Micro-Checks</h1>
+            <p className="text-gray-600">Track your daily micro-checks and improvement streaks.</p>
           </div>
           {(user?.role === 'ADMIN' || user?.role === 'OWNER' || user?.role === 'TRIAL_ADMIN') && (
             <Link to="/micro-check-templates">
@@ -213,7 +213,7 @@ const MicroCheckHistoryPage = () => {
             <Target className="w-16 h-16 text-gray-300 mx-auto mb-4" />
             <h3 className="text-lg font-semibold text-gray-900 mb-2">No Check Sessions Yet</h3>
             <p className="text-gray-600 mb-6">
-              Start your first quick check to begin tracking your progress and building streaks.
+              Start your first micro-check to begin tracking your progress and building streaks.
             </p>
 
             {/* Show error message if present */}
@@ -247,8 +247,8 @@ const MicroCheckHistoryPage = () => {
     <div className="px-1 py-3 sm:p-4 lg:p-8">
       <div className="flex flex-col lg:flex-row lg:justify-between lg:items-center mb-4 sm:mb-6 lg:mb-8 space-y-4 lg:space-y-0">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 mb-2">Quick Checks</h1>
-          <p className="text-gray-600">Track your daily quick checks and improvement streaks.</p>
+          <h1 className="text-2xl font-bold text-gray-900 mb-2">Micro-Checks</h1>
+          <p className="text-gray-600">Track your daily micro-checks and improvement streaks.</p>
         </div>
         <div className="flex flex-col sm:flex-row gap-3">
           {(user?.role === 'ADMIN' || user?.role === 'OWNER' || user?.role === 'TRIAL_ADMIN') && (

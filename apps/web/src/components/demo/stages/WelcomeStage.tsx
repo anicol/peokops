@@ -23,7 +23,7 @@ export default function WelcomeStage({ onComplete }: WelcomeStageProps) {
           Build operational excellence through simple daily habits.
         </p>
         <p className="text-lg md:text-xl text-gray-700 mb-12 leading-relaxed">
-          3 quick checks every day. Get AI feedback instantly.
+          3 micro-checks every day. Get AI feedback instantly.
           Stay inspection-ready without the stress.
         </p>
 
