@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { insightsAPI } from '@/services/api';
+import LocationTypeahead from '@/components/LocationTypeahead';
 
 interface AnalysisStatus {
   id: string;
@@ -170,14 +171,13 @@ export default function ReviewAnalysisPage() {
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Location (City, State)
                 </label>
-                <input
-                  type="text"
+                <LocationTypeahead
                   value={location}
-                  onChange={(e) => setLocation(e.target.value)}
+                  onChange={setLocation}
                   placeholder="e.g., Toledo, OH"
                   className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 />
-                <p className="mt-1 text-sm text-gray-500">
+                <p className="mt-2 text-sm text-gray-500">
                   Optional: Helps us find the right business
                 </p>
               </div>
