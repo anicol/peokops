@@ -1,12 +1,74 @@
-'use client';
-
 import React from 'react';
 import Link from 'next/link';
 import { ArrowLeft, Clock, User, Calendar } from 'lucide-react';
+import type { Metadata } from 'next';
 
-const BlogPivotChroniclesZeroRevenue = () => {
+export const metadata: Metadata = {
+  title: 'What $0 in Revenue Teaches You (That $1M Can\'t) | The Pivot Chronicles',
+  description: '$0 in revenue is a gift. It doesn\'t feel like one when you\'re living it, but it tells the truth in a way numbers never can. When there\'s no money, you can\'t hide behind vanity metrics.',
+  openGraph: {
+    title: 'What $0 in Revenue Teaches You (That $1M Can\'t)',
+    description: 'Silence is data. Part 8 of The Pivot Chronicles.',
+    url: 'https://getpeakops.com/blog/pivot-chronicles-zero-revenue',
+    siteName: 'PeakOps',
+    type: 'article',
+    publishedTime: '2025-09-02T00:00:00Z',
+    authors: ['Alistair Nicol'],
+    images: [
+      {
+        url: '/og-image.jpg',
+        width: 1200,
+        height: 630,
+        alt: 'What $0 in Revenue Teaches You',
+      },
+    ],
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'What $0 in Revenue Teaches You (That $1M Can\'t)',
+    description: 'Silence is data. The purest mirror you\'ll ever get as a founder.',
+    images: ['/og-image.jpg'],
+  },
+  alternates: {
+    canonical: 'https://getpeakops.com/blog/pivot-chronicles-zero-revenue',
+  },
+};
+
+export default function BlogPivotChroniclesZeroRevenue() {
+  const jsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'Article',
+    headline: 'What $0 in Revenue Teaches You (That $1M Can\'t)',
+    description: '$0 in revenue is a gift. When there\'s no money coming in, you can\'t hide behind vanity metrics. Just silence. And silence is data.',
+    image: 'https://getpeakops.com/og-image.jpg',
+    datePublished: '2025-09-02T00:00:00Z',
+    dateModified: '2025-09-02T00:00:00Z',
+    author: {
+      '@type': 'Person',
+      name: 'Alistair Nicol',
+      url: 'https://getpeakops.com',
+    },
+    publisher: {
+      '@type': 'Organization',
+      name: 'PeakOps',
+      logo: {
+        '@type': 'ImageObject',
+        url: 'https://getpeakops.com/logo.png',
+      },
+    },
+    mainEntityOfPage: {
+      '@type': 'WebPage',
+      '@id': 'https://getpeakops.com/blog/pivot-chronicles-zero-revenue',
+    },
+  };
+
   return (
-    <div className="min-h-screen bg-white">      {/* Header */}
+    <div className="min-h-screen bg-white">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
+      {/* Header */}
       <div className="bg-gray-50 border-b border-gray-200">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
           <Link
@@ -255,6 +317,4 @@ const BlogPivotChroniclesZeroRevenue = () => {
       </section>
     </div>
   );
-};
-
-export default BlogPivotChroniclesZeroRevenue;
+}

@@ -1,12 +1,74 @@
-'use client';
-
 import React from 'react';
 import Link from 'next/link';
 import { ArrowLeft, Clock, User, Calendar } from 'lucide-react';
+import type { Metadata } from 'next';
 
-const BlogPivotChroniclesPattern = () => {
+export const metadata: Metadata = {
+  title: 'The Pattern: Five Pivots Without Customer Engagement | The Pivot Chronicles',
+  description: 'At some point, I looked back at everything we\'d built and realized there was a pattern. We\'d built five different products. And almost none of them had real customer engagement.',
+  openGraph: {
+    title: 'The Pattern: Five Pivots Without Customer Engagement',
+    description: 'Building for customers, but not with them. Part 7 of The Pivot Chronicles.',
+    url: 'https://getpeakops.com/blog/pivot-chronicles-pattern',
+    siteName: 'PeakOps',
+    type: 'article',
+    publishedTime: '2025-08-26T00:00:00Z',
+    authors: ['Alistair Nicol'],
+    images: [
+      {
+        url: '/og-image.jpg',
+        width: 1200,
+        height: 630,
+        alt: 'The Pattern: Five Pivots Without Customer Engagement',
+      },
+    ],
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'The Pattern: Five Pivots Without Customer Engagement',
+    description: 'We built five different products, each smarter than the last. And almost none had real customer engagement.',
+    images: ['/og-image.jpg'],
+  },
+  alternates: {
+    canonical: 'https://getpeakops.com/blog/pivot-chronicles-pattern',
+  },
+};
+
+export default function BlogPivotChroniclesPattern() {
+  const jsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'Article',
+    headline: 'The Pattern: Five Pivots Without Customer Engagement',
+    description: 'We built five different products, each one smarter, faster, and simpler than the last. And almost none of them had real customer engagement.',
+    image: 'https://getpeakops.com/og-image.jpg',
+    datePublished: '2025-08-26T00:00:00Z',
+    dateModified: '2025-08-26T00:00:00Z',
+    author: {
+      '@type': 'Person',
+      name: 'Alistair Nicol',
+      url: 'https://getpeakops.com',
+    },
+    publisher: {
+      '@type': 'Organization',
+      name: 'PeakOps',
+      logo: {
+        '@type': 'ImageObject',
+        url: 'https://getpeakops.com/logo.png',
+      },
+    },
+    mainEntityOfPage: {
+      '@type': 'WebPage',
+      '@id': 'https://getpeakops.com/blog/pivot-chronicles-pattern',
+    },
+  };
+
   return (
-    <div className="min-h-screen bg-white">      {/* Header */}
+    <div className="min-h-screen bg-white">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
+      {/* Header */}
       <div className="bg-gray-50 border-b border-gray-200">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
           <Link
@@ -310,6 +372,4 @@ const BlogPivotChroniclesPattern = () => {
       </section>
     </div>
   );
-};
-
-export default BlogPivotChroniclesPattern;
+}

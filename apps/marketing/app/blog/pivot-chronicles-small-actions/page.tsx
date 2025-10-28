@@ -1,12 +1,74 @@
-'use client';
-
 import React from 'react';
 import Link from 'next/link';
 import { ArrowLeft, Clock, User, Calendar } from 'lucide-react';
+import type { Metadata } from 'next';
 
-const BlogPivotChroniclesSmallActions = () => {
+export const metadata: Metadata = {
+  title: 'Small Actions, Big Shifts: The Psychology Behind Micro-Checks | The Pivot Chronicles',
+  description: 'After realizing our AI video system was too heavy for the real world, I knew the next version had to feel effortless. What\'s the lightest possible thing that still drives improvement?',
+  openGraph: {
+    title: 'Small Actions, Big Shifts: The Psychology Behind Micro-Checks',
+    description: 'How behavioral design turned compliance into momentum. Part 6 of The Pivot Chronicles.',
+    url: 'https://getpeakops.com/blog/pivot-chronicles-small-actions',
+    siteName: 'PeakOps',
+    type: 'article',
+    publishedTime: '2025-08-19T00:00:00Z',
+    authors: ['Alistair Nicol'],
+    images: [
+      {
+        url: '/og-image.jpg',
+        width: 1200,
+        height: 630,
+        alt: 'Small Actions, Big Shifts',
+      },
+    ],
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Small Actions, Big Shifts: The Psychology Behind Micro-Checks',
+    description: 'How behavioral design turned compliance into momentum. The psychology of making simplicity stick.',
+    images: ['/og-image.jpg'],
+  },
+  alternates: {
+    canonical: 'https://getpeakops.com/blog/pivot-chronicles-small-actions',
+  },
+};
+
+export default function BlogPivotChroniclesSmallActions() {
+  const jsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'Article',
+    headline: 'Small Actions, Big Shifts: The Psychology Behind Micro-Checks',
+    description: 'How we designed micro-checks using behavioral psychology. Small actions, repeated daily, shape long-term consistency.',
+    image: 'https://getpeakops.com/og-image.jpg',
+    datePublished: '2025-08-19T00:00:00Z',
+    dateModified: '2025-08-19T00:00:00Z',
+    author: {
+      '@type': 'Person',
+      name: 'Alistair Nicol',
+      url: 'https://getpeakops.com',
+    },
+    publisher: {
+      '@type': 'Organization',
+      name: 'PeakOps',
+      logo: {
+        '@type': 'ImageObject',
+        url: 'https://getpeakops.com/logo.png',
+      },
+    },
+    mainEntityOfPage: {
+      '@type': 'WebPage',
+      '@id': 'https://getpeakops.com/blog/pivot-chronicles-small-actions',
+    },
+  };
+
   return (
-    <div className="min-h-screen bg-white">      {/* Header */}
+    <div className="min-h-screen bg-white">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
+      {/* Header */}
       <div className="bg-gray-50 border-b border-gray-200">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
           <Link
@@ -280,6 +342,4 @@ const BlogPivotChroniclesSmallActions = () => {
       </section>
     </div>
   );
-};
-
-export default BlogPivotChroniclesSmallActions;
+}

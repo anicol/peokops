@@ -1,12 +1,74 @@
-'use client';
-
 import React from 'react';
 import Link from 'next/link';
 import { ArrowLeft, Clock, User, Calendar } from 'lucide-react';
+import type { Metadata } from 'next';
 
-const BlogPivotChroniclesHeavyRealization = () => {
+export const metadata: Metadata = {
+  title: 'The "Too Heavy" Realization: When Your Solution Is Harder Than the Problem | The Pivot Chronicles',
+  description: 'By the time the AI video version of PeakOps was running smoothly, I was proud of it. It worked exactly as designed. The problem was... no one wanted to use it.',
+  openGraph: {
+    title: 'The "Too Heavy" Realization: When Your Solution Is Harder Than the Problem',
+    description: 'Innovation isn\'t about what\'s possible. It\'s about what\'s easy. Part 4 of The Pivot Chronicles.',
+    url: 'https://getpeakops.com/blog/pivot-chronicles-heavy-realization',
+    siteName: 'PeakOps',
+    type: 'article',
+    publishedTime: '2025-08-05T00:00:00Z',
+    authors: ['Alistair Nicol'],
+    images: [
+      {
+        url: '/og-image.jpg',
+        width: 1200,
+        height: 630,
+        alt: 'The Too Heavy Realization',
+      },
+    ],
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'The "Too Heavy" Realization: When Your Solution Is Harder Than the Problem',
+    description: 'The product was heavier than the problem it was meant to fix. Innovation isn\'t about what\'s possible. It\'s about what\'s easy.',
+    images: ['/og-image.jpg'],
+  },
+  alternates: {
+    canonical: 'https://getpeakops.com/blog/pivot-chronicles-heavy-realization',
+  },
+};
+
+export default function BlogPivotChroniclesHeavyRealization() {
+  const jsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'Article',
+    headline: 'The "Too Heavy" Realization: When Your Solution Is Harder Than the Problem',
+    description: 'We built advanced AI to make inspections easier, but in practice, it added steps. The product was heavier than the problem it was meant to fix.',
+    image: 'https://getpeakops.com/og-image.jpg',
+    datePublished: '2025-08-05T00:00:00Z',
+    dateModified: '2025-08-05T00:00:00Z',
+    author: {
+      '@type': 'Person',
+      name: 'Alistair Nicol',
+      url: 'https://getpeakops.com',
+    },
+    publisher: {
+      '@type': 'Organization',
+      name: 'PeakOps',
+      logo: {
+        '@type': 'ImageObject',
+        url: 'https://getpeakops.com/logo.png',
+      },
+    },
+    mainEntityOfPage: {
+      '@type': 'WebPage',
+      '@id': 'https://getpeakops.com/blog/pivot-chronicles-heavy-realization',
+    },
+  };
+
   return (
-    <div className="min-h-screen bg-white">      {/* Header */}
+    <div className="min-h-screen bg-white">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
+      {/* Header */}
       <div className="bg-gray-50 border-b border-gray-200">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
           <Link
@@ -270,6 +332,4 @@ const BlogPivotChroniclesHeavyRealization = () => {
       </section>
     </div>
   );
-};
-
-export default BlogPivotChroniclesHeavyRealization;
+}

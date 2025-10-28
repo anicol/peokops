@@ -1,12 +1,74 @@
-'use client';
-
 import React from 'react';
 import Link from 'next/link';
 import { ArrowLeft, Clock, User, Calendar } from 'lucide-react';
+import type { Metadata } from 'next';
 
-const BlogPivotChroniclesPeakOps = () => {
+export const metadata: Metadata = {
+  title: 'PeakOps: The AI Video Analysis Pivot That Almost Made Sense | The Pivot Chronicles',
+  description: 'This time felt different. Finally, a problem you could see, touch, and point to: health code violations, safety hazards. Things that restaurant operators actually lose sleep over.',
+  openGraph: {
+    title: 'PeakOps: The AI Video Analysis Pivot That Almost Made Sense',
+    description: 'Building a SaaS in Search of Product-Market Fit. Part 3 of The Pivot Chronicles.',
+    url: 'https://getpeakops.com/blog/pivot-chronicles-peakops',
+    siteName: 'PeakOps',
+    type: 'article',
+    publishedTime: '2025-07-29T00:00:00Z',
+    authors: ['Alistair Nicol'],
+    images: [
+      {
+        url: '/og-image.jpg',
+        width: 1200,
+        height: 630,
+        alt: 'PeakOps AI Video Analysis',
+      },
+    ],
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'PeakOps: The AI Video Analysis Pivot That Almost Made Sense',
+    description: 'We built AWS Rekognition integration, PPE detection, compliance scoring. Impressive tech, tangible problems. Why it still wasn\'t enough.',
+    images: ['/og-image.jpg'],
+  },
+  alternates: {
+    canonical: 'https://getpeakops.com/blog/pivot-chronicles-peakops',
+  },
+};
+
+export default function BlogPivotChroniclesPeakOps() {
+  const jsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'Article',
+    headline: 'PeakOps: The AI Video Analysis Pivot That Almost Made Sense',
+    description: 'Finally, a tangible problem: health code violations, safety issues, cleanliness standards. We built impressive tech. Why it still wasn\'t enough.',
+    image: 'https://getpeakops.com/og-image.jpg',
+    datePublished: '2025-07-29T00:00:00Z',
+    dateModified: '2025-07-29T00:00:00Z',
+    author: {
+      '@type': 'Person',
+      name: 'Alistair Nicol',
+      url: 'https://getpeakops.com',
+    },
+    publisher: {
+      '@type': 'Organization',
+      name: 'PeakOps',
+      logo: {
+        '@type': 'ImageObject',
+        url: 'https://getpeakops.com/logo.png',
+      },
+    },
+    mainEntityOfPage: {
+      '@type': 'WebPage',
+      '@id': 'https://getpeakops.com/blog/pivot-chronicles-peakops',
+    },
+  };
+
   return (
-    <div className="min-h-screen bg-white">      {/* Header */}
+    <div className="min-h-screen bg-white">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
+      {/* Header */}
       <div className="bg-gray-50 border-b border-gray-200">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
           <Link
@@ -361,6 +423,4 @@ const BlogPivotChroniclesPeakOps = () => {
       </section>
     </div>
   );
-};
-
-export default BlogPivotChroniclesPeakOps;
+}

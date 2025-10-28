@@ -1,12 +1,74 @@
-'use client';
-
 import React from 'react';
 import Link from 'next/link';
 import { ArrowLeft, Clock, User, Calendar } from 'lucide-react';
+import type { Metadata } from 'next';
 
-const BlogPivotChroniclesStartingOver = () => {
+export const metadata: Metadata = {
+  title: 'Starting Over (Again): What Would Change With 10 Real Customers | The Pivot Chronicles',
+  description: 'If I had to start over tomorrow and get 10 paying customers in 30 days, almost everything I\'ve built so far would be irrelevant. Not because it wasn\'t good, but because it wasn\'t anchored.',
+  openGraph: {
+    title: 'Starting Over (Again): What Would Change With 10 Real Customers',
+    description: 'Proof before perfection. Part 10 of The Pivot Chronicles.',
+    url: 'https://getpeakops.com/blog/pivot-chronicles-starting-over',
+    siteName: 'PeakOps',
+    type: 'article',
+    publishedTime: '2025-09-16T00:00:00Z',
+    authors: ['Alistair Nicol'],
+    images: [
+      {
+        url: '/og-image.jpg',
+        width: 1200,
+        height: 630,
+        alt: 'Starting Over Again',
+      },
+    ],
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Starting Over (Again): What Would Change With 10 Real Customers',
+    description: 'If I had 30 days to get 10 paying customers, I\'d throw out 90% of what I\'ve built. Here\'s what I\'d do instead.',
+    images: ['/og-image.jpg'],
+  },
+  alternates: {
+    canonical: 'https://getpeakops.com/blog/pivot-chronicles-starting-over',
+  },
+};
+
+export default function BlogPivotChroniclesStartingOver() {
+  const jsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'Article',
+    headline: 'Starting Over (Again): What Would Change With 10 Real Customers',
+    description: 'If I had 30 days to get 10 paying customers, I\'d throw out 90% of what I\'ve built. Proof before perfection.',
+    image: 'https://getpeakops.com/og-image.jpg',
+    datePublished: '2025-09-16T00:00:00Z',
+    dateModified: '2025-09-16T00:00:00Z',
+    author: {
+      '@type': 'Person',
+      name: 'Alistair Nicol',
+      url: 'https://getpeakops.com',
+    },
+    publisher: {
+      '@type': 'Organization',
+      name: 'PeakOps',
+      logo: {
+        '@type': 'ImageObject',
+        url: 'https://getpeakops.com/logo.png',
+      },
+    },
+    mainEntityOfPage: {
+      '@type': 'WebPage',
+      '@id': 'https://getpeakops.com/blog/pivot-chronicles-starting-over',
+    },
+  };
+
   return (
-    <div className="min-h-screen bg-white">      {/* Header */}
+    <div className="min-h-screen bg-white">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
+      {/* Header */}
       <div className="bg-gray-50 border-b border-gray-200">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
           <Link
@@ -274,6 +336,4 @@ const BlogPivotChroniclesStartingOver = () => {
       </section>
     </div>
   );
-};
-
-export default BlogPivotChroniclesStartingOver;
+}

@@ -1,12 +1,73 @@
-'use client';
-
 import React from 'react';
 import Link from 'next/link';
 import { ArrowLeft, Clock, User, Calendar } from 'lucide-react';
+import type { Metadata } from 'next';
 
-const BlogCoachingOverCompliance = () => {
+export const metadata: Metadata = {
+  title: 'Coaching Over Compliance: How QSR Managers Can Turn Inspections Into Growth Moments | PeakOps',
+  description: 'Most managers in quick service restaurants dread inspections. They feel like high-stakes tests where the goal is simple: don\'t fail. Discover a better way: coaching.',
+  openGraph: {
+    title: 'Coaching Over Compliance: How QSR Managers Can Turn Inspections Into Growth Moments',
+    description: 'What if inspections weren\'t just about compliance? What if they were about coaching? Learn how to transform your inspection process.',
+    url: 'https://getpeakops.com/blog/coaching-over-compliance',
+    siteName: 'PeakOps',
+    type: 'article',
+    publishedTime: '2024-03-15T00:00:00Z',
+    authors: ['PeakOps Team'],
+    images: [
+      {
+        url: '/og-image.jpg',
+        width: 1200,
+        height: 630,
+        alt: 'Coaching Over Compliance',
+      },
+    ],
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Coaching Over Compliance: Turn Inspections Into Growth Moments',
+    description: 'Learn how to transform your QSR inspection process from compliance-only thinking to coaching moments.',
+    images: ['/og-image.jpg'],
+  },
+  alternates: {
+    canonical: 'https://getpeakops.com/blog/coaching-over-compliance',
+  },
+};
+
+export default function BlogCoachingOverCompliance() {
+  const jsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'Article',
+    headline: 'Coaching Over Compliance: How QSR Managers Can Turn Inspections Into Growth Moments',
+    description: 'Most managers in quick service restaurants dread inspections. Discover how to treat inspections as coaching moments instead of pass/fail tests.',
+    image: 'https://getpeakops.com/og-image.jpg',
+    datePublished: '2024-03-15T00:00:00Z',
+    dateModified: '2024-03-15T00:00:00Z',
+    author: {
+      '@type': 'Organization',
+      name: 'PeakOps Team',
+      url: 'https://getpeakops.com',
+    },
+    publisher: {
+      '@type': 'Organization',
+      name: 'PeakOps',
+      logo: {
+        '@type': 'ImageObject',
+        url: 'https://getpeakops.com/logo.png',
+      },
+    },
+    mainEntityOfPage: {
+      '@type': 'WebPage',
+      '@id': 'https://getpeakops.com/blog/coaching-over-compliance',
+    },
+  };
+
   return (
     <div className="min-h-screen bg-white">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
       {/* Header */}
       <div className="bg-gray-50 border-b border-gray-200">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
@@ -193,6 +254,4 @@ const BlogCoachingOverCompliance = () => {
       </article>
     </div>
   );
-};
-
-export default BlogCoachingOverCompliance;
+}

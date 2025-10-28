@@ -1,12 +1,74 @@
-'use client';
-
 import React from 'react';
 import Link from 'next/link';
 import { ArrowLeft, Clock, User, Calendar } from 'lucide-react';
+import type { Metadata } from 'next';
 
-const BlogPivotChroniclesExtenure = () => {
+export const metadata: Metadata = {
+  title: 'Extenure: When Good Data Meets the Wrong Problem | The Pivot Chronicles',
+  description: 'I thought I was being clever. Predict who\'s about to quit, tell the manager early, save the company money. That was Extenure. It worked. The models were accurate. And nobody cared.',
+  openGraph: {
+    title: 'Extenure: When Good Data Meets the Wrong Problem',
+    description: 'Building a SaaS in Search of Product-Market Fit. Part 1 of The Pivot Chronicles.',
+    url: 'https://getpeakops.com/blog/pivot-chronicles-extenure',
+    siteName: 'PeakOps',
+    type: 'article',
+    publishedTime: '2025-07-15T00:00:00Z',
+    authors: ['Alistair Nicol'],
+    images: [
+      {
+        url: '/og-image.jpg',
+        width: 1200,
+        height: 630,
+        alt: 'Extenure: When Good Data Meets the Wrong Problem',
+      },
+    ],
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Extenure: When Good Data Meets the Wrong Problem',
+    description: 'How we built beautiful predictive retention analytics that nobody wanted. Part 1 of The Pivot Chronicles.',
+    images: ['/og-image.jpg'],
+  },
+  alternates: {
+    canonical: 'https://getpeakops.com/blog/pivot-chronicles-extenure',
+  },
+};
+
+export default function BlogPivotChroniclesExtenure() {
+  const jsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'Article',
+    headline: 'Extenure: When Good Data Meets the Wrong Problem',
+    description: 'We built predictive retention analytics for frontline teams. The models were accurate. The dashboards looked sharp. And nobody cared.',
+    image: 'https://getpeakops.com/og-image.jpg',
+    datePublished: '2025-07-15T00:00:00Z',
+    dateModified: '2025-07-15T00:00:00Z',
+    author: {
+      '@type': 'Person',
+      name: 'Alistair Nicol',
+      url: 'https://getpeakops.com',
+    },
+    publisher: {
+      '@type': 'Organization',
+      name: 'PeakOps',
+      logo: {
+        '@type': 'ImageObject',
+        url: 'https://getpeakops.com/logo.png',
+      },
+    },
+    mainEntityOfPage: {
+      '@type': 'WebPage',
+      '@id': 'https://getpeakops.com/blog/pivot-chronicles-extenure',
+    },
+  };
+
   return (
-    <div className="min-h-screen bg-white">      {/* Header */}
+    <div className="min-h-screen bg-white">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
+      {/* Header */}
       <div className="bg-gray-50 border-b border-gray-200">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
           <Link
@@ -204,6 +266,4 @@ const BlogPivotChroniclesExtenure = () => {
       </section>
     </div>
   );
-};
-
-export default BlogPivotChroniclesExtenure;
+}

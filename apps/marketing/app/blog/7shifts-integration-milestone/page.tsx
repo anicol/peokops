@@ -1,12 +1,74 @@
-'use client';
-
 import React from 'react';
 import Link from 'next/link';
 import { ArrowLeft, Clock, User, Calendar, CheckCircle } from 'lucide-react';
+import type { Metadata } from 'next';
 
-const Blog7ShiftsIntegration = () => {
+export const metadata: Metadata = {
+  title: 'Peak Ops 7shifts Integration: Zero Setup, Maximum Impact | Peak Ops',
+  description: 'Peak Ops now integrates with 7shifts to automatically deliver daily micro-checks to managers on shift. No extra logins, no new apps, just operational excellence built into your existing workflow.',
+  openGraph: {
+    title: 'Peak Ops Now Integrates with 7shifts: Zero Setup, Maximum Impact',
+    description: 'Delivering daily micro-checks to the manager currently on shift. No extra logins, no new apps, just operational excellence built into your existing workflow.',
+    url: 'https://getpeakops.com/blog/7shifts-integration-milestone',
+    siteName: 'PeakOps',
+    type: 'article',
+    publishedTime: '2025-10-27T00:00:00Z',
+    authors: ['Alistair Nicol'],
+    images: [
+      {
+        url: '/og-image.jpg',
+        width: 1200,
+        height: 630,
+        alt: 'Peak Ops 7shifts Integration',
+      },
+    ],
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Peak Ops 7shifts Integration: Zero Setup, Maximum Impact',
+    description: 'Delivering daily micro-checks to the manager currently on shift. No extra logins, no new apps, just operational excellence.',
+    images: ['/og-image.jpg'],
+  },
+  alternates: {
+    canonical: 'https://getpeakops.com/blog/7shifts-integration-milestone',
+  },
+};
+
+export default function Blog7ShiftsIntegration() {
+  const jsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'Article',
+    headline: 'Peak Ops Now Integrates with 7shifts: Zero Setup, Maximum Impact',
+    description: 'Peak Ops now integrates with 7shifts to automatically deliver daily micro-checks to managers on shift.',
+    image: 'https://getpeakops.com/og-image.jpg',
+    datePublished: '2025-10-27T00:00:00Z',
+    dateModified: '2025-10-27T00:00:00Z',
+    author: {
+      '@type': 'Person',
+      name: 'Alistair Nicol',
+      url: 'https://getpeakops.com',
+    },
+    publisher: {
+      '@type': 'Organization',
+      name: 'PeakOps',
+      logo: {
+        '@type': 'ImageObject',
+        url: 'https://getpeakops.com/logo.png',
+      },
+    },
+    mainEntityOfPage: {
+      '@type': 'WebPage',
+      '@id': 'https://getpeakops.com/blog/7shifts-integration-milestone',
+    },
+  };
+
   return (
     <div className="min-h-screen bg-white">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
+
       {/* Header */}
       <div className="bg-gradient-to-r from-blue-600 to-teal-600 text-white">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
@@ -325,6 +387,4 @@ const Blog7ShiftsIntegration = () => {
       </section>
     </div>
   );
-};
-
-export default Blog7ShiftsIntegration;
+}
