@@ -117,6 +117,16 @@ export const authAPI = {
     localStorage.removeItem('access_token');
     localStorage.removeItem('refresh_token');
   },
+
+  startImpersonation: async (userId: number): Promise<AuthResponse & { impersonation_context: any }> => {
+    const response = await api.post(`/auth/impersonate/${userId}/`);
+    return response.data;
+  },
+
+  stopImpersonation: async (): Promise<AuthResponse & { impersonation_context: any }> => {
+    const response = await api.post('/auth/stop-impersonation/');
+    return response.data;
+  },
 };
 
 // Users API

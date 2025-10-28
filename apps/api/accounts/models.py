@@ -480,7 +480,7 @@ class SmartNudge(models.Model):
         return timezone.now() > self.expires_at
     
     @classmethod
-    def create_nudge(cls, user, nudge_type, title, message, cta_text="", cta_url="", 
+    def create_nudge(cls, user, nudge_type, title, message, cta_text="", cta_url="",
                      show_after=None, expires_at=None, priority=1, trigger_condition=None):
         """Convenient method to create smart nudges"""
         return cls.objects.create(
@@ -495,3 +495,67 @@ class SmartNudge(models.Model):
             priority=priority,
             trigger_condition=trigger_condition or {}
         )
+
+
+class ImpersonationSession(models.Model):
+    """Track when super admins impersonate users for customer support"""
+
+    super_admin = models.ForeignKey(
+        'User',
+        on_delete=models.CASCADE,
+        related_name='impersonation_sessions_as_admin',
+        help_text="The super admin performing the impersonation"
+    )
+    impersonated_user = models.ForeignKey(
+        'User',
+        on_delete=models.CASCADE,
+        related_name='impersonation_sessions_as_target',
+        help_text="The user being impersonated"
+    )
+    impersonated_account = models.ForeignKey(
+        'Account',
+        on_delete=models.CASCADE,
+        related_name='impersonation_sessions',
+        null=True,
+        blank=True,
+        help_text="The account being accessed (if applicable)"
+    )
+
+    # Session tracking
+    started_at = models.DateTimeField(auto_now_add=True)
+    ended_at = models.DateTimeField(null=True, blank=True, help_text="When impersonation ended")
+
+    # Audit info
+    ip_address = models.GenericIPAddressField(null=True, blank=True, help_text="IP address of super admin")
+    user_agent = models.TextField(blank=True, help_text="Browser user agent")
+    notes = models.TextField(blank=True, help_text="Optional notes about why impersonation was needed")
+
+    class Meta:
+        db_table = 'impersonation_sessions'
+        ordering = ['-started_at']
+        indexes = [
+            models.Index(fields=['super_admin', 'started_at']),
+            models.Index(fields=['impersonated_user', 'started_at']),
+            models.Index(fields=['impersonated_account', 'started_at']),
+        ]
+
+    def __str__(self):
+        return f"{self.super_admin.username} impersonating {self.impersonated_user.username} at {self.started_at}"
+
+    @property
+    def is_active(self):
+        """Check if this impersonation session is still active"""
+        return self.ended_at is None
+
+    @property
+    def duration(self):
+        """Get duration of impersonation session"""
+        if self.ended_at:
+            return self.ended_at - self.started_at
+        return timezone.now() - self.started_at
+
+    def end_session(self):
+        """Mark this impersonation session as ended"""
+        if not self.ended_at:
+            self.ended_at = timezone.now()
+            self.save()

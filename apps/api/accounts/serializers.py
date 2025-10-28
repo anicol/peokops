@@ -17,20 +17,57 @@ class UserSerializer(serializers.ModelSerializer):
     store_name = serializers.CharField(source='store.name', read_only=True)
     brand_name = serializers.CharField(source='store.brand.name', read_only=True)
     brand_id = serializers.IntegerField(source='store.brand.id', read_only=True)
+    account_id = serializers.IntegerField(source='account.id', read_only=True)
+    account_name = serializers.CharField(source='account.name', read_only=True)
+    impersonation_context = serializers.SerializerMethodField()
 
     class Meta:
         model = User
         fields = ('id', 'username', 'email', 'first_name', 'last_name', 'full_name',
-                 'role', 'store', 'store_name', 'brand_name', 'brand_id', 'phone',
+                 'role', 'store', 'store_name', 'brand_name', 'brand_id',
+                 'account_id', 'account_name', 'phone',
                  'is_active', 'is_trial_user', 'trial_status', 'hours_since_signup',
                  'total_inspections', 'has_seen_demo', 'demo_completed_at', 'onboarding_completed_at',
-                 'created_at', 'last_active_at')
+                 'created_at', 'last_active_at', 'impersonation_context')
         read_only_fields = ('id', 'created_at', 'is_trial_user', 'trial_status', 'hours_since_signup',
-                           'total_inspections', 'last_active_at', 'onboarding_completed_at')
+                           'total_inspections', 'last_active_at', 'onboarding_completed_at',
+                           'account_id', 'account_name', 'impersonation_context')
 
     def get_trial_status(self, obj):
         """Get trial status information"""
         return obj.get_trial_status()
+
+    def get_impersonation_context(self, obj):
+        """Get impersonation context from request if available"""
+        request = self.context.get('request')
+        if not request:
+            return None
+
+        from .jwt_utils import get_impersonation_context_from_request
+        context = get_impersonation_context_from_request(request)
+
+        if not context or not context.get('is_impersonating'):
+            return None
+
+        # Get the original super admin user
+        try:
+            original_user = User.objects.get(id=context['original_user_id'])
+            return {
+                'is_impersonating': True,
+                'original_user': {
+                    'id': original_user.id,
+                    'email': original_user.email,
+                    'full_name': original_user.full_name,
+                },
+                'impersonated_user': {
+                    'id': obj.id,
+                    'email': obj.email,
+                    'full_name': obj.full_name,
+                    'account_name': obj.account.name if obj.account else None,
+                }
+            }
+        except User.DoesNotExist:
+            return None
 
 
 class UserCreateSerializer(serializers.ModelSerializer):
