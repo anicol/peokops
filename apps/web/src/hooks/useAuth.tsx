@@ -30,9 +30,11 @@ export function AuthProvider({ children }: { children: ReactNode}) {
     {
       enabled: !!localStorage.getItem('access_token'),
       onSuccess: (userData) => {
-        setUser(userData);
-        setImpersonationContext(userData.impersonation_context || null);
-        setError(null);
+        if (userData) {
+          setUser(userData);
+          setImpersonationContext(userData.impersonation_context || null);
+          setError(null);
+        }
       },
       onError: () => {
         localStorage.removeItem('access_token');
