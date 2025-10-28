@@ -20,19 +20,23 @@ def process_review_analysis(self, analysis_id):
     
     try:
         analysis = ReviewAnalysis.objects.get(id=analysis_id)
-        
-        # Update status to PROCESSING
+
+        # Step 1: Initialize
         analysis.status = ReviewAnalysis.Status.PROCESSING
-        analysis.progress_message = 'Searching for your business on Google Maps...'
-        analysis.progress_percentage = 10
+        analysis.progress_message = '🔍 Initializing browser and searching Google Maps...'
+        analysis.progress_percentage = 5
         analysis.save()
-        
-        # Scrape reviews using our existing scraper
+
+        # Step 2: Start scraping
         scraper = ScraperCommand()
-        scraper.stdout = MockStdout()  # Mock stdout to capture messages
-        
+        scraper.stdout = MockStdout()
+
         logger.info(f"Starting scrape for {analysis.business_name}")
-        
+
+        analysis.progress_message = f'🗺️  Finding "{analysis.business_name}" on Google Maps...'
+        analysis.progress_percentage = 15
+        analysis.save()
+
         try:
             scraped_data = scraper.scrape_reviews(
                 business_name=analysis.business_name,
@@ -46,40 +50,60 @@ def process_review_analysis(self, analysis_id):
             analysis.error_message = f"Could not find business or scrape reviews: {str(e)}"
             analysis.save()
             return
-        
+
         if not scraped_data or not scraped_data.get('reviews'):
             analysis.status = ReviewAnalysis.Status.FAILED
             analysis.error_message = 'No reviews found. Please check business name and location.'
             analysis.save()
             return
-        
-        # Update with scraped data
-        analysis.progress_message = f'Analyzing {len(scraped_data["reviews"])} reviews...'
-        analysis.progress_percentage = 50
+
+        # Step 3: Reviews found
+        review_count = len(scraped_data['reviews'])
+        business_info = scraped_data.get('business_info', {})
+
+        analysis.progress_message = f'✅ Found business! Loading {review_count} reviews...'
+        analysis.progress_percentage = 30
         analysis.scraped_data = scraped_data
-        analysis.google_rating = scraped_data.get('business_info', {}).get('rating')
-        analysis.google_address = scraped_data.get('business_info', {}).get('address', '')
-        analysis.total_reviews_found = scraped_data.get('business_info', {}).get('total_reviews', 0)
-        analysis.reviews_analyzed = len(scraped_data['reviews'])
+        analysis.google_rating = business_info.get('rating')
+        analysis.google_address = business_info.get('address', '')
+        analysis.total_reviews_found = business_info.get('total_reviews', 0)
+        analysis.reviews_analyzed = review_count
         analysis.save()
-        
+
+        # Step 4: Reading reviews
+        analysis.progress_message = f'📖 Reading through {review_count} customer reviews...'
+        analysis.progress_percentage = 45
+        analysis.save()
+
+        # Step 5: Analyzing sentiment
+        analysis.progress_message = '🎯 Analyzing sentiment and identifying patterns...'
+        analysis.progress_percentage = 60
+        analysis.save()
+
         # Analyze reviews
         analyzer = AnalyzerCommand()
         reviews_formatted = scraped_data.get('reviews', [])
-        
+
         insights = analyzer.analyze_reviews(reviews_formatted)
-        micro_check_suggestions = analyzer.generate_microcheck_suggestions(insights)
-        
-        # Update with analysis results
-        analysis.progress_message = 'Generating recommendations...'
-        analysis.progress_percentage = 90
+
+        # Step 6: Identifying issues
+        analysis.progress_message = '🔎 Identifying key operational issues...'
+        analysis.progress_percentage = 75
         analysis.insights = insights
+        analysis.save()
+
+        # Step 7: Generate recommendations
+        analysis.progress_message = '💡 Generating personalized micro-check recommendations...'
+        analysis.progress_percentage = 90
+        analysis.save()
+
+        micro_check_suggestions = analyzer.generate_microcheck_suggestions(insights)
         analysis.micro_check_suggestions = micro_check_suggestions
         analysis.save()
-        
-        # Mark as completed
+
+        # Step 8: Complete
         analysis.status = ReviewAnalysis.Status.COMPLETED
-        analysis.progress_message = 'Analysis complete!'
+        analysis.progress_message = '🎉 Analysis complete! Your insights are ready.'
         analysis.progress_percentage = 100
         analysis.completed_at = timezone.now()
         analysis.save()

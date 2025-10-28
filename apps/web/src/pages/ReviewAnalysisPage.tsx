@@ -220,9 +220,22 @@ export default function ReviewAnalysisPage() {
 
   // Render processing state
   if (status && status.status !== 'COMPLETED' && status.status !== 'FAILED') {
+    const steps = [
+      { label: 'Searching Google Maps', percentage: 15 },
+      { label: 'Loading Reviews', percentage: 30 },
+      { label: 'Reading Reviews', percentage: 45 },
+      { label: 'Analyzing Sentiment', percentage: 60 },
+      { label: 'Identifying Issues', percentage: 75 },
+      { label: 'Generating Recommendations', percentage: 90 },
+      { label: 'Finalizing Report', percentage: 100 },
+    ];
+
+    const currentStepIndex = steps.findIndex(step => status.progress_percentage <= step.percentage);
+    const activeStep = currentStepIndex >= 0 ? currentStepIndex : steps.length - 1;
+
     return (
       <div className="min-h-screen bg-gradient-to-b from-blue-50 to-white py-12 px-4">
-        <div className="max-w-2xl mx-auto">
+        <div className="max-w-3xl mx-auto">
           <div className="bg-white rounded-lg shadow-lg p-8">
             <div className="text-center mb-8">
               <div className="inline-flex items-center justify-center w-16 h-16 bg-blue-100 rounded-full mb-4">
@@ -231,20 +244,74 @@ export default function ReviewAnalysisPage() {
               <h2 className="text-2xl font-bold text-gray-900 mb-2">
                 Analyzing Your Reviews
               </h2>
-              <p className="text-gray-600">{status.progress_message}</p>
+              <p className="text-lg text-gray-700 mb-4">{status.progress_message}</p>
             </div>
 
             {/* Progress bar */}
             <div className="mb-8">
-              <div className="w-full bg-gray-200 rounded-full h-3">
+              <div className="w-full bg-gray-200 rounded-full h-3 overflow-hidden">
                 <div
-                  className="bg-blue-600 h-3 rounded-full transition-all duration-500"
+                  className="bg-gradient-to-r from-blue-500 to-blue-600 h-3 rounded-full transition-all duration-500 ease-out"
                   style={{ width: `${status.progress_percentage}%` }}
                 ></div>
               </div>
-              <p className="text-center text-sm text-gray-600 mt-2">
+              <p className="text-center text-sm font-medium text-gray-600 mt-2">
                 {status.progress_percentage}% complete
               </p>
+            </div>
+
+            {/* Step indicators */}
+            <div className="mb-8 space-y-3">
+              {steps.map((step, index) => {
+                const isCompleted = index < activeStep;
+                const isCurrent = index === activeStep;
+                const isUpcoming = index > activeStep;
+
+                return (
+                  <div
+                    key={step.label}
+                    className={`flex items-center gap-3 p-3 rounded-lg transition-all ${
+                      isCurrent
+                        ? 'bg-blue-50 border-2 border-blue-200'
+                        : isCompleted
+                        ? 'bg-green-50 border border-green-200'
+                        : 'bg-gray-50 border border-gray-200'
+                    }`}
+                  >
+                    <div
+                      className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center font-semibold text-sm ${
+                        isCurrent
+                          ? 'bg-blue-600 text-white animate-pulse'
+                          : isCompleted
+                          ? 'bg-green-500 text-white'
+                          : 'bg-gray-300 text-gray-600'
+                      }`}
+                    >
+                      {isCompleted ? '✓' : index + 1}
+                    </div>
+                    <span
+                      className={`font-medium ${
+                        isCurrent
+                          ? 'text-blue-900'
+                          : isCompleted
+                          ? 'text-green-900'
+                          : 'text-gray-500'
+                      }`}
+                    >
+                      {step.label}
+                    </span>
+                    {isCurrent && (
+                      <div className="ml-auto">
+                        <div className="flex space-x-1">
+                          <div className="w-2 h-2 bg-blue-600 rounded-full animate-bounce"></div>
+                          <div className="w-2 h-2 bg-blue-600 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
+                          <div className="w-2 h-2 bg-blue-600 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
             </div>
 
             {/* Email capture card */}
