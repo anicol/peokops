@@ -200,7 +200,7 @@ Verify that staff are aware of this feedback and have taken corrective action.""
 
         # Check if similar check already exists
         existing = MicroCheckTemplate.objects.filter(
-            account=account,
+            brand=account.brand,
             title__icontains=pattern['issue'][:30],
             source='google_reviews'
         ).first()
@@ -211,7 +211,7 @@ Verify that staff are aware of this feedback and have taken corrective action.""
 
         # Create the micro-check template
         check = MicroCheckTemplate.objects.create(
-            account=account,
+            brand=account.brand,
             category=category,
             severity=pattern['severity'],
             title=title,
