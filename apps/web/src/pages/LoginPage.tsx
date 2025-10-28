@@ -327,9 +327,9 @@ const Login = () => {
         <div className="text-center mt-8 text-sm text-gray-600">
           <p>
             By signing up, you agree to our{' '}
-            <a href="#" className="text-blue-600 hover:text-blue-700">Terms of Service</a>
+            <a href="https://getpeakops.com/terms" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:text-blue-700">Terms of Service</a>
             {' '}and{' '}
-            <a href="#" className="text-blue-600 hover:text-blue-700">Privacy Policy</a>
+            <a href="https://getpeakops.com/privacy" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:text-blue-700">Privacy Policy</a>
           </p>
         </div>
       </div>
