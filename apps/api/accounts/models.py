@@ -559,3 +559,53 @@ class ImpersonationSession(models.Model):
         if not self.ended_at:
             self.ended_at = timezone.now()
             self.save()
+
+
+class PasswordlessLoginToken(models.Model):
+    """Token for passwordless magic link login"""
+
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='login_tokens')
+    token = models.CharField(max_length=64, unique=True, db_index=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    expires_at = models.DateTimeField()
+    used_at = models.DateTimeField(null=True, blank=True)
+    ip_address = models.GenericIPAddressField(null=True, blank=True)
+    user_agent = models.TextField(blank=True)
+
+    class Meta:
+        db_table = 'passwordless_login_tokens'
+        ordering = ['-created_at']
+        indexes = [
+            models.Index(fields=['token', 'expires_at']),
+        ]
+
+    def __str__(self):
+        return f"Login token for {self.user.email} - {'used' if self.used_at else 'valid'}"
+
+    @property
+    def is_expired(self):
+        """Check if token has expired"""
+        return timezone.now() > self.expires_at
+
+    @property
+    def is_valid(self):
+        """Check if token is valid (not used and not expired)"""
+        return not self.used_at and not self.is_expired
+
+    def mark_as_used(self):
+        """Mark token as used"""
+        self.used_at = timezone.now()
+        self.save()
+
+    @classmethod
+    def generate_token(cls, user, expires_in_minutes=15):
+        """Generate a new login token for user"""
+        import secrets
+        token = secrets.token_urlsafe(32)
+        expires_at = timezone.now() + timedelta(minutes=expires_in_minutes)
+
+        return cls.objects.create(
+            user=user,
+            token=token,
+            expires_at=expires_at
+        )

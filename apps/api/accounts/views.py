@@ -828,3 +828,210 @@ def stop_impersonation_view(request):
             'impersonated_user': None,
         }
     })
+
+
+@extend_schema(
+    request={
+        'application/json': {
+            'type': 'object',
+            'properties': {
+                'email': {
+                    'type': 'string',
+                    'format': 'email',
+                    'description': 'User email address'
+                }
+            },
+            'required': ['email']
+        }
+    },
+    responses={
+        200: {
+            'type': 'object',
+            'properties': {
+                'message': {'type': 'string'},
+                'email': {'type': 'string'}
+            }
+        },
+        400: {'description': 'Invalid email or user not found'}
+    },
+    description="Request a passwordless magic link login email"
+)
+@api_view(['POST'])
+@permission_classes([AllowAny])
+def request_magic_link_view(request):
+    """Request a magic link for passwordless login"""
+    from .models import PasswordlessLoginToken
+    from django.core.mail import EmailMultiAlternatives
+    from django.conf import settings
+
+    email = request.data.get('email', '').strip().lower()
+
+    if not email:
+        return Response(
+            {'error': 'Email is required'},
+            status=status.HTTP_400_BAD_REQUEST
+        )
+
+    # Check if user exists
+    try:
+        user = User.objects.get(email=email, is_active=True)
+    except User.DoesNotExist:
+        # Return success even if user doesn't exist (security: don't leak user existence)
+        return Response({
+            'message': 'If an account exists with that email, we sent you a login link.',
+            'email': email
+        })
+
+    # Generate login token (15 minutes expiry)
+    login_token = PasswordlessLoginToken.generate_token(user, expires_in_minutes=15)
+
+    # Build magic link URL
+    web_url = getattr(settings, 'WEB_APP_URL', 'http://localhost:5173')
+    magic_link = f"{web_url}/login?token={login_token.token}"
+
+    # Send email
+    subject = "Sign in to PeakOps"
+
+    text_content = f"""Hi {user.first_name or 'there'},
+
+Click the link below to sign in to your PeakOps account:
+
+{magic_link}
+
+This link will expire in 15 minutes.
+
+If you didn't request this email, you can safely ignore it.
+
+Thanks,
+The PeakOps Team
+"""
+
+    html_content = f"""
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+<body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
+    <p style="font-size: 16px; margin-bottom: 20px;">Hi {user.first_name or 'there'},</p>
+
+    <p style="font-size: 16px; margin-bottom: 20px;">Click the button below to sign in to your PeakOps account:</p>
+
+    <div style="text-align: center; margin: 32px 0;">
+        <a href="{magic_link}" style="display: inline-block; background: linear-gradient(135deg, #0d9488 0%, #06b6d4 100%); color: white; padding: 14px 32px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 16px;">Sign In to PeakOps</a>
+    </div>
+
+    <p style="font-size: 14px; color: #6b7280; margin-bottom: 20px;">Or copy and paste this link into your browser:</p>
+    <p style="font-size: 14px; color: #0d9488; word-break: break-all; margin-bottom: 20px;">{magic_link}</p>
+
+    <p style="font-size: 14px; color: #6b7280; margin-bottom: 20px;">This link will expire in <strong>15 minutes</strong>.</p>
+
+    <p style="font-size: 14px; color: #6b7280;">If you didn't request this email, you can safely ignore it.</p>
+
+    <p style="font-size: 16px; margin-top: 32px;">Thanks,<br>The PeakOps Team</p>
+</body>
+</html>
+"""
+
+    try:
+        msg = EmailMultiAlternatives(
+            subject=subject,
+            body=text_content,
+            from_email=settings.DEFAULT_FROM_EMAIL,
+            to=[email]
+        )
+        msg.attach_alternative(html_content, "text/html")
+        msg.send()
+    except Exception as e:
+        # Log error but don't expose it to user
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.error(f"Failed to send magic link email to {email}: {str(e)}")
+
+    return Response({
+        'message': 'If an account exists with that email, we sent you a login link.',
+        'email': email
+    })
+
+
+@extend_schema(
+    request={
+        'application/json': {
+            'type': 'object',
+            'properties': {
+                'token': {
+                    'type': 'string',
+                    'description': 'Magic link login token'
+                }
+            },
+            'required': ['token']
+        }
+    },
+    responses={
+        200: {
+            'type': 'object',
+            'properties': {
+                'access': {'type': 'string'},
+                'refresh': {'type': 'string'},
+                'user': {'type': 'object'}
+            }
+        },
+        400: {'description': 'Invalid or expired token'},
+        404: {'description': 'Token not found'}
+    },
+    description="Verify magic link token and log in"
+)
+@api_view(['POST'])
+@permission_classes([AllowAny])
+def verify_magic_link_view(request):
+    """Verify magic link token and log user in"""
+    from .models import PasswordlessLoginToken
+
+    token = request.data.get('token', '').strip()
+
+    if not token:
+        return Response(
+            {'error': 'Token is required'},
+            status=status.HTTP_400_BAD_REQUEST
+        )
+
+    # Find token
+    try:
+        login_token = PasswordlessLoginToken.objects.select_related('user').get(token=token)
+    except PasswordlessLoginToken.DoesNotExist:
+        return Response(
+            {'error': 'Invalid or expired login link'},
+            status=status.HTTP_404_NOT_FOUND
+        )
+
+    # Check if token is valid
+    if not login_token.is_valid:
+        if login_token.used_at:
+            return Response(
+                {'error': 'This login link has already been used'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        else:
+            return Response(
+                {'error': 'This login link has expired'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+    # Mark token as used
+    login_token.mark_as_used()
+
+    # Log the user in
+    user = login_token.user
+    refresh = RefreshToken.for_user(user)
+    access_token = refresh.access_token
+
+    # Update last login
+    user.last_login = timezone.now()
+    user.save(update_fields=['last_login'])
+
+    return Response({
+        'access': str(access_token),
+        'refresh': str(refresh),
+        'user': UserSerializer(user).data
+    })
