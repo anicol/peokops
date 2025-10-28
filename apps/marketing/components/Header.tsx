@@ -62,21 +62,21 @@ const Header = () => {
             </div>
 
             <Link
-              href="/roi-calculator"
-              className={`transition-colors ${
-                isActive('/roi-calculator') ? 'text-blue-600' : 'text-gray-700 hover:text-blue-600'
-              }`}
-            >
-              ROI Calculator
-            </Link>
-
-            <Link
               href="/pricing"
               className={`transition-colors ${
                 isActive('/pricing') ? 'text-blue-600' : 'text-gray-700 hover:text-blue-600'
               }`}
             >
               Pricing
+            </Link>
+
+            <Link
+              href="/blog"
+              className={`transition-colors ${
+                isActive('/blog') ? 'text-blue-600' : 'text-gray-700 hover:text-blue-600'
+              }`}
+            >
+              Blog
             </Link>
 
             <Link
@@ -155,18 +155,18 @@ const Header = () => {
                 The Inspector
               </Link>
               <Link
-                href="/roi-calculator"
-                className="block text-gray-700 hover:text-blue-600"
-                onClick={() => setIsMenuOpen(false)}
-              >
-                ROI Calculator
-              </Link>
-              <Link
                 href="/pricing"
                 className="block text-gray-700 hover:text-blue-600"
                 onClick={() => setIsMenuOpen(false)}
               >
                 Pricing
+              </Link>
+              <Link
+                href="/blog"
+                className="block text-gray-700 hover:text-blue-600"
+                onClick={() => setIsMenuOpen(false)}
+              >
+                Blog
               </Link>
               <Link
                 href="/about"
