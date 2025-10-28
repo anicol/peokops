@@ -73,7 +73,7 @@ const Login = () => {
     try {
       if (isMagicLink) {
         // Handle magic link request
-        const response = await fetch(`${API_CONFIG.baseURL}/api/auth/magic-link/request/`, {
+        const response = await fetch(`${API_CONFIG.baseURL}/auth/magic-link/request/`, {
           method: 'POST',
           headers: API_CONFIG.headers,
           body: JSON.stringify({ email }),
