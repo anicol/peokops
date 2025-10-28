@@ -37,30 +37,32 @@ const Login = () => {
   useEffect(() => {
     const token = searchParams.get('token');
     if (token) {
-      // Store the token and redirect to dashboard
-      localStorage.setItem('access_token', token);
+      setIsLoading(true);
 
-      // Fetch user profile to complete auth and then redirect
-      fetch(`${API_CONFIG.baseURL}${API_ENDPOINTS.auth.profile}`, {
-        headers: {
-          ...API_CONFIG.headers,
-          'Authorization': `Bearer ${token}`
-        }
+      // Verify the magic link token and get JWT tokens
+      fetch(`${API_CONFIG.baseURL}/auth/magic-link/verify/`, {
+        method: 'POST',
+        headers: API_CONFIG.headers,
+        body: JSON.stringify({ token })
       })
         .then(res => {
           if (!res.ok) {
-            throw new Error(`Authentication failed: ${res.status}`);
+            throw new Error(`Token verification failed: ${res.status}`);
           }
           return res.json();
         })
-        .then(() => {
+        .then(data => {
+          // Store JWT tokens
+          localStorage.setItem('access_token', data.access);
+          localStorage.setItem('refresh_token', data.refresh);
+
           // Trigger a page reload to ensure auth state updates
           window.location.href = '/';
         })
         .catch(err => {
           console.error('Magic link login failed:', err);
           setLocalError('Invalid or expired login link. Please try logging in with your credentials.');
-          localStorage.removeItem('access_token');
+          setIsLoading(false);
         });
     }
   }, [searchParams]);
