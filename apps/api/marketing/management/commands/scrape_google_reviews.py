@@ -227,38 +227,63 @@ class Command(BaseCommand):
             rating = 0
             total_reviews = 0
 
-            # Try multiple selectors for rating info
+            # Strategy 1: Try to find rating in various aria-labels
             rating_selectors = [
                 '[aria-label*="stars" i]',
                 'div[aria-label*="star" i]',
                 'span[role="img"][aria-label*="star" i]',
+                'span[aria-label*="star" i]',
             ]
 
             rating_elem = None
             for selector in rating_selectors:
                 rating_elem = page.query_selector(selector)
                 if rating_elem:
-                    break
+                    aria_label = rating_elem.get_attribute('aria-label')
+                    if aria_label:
+                        rating_match = re.search(r'([\d.]+)\s*stars?', aria_label, re.IGNORECASE)
+                        reviews_match = re.search(r'(\d+(?:,\d+)*)\s*reviews?', aria_label, re.IGNORECASE)
 
-            if rating_elem:
-                aria_label = rating_elem.get_attribute('aria-label')
-                if aria_label:
-                    rating_match = re.search(r'([\d.]+)\s*stars?', aria_label, re.IGNORECASE)
-                    reviews_match = re.search(r'(\d+(?:,\d+)*)\s*reviews?', aria_label, re.IGNORECASE)
+                        if rating_match:
+                            rating = float(rating_match.group(1))
+                        if reviews_match:
+                            total_reviews = int(reviews_match.group(1).replace(',', ''))
 
-                    if rating_match:
-                        rating = float(rating_match.group(1))
-                    if reviews_match:
-                        total_reviews = int(reviews_match.group(1).replace(',', ''))
+                        if rating > 0 or total_reviews > 0:
+                            break
 
-            # If we didn't find reviews in aria-label, try finding review count text
+            # Strategy 2: Look for rating as text (e.g., "4.3" followed by stars)
+            if rating == 0:
+                # Try to find rating display text
+                rating_text_elems = page.query_selector_all('span, div')
+                for elem in rating_text_elems:
+                    try:
+                        text = elem.inner_text().strip()
+                        # Match patterns like "4.3", "3.5", etc.
+                        if re.match(r'^\d\.\d$', text):
+                            rating = float(text)
+                            break
+                    except:
+                        continue
+
+            # Strategy 3: Find review count from button text or nearby elements
             if total_reviews == 0:
-                review_count_elem = page.query_selector('button:has-text("reviews"), span:has-text("reviews")')
-                if review_count_elem:
-                    text = review_count_elem.inner_text()
-                    reviews_match = re.search(r'(\d+(?:,\d+)*)\s*reviews?', text, re.IGNORECASE)
-                    if reviews_match:
-                        total_reviews = int(reviews_match.group(1).replace(',', ''))
+                # Try multiple patterns for review count
+                review_patterns = [
+                    'button:has-text("reviews")',
+                    'button:has-text("review")',
+                    'span:has-text("reviews")',
+                    'div:has-text("reviews")',
+                ]
+
+                for pattern in review_patterns:
+                    review_elem = page.query_selector(pattern)
+                    if review_elem:
+                        text = review_elem.inner_text()
+                        reviews_match = re.search(r'(\d+(?:,\d+)*)\s*reviews?', text, re.IGNORECASE)
+                        if reviews_match:
+                            total_reviews = int(reviews_match.group(1).replace(',', ''))
+                            break
 
             # Extract address
             address = ''
