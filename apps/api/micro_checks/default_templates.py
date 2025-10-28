@@ -34,6 +34,7 @@ DEFAULT_TEMPLATES = [
         'rotation_priority': 70,
         'ai_validation_enabled': False,
         'ai_validation_prompt': '',
+        'applicable_subtypes': [],
     },
     {
         'title': 'Food Temperature Check',
@@ -47,6 +48,7 @@ DEFAULT_TEMPLATES = [
         'rotation_priority': 90,
         'ai_validation_enabled': False,
         'ai_validation_prompt': '',
+        'applicable_subtypes': [],
     },
     {
         'title': 'Food Storage Proper',
@@ -60,6 +62,7 @@ DEFAULT_TEMPLATES = [
         'rotation_priority': 75,
         'ai_validation_enabled': False,
         'ai_validation_prompt': '',
+        'applicable_subtypes': [],
     },
     {
         'title': 'Sanitizer Buckets Fresh',
@@ -73,6 +76,7 @@ DEFAULT_TEMPLATES = [
         'rotation_priority': 65,
         'ai_validation_enabled': False,
         'ai_validation_prompt': '',
+        'applicable_subtypes': [],
     },
     {
         'title': 'Prep Surfaces Sanitized',
@@ -86,6 +90,7 @@ DEFAULT_TEMPLATES = [
         'rotation_priority': 75,
         'ai_validation_enabled': False,
         'ai_validation_prompt': '',
+        'applicable_subtypes': [],
     },
     {
         'title': 'Refrigeration Temperatures',
@@ -99,6 +104,7 @@ DEFAULT_TEMPLATES = [
         'rotation_priority': 90,
         'ai_validation_enabled': False,
         'ai_validation_prompt': '',
+        'applicable_subtypes': [],
     },
     {
         'title': 'Dishwasher Sanitizing Correctly',
@@ -112,6 +118,7 @@ DEFAULT_TEMPLATES = [
         'rotation_priority': 70,
         'ai_validation_enabled': False,
         'ai_validation_prompt': '',
+        'applicable_subtypes': ['QSR', 'FAST_CASUAL', 'CASUAL_DINING', 'FINE_DINING', 'CAFE', 'BAR_PUB', 'BAKERY'],
     },
     {
         'title': 'Staff Wearing Gloves Properly',
@@ -125,6 +132,7 @@ DEFAULT_TEMPLATES = [
         'rotation_priority': 75,
         'ai_validation_enabled': False,
         'ai_validation_prompt': '',
+        'applicable_subtypes': [],
     },
     {
         'title': 'Hair Restraints Worn',
@@ -138,6 +146,7 @@ DEFAULT_TEMPLATES = [
         'rotation_priority': 60,
         'ai_validation_enabled': False,
         'ai_validation_prompt': '',
+        'applicable_subtypes': [],
     },
     {
         'title': 'Date Labels Current',
@@ -151,6 +160,7 @@ DEFAULT_TEMPLATES = [
         'rotation_priority': 70,
         'ai_validation_enabled': False,
         'ai_validation_prompt': '',
+        'applicable_subtypes': [],
     },
 
     # ========================================
@@ -168,6 +178,7 @@ DEFAULT_TEMPLATES = [
         'rotation_priority': 60,
         'ai_validation_enabled': False,
         'ai_validation_prompt': '',
+        'applicable_subtypes': [],
     },
     {
         'title': 'Trash Containers Managed',
@@ -181,6 +192,7 @@ DEFAULT_TEMPLATES = [
         'rotation_priority': 40,
         'ai_validation_enabled': False,
         'ai_validation_prompt': '',
+        'applicable_subtypes': [],
     },
     {
         'title': 'Dining Room Clean',
@@ -194,6 +206,7 @@ DEFAULT_TEMPLATES = [
         'rotation_priority': 65,
         'ai_validation_enabled': False,
         'ai_validation_prompt': '',
+        'applicable_subtypes': ['QSR', 'FAST_CASUAL', 'CASUAL_DINING', 'FINE_DINING', 'CAFE', 'BAR_PUB'],
     },
     {
         'title': 'Restrooms Sanitized',
@@ -207,6 +220,7 @@ DEFAULT_TEMPLATES = [
         'rotation_priority': 75,
         'ai_validation_enabled': False,
         'ai_validation_prompt': '',
+        'applicable_subtypes': ['QSR', 'FAST_CASUAL', 'CASUAL_DINING', 'FINE_DINING', 'CAFE', 'BAR_PUB'],
     },
     {
         'title': 'Kitchen Walls and Ceiling Clean',
@@ -220,6 +234,7 @@ DEFAULT_TEMPLATES = [
         'rotation_priority': 50,
         'ai_validation_enabled': False,
         'ai_validation_prompt': '',
+        'applicable_subtypes': [],
     },
     {
         'title': 'Dry Storage Area Organized',
@@ -233,6 +248,7 @@ DEFAULT_TEMPLATES = [
         'rotation_priority': 55,
         'ai_validation_enabled': False,
         'ai_validation_prompt': '',
+        'applicable_subtypes': [],
     },
     {
         'title': 'Ice Machine Clean',
@@ -246,6 +262,7 @@ DEFAULT_TEMPLATES = [
         'rotation_priority': 60,
         'ai_validation_enabled': False,
         'ai_validation_prompt': '',
+        'applicable_subtypes': [],
     },
     {
         'title': 'Beverage Station Clean',
@@ -259,6 +276,7 @@ DEFAULT_TEMPLATES = [
         'rotation_priority': 50,
         'ai_validation_enabled': False,
         'ai_validation_prompt': '',
+        'applicable_subtypes': ['QSR', 'FAST_CASUAL', 'CAFE'],
     },
     {
         'title': 'Exterior Entrance Clean',
@@ -272,6 +290,7 @@ DEFAULT_TEMPLATES = [
         'rotation_priority': 55,
         'ai_validation_enabled': False,
         'ai_validation_prompt': '',
+        'applicable_subtypes': ['QSR', 'FAST_CASUAL', 'CASUAL_DINING', 'FINE_DINING', 'CAFE', 'BAR_PUB', 'BAKERY'],
     },
     {
         'title': 'Prep Equipment Surfaces Clean',
@@ -285,6 +304,7 @@ DEFAULT_TEMPLATES = [
         'rotation_priority': 60,
         'ai_validation_enabled': False,
         'ai_validation_prompt': '',
+        'applicable_subtypes': [],
     },
 
     # ========================================
@@ -302,6 +322,7 @@ DEFAULT_TEMPLATES = [
         'rotation_priority': 80,
         'ai_validation_enabled': False,
         'ai_validation_prompt': '',
+        'applicable_subtypes': [],
     },
     {
         'title': 'Exit Paths Clear',
@@ -315,6 +336,7 @@ DEFAULT_TEMPLATES = [
         'rotation_priority': 85,
         'ai_validation_enabled': False,
         'ai_validation_prompt': '',
+        'applicable_subtypes': [],
     },
     {
         'title': 'Wet Floor Signs Used',
@@ -328,6 +350,7 @@ DEFAULT_TEMPLATES = [
         'rotation_priority': 50,
         'ai_validation_enabled': False,
         'ai_validation_prompt': '',
+        'applicable_subtypes': [],
     },
     {
         'title': 'Chemical Storage Safe',
@@ -341,6 +364,7 @@ DEFAULT_TEMPLATES = [
         'rotation_priority': 75,
         'ai_validation_enabled': False,
         'ai_validation_prompt': '',
+        'applicable_subtypes': [],
     },
     {
         'title': 'First Aid Kit Stocked',
@@ -354,6 +378,7 @@ DEFAULT_TEMPLATES = [
         'rotation_priority': 65,
         'ai_validation_enabled': False,
         'ai_validation_prompt': '',
+        'applicable_subtypes': [],
     },
     {
         'title': 'Emergency Lighting Functional',
@@ -367,6 +392,7 @@ DEFAULT_TEMPLATES = [
         'rotation_priority': 60,
         'ai_validation_enabled': False,
         'ai_validation_prompt': '',
+        'applicable_subtypes': [],
     },
     {
         'title': 'Ladder Safety Check',
@@ -380,6 +406,7 @@ DEFAULT_TEMPLATES = [
         'rotation_priority': 45,
         'ai_validation_enabled': False,
         'ai_validation_prompt': '',
+        'applicable_subtypes': [],
     },
     {
         'title': 'Electrical Cords Safe',
@@ -393,6 +420,7 @@ DEFAULT_TEMPLATES = [
         'rotation_priority': 70,
         'ai_validation_enabled': False,
         'ai_validation_prompt': '',
+        'applicable_subtypes': [],
     },
     {
         'title': 'Knife Storage Safe',
@@ -406,6 +434,7 @@ DEFAULT_TEMPLATES = [
         'rotation_priority': 55,
         'ai_validation_enabled': False,
         'ai_validation_prompt': '',
+        'applicable_subtypes': [],
     },
     {
         'title': 'Anti-Slip Mats in Place',
@@ -419,6 +448,7 @@ DEFAULT_TEMPLATES = [
         'rotation_priority': 60,
         'ai_validation_enabled': False,
         'ai_validation_prompt': '',
+        'applicable_subtypes': [],
     },
 
     # ========================================
@@ -436,6 +466,7 @@ DEFAULT_TEMPLATES = [
         'rotation_priority': 60,
         'ai_validation_enabled': False,
         'ai_validation_prompt': '',
+        'applicable_subtypes': [],
     },
     {
         'title': 'Non-Slip Shoes Worn',
@@ -449,6 +480,7 @@ DEFAULT_TEMPLATES = [
         'rotation_priority': 75,
         'ai_validation_enabled': False,
         'ai_validation_prompt': '',
+        'applicable_subtypes': [],
     },
     {
         'title': 'Oven Mitts/Heat Gloves Available',
@@ -462,6 +494,7 @@ DEFAULT_TEMPLATES = [
         'rotation_priority': 65,
         'ai_validation_enabled': False,
         'ai_validation_prompt': '',
+        'applicable_subtypes': [],
     },
     {
         'title': 'Aprons Clean and Used',
@@ -475,6 +508,7 @@ DEFAULT_TEMPLATES = [
         'rotation_priority': 40,
         'ai_validation_enabled': False,
         'ai_validation_prompt': '',
+        'applicable_subtypes': [],
     },
     {
         'title': 'Safety Goggles Available',
@@ -488,6 +522,7 @@ DEFAULT_TEMPLATES = [
         'rotation_priority': 50,
         'ai_validation_enabled': False,
         'ai_validation_prompt': '',
+        'applicable_subtypes': [],
     },
     {
         'title': 'Back Support Belts Available',
@@ -501,6 +536,7 @@ DEFAULT_TEMPLATES = [
         'rotation_priority': 35,
         'ai_validation_enabled': False,
         'ai_validation_prompt': '',
+        'applicable_subtypes': [],
     },
     {
         'title': 'Disposable Glove Supply',
@@ -514,6 +550,7 @@ DEFAULT_TEMPLATES = [
         'rotation_priority': 60,
         'ai_validation_enabled': False,
         'ai_validation_prompt': '',
+        'applicable_subtypes': [],
     },
     {
         'title': 'Face Shields Available',
@@ -527,6 +564,7 @@ DEFAULT_TEMPLATES = [
         'rotation_priority': 30,
         'ai_validation_enabled': False,
         'ai_validation_prompt': '',
+        'applicable_subtypes': [],
     },
     {
         'title': 'Hearing Protection Available',
@@ -540,6 +578,7 @@ DEFAULT_TEMPLATES = [
         'rotation_priority': 35,
         'ai_validation_enabled': False,
         'ai_validation_prompt': '',
+        'applicable_subtypes': [],
     },
     {
         'title': 'Bandage/Finger Cot Supply',
@@ -553,6 +592,7 @@ DEFAULT_TEMPLATES = [
         'rotation_priority': 55,
         'ai_validation_enabled': False,
         'ai_validation_prompt': '',
+        'applicable_subtypes': [],
     },
 
     # ========================================
@@ -570,6 +610,7 @@ DEFAULT_TEMPLATES = [
         'rotation_priority': 55,
         'ai_validation_enabled': False,
         'ai_validation_prompt': '',
+        'applicable_subtypes': [],
     },
     {
         'title': 'Thermometer Calibration',
@@ -583,6 +624,7 @@ DEFAULT_TEMPLATES = [
         'rotation_priority': 70,
         'ai_validation_enabled': False,
         'ai_validation_prompt': '',
+        'applicable_subtypes': [],
     },
     {
         'title': 'Hood Filter Cleaning Status',
@@ -596,6 +638,7 @@ DEFAULT_TEMPLATES = [
         'rotation_priority': 65,
         'ai_validation_enabled': False,
         'ai_validation_prompt': '',
+        'applicable_subtypes': ['QSR', 'FAST_CASUAL', 'CASUAL_DINING', 'FINE_DINING', 'CAFE', 'BAR_PUB', 'BAKERY'],
     },
     {
         'title': 'Refrigerator Door Seals Intact',
@@ -609,6 +652,7 @@ DEFAULT_TEMPLATES = [
         'rotation_priority': 60,
         'ai_validation_enabled': False,
         'ai_validation_prompt': '',
+        'applicable_subtypes': [],
     },
     {
         'title': 'Slicer Blade Sharp and Clean',
@@ -622,6 +666,7 @@ DEFAULT_TEMPLATES = [
         'rotation_priority': 60,
         'ai_validation_enabled': False,
         'ai_validation_prompt': '',
+        'applicable_subtypes': [],
     },
     {
         'title': 'Fryer Oil Quality',
@@ -635,6 +680,7 @@ DEFAULT_TEMPLATES = [
         'rotation_priority': 65,
         'ai_validation_enabled': False,
         'ai_validation_prompt': '',
+        'applicable_subtypes': ['QSR', 'FAST_CASUAL', 'CASUAL_DINING', 'BAR_PUB'],
     },
     {
         'title': 'Grease Trap Maintenance',
@@ -648,6 +694,7 @@ DEFAULT_TEMPLATES = [
         'rotation_priority': 55,
         'ai_validation_enabled': False,
         'ai_validation_prompt': '',
+        'applicable_subtypes': ['QSR', 'FAST_CASUAL', 'CASUAL_DINING', 'FINE_DINING', 'CAFE', 'BAR_PUB', 'BAKERY'],
     },
     {
         'title': 'Oven Temperature Accuracy',
@@ -661,6 +708,7 @@ DEFAULT_TEMPLATES = [
         'rotation_priority': 60,
         'ai_validation_enabled': False,
         'ai_validation_prompt': '',
+        'applicable_subtypes': ['QSR', 'FAST_CASUAL', 'CASUAL_DINING', 'FINE_DINING', 'BAKERY'],
     },
     {
         'title': 'Water Filter Replacement',
@@ -674,6 +722,7 @@ DEFAULT_TEMPLATES = [
         'rotation_priority': 45,
         'ai_validation_enabled': False,
         'ai_validation_prompt': '',
+        'applicable_subtypes': [],
     },
     {
         'title': 'Knife Sharpness',
@@ -687,6 +736,7 @@ DEFAULT_TEMPLATES = [
         'rotation_priority': 55,
         'ai_validation_enabled': False,
         'ai_validation_prompt': '',
+        'applicable_subtypes': [],
     },
 
     # ========================================
@@ -704,6 +754,7 @@ DEFAULT_TEMPLATES = [
         'rotation_priority': 40,
         'ai_validation_enabled': False,
         'ai_validation_prompt': '',
+        'applicable_subtypes': ['QSR', 'FAST_CASUAL', 'CASUAL_DINING', 'FINE_DINING', 'CAFE'],
     },
     {
         'title': 'Uniform Shirt Clean and Pressed',
@@ -717,6 +768,7 @@ DEFAULT_TEMPLATES = [
         'rotation_priority': 55,
         'ai_validation_enabled': False,
         'ai_validation_prompt': '',
+        'applicable_subtypes': [],
     },
     {
         'title': 'Proper Pants/Bottoms',
@@ -730,6 +782,7 @@ DEFAULT_TEMPLATES = [
         'rotation_priority': 50,
         'ai_validation_enabled': False,
         'ai_validation_prompt': '',
+        'applicable_subtypes': [],
     },
     {
         'title': 'Jewelry Policy Followed',
@@ -743,6 +796,7 @@ DEFAULT_TEMPLATES = [
         'rotation_priority': 60,
         'ai_validation_enabled': False,
         'ai_validation_prompt': '',
+        'applicable_subtypes': [],
     },
     {
         'title': 'Hair Neat and Professional',
@@ -756,6 +810,7 @@ DEFAULT_TEMPLATES = [
         'rotation_priority': 45,
         'ai_validation_enabled': False,
         'ai_validation_prompt': '',
+        'applicable_subtypes': [],
     },
     {
         'title': 'Appropriate Footwear',
@@ -769,6 +824,7 @@ DEFAULT_TEMPLATES = [
         'rotation_priority': 70,
         'ai_validation_enabled': False,
         'ai_validation_prompt': '',
+        'applicable_subtypes': [],
     },
     {
         'title': 'Visible Tattoos Policy',
@@ -782,6 +838,7 @@ DEFAULT_TEMPLATES = [
         'rotation_priority': 30,
         'ai_validation_enabled': False,
         'ai_validation_prompt': '',
+        'applicable_subtypes': [],
     },
     {
         'title': 'Nails Clean and Trimmed',
@@ -795,6 +852,7 @@ DEFAULT_TEMPLATES = [
         'rotation_priority': 55,
         'ai_validation_enabled': False,
         'ai_validation_prompt': '',
+        'applicable_subtypes': [],
     },
     {
         'title': 'Hat or Visor Worn',
@@ -808,6 +866,7 @@ DEFAULT_TEMPLATES = [
         'rotation_priority': 35,
         'ai_validation_enabled': False,
         'ai_validation_prompt': '',
+        'applicable_subtypes': [],
     },
     {
         'title': 'Overall Appearance Professional',
@@ -821,6 +880,7 @@ DEFAULT_TEMPLATES = [
         'rotation_priority': 50,
         'ai_validation_enabled': False,
         'ai_validation_prompt': '',
+        'applicable_subtypes': [],
     },
 
     # ========================================
@@ -838,6 +898,7 @@ DEFAULT_TEMPLATES = [
         'rotation_priority': 75,
         'ai_validation_enabled': False,
         'ai_validation_prompt': '',
+        'applicable_subtypes': ['QSR', 'FAST_CASUAL', 'CAFE'],
     },
     {
         'title': 'Daily Specials Updated',
@@ -851,6 +912,7 @@ DEFAULT_TEMPLATES = [
         'rotation_priority': 60,
         'ai_validation_enabled': False,
         'ai_validation_prompt': '',
+        'applicable_subtypes': ['QSR', 'FAST_CASUAL', 'CAFE', 'CASUAL_DINING'],
     },
     {
         'title': 'Menu Board Clean and Lit',
@@ -864,6 +926,7 @@ DEFAULT_TEMPLATES = [
         'rotation_priority': 55,
         'ai_validation_enabled': False,
         'ai_validation_prompt': '',
+        'applicable_subtypes': ['QSR', 'FAST_CASUAL', 'CAFE'],
     },
     {
         'title': 'Allergen Information Available',
@@ -877,6 +940,7 @@ DEFAULT_TEMPLATES = [
         'rotation_priority': 70,
         'ai_validation_enabled': False,
         'ai_validation_prompt': '',
+        'applicable_subtypes': [],
     },
     {
         'title': 'Seasonal Items Updated',
@@ -890,6 +954,7 @@ DEFAULT_TEMPLATES = [
         'rotation_priority': 50,
         'ai_validation_enabled': False,
         'ai_validation_prompt': '',
+        'applicable_subtypes': ['QSR', 'FAST_CASUAL', 'CAFE', 'CASUAL_DINING'],
     },
     {
         'title': 'Combo Meals Clearly Displayed',
@@ -903,6 +968,7 @@ DEFAULT_TEMPLATES = [
         'rotation_priority': 60,
         'ai_validation_enabled': False,
         'ai_validation_prompt': '',
+        'applicable_subtypes': ['QSR', 'FAST_CASUAL'],
     },
     {
         'title': 'Nutritional Claims Compliant',
@@ -916,6 +982,7 @@ DEFAULT_TEMPLATES = [
         'rotation_priority': 65,
         'ai_validation_enabled': False,
         'ai_validation_prompt': '',
+        'applicable_subtypes': [],
     },
     {
         'title': 'Photos Match Products',
@@ -929,6 +996,7 @@ DEFAULT_TEMPLATES = [
         'rotation_priority': 55,
         'ai_validation_enabled': False,
         'ai_validation_prompt': '',
+        'applicable_subtypes': ['QSR', 'FAST_CASUAL', 'CAFE'],
     },
     {
         'title': 'Out-of-Stock Items Covered',
@@ -942,6 +1010,7 @@ DEFAULT_TEMPLATES = [
         'rotation_priority': 75,
         'ai_validation_enabled': False,
         'ai_validation_prompt': '',
+        'applicable_subtypes': ['QSR', 'FAST_CASUAL', 'CAFE', 'CASUAL_DINING'],
     },
     {
         'title': 'Menu Organization Logical',
@@ -955,6 +1024,7 @@ DEFAULT_TEMPLATES = [
         'rotation_priority': 40,
         'ai_validation_enabled': False,
         'ai_validation_prompt': '',
+        'applicable_subtypes': ['QSR', 'FAST_CASUAL', 'CAFE'],
     },
 
     # ========================================
@@ -972,6 +1042,7 @@ DEFAULT_TEMPLATES = [
         'rotation_priority': 60,
         'ai_validation_enabled': False,
         'ai_validation_prompt': '',
+        'applicable_subtypes': [],
     },
     {
         'title': 'Closing Checklist Complete',
@@ -985,6 +1056,7 @@ DEFAULT_TEMPLATES = [
         'rotation_priority': 65,
         'ai_validation_enabled': False,
         'ai_validation_prompt': '',
+        'applicable_subtypes': [],
     },
     {
         'title': 'Cash Handling Procedures',
@@ -998,6 +1070,7 @@ DEFAULT_TEMPLATES = [
         'rotation_priority': 75,
         'ai_validation_enabled': False,
         'ai_validation_prompt': '',
+        'applicable_subtypes': [],
     },
     {
         'title': 'Inventory Par Levels',
@@ -1011,6 +1084,7 @@ DEFAULT_TEMPLATES = [
         'rotation_priority': 60,
         'ai_validation_enabled': False,
         'ai_validation_prompt': '',
+        'applicable_subtypes': [],
     },
     {
         'title': 'Daily Sales Report Complete',
@@ -1024,6 +1098,7 @@ DEFAULT_TEMPLATES = [
         'rotation_priority': 55,
         'ai_validation_enabled': False,
         'ai_validation_prompt': '',
+        'applicable_subtypes': [],
     },
     {
         'title': 'Labor Schedule Posted',
@@ -1037,6 +1112,7 @@ DEFAULT_TEMPLATES = [
         'rotation_priority': 50,
         'ai_validation_enabled': False,
         'ai_validation_prompt': '',
+        'applicable_subtypes': [],
     },
     {
         'title': 'Required Posters Displayed',
@@ -1050,6 +1126,7 @@ DEFAULT_TEMPLATES = [
         'rotation_priority': 65,
         'ai_validation_enabled': False,
         'ai_validation_prompt': '',
+        'applicable_subtypes': [],
     },
     {
         'title': 'Health Permit Current',
@@ -1063,6 +1140,7 @@ DEFAULT_TEMPLATES = [
         'rotation_priority': 85,
         'ai_validation_enabled': False,
         'ai_validation_prompt': '',
+        'applicable_subtypes': [],
     },
     {
         'title': 'Incident Report Log',
@@ -1076,6 +1154,7 @@ DEFAULT_TEMPLATES = [
         'rotation_priority': 55,
         'ai_validation_enabled': False,
         'ai_validation_prompt': '',
+        'applicable_subtypes': [],
     },
     {
         'title': 'Manager on Duty Identified',
@@ -1089,6 +1168,7 @@ DEFAULT_TEMPLATES = [
         'rotation_priority': 60,
         'ai_validation_enabled': False,
         'ai_validation_prompt': '',
+        'applicable_subtypes': [],
     },
 
     # ========================================
@@ -1106,6 +1186,7 @@ DEFAULT_TEMPLATES = [
         'rotation_priority': 65,
         'ai_validation_enabled': False,
         'ai_validation_prompt': '',
+        'applicable_subtypes': [],
     },
     {
         'title': 'Plating Standards Met',
@@ -1119,6 +1200,7 @@ DEFAULT_TEMPLATES = [
         'rotation_priority': 60,
         'ai_validation_enabled': False,
         'ai_validation_prompt': '',
+        'applicable_subtypes': ['CASUAL_DINING', 'FINE_DINING'],
     },
     {
         'title': 'Recipe Adherence',
@@ -1132,6 +1214,7 @@ DEFAULT_TEMPLATES = [
         'rotation_priority': 70,
         'ai_validation_enabled': False,
         'ai_validation_prompt': '',
+        'applicable_subtypes': [],
     },
     {
         'title': 'Garnish Freshness',
@@ -1145,6 +1228,7 @@ DEFAULT_TEMPLATES = [
         'rotation_priority': 55,
         'ai_validation_enabled': False,
         'ai_validation_prompt': '',
+        'applicable_subtypes': [],
     },
     {
         'title': 'Food Temperature at Service',
@@ -1158,6 +1242,7 @@ DEFAULT_TEMPLATES = [
         'rotation_priority': 75,
         'ai_validation_enabled': False,
         'ai_validation_prompt': '',
+        'applicable_subtypes': [],
     },
     {
         'title': 'Bread/Buns Fresh',
@@ -1171,6 +1256,7 @@ DEFAULT_TEMPLATES = [
         'rotation_priority': 60,
         'ai_validation_enabled': False,
         'ai_validation_prompt': '',
+        'applicable_subtypes': ['QSR', 'FAST_CASUAL', 'CASUAL_DINING'],
     },
     {
         'title': 'Cook Temperatures Correct',
@@ -1184,6 +1270,7 @@ DEFAULT_TEMPLATES = [
         'rotation_priority': 85,
         'ai_validation_enabled': False,
         'ai_validation_prompt': '',
+        'applicable_subtypes': [],
     },
     {
         'title': 'Sauce Consistency',
@@ -1197,6 +1284,7 @@ DEFAULT_TEMPLATES = [
         'rotation_priority': 55,
         'ai_validation_enabled': False,
         'ai_validation_prompt': '',
+        'applicable_subtypes': [],
     },
     {
         'title': 'Food Waste Minimized',
@@ -1210,6 +1298,7 @@ DEFAULT_TEMPLATES = [
         'rotation_priority': 50,
         'ai_validation_enabled': False,
         'ai_validation_prompt': '',
+        'applicable_subtypes': [],
     },
     {
         'title': 'Expeditor Quality Check',
@@ -1223,6 +1312,7 @@ DEFAULT_TEMPLATES = [
         'rotation_priority': 70,
         'ai_validation_enabled': False,
         'ai_validation_prompt': '',
+        'applicable_subtypes': ['CASUAL_DINING', 'FINE_DINING', 'FAST_CASUAL'],
     },
 
     # ========================================
@@ -1240,6 +1330,7 @@ DEFAULT_TEMPLATES = [
         'rotation_priority': 65,
         'ai_validation_enabled': False,
         'ai_validation_prompt': '',
+        'applicable_subtypes': ['QSR', 'FAST_CASUAL', 'CASUAL_DINING', 'FINE_DINING', 'CAFE', 'BAR_PUB'],
     },
     {
         'title': 'Teamwork Observed',
@@ -1253,6 +1344,7 @@ DEFAULT_TEMPLATES = [
         'rotation_priority': 55,
         'ai_validation_enabled': False,
         'ai_validation_prompt': '',
+        'applicable_subtypes': [],
     },
     {
         'title': 'Phone Etiquette Professional',
@@ -1266,6 +1358,7 @@ DEFAULT_TEMPLATES = [
         'rotation_priority': 60,
         'ai_validation_enabled': False,
         'ai_validation_prompt': '',
+        'applicable_subtypes': [],
     },
     {
         'title': 'No Cell Phone Use',
@@ -1279,6 +1372,7 @@ DEFAULT_TEMPLATES = [
         'rotation_priority': 60,
         'ai_validation_enabled': False,
         'ai_validation_prompt': '',
+        'applicable_subtypes': [],
     },
     {
         'title': 'Positive Body Language',
@@ -1292,6 +1386,7 @@ DEFAULT_TEMPLATES = [
         'rotation_priority': 50,
         'ai_validation_enabled': False,
         'ai_validation_prompt': '',
+        'applicable_subtypes': [],
     },
     {
         'title': 'Complaint Handling Appropriate',
@@ -1305,6 +1400,7 @@ DEFAULT_TEMPLATES = [
         'rotation_priority': 70,
         'ai_validation_enabled': False,
         'ai_validation_prompt': '',
+        'applicable_subtypes': [],
     },
     {
         'title': 'Punctuality and Attendance',
@@ -1318,6 +1414,7 @@ DEFAULT_TEMPLATES = [
         'rotation_priority': 60,
         'ai_validation_enabled': False,
         'ai_validation_prompt': '',
+        'applicable_subtypes': [],
     },
     {
         'title': 'Following Instructions',
@@ -1331,6 +1428,7 @@ DEFAULT_TEMPLATES = [
         'rotation_priority': 60,
         'ai_validation_enabled': False,
         'ai_validation_prompt': '',
+        'applicable_subtypes': [],
     },
     {
         'title': 'Professional Language Used',
@@ -1344,6 +1442,7 @@ DEFAULT_TEMPLATES = [
         'rotation_priority': 60,
         'ai_validation_enabled': False,
         'ai_validation_prompt': '',
+        'applicable_subtypes': [],
     },
     {
         'title': 'Hustle and Urgency',
@@ -1357,6 +1456,7 @@ DEFAULT_TEMPLATES = [
         'rotation_priority': 65,
         'ai_validation_enabled': False,
         'ai_validation_prompt': '',
+        'applicable_subtypes': [],
     },
 ]
 
