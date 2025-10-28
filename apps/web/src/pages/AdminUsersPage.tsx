@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from 'react-query';
 import { format } from 'date-fns';
+import { useAuth } from '@/hooks/useAuth';
+import { useNavigate } from 'react-router-dom';
 import {
   Plus,
   Users as UsersIcon,
@@ -17,6 +19,7 @@ import {
   UserCheck,
   Crown,
   Key,
+  UserCog,
 } from 'lucide-react';
 import { API_CONFIG } from '@/config/api';
 import { brandsAPI, storesAPI } from '@/services/api';
@@ -99,6 +102,8 @@ export default function AdminUsersPage() {
   const [roleFilter, setRoleFilter] = useState<string>('all');
   const [brandFilter, setBrandFilter] = useState<string>('all');
   const queryClient = useQueryClient();
+  const { user: currentUser, startImpersonation } = useAuth();
+  const navigate = useNavigate();
 
   const { data: users, isLoading, error } = useQuery<User[]>(
     'admin-users',
@@ -123,6 +128,17 @@ export default function AdminUsersPage() {
         await deleteMutation.mutateAsync(user.id);
       } catch (error: any) {
         alert(error.message || 'Failed to delete user');
+      }
+    }
+  };
+
+  const handleImpersonate = async (user: User) => {
+    if (window.confirm(`Impersonate ${user.full_name} (${user.email})?\n\nYou will be logged in as this user and all actions will be performed as them.`)) {
+      try {
+        await startImpersonation(user.id);
+        navigate('/'); // Redirect to home page after impersonation starts
+      } catch (error: any) {
+        alert(error.message || 'Failed to start impersonation');
       }
     }
   };
@@ -370,6 +386,17 @@ export default function AdminUsersPage() {
                       {format(new Date(user.created_at), 'MMM d, yyyy')}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                      {currentUser?.role === 'SUPER_ADMIN' &&
+                       user.role !== 'SUPER_ADMIN' &&
+                       user.id !== currentUser?.id && (
+                        <button
+                          onClick={() => handleImpersonate(user)}
+                          className="text-blue-600 hover:text-blue-900 mr-4"
+                          title="Impersonate user"
+                        >
+                          <UserCog className="h-4 w-4" />
+                        </button>
+                      )}
                       <button
                         onClick={() => setEditingUser(user)}
                         className="text-indigo-600 hover:text-indigo-900 mr-4"

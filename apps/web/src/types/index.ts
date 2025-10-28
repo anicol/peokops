@@ -16,6 +16,21 @@ export interface TrialStatus {
   conversion_score?: number;
 }
 
+export interface ImpersonationContext {
+  is_impersonating: boolean;
+  original_user: {
+    id: number;
+    email: string;
+    full_name: string;
+  } | null;
+  impersonated_user: {
+    id: number;
+    email: string;
+    full_name: string;
+    account_name: string | null;
+  } | null;
+}
+
 export interface User {
   id: number;
   username: string;
@@ -28,6 +43,8 @@ export interface User {
   store_name?: string;
   brand_name?: string;
   brand_id?: number;
+  account_id?: number;
+  account_name?: string;
   phone: string;
   is_active: boolean;
   is_trial_user?: boolean;
@@ -40,6 +57,7 @@ export interface User {
   total_inspections?: number;
   created_at: string;
   last_active_at?: string;
+  impersonation_context?: ImpersonationContext | null;
 }
 
 export interface Brand {

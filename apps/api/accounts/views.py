@@ -8,13 +8,15 @@ from django.utils import timezone
 from django.db.models import Q
 from django_filters.rest_framework import DjangoFilterBackend
 from drf_spectacular.utils import extend_schema
-from .models import User, SmartNudge, UserBehaviorEvent, MicroCheckDeliveryConfig
+from .models import User, SmartNudge, UserBehaviorEvent, MicroCheckDeliveryConfig, ImpersonationSession
 from .serializers import (
     UserSerializer, UserCreateSerializer, LoginSerializer, TrialSignupSerializer,
     SmartNudgeSerializer, BehaviorEventCreateSerializer, ProfileUpdateSerializer,
     PasswordChangeSerializer, QuickSignupSerializer, MicroCheckDeliveryConfigSerializer
 )
 from .nudge_engine import BehaviorTracker, NudgeEngine
+from .jwt_utils import get_tokens_for_impersonation, get_impersonation_context_from_request
+from .permissions import IsSuperAdmin, CanImpersonate
 
 
 class UserListCreateView(generics.ListCreateAPIView):
@@ -89,14 +91,14 @@ def login_view(request):
 @permission_classes([IsAuthenticated])
 def profile_view(request):
     if request.method == 'GET':
-        serializer = UserSerializer(request.user)
+        serializer = UserSerializer(request.user, context={'request': request})
         return Response(serializer.data)
 
     elif request.method == 'PATCH':
         serializer = ProfileUpdateSerializer(request.user, data=request.data, partial=True)
         if serializer.is_valid():
             serializer.save()
-            return Response(UserSerializer(request.user).data)
+            return Response(UserSerializer(request.user, context={'request': request}).data)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
@@ -680,4 +682,149 @@ def micro_check_schedule_preview_view(request):
     return Response({
         'cadence_mode': config.cadence_mode if config else 'DAILY',
         'employees': schedule_data
+    })
+
+
+@extend_schema(
+    responses={200: UserSerializer},
+    description="Start impersonating a user (super admin only)"
+)
+@api_view(['POST'])
+@permission_classes([CanImpersonate])
+def start_impersonation_view(request, user_id):
+    """
+    POST /api/accounts/impersonate/<user_id>/
+    Start impersonating a user as a super admin.
+
+    Only super admins can impersonate users, and they cannot impersonate other super admins.
+    Returns new JWT tokens with impersonation claims.
+    """
+    # Verify request user is super admin
+    if request.user.role != User.Role.SUPER_ADMIN:
+        return Response(
+            {'error': 'Only super admins can impersonate users'},
+            status=status.HTTP_403_FORBIDDEN
+        )
+
+    # Get the target user
+    try:
+        target_user = User.objects.select_related('account', 'store').get(id=user_id)
+    except User.DoesNotExist:
+        return Response(
+            {'error': 'User not found'},
+            status=status.HTTP_404_NOT_FOUND
+        )
+
+    # Cannot impersonate other super admins
+    if target_user.role == User.Role.SUPER_ADMIN:
+        return Response(
+            {'error': 'Cannot impersonate other super admins'},
+            status=status.HTTP_403_FORBIDDEN
+        )
+
+    # Cannot impersonate yourself
+    if target_user.id == request.user.id:
+        return Response(
+            {'error': 'Cannot impersonate yourself'},
+            status=status.HTTP_400_BAD_REQUEST
+        )
+
+    # Get client IP and user agent for audit trail
+    ip_address = request.META.get('REMOTE_ADDR')
+    user_agent = request.META.get('HTTP_USER_AGENT', '')
+
+    # Create impersonation session
+    impersonation_session = ImpersonationSession.objects.create(
+        super_admin=request.user,
+        impersonated_user=target_user,
+        impersonated_account=target_user.account,
+        ip_address=ip_address,
+        user_agent=user_agent,
+    )
+
+    # Generate tokens with impersonation claims
+    tokens = get_tokens_for_impersonation(
+        super_admin=request.user,
+        target_user=target_user,
+        impersonation_session=impersonation_session
+    )
+
+    # Return tokens and user info
+    return Response({
+        'access': tokens['access'],
+        'refresh': tokens['refresh'],
+        'user': UserSerializer(target_user).data,
+        'impersonation_context': {
+            'is_impersonating': True,
+            'original_user': {
+                'id': request.user.id,
+                'email': request.user.email,
+                'full_name': request.user.full_name,
+            },
+            'impersonated_user': {
+                'id': target_user.id,
+                'email': target_user.email,
+                'full_name': target_user.full_name,
+                'account_name': target_user.account.name if target_user.account else None,
+            },
+            'session_id': impersonation_session.id,
+        }
+    })
+
+
+@extend_schema(
+    responses={200: UserSerializer},
+    description="Stop impersonating and return to super admin account"
+)
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def stop_impersonation_view(request):
+    """
+    POST /api/accounts/stop-impersonation/
+    Stop impersonating and return to the original super admin account.
+
+    Requires an active impersonation session in the JWT token.
+    """
+    # Check if currently impersonating
+    impersonation_context = get_impersonation_context_from_request(request)
+
+    if not impersonation_context or not impersonation_context.get('is_impersonating'):
+        return Response(
+            {'error': 'Not currently impersonating anyone'},
+            status=status.HTTP_400_BAD_REQUEST
+        )
+
+    # Get the original super admin user
+    try:
+        super_admin = User.objects.get(id=impersonation_context['original_user_id'])
+    except User.DoesNotExist:
+        return Response(
+            {'error': 'Original user not found'},
+            status=status.HTTP_404_NOT_FOUND
+        )
+
+    # End the impersonation session
+    try:
+        impersonation_session = ImpersonationSession.objects.get(
+            id=impersonation_context['impersonation_session_id']
+        )
+        impersonation_session.end_session()
+    except ImpersonationSession.DoesNotExist:
+        pass  # Session might have already been ended
+
+    # Generate normal tokens for the super admin
+    from rest_framework_simplejwt.tokens import RefreshToken
+    refresh = RefreshToken.for_user(super_admin)
+    access_token = refresh.access_token
+
+    # Return tokens and user info
+    return Response({
+        'access': str(access_token),
+        'refresh': str(refresh),
+        'user': UserSerializer(super_admin).data,
+        'impersonation_context': {
+            'is_impersonating': False,
+            'original_user': None,
+            'impersonated_user': None,
+        }
     })

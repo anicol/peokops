@@ -23,6 +23,8 @@ urlpatterns = [
     path('users/', views.UserListCreateView.as_view(), name='user-list-create'),
     path('users/<int:pk>/', views.UserDetailView.as_view(), name='user-detail'),
     path('users/<int:pk>/reinvite/', views.reinvite_user_view, name='user-reinvite'),
+    path('impersonate/<int:user_id>/', views.start_impersonation_view, name='start-impersonation'),
+    path('stop-impersonation/', views.stop_impersonation_view, name='stop-impersonation'),
     path('nudges/active/', views.get_active_nudges, name='active-nudges'),
     path('', include(router.urls)),
 ]

@@ -3,6 +3,7 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { useProgressiveNavigation } from '@/hooks/useProgressiveNavigation';
 import { useFeatureGates } from '@/hooks/useFeatureGates';
+import { ImpersonationBanner } from './ImpersonationBanner';
 import {
   Home,
   CheckSquare,
@@ -138,6 +139,9 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           </div>
         </div>
       </header>
+
+      {/* Impersonation Banner */}
+      <ImpersonationBanner />
 
       <div className="flex flex-1 overflow-hidden">
         {/* Mobile sidebar */}

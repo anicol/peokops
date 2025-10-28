@@ -1,7 +1,7 @@
 import { useState, createContext, useContext, ReactNode } from 'react';
 import { useQuery, useMutation } from 'react-query';
 import { authAPI } from '@/services/api';
-import type { User, LoginCredentials } from '@/types';
+import type { User, LoginCredentials, ImpersonationContext } from '@/types';
 
 interface AuthContextType {
   user: User | null;
@@ -11,13 +11,17 @@ interface AuthContextType {
   logout: () => void;
   refetchUser: () => Promise<void>;
   error: string | null;
+  impersonationContext: ImpersonationContext | null;
+  startImpersonation: (userId: number) => Promise<void>;
+  stopImpersonation: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-export function AuthProvider({ children }: { children: ReactNode }) {
+export function AuthProvider({ children }: { children: ReactNode}) {
   const [user, setUser] = useState<User | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [impersonationContext, setImpersonationContext] = useState<ImpersonationContext | null>(null);
 
   // Check if user is already logged in
   const { isLoading: isLoadingProfile, refetch: refetchProfile } = useQuery(
@@ -27,12 +31,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       enabled: !!localStorage.getItem('access_token'),
       onSuccess: (userData) => {
         setUser(userData);
+        setImpersonationContext(userData.impersonation_context || null);
         setError(null);
       },
       onError: () => {
         localStorage.removeItem('access_token');
         localStorage.removeItem('refresh_token');
         setUser(null);
+        setImpersonationContext(null);
       },
       retry: false,
     }
@@ -90,8 +96,46 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     await refetchProfile();
   };
 
+  const impersonationMutation = useMutation(authAPI.startImpersonation, {
+    onSuccess: (response) => {
+      localStorage.setItem('access_token', response.access);
+      localStorage.setItem('refresh_token', response.refresh);
+      setUser(response.user);
+      setImpersonationContext(response.impersonation_context);
+      setError(null);
+    },
+    onError: (error: any) => {
+      const errorMessage = error.response?.data?.error || 'Failed to impersonate user';
+      setError(errorMessage);
+    },
+  });
+
+  const stopImpersonationMutation = useMutation(authAPI.stopImpersonation, {
+    onSuccess: (response) => {
+      localStorage.setItem('access_token', response.access);
+      localStorage.setItem('refresh_token', response.refresh);
+      setUser(response.user);
+      setImpersonationContext(null);
+      setError(null);
+    },
+    onError: (error: any) => {
+      const errorMessage = error.response?.data?.error || 'Failed to stop impersonation';
+      setError(errorMessage);
+    },
+  });
+
+  const startImpersonation = async (userId: number) => {
+    setError(null);
+    await impersonationMutation.mutateAsync(userId);
+  };
+
+  const stopImpersonation = async () => {
+    setError(null);
+    await stopImpersonationMutation.mutateAsync();
+  };
+
   const isAuthenticated = !!user;
-  const isLoading = isLoadingProfile || loginMutation.isLoading;
+  const isLoading = isLoadingProfile || loginMutation.isLoading || impersonationMutation.isLoading || stopImpersonationMutation.isLoading;
 
   return (
     <AuthContext.Provider
@@ -103,6 +147,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         logout,
         refetchUser,
         error,
+        impersonationContext,
+        startImpersonation,
+        stopImpersonation,
       }}
     >
       {children}
