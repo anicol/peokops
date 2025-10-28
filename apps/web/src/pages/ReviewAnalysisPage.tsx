@@ -169,7 +169,7 @@ export default function ReviewAnalysisPage() {
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Location (City, State)
+                  Location (City, State) *
                 </label>
                 <LocationTypeahead
                   value={location}
@@ -178,13 +178,13 @@ export default function ReviewAnalysisPage() {
                   className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 />
                 <p className="mt-2 text-sm text-gray-500">
-                  Optional: Helps us find the right business
+                  <strong>Required for chains with multiple locations.</strong> Helps us find the correct business.
                 </p>
               </div>
 
               <button
                 type="submit"
-                disabled={isSubmitting || !businessName}
+                disabled={isSubmitting || !businessName || !location}
                 className="w-full bg-blue-600 text-white py-3 px-6 rounded-lg font-semibold hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
               >
                 {isSubmitting ? 'Starting Analysis...' : 'Analyze My Reviews'}

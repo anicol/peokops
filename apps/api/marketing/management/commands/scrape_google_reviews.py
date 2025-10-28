@@ -90,10 +90,17 @@ class Command(BaseCommand):
 
             try:
                 # Search for the business on Google Maps
-                search_query = f"{business_name} {location}".strip()
+                # Put location first if provided to help Google prioritize the right city
+                if location:
+                    search_query = f"{business_name} {location}"
+                else:
+                    search_query = business_name
+
                 self.stdout.write(f'Searching for: {search_query}')
+                logger.info(f"Search query: '{search_query}'")
 
                 search_url = f"https://www.google.com/maps/search/{search_query.replace(' ', '+')}"
+                logger.info(f"Navigating to: {search_url}")
                 page.goto(search_url, timeout=60000)  # 60 second timeout
                 time.sleep(6)  # Wait for page to fully load
 
