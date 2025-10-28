@@ -47,6 +47,7 @@ export default function AccountPage() {
     name: brand?.name || '',
     description: brand?.description || '',
     industry: brand?.industry || '',
+    subtype: brand?.subtype || '',
     logo: brand?.logo || null,
     is_active: brand?.is_active ?? true,
   });
@@ -58,6 +59,7 @@ export default function AccountPage() {
         name: brand.name,
         description: brand.description,
         industry: brand.industry || '',
+        subtype: brand.subtype || '',
         logo: brand.logo,
         is_active: brand.is_active,
       });
@@ -218,7 +220,7 @@ export default function AccountPage() {
                   </label>
                   <select
                     value={formData.industry}
-                    onChange={(e) => setFormData({ ...formData, industry: e.target.value })}
+                    onChange={(e) => setFormData({ ...formData, industry: e.target.value, subtype: '' })}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
                   >
                     <option value="">Select an industry</option>
@@ -228,6 +230,54 @@ export default function AccountPage() {
                     <option value="OTHER">Other</option>
                   </select>
                 </div>
+
+                {formData.industry && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Business Type
+                    </label>
+                    <select
+                      value={formData.subtype}
+                      onChange={(e) => setFormData({ ...formData, subtype: e.target.value })}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
+                    >
+                      <option value="">Select a business type</option>
+                      {formData.industry === 'RESTAURANT' && (
+                        <>
+                          <option value="QSR">Quick Service / Fast Food</option>
+                          <option value="FAST_CASUAL">Fast Casual</option>
+                          <option value="CASUAL_DINING">Casual Dining</option>
+                          <option value="FINE_DINING">Fine Dining</option>
+                          <option value="CAFE">Cafe / Coffee Shop</option>
+                          <option value="BAR_PUB">Bar / Pub</option>
+                          <option value="FOOD_TRUCK">Food Truck</option>
+                          <option value="CATERING">Catering</option>
+                          <option value="BAKERY">Bakery / Dessert Shop</option>
+                        </>
+                      )}
+                      {formData.industry === 'RETAIL' && (
+                        <>
+                          <option value="GROCERY">Grocery Store</option>
+                          <option value="CONVENIENCE">Convenience Store</option>
+                          <option value="FASHION">Fashion Retail</option>
+                          <option value="OTHER_SUBTYPE">Other Retail</option>
+                        </>
+                      )}
+                      {formData.industry === 'HOSPITALITY' && (
+                        <>
+                          <option value="HOTEL">Hotel</option>
+                          <option value="OTHER_SUBTYPE">Other Hospitality</option>
+                        </>
+                      )}
+                      {formData.industry === 'OTHER' && (
+                        <option value="OTHER_SUBTYPE">Other</option>
+                      )}
+                    </select>
+                    <p className="text-xs text-gray-500 mt-1">
+                      Your micro-check templates are customized based on this type
+                    </p>
+                  </div>
+                )}
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
