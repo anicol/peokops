@@ -90,26 +90,59 @@ class Command(BaseCommand):
 
                 search_url = f"https://www.google.com/maps/search/{search_query.replace(' ', '+')}"
                 page.goto(search_url, timeout=60000)  # 60 second timeout
-                time.sleep(5)  # Wait for page to fully load
+                time.sleep(6)  # Wait for page to fully load
 
                 # Check if we found results
                 try:
                     # Wait for search results to appear
                     self.stdout.write('Waiting for search results...')
-                    page.wait_for_selector('div[role="feed"], div[role="main"]', timeout=15000)
-                    time.sleep(2)
+                    page.wait_for_selector('div[role="feed"], div[role="main"]', timeout=20000)
+                    time.sleep(3)
 
-                    # Click on the first result (it might auto-select, so this is optional)
-                    first_result = page.query_selector('a[href*="/maps/place/"], div[role="article"] a')
+                    # Try multiple selectors to find clickable business listings
+                    self.stdout.write('Looking for business listings...')
+                    first_result = None
+
+                    # Try different selectors for search results
+                    selectors = [
+                        'a[href*="/maps/place/"]',  # Direct place links
+                        'div[role="article"] a',    # Article wrapper links
+                        'a.hfpxzc',                 # Google Maps specific class
+                        'div[role="feed"] > div > div > a',  # Feed items
+                    ]
+
+                    for selector in selectors:
+                        first_result = page.query_selector(selector)
+                        if first_result:
+                            self.stdout.write(f'Found result with selector: {selector}')
+                            break
+
                     if first_result:
-                        self.stdout.write('Clicking on first result...')
+                        self.stdout.write('Clicking on first search result...')
                         first_result.click()
-                        time.sleep(3)
+                        time.sleep(4)  # Wait for business page to load
+                    else:
+                        self.stdout.write(self.style.WARNING('No clickable result found - checking if already on business page...'))
 
                     # Get business info
                     business_info = self.extract_business_info(page)
+
+                    # Validate we found a real business
+                    if business_info["name"] == "Unknown" or business_info["total_reviews"] == 0:
+                        self.stdout.write(self.style.ERROR('❌ Could not find valid business information'))
+                        self.stdout.write(f'Debug: name={business_info["name"]}, reviews={business_info["total_reviews"]}')
+
+                        # Take a screenshot for debugging (if not headless)
+                        if not headless:
+                            page.screenshot(path='debug_screenshot.png')
+                            self.stdout.write('Screenshot saved to debug_screenshot.png')
+
+                        browser.close()
+                        return None
+
                     self.stdout.write(self.style.SUCCESS(f'✓ Found: {business_info["name"]}'))
                     self.stdout.write(f'  Rating: {business_info["rating"]} ({business_info["total_reviews"]} reviews)')
+                    self.stdout.write(f'  Address: {business_info["address"]}')
 
                     # Click on reviews tab
                     self.stdout.write('\nNavigating to reviews...')
@@ -159,25 +192,66 @@ class Command(BaseCommand):
     def extract_business_info(self, page):
         """Extract business information from the page"""
         try:
-            name = page.query_selector('h1')
-            name_text = name.inner_text() if name else 'Unknown'
+            # Extract business name - try multiple selectors
+            name_text = 'Unknown'
+            name_selectors = ['h1', 'h1[class*="title"]', 'div[role="main"] h1']
+            for selector in name_selectors:
+                name_elem = page.query_selector(selector)
+                if name_elem:
+                    name_text = name_elem.inner_text().strip()
+                    if name_text and name_text != 'Unknown':
+                        break
 
-            rating_elem = page.query_selector('[aria-label*="stars" i]')
+            # Extract rating and review count
             rating = 0
             total_reviews = 0
 
+            # Try multiple selectors for rating info
+            rating_selectors = [
+                '[aria-label*="stars" i]',
+                'div[aria-label*="star" i]',
+                'span[role="img"][aria-label*="star" i]',
+            ]
+
+            rating_elem = None
+            for selector in rating_selectors:
+                rating_elem = page.query_selector(selector)
+                if rating_elem:
+                    break
+
             if rating_elem:
                 aria_label = rating_elem.get_attribute('aria-label')
-                rating_match = re.search(r'([\d.]+)\s*stars?', aria_label, re.IGNORECASE)
-                reviews_match = re.search(r'(\d+(?:,\d+)*)\s*reviews?', aria_label, re.IGNORECASE)
+                if aria_label:
+                    rating_match = re.search(r'([\d.]+)\s*stars?', aria_label, re.IGNORECASE)
+                    reviews_match = re.search(r'(\d+(?:,\d+)*)\s*reviews?', aria_label, re.IGNORECASE)
 
-                if rating_match:
-                    rating = float(rating_match.group(1))
-                if reviews_match:
-                    total_reviews = int(reviews_match.group(1).replace(',', ''))
+                    if rating_match:
+                        rating = float(rating_match.group(1))
+                    if reviews_match:
+                        total_reviews = int(reviews_match.group(1).replace(',', ''))
 
-            address_elem = page.query_selector('button[data-item-id="address"]')
-            address = address_elem.inner_text() if address_elem else ''
+            # If we didn't find reviews in aria-label, try finding review count text
+            if total_reviews == 0:
+                review_count_elem = page.query_selector('button:has-text("reviews"), span:has-text("reviews")')
+                if review_count_elem:
+                    text = review_count_elem.inner_text()
+                    reviews_match = re.search(r'(\d+(?:,\d+)*)\s*reviews?', text, re.IGNORECASE)
+                    if reviews_match:
+                        total_reviews = int(reviews_match.group(1).replace(',', ''))
+
+            # Extract address
+            address = ''
+            address_selectors = [
+                'button[data-item-id="address"]',
+                'button[data-tooltip*="address" i]',
+                'div[data-item-id="address"]'
+            ]
+
+            for selector in address_selectors:
+                address_elem = page.query_selector(selector)
+                if address_elem:
+                    address = address_elem.inner_text().strip()
+                    break
 
             return {
                 'name': name_text,
@@ -185,7 +259,8 @@ class Command(BaseCommand):
                 'total_reviews': total_reviews,
                 'address': address
             }
-        except:
+        except Exception as e:
+            print(f"Error extracting business info: {e}")
             return {
                 'name': 'Unknown',
                 'rating': 0,
