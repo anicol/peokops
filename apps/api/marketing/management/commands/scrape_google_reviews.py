@@ -8,9 +8,12 @@ Usage:
 import json
 import time
 import re
+import logging
 from datetime import datetime
 from django.core.management.base import BaseCommand
 from playwright.sync_api import sync_playwright, TimeoutError as PlaywrightTimeout
+
+logger = logging.getLogger(__name__)
 
 
 class Command(BaseCommand):
@@ -70,14 +73,20 @@ class Command(BaseCommand):
                 json.dump(full_data, f, indent=2)
             self.stdout.write(self.style.SUCCESS(f'✓ Full analysis saved to {analysis_output}'))
 
-    def scrape_reviews(self, business_name, location, max_reviews, headless):
-        """Scrape reviews using Playwright browser automation"""
+    def scrape_reviews(self, business_name, location, max_reviews, headless, progress_callback=None):
+        """Scrape reviews using Playwright browser automation
+
+        Args:
+            business_name: Name of the business to search for
+            location: Location to search in
+            max_reviews: Maximum number of reviews to scrape
+            headless: Whether to run in headless mode
+            progress_callback: Optional callback function(message, percentage) for progress updates
+        """
 
         with sync_playwright() as p:
             # Launch browser
             self.stdout.write('Launching browser...')
-            import logging
-            logger = logging.getLogger(__name__)
             logger.info("Starting Playwright browser...")
 
             browser = p.chromium.launch(headless=headless)
@@ -101,17 +110,63 @@ class Command(BaseCommand):
 
                 search_url = f"https://www.google.com/maps/search/{search_query.replace(' ', '+')}"
                 logger.info(f"Navigating to: {search_url}")
-                page.goto(search_url, timeout=60000)  # 60 second timeout
-                time.sleep(6)  # Wait for page to fully load
+
+                try:
+                    page.goto(search_url, timeout=60000)  # 60 second timeout
+                    logger.info(f"Page loaded, current URL: {page.url}")
+                except Exception as e:
+                    logger.error(f"Failed to navigate to search URL: {str(e)}")
+                    browser.close()
+                    return None
+
+                time.sleep(8)  # Wait for page to fully load and animations
+
+                # Check if Google is blocking us
+                page_content = page.content()
+                if 'unusual traffic' in page_content.lower() or 'captcha' in page_content.lower():
+                    logger.error("Google detected unusual traffic or showing CAPTCHA")
+                    self.stdout.write(self.style.ERROR('Google is blocking automated access. Try again later.'))
+                    browser.close()
+                    return None
 
                 # Check if we found results
                 try:
                     # Wait for search results to appear
                     self.stdout.write('Waiting for search results...')
                     logger.info(f"Waiting for search results to load...")
-                    page.wait_for_selector('div[role="feed"], div[role="main"]', timeout=20000)
-                    logger.info("Search results loaded")
-                    time.sleep(3)
+
+                    # Try multiple selectors with longer timeouts
+                    selectors_to_try = [
+                        ('div[role="main"]', 15000),
+                        ('div.m6QErb', 15000),
+                        ('#QA0Szd', 15000),
+                        ('div[role="feed"]', 15000),
+                        ('a[href*="/maps/place/"]', 15000),  # Direct place links
+                    ]
+
+                    result_found = False
+                    for selector, timeout in selectors_to_try:
+                        try:
+                            page.wait_for_selector(selector, timeout=timeout, state='visible')
+                            logger.info(f"Search results loaded using selector: {selector}")
+                            result_found = True
+                            break
+                        except Exception as e:
+                            logger.debug(f"Selector {selector} failed: {str(e)[:100]}")
+                            continue
+
+                    if not result_found:
+                        logger.error("Could not find search results with any selector")
+                        # Take screenshot for debugging
+                        try:
+                            screenshot_path = f"/tmp/maps_error_{int(time.time())}.png"
+                            page.screenshot(path=screenshot_path)
+                            logger.info(f"Screenshot saved to {screenshot_path}")
+                        except:
+                            pass
+                        raise PlaywrightTimeout("No search results found")
+
+                    time.sleep(4)
 
                     # Try multiple selectors to find clickable business listings
                     self.stdout.write('Looking for business listings...')
@@ -171,30 +226,43 @@ class Command(BaseCommand):
                     self.stdout.write(self.style.SUCCESS(f'✓ Found: {business_info["name"]}'))
                     self.stdout.write(f'  Rating: {business_info["rating"]} ({business_info["total_reviews"]} reviews)')
                     self.stdout.write(f'  Address: {business_info["address"]}')
+                    logger.info(f"Successfully validated business: {business_info['name']} with {business_info['total_reviews']} reviews")
 
                     # Click on reviews tab
                     self.stdout.write('\nNavigating to reviews...')
+                    logger.info("Looking for reviews button...")
                     reviews_button = page.query_selector('button[aria-label*="reviews" i], button:has-text("Reviews")')
                     if reviews_button:
+                        logger.info("Found reviews button, clicking...")
                         reviews_button.click()
                         time.sleep(2)
+                        logger.info("Clicked reviews button")
+                    else:
+                        logger.warning("Reviews button not found - may already be on reviews")
 
                     # Sort by newest (optional but helpful)
                     try:
+                        logger.info("Looking for sort button...")
                         sort_button = page.query_selector('button[aria-label*="Sort" i]')
                         if sort_button:
+                            logger.info("Found sort button, clicking...")
                             sort_button.click()
                             time.sleep(1)
                             newest_option = page.query_selector('div[role="menuitemradio"]:has-text("Newest")')
                             if newest_option:
+                                logger.info("Selecting 'Newest' sort option...")
                                 newest_option.click()
                                 time.sleep(2)
-                    except:
+                    except Exception as e:
+                        logger.warning(f"Error with sort button: {e}")
                         pass
 
                     # Scrape reviews
                     self.stdout.write(f'Scrolling to load reviews (max {max_reviews})...')
-                    reviews = self.scroll_and_extract_reviews(page, max_reviews)
+                    logger.info(f"Starting to scroll and extract reviews (max {max_reviews})...")
+                    logger.info(f"About to call scroll_and_extract_reviews with page={type(page)}, max_reviews={max_reviews}")
+                    reviews = self.scroll_and_extract_reviews(page, max_reviews, progress_callback)
+                    logger.info(f"scroll_and_extract_reviews returned: type={type(reviews)}, value={reviews if reviews is None else f'list with {len(reviews)} items'}")
 
                     browser.close()
 
@@ -207,13 +275,23 @@ class Command(BaseCommand):
                         'reviews': reviews
                     }
 
-                except PlaywrightTimeout:
+                except PlaywrightTimeout as e:
                     self.stdout.write(self.style.WARNING('Timeout waiting for results'))
+                    logger.error(f"Playwright timeout waiting for search results: {str(e)}", exc_info=True)
+
+                    # Try to capture current page state for debugging
+                    try:
+                        current_url = page.url
+                        logger.error(f"Current page URL when timeout occurred: {current_url}")
+                    except:
+                        pass
+
                     browser.close()
                     return None
 
             except Exception as e:
                 self.stdout.write(self.style.ERROR(f'Error: {str(e)}'))
+                logger.error(f"Unexpected error during scraping: {str(e)}", exc_info=True)
                 browser.close()
                 return None
 
@@ -321,74 +399,107 @@ class Command(BaseCommand):
                 'address': ''
             }
 
-    def scroll_and_extract_reviews(self, page, max_reviews):
+    def scroll_and_extract_reviews(self, page, max_reviews, progress_callback=None):
         """Scroll through reviews and extract data"""
-        reviews = []
-        seen_review_texts = set()  # Avoid duplicates
-        last_review_count = 0
-        no_new_reviews_count = 0
+        logger.info("=== SCROLL_AND_EXTRACT_REVIEWS FUNCTION ENTRY v2 ===")
+        logger.info(f"Parameters: page={type(page)}, max_reviews={max_reviews}")
+        try:
+            reviews = []
+            seen_review_texts = set()  # Avoid duplicates
+            last_review_count = 0
+            no_new_reviews_count = 0
 
-        # Find the scrollable reviews container
-        reviews_container = page.query_selector('[role="main"] div[role="feed"], div[aria-label*="Reviews" i]')
-        if not reviews_container:
-            # Try alternative selector
-            reviews_container = page.query_selector('div[class*="review" i]')
+            # Find the scrollable reviews container
+            logger.info("Looking for scrollable reviews container...")
+            reviews_container = page.query_selector('[role="main"] div[role="feed"], div[aria-label*="Reviews" i]')
+            if not reviews_container:
+                logger.warning("Main reviews container not found, trying alternative selector...")
+                # Try alternative selector
+                reviews_container = page.query_selector('div[class*="review" i]')
 
-        scroll_attempts = 0
-        max_scroll_attempts = 100
-
-        while len(reviews) < max_reviews and scroll_attempts < max_scroll_attempts:
-            # Extract current reviews on page
-            review_elements = page.query_selector_all('[data-review-id], div[data-review-id]')
-
-            if not review_elements:
-                # Try alternative selector for review elements
-                review_elements = page.query_selector_all('div[jslog*="review"]')
-
-            for elem in review_elements:
-                if len(reviews) >= max_reviews:
-                    break
-
-                try:
-                    review_data = self.extract_review_data(elem, page)
-
-                    # Avoid duplicates
-                    review_text_signature = f"{review_data['author']}_{review_data['text'][:50]}"
-                    if review_text_signature not in seen_review_texts:
-                        reviews.append(review_data)
-                        seen_review_texts.add(review_text_signature)
-                except Exception as e:
-                    continue
-
-            # Check if we got new reviews
-            if len(reviews) == last_review_count:
-                no_new_reviews_count += 1
-                if no_new_reviews_count >= 3:
-                    self.stdout.write(f'\nNo new reviews found after {no_new_reviews_count} scroll attempts')
-                    break
+            if reviews_container:
+                logger.info("Found reviews container")
             else:
-                no_new_reviews_count = 0
-                self.stdout.write(f'\rScraped {len(reviews)} reviews...', ending='')
+                logger.warning("No reviews container found - will try to scroll anyway")
 
-            last_review_count = len(reviews)
+            scroll_attempts = 0
+            max_scroll_attempts = 100
 
-            # Scroll down - find the scrollable element fresh each time to avoid stale handles
-            try:
-                # Re-query the scrollable container to avoid stale element references
-                fresh_container = page.query_selector('[role="main"] div[role="feed"], div[aria-label*="Reviews" i]')
-                if fresh_container:
-                    page.evaluate('(element) => element.scrollBy(0, 1000)', fresh_container)
+            while len(reviews) < max_reviews and scroll_attempts < max_scroll_attempts:
+                # Extract current reviews on page
+                review_elements = page.query_selector_all('[data-review-id], div[data-review-id]')
+                logger.info(f"Scroll attempt {scroll_attempts + 1}: Found {len(review_elements)} review elements with [data-review-id]")
+
+                if not review_elements:
+                    # Try alternative selector for review elements
+                    review_elements = page.query_selector_all('div[jslog*="review"]')
+                    logger.info(f"Trying alternative selector: Found {len(review_elements)} review elements with [jslog*='review']")
+
+                for elem in review_elements:
+                    if len(reviews) >= max_reviews:
+                        break
+
+                    try:
+                        review_data = self.extract_review_data(elem, page)
+
+                        # Avoid duplicates
+                        review_text_signature = f"{review_data['author']}_{review_data['text'][:50]}"
+                        if review_text_signature not in seen_review_texts:
+                            reviews.append(review_data)
+                            seen_review_texts.add(review_text_signature)
+                    except Exception as e:
+                        logger.debug(f"Error extracting review data: {e}")
+                        continue
+
+                logger.info(f"After extraction: Total reviews collected = {len(reviews)}")
+
+                # Check if we got new reviews
+                if len(reviews) == last_review_count:
+                    no_new_reviews_count += 1
+                    logger.info(f"No new reviews this iteration. Count: {no_new_reviews_count}/5")
+                    if no_new_reviews_count >= 5:
+                        logger.warning(f'No new reviews found after {no_new_reviews_count} scroll attempts - stopping')
+                        self.stdout.write(f'\nNo new reviews found after {no_new_reviews_count} scroll attempts')
+                        break
                 else:
+                    no_new_reviews_count = 0
+                    logger.info(f"Found {len(reviews) - last_review_count} new reviews this iteration")
+                    self.stdout.write(f'\rScraped {len(reviews)} reviews...', ending='')
+
+                    # Call progress callback if provided
+                    if progress_callback:
+                        # Calculate progress: 30% + (45% of completion based on reviews scraped)
+                        progress_pct = min(30 + int((len(reviews) / max_reviews) * 15), 45)
+                        progress_callback(
+                            f'📥 Loading reviews from Google... Found {len(reviews)} reviews so far...',
+                            progress_pct
+                        )
+
+                last_review_count = len(reviews)
+
+                # Scroll down - find the scrollable element fresh each time to avoid stale handles
+                try:
+                    # Re-query the scrollable container to avoid stale element references
+                    fresh_container = page.query_selector('[role="main"] div[role="feed"], div[aria-label*="Reviews" i]')
+                    if fresh_container:
+                        page.evaluate('(element) => element.scrollBy(0, 1000)', fresh_container)
+                    else:
+                        page.evaluate('window.scrollBy(0, 1000)')
+                except Exception as e:
+                    # If scrolling fails, try window scroll as fallback
                     page.evaluate('window.scrollBy(0, 1000)')
-            except Exception as e:
-                # If scrolling fails, try window scroll as fallback
-                page.evaluate('window.scrollBy(0, 1000)')
 
-            time.sleep(1.5)  # Be respectful with rate limiting
-            scroll_attempts += 1
+                time.sleep(2.5)  # Increased wait time to let reviews load
+                scroll_attempts += 1
 
-        self.stdout.write(f'\n✓ Scraped {len(reviews)} reviews')
-        return reviews
+            logger.info(f"Scroll loop completed. Total reviews: {len(reviews)}, Scroll attempts: {scroll_attempts}")
+            self.stdout.write(f'\n✓ Scraped {len(reviews)} reviews')
+            logger.info(f"Returning {len(reviews)} reviews from scroll_and_extract_reviews()")
+            return reviews
+
+        except Exception as e:
+            logger.error(f"Exception in scroll_and_extract_reviews: {str(e)}", exc_info=True)
+            return []
 
     def extract_review_data(self, elem, page):
         """Extract data from a single review element"""

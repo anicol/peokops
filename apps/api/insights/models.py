@@ -48,6 +48,8 @@ class ReviewAnalysis(models.Model):
     google_address = models.CharField(max_length=500, blank=True)
     total_reviews_found = models.IntegerField(null=True, blank=True)
     reviews_analyzed = models.IntegerField(null=True, blank=True)
+    oldest_review_date = models.DateTimeField(null=True, blank=True)
+    newest_review_date = models.DateTimeField(null=True, blank=True)
 
     # Error tracking
     error_message = models.TextField(blank=True)
@@ -88,21 +90,229 @@ class ReviewAnalysis(models.Model):
             self.viewed_at = timezone.now()
             self.save(update_fields=['viewed_at'])
 
-    def mark_converted(self, brand):
+    def mark_converted(self, user, account=None):
         """
-        Mark as converted to trial and link to brand.
+        Mark as converted to trial and auto-populate account with review data.
 
         Args:
-            brand: Brand instance (note: stored in self.account field for historical reasons)
-        """
-        if not self.converted_to_trial:
-            self.converted_to_trial = True
-            self.converted_at = timezone.now()
-            self.account = brand
-            self.save(update_fields=['converted_to_trial', 'converted_at', 'account'])
+            user: User instance who is converting
+            account: Optional Account instance (if None, will create from analysis data)
 
-            # Automatically migrate scraped reviews to integrations
-            self.migrate_reviews_to_integrations()
+        Returns:
+            tuple: (brand, account, store) - The created/updated entities
+        """
+        if self.converted_to_trial:
+            # Already converted, return existing entities
+            brand = self.account
+            account = brand.accounts.first() if brand else None
+            store = account.stores.first() if account else None
+            return (brand, account, store)
+
+        from brands.models import Brand, Store
+        from accounts.models import Account
+        import re
+
+        # Check if user already has a trial brand from a previous conversion
+        # This prevents duplicate key errors when clicking conversion link multiple times
+        existing_brand = None
+        if hasattr(user, 'account') and user.account:
+            existing_brand = user.account.brand
+
+        if existing_brand:
+            # User already converted previously, use existing brand/account/store
+            brand = existing_brand
+            account = user.account
+            store = user.store if hasattr(user, 'store') and user.store else account.stores.first()
+        else:
+            # First time conversion, create new entities
+            # Parse business name into brand name (remove location-specific parts)
+            brand_name = self._parse_brand_name(self.business_name)
+
+            # Create trial brand
+            brand = Brand.create_trial_brand(user)
+            brand.name = brand_name
+            brand.industry = Brand.Industry.RESTAURANT  # Default to restaurant
+            brand.save()
+
+            # Create account for the user
+            if not account:
+                account = Account.objects.create(
+                    name=f"{brand_name} - {user.first_name or user.username}'s Account",
+                    brand=brand,
+                    owner=user,
+                    is_active=True
+                )
+                user.account = account
+                user.save()
+
+            # Parse location into city, state
+            city, state = self._parse_location(self.location)
+
+            # Create store
+            store_code = self._generate_store_code(brand_name, city)
+            store = Store.objects.create(
+                account=account,
+                brand=brand,
+                name=f"{city}, {state}" if city and state else self.location or "Main Location",
+                code=store_code,
+                address=self.google_address or self.location or "",
+                city=city or "",
+                state=state or "",
+                zip_code="",
+                is_active=True
+            )
+
+            # Link user to store
+            user.store = store
+            user.save()
+
+        # Mark as converted
+        self.converted_to_trial = True
+        self.converted_at = timezone.now()
+        self.account = brand  # Historical field name
+        self.save(update_fields=['converted_to_trial', 'converted_at', 'account'])
+
+        # Create micro-check templates from suggestions (only if we have suggestions)
+        # This allows multiple review analyses to contribute templates
+        self._create_microcheck_templates(brand, user)
+
+        # Migrate scraped reviews to integrations
+        self.migrate_reviews_to_integrations()
+
+        return (brand, account, store)
+
+    def _parse_brand_name(self, business_name):
+        """Parse brand name from business name, removing location suffixes"""
+        import re
+
+        if not business_name:
+            return "My Restaurant"
+
+        # Remove common location suffixes like "- City", "City Location", etc.
+        patterns = [
+            r'\s*-\s*[A-Z][a-z]+,?\s*[A-Z]{2}$',  # "- Independence, OH"
+            r'\s*-\s*[A-Z][a-z]+$',                # "- Independence"
+            r'\s+[A-Z][a-z]+,?\s*[A-Z]{2}$',      # "Independence, OH"
+        ]
+
+        clean_name = business_name
+        for pattern in patterns:
+            clean_name = re.sub(pattern, '', clean_name).strip()
+
+        return clean_name or business_name
+
+    def _parse_location(self, location_str):
+        """Parse city and state from location string"""
+        import re
+
+        if not location_str:
+            return (None, None)
+
+        # Try to match "City, ST" pattern
+        match = re.search(r'([A-Za-z\s]+),\s*([A-Z]{2})', location_str)
+        if match:
+            return (match.group(1).strip(), match.group(2))
+
+        # Try to match just state code
+        match = re.search(r'\b([A-Z]{2})\b', location_str)
+        if match:
+            return (None, match.group(1))
+
+        # Fallback: use the whole string as city
+        return (location_str.strip(), None)
+
+    def _generate_store_code(self, brand_name, city):
+        """Generate a unique store code"""
+        import re
+        import random
+
+        # Take first 3 letters of brand, first 2 of city, plus random 3 digits
+        brand_part = re.sub(r'[^A-Z]', '', brand_name.upper())[:3] or 'STR'
+        city_part = re.sub(r'[^A-Z]', '', (city or '').upper())[:2] or 'XX'
+        random_part = f"{random.randint(100, 999)}"
+
+        return f"{brand_part}{city_part}{random_part}"
+
+    def _create_microcheck_templates(self, brand, user):
+        """Create micro-check templates from AI suggestions"""
+        from micro_checks.models import MicroCheckTemplate
+        from inspections.models import Finding
+        import logging
+
+        logger = logging.getLogger(__name__)
+
+        if not self.micro_check_suggestions:
+            logger.info("No micro-check suggestions to create templates from")
+            return
+
+        templates_created = 0
+
+        for suggestion in self.micro_check_suggestions:
+            try:
+                # Map category string to Finding.Category choices
+                # AI-generated categories from review analysis are mapped to valid Finding categories
+                category_map = {
+                    'FOOD_SAFETY': Finding.Category.FOOD_SAFETY,
+                    'CLEANLINESS': Finding.Category.CLEANLINESS,
+                    'SERVICE': Finding.Category.STAFF_BEHAVIOR,  # Service issues -> Staff behavior
+                    'AMBIANCE': Finding.Category.CLEANLINESS,    # Ambiance often relates to cleanliness
+                    'COMPLIANCE': Finding.Category.OPERATIONAL,  # Compliance -> Operational
+                    'EQUIPMENT': Finding.Category.EQUIPMENT,
+                    'SAFETY': Finding.Category.SAFETY,
+                    'STAFF_BEHAVIOR': Finding.Category.STAFF_BEHAVIOR,
+                    'OPERATIONAL': Finding.Category.OPERATIONAL,
+                    'FOOD_QUALITY': Finding.Category.FOOD_QUALITY,
+                    'OTHER': Finding.Category.OTHER,
+                }
+
+                category = category_map.get(
+                    suggestion.get('category', 'OTHER'),
+                    Finding.Category.OTHER  # Default to OTHER if category not recognized
+                )
+
+                # Map severity
+                severity_map = {
+                    'CRITICAL': Finding.Severity.CRITICAL,
+                    'HIGH': Finding.Severity.HIGH,
+                    'MEDIUM': Finding.Severity.MEDIUM,
+                    'LOW': Finding.Severity.LOW,
+                }
+
+                severity = severity_map.get(
+                    suggestion.get('severity', 'MEDIUM'),
+                    Finding.Severity.MEDIUM
+                )
+
+                # Create template
+                template = MicroCheckTemplate.objects.create(
+                    brand=brand,
+                    category=category,
+                    severity=severity,
+                    title=suggestion.get('title', 'Untitled Check'),
+                    description=suggestion.get('description', suggestion.get('question', '')),
+                    success_criteria=suggestion.get('success_criteria', 'Check passes inspection'),
+                    source='google_reviews',
+                    metadata={
+                        'review_analysis_id': str(self.id),
+                        'business_name': self.business_name,
+                        'mentions_in_reviews': suggestion.get('mentions_in_reviews', 0),
+                        'generated_from': 'ai_review_analysis',
+                    },
+                    include_in_rotation=True,
+                    rotation_priority=70,  # Higher priority for review-based checks
+                    is_active=True,
+                    created_by=user,
+                )
+
+                templates_created += 1
+                logger.info(f"Created micro-check template: {template.title}")
+
+            except Exception as e:
+                logger.error(f"Failed to create micro-check template: {e}")
+                continue
+
+        logger.info(f"Created {templates_created} micro-check templates from review analysis")
+        return templates_created
 
     def migrate_reviews_to_integrations(self):
         """
@@ -251,3 +461,34 @@ class ReviewAnalysis(models.Model):
             'neutral_count': neutral,
             'total': total
         }
+
+    @property
+    def review_timeframe(self):
+        """Get human-readable timeframe of reviews"""
+        if not self.oldest_review_date or not self.newest_review_date:
+            return None
+
+        from django.utils import timezone
+        from datetime import timedelta
+
+        # Calculate age of oldest review
+        now = timezone.now()
+        oldest_age = now - self.oldest_review_date
+        newest_age = now - self.newest_review_date
+
+        # Determine timeframe description
+        if oldest_age.days < 7:
+            return "Last week"
+        elif oldest_age.days < 31:
+            return "Last month"
+        elif oldest_age.days < 90:
+            weeks = oldest_age.days // 7
+            return f"Last {weeks} weeks"
+        elif oldest_age.days < 365:
+            months = oldest_age.days // 30
+            return f"Last {months} months"
+        elif oldest_age.days < 730:
+            return "Last year"
+        else:
+            years = oldest_age.days // 365
+            return f"Last {years} years"

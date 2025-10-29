@@ -7,9 +7,13 @@ Usage:
 """
 import requests
 import json
+import boto3
 from collections import Counter
 from django.core.management.base import BaseCommand
 from django.conf import settings
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 class Command(BaseCommand):
@@ -207,6 +211,225 @@ class Command(BaseCommand):
             self.stdout.write(self.style.ERROR(f'API Error: {str(e)}'))
             return None
 
+    def analyze_review_trends(self, reviews):
+        """Analyze how ratings and sentiment change over time"""
+        from datetime import datetime, timedelta
+        from django.utils import timezone
+
+        if not reviews:
+            return None
+
+        # Parse timestamps and sort reviews chronologically
+        reviews_with_dates = []
+        now = timezone.now()
+
+        for review in reviews:
+            timestamp = review.get('timestamp')
+            if timestamp and isinstance(timestamp, int) and timestamp > 0:
+                # Unix timestamp from API
+                review_date = datetime.fromtimestamp(timestamp, tz=timezone.get_current_timezone())
+            else:
+                # Parse relative time from web scraping
+                time_text = review.get('time', '')
+                review_date = self.parse_relative_time_for_trends(time_text, now)
+
+            if review_date:
+                reviews_with_dates.append({
+                    'date': review_date,
+                    'rating': review.get('rating', 0),
+                    'text': review.get('text', '')
+                })
+
+        if not reviews_with_dates:
+            return None
+
+        # Sort by date
+        reviews_with_dates.sort(key=lambda x: x['date'])
+
+        # Determine time grouping based on date range
+        oldest = reviews_with_dates[0]['date']
+        newest = reviews_with_dates[-1]['date']
+        date_range_days = (newest - oldest).days
+
+        # Choose grouping: weekly for <3 months, monthly for >3 months
+        if date_range_days < 90:
+            period_days = 7  # Weekly
+            period_label = 'week'
+        else:
+            period_days = 30  # Monthly
+            period_label = 'month'
+
+        # Group reviews by time period
+        period_data = {}
+
+        for review in reviews_with_dates:
+            # Calculate period key (e.g., "2024-W01" or "2024-01")
+            if period_days == 7:
+                # Weekly: use ISO week
+                period_key = review['date'].strftime('%Y-W%U')
+                period_display = review['date'].strftime('%b %d')
+            else:
+                # Monthly: use year-month
+                period_key = review['date'].strftime('%Y-%m')
+                period_display = review['date'].strftime('%b %Y')
+
+            if period_key not in period_data:
+                period_data[period_key] = {
+                    'period': period_display,
+                    'ratings': [],
+                    'positive_count': 0,
+                    'negative_count': 0,
+                    'neutral_count': 0
+                }
+
+            rating = review['rating']
+            period_data[period_key]['ratings'].append(rating)
+
+            # Count sentiment
+            if rating >= 4:
+                period_data[period_key]['positive_count'] += 1
+            elif rating <= 2:
+                period_data[period_key]['negative_count'] += 1
+            else:
+                period_data[period_key]['neutral_count'] += 1
+
+        # Calculate averages and format for charting
+        trend_series = []
+        for period_key in sorted(period_data.keys()):
+            data = period_data[period_key]
+            total = len(data['ratings'])
+            avg_rating = sum(data['ratings']) / total if total > 0 else 0
+
+            trend_series.append({
+                'period': data['period'],
+                'average_rating': round(avg_rating, 2),
+                'total_reviews': total,
+                'positive_percentage': round((data['positive_count'] / total * 100), 1) if total > 0 else 0,
+                'negative_percentage': round((data['negative_count'] / total * 100), 1) if total > 0 else 0,
+                'neutral_percentage': round((data['neutral_count'] / total * 100), 1) if total > 0 else 0,
+            })
+
+        return {
+            'series': trend_series,
+            'period_type': period_label,
+            'total_periods': len(trend_series)
+        }
+
+    def parse_relative_time_for_trends(self, time_text, reference_time):
+        """Parse relative time for trend analysis"""
+        import re
+
+        if not time_text or not isinstance(time_text, str):
+            return None
+
+        time_text = time_text.lower().strip()
+
+        patterns = [
+            (r'(\d+)\s*day', 'days'),
+            (r'(\d+)\s*week', 'weeks'),
+            (r'(\d+)\s*month', 'months'),
+            (r'(\d+)\s*year', 'years'),
+            (r'a\s+day', 'days'),
+            (r'a\s+week', 'weeks'),
+            (r'a\s+month', 'months'),
+            (r'a\s+year', 'years'),
+        ]
+
+        for pattern, unit in patterns:
+            match = re.search(pattern, time_text)
+            if match:
+                try:
+                    number = int(match.group(1))
+                except (IndexError, ValueError):
+                    number = 1
+
+                if unit == 'days':
+                    delta = timedelta(days=number)
+                elif unit == 'weeks':
+                    delta = timedelta(weeks=number)
+                elif unit == 'months':
+                    delta = timedelta(days=number * 30)
+                elif unit == 'years':
+                    delta = timedelta(days=number * 365)
+                else:
+                    continue
+
+                return reference_time - delta
+
+        return None
+
+    def analyze_reviews_with_ai(self, reviews):
+        """Use AI to analyze reviews for deeper insights"""
+        try:
+            # Initialize Bedrock client
+            bedrock = boto3.client('bedrock-runtime', region_name='us-east-1')
+
+            # Prepare review samples for AI (limit to avoid token limits)
+            review_samples = []
+            for review in reviews[:50]:  # Analyze up to 50 reviews for efficiency
+                review_samples.append(f"Rating: {review.get('rating', 0)}/5\n{review.get('text', '')}")
+
+            reviews_text = "\n\n---\n\n".join(review_samples)
+
+            prompt = f"""Analyze these customer reviews for a hospitality business and provide actionable operational insights.
+
+REVIEWS:
+{reviews_text}
+
+Please provide a JSON response with this structure:
+{{
+  "key_issues": [
+    {{
+      "theme": "Brief theme name (e.g., 'Food Temperature Issues')",
+      "severity": "HIGH|MEDIUM|LOW",
+      "mentions": 5,
+      "summary": "2-sentence description of the issue",
+      "examples": [
+        {{"snippet": "relevant quote from review", "rating": 2}}
+      ]
+    }}
+  ],
+  "operational_themes": {{
+    "cleanliness": {{"count": 0, "sentiment": "positive|negative|mixed", "examples": [{{"snippet": "...", "rating": 4}}]}},
+    "service_speed": {{"count": 0, "sentiment": "positive|negative|mixed", "examples": []}},
+    "food_quality": {{"count": 0, "sentiment": "positive|negative|mixed", "examples": []}},
+    "staff_attitude": {{"count": 0, "sentiment": "positive|negative|mixed", "examples": []}},
+    "wait_time": {{"count": 0, "sentiment": "positive|negative|mixed", "examples": []}},
+    "temperature": {{"count": 0, "sentiment": "positive|negative|mixed", "examples": []}},
+    "accuracy": {{"count": 0, "sentiment": "positive|negative|mixed", "examples": []}},
+    "ambiance": {{"count": 0, "sentiment": "positive|negative|mixed", "examples": []}}
+  }}
+}}
+
+Focus on identifying specific, actionable operational issues that could be addressed with daily checks."""
+
+            # Call Claude via Bedrock
+            response = bedrock.invoke_model(
+                modelId='anthropic.claude-3-5-sonnet-20240620-v1:0',
+                body=json.dumps({
+                    "anthropic_version": "bedrock-2023-05-31",
+                    "max_tokens": 4000,
+                    "messages": [
+                        {
+                            "role": "user",
+                            "content": prompt
+                        }
+                    ]
+                })
+            )
+
+            response_body = json.loads(response['body'].read())
+            ai_analysis = json.loads(response_body['content'][0]['text'])
+
+            logger.info("AI analysis completed successfully")
+            return ai_analysis
+
+        except Exception as e:
+            logger.error(f"Error in AI analysis: {str(e)}")
+            # Fall back to keyword-based analysis
+            logger.info("Falling back to keyword-based analysis")
+            return None
+
     def analyze_reviews(self, reviews):
         """Analyze reviews to extract operational insights"""
         insights = {
@@ -227,6 +450,16 @@ class Command(BaseCommand):
             'negative_reviews': [],
             'positive_reviews': []
         }
+
+        # Try AI analysis first
+        ai_insights = self.analyze_reviews_with_ai(reviews)
+        if ai_insights:
+            # Merge AI insights with basic stats
+            insights['operational_themes'] = ai_insights.get('operational_themes', insights['operational_themes'])
+            insights['key_issues'] = ai_insights.get('key_issues', [])
+
+        # Add time-series trend analysis
+        insights['trend_data'] = self.analyze_review_trends(reviews)
 
         # Keywords for each operational theme
         theme_keywords = {
@@ -279,8 +512,75 @@ class Command(BaseCommand):
                 return f"...{snippet}..."
         return text[:100]
 
+    def generate_microcheck_suggestions_with_ai(self, insights):
+        """Use AI to generate highly relevant micro-check suggestions"""
+        try:
+            bedrock = boto3.client('bedrock-runtime', region_name='us-east-1')
+
+            # Prepare key issues for context
+            key_issues_text = ""
+            if 'key_issues' in insights:
+                for issue in insights['key_issues'][:5]:
+                    key_issues_text += f"- {issue.get('theme')}: {issue.get('summary', '')}\n"
+
+            prompt = f"""Based on these customer review insights for a hospitality business, generate 5-7 specific micro-check questions that staff should perform daily to prevent these issues.
+
+KEY ISSUES IDENTIFIED:
+{key_issues_text}
+
+OPERATIONAL THEMES:
+{json.dumps(insights.get('operational_themes', {}), indent=2)}
+
+Generate a JSON array of micro-check suggestions with this structure:
+[
+  {{
+    "title": "Clear, actionable title (e.g., 'Food Temperature Verification')",
+    "question": "Specific yes/no question staff should check (e.g., 'Is all hot food being served above 140°F?')",
+    "success_criteria": "Clear, measurable criteria for passing this check",
+    "category": "CLEANLINESS|FOOD_SAFETY|SERVICE|AMBIANCE",
+    "severity": "CRITICAL|HIGH|MEDIUM|LOW",
+    "mentions_in_reviews": 5
+  }}
+]
+
+Focus on:
+1. Specific, daily-checkable items (not vague or subjective)
+2. Issues that customers actually mentioned
+3. Preventable operational problems
+4. Clear pass/fail criteria"""
+
+            response = bedrock.invoke_model(
+                modelId='anthropic.claude-3-5-sonnet-20240620-v1:0',
+                body=json.dumps({
+                    "anthropic_version": "bedrock-2023-05-31",
+                    "max_tokens": 3000,
+                    "messages": [
+                        {
+                            "role": "user",
+                            "content": prompt
+                        }
+                    ]
+                })
+            )
+
+            response_body = json.loads(response['body'].read())
+            ai_suggestions = json.loads(response_body['content'][0]['text'])
+
+            logger.info(f"AI generated {len(ai_suggestions)} micro-check suggestions")
+            return ai_suggestions
+
+        except Exception as e:
+            logger.error(f"Error generating AI micro-checks: {str(e)}")
+            return None
+
     def generate_microcheck_suggestions(self, insights):
         """Generate micro-check questions based on insights"""
+        # Try AI-powered generation first
+        ai_suggestions = self.generate_microcheck_suggestions_with_ai(insights)
+        if ai_suggestions:
+            return ai_suggestions
+
+        # Fallback to keyword-based suggestions
         suggestions = []
 
         themes = insights['operational_themes']

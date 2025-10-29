@@ -877,6 +877,21 @@ export const insightsAPI = {
     });
     return response.data;
   },
+
+  // Share analysis via email
+  shareAnalysis: async (
+    analysisId: string,
+    data: {
+      recipient_email: string;
+      recipient_name?: string;
+      sender_message?: string;
+    }
+  ): Promise<{ message: string }> => {
+    const response = await api.post(`/insights/share/${analysisId}/`, data, {
+      headers: { Authorization: '' },
+    });
+    return response.data;
+  },
 };
 
 export default api;
