@@ -16,6 +16,8 @@ from django.utils import timezone
 import requests
 from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
+from cryptography.fernet import Fernet
+import base64
 
 logger = logging.getLogger(__name__)
 
@@ -36,6 +38,115 @@ class GoogleReviewsClient:
         self.access_token = access_token
         self.refresh_token = refresh_token
         self.session = self._create_session()
+
+    @staticmethod
+    def get_oauth_authorization_url() -> str:
+        """Generate Google OAuth authorization URL
+
+        Returns:
+            OAuth authorization URL for user to visit
+        """
+        client_id = getattr(settings, 'GOOGLE_OAUTH_CLIENT_ID', None)
+        redirect_uri = getattr(settings, 'GOOGLE_OAUTH_REDIRECT_URI', 'http://localhost:3000/integrations/google-reviews')
+
+        if not client_id:
+            raise ValueError('GOOGLE_OAUTH_CLIENT_ID not configured in settings')
+
+        # Scopes needed for Google Business Profile
+        scopes = [
+            'https://www.googleapis.com/auth/business.manage',
+        ]
+        scope_string = ' '.join(scopes)
+
+        params = {
+            'client_id': client_id,
+            'redirect_uri': redirect_uri,
+            'response_type': 'code',
+            'scope': scope_string,
+            'access_type': 'offline',  # Get refresh token
+            'prompt': 'consent',  # Force consent to get refresh token
+        }
+
+        param_string = '&'.join([f'{k}={requests.utils.quote(v)}' for k, v in params.items()])
+        return f'https://accounts.google.com/o/oauth2/v2/auth?{param_string}'
+
+    @staticmethod
+    def exchange_code_for_tokens(code: str) -> Dict[str, Any]:
+        """Exchange OAuth authorization code for access and refresh tokens
+
+        Args:
+            code: Authorization code from OAuth callback
+
+        Returns:
+            Dict with access_token, refresh_token, expires_in
+        """
+        client_id = getattr(settings, 'GOOGLE_OAUTH_CLIENT_ID', None)
+        client_secret = getattr(settings, 'GOOGLE_OAUTH_CLIENT_SECRET', None)
+        redirect_uri = getattr(settings, 'GOOGLE_OAUTH_REDIRECT_URI', 'http://localhost:3000/integrations/google-reviews')
+
+        if not client_id or not client_secret:
+            raise ValueError('GOOGLE_OAUTH_CLIENT_ID and GOOGLE_OAUTH_CLIENT_SECRET must be configured')
+
+        url = 'https://oauth2.googleapis.com/token'
+        data = {
+            'code': code,
+            'client_id': client_id,
+            'client_secret': client_secret,
+            'redirect_uri': redirect_uri,
+            'grant_type': 'authorization_code',
+        }
+
+        response = requests.post(url, data=data)
+        response.raise_for_status()
+
+        return response.json()
+
+    @staticmethod
+    def encrypt_token(token: str) -> str:
+        """Encrypt a token for database storage
+
+        Args:
+            token: Plain text token
+
+        Returns:
+            Encrypted token as base64 string (Fernet already returns base64-encoded)
+        """
+        secret_key = settings.SECRET_KEY.encode()
+        # Ensure key is 32 bytes for Fernet
+        key = base64.urlsafe_b64encode(secret_key[:32].ljust(32, b'0'))
+        f = Fernet(key)
+        # Fernet.encrypt() already returns a URL-safe base64-encoded token
+        encrypted = f.encrypt(token.encode())
+        return encrypted.decode()
+
+    @staticmethod
+    def decrypt_token(encrypted_token: bytes) -> str:
+        """Decrypt a token from database
+
+        Args:
+            encrypted_token: Encrypted token as bytes/memoryview (from BinaryField)
+
+        Returns:
+            Decrypted plain text token
+        """
+        secret_key = settings.SECRET_KEY.encode()
+        # Ensure key is 32 bytes for Fernet
+        key = base64.urlsafe_b64encode(secret_key[:32].ljust(32, b'0'))
+        f = Fernet(key)
+
+        # Convert memoryview to bytes if needed (Django BinaryField returns memoryview)
+        if isinstance(encrypted_token, memoryview):
+            encrypted_token = bytes(encrypted_token)
+
+        # Convert bytes to string for Fernet (Fernet expects base64 string as bytes)
+        if isinstance(encrypted_token, bytes):
+            encrypted_token_str = encrypted_token.decode()
+        else:
+            encrypted_token_str = encrypted_token
+
+        # Decrypt (Fernet expects string encoded as bytes)
+        decrypted = f.decrypt(encrypted_token_str.encode())
+        return decrypted.decode()
 
     def _create_session(self) -> requests.Session:
         """Create requests session with retry logic"""

@@ -145,21 +145,21 @@ class SevenShiftsLocationSerializer(serializers.Serializer):
 # ============================================================================
 
 class GoogleReviewsConfigSerializer(serializers.ModelSerializer):
-    """Serializer for GoogleReviewsConfig model"""
+    """Serializer for GoogleReviewsConfig model
+
+    Note: Encrypted tokens are intentionally excluded from serialization for security.
+    They are only used internally and should never be exposed via API.
+    """
 
     class Meta:
         model = None  # Will be imported to avoid circular import
         fields = [
-            'id', 'account', 'is_active', 'google_business_account_id',
-            'access_token_encrypted', 'refresh_token_encrypted', 'token_expires_at',
-            'last_sync_at', 'auto_sync_enabled', 'sync_frequency_hours',
-            'created_at', 'updated_at', 'created_by'
+            'id', 'account', 'is_active', 'google_account_id',
+            'token_expires_at', 'last_sync_at', 'sync_frequency',
+            'auto_generate_checks', 'min_rating_for_analysis',
+            'min_reviews_for_check', 'created_at', 'updated_at', 'created_by'
         ]
         read_only_fields = ['id', 'created_at', 'updated_at', 'last_sync_at']
-        extra_kwargs = {
-            'access_token_encrypted': {'write_only': True},
-            'refresh_token_encrypted': {'write_only': True}
-        }
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)

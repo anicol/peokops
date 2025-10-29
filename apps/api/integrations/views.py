@@ -643,7 +643,7 @@ class GoogleReviewsIntegrationViewSet(viewsets.GenericViewSet):
             ).count()
             data['unread_review_count'] = GoogleReview.objects.filter(
                 account=request.user.account,
-                read_at__isnull=True
+                needs_analysis=True
             ).count()
 
             return Response(data)
@@ -707,13 +707,33 @@ class GoogleReviewsIntegrationViewSet(viewsets.GenericViewSet):
         try:
             # Exchange code for tokens
             token_data = GoogleReviewsClient.exchange_code_for_tokens(code)
+            logger.info(f"Token exchange successful. Keys in response: {list(token_data.keys())}")
 
-            # Encrypt tokens
-            encrypted_access_token = GoogleReviewsClient.encrypt_token(token_data['access_token'])
-            encrypted_refresh_token = GoogleReviewsClient.encrypt_token(token_data['refresh_token'])
+            # Encrypt tokens (returns str, convert to bytes for BinaryField)
+            encrypted_access_token = GoogleReviewsClient.encrypt_token(token_data['access_token']).encode()
+            encrypted_refresh_token = GoogleReviewsClient.encrypt_token(token_data['refresh_token']).encode()
 
             # Calculate token expiration
             expires_at = timezone.now() + timedelta(seconds=token_data.get('expires_in', 3600))
+
+            # Fetch Google Business account ID
+            google_account_id = ''
+            try:
+                temp_client = GoogleReviewsClient(
+                    token_data['access_token'],
+                    token_data.get('refresh_token', '')
+                )
+                accounts = temp_client.list_accounts()
+                if accounts and len(accounts) > 0:
+                    # Use the first account (users typically have one business account)
+                    # Account name format: "accounts/12345"
+                    google_account_id = accounts[0].get('name', '')
+                    logger.info(f"Found Google Business account: {google_account_id}")
+                else:
+                    logger.warning("No Google Business accounts found for this user")
+            except Exception as e:
+                logger.error(f"Failed to fetch Google Business accounts: {e}")
+                # Continue anyway - user might not have set up their business profile yet
 
             # Create or update configuration
             config, created = GoogleReviewsConfig.objects.update_or_create(
@@ -722,24 +742,27 @@ class GoogleReviewsIntegrationViewSet(viewsets.GenericViewSet):
                     'access_token_encrypted': encrypted_access_token,
                     'refresh_token_encrypted': encrypted_refresh_token,
                     'token_expires_at': expires_at,
+                    'google_account_id': google_account_id,
                     'is_active': True,
-                    'created_by': request.user if created else None
                 }
             )
 
-            # Trigger initial sync of locations
-            try:
-                from .google_reviews_sync import GoogleReviewsSyncService
-                sync_service = GoogleReviewsSyncService(config)
-                sync_service.sync_locations()
-            except Exception as e:
-                logger.error(f"Initial location sync failed: {str(e)}")
-                # Don't fail the OAuth connection if sync fails
+            # Set created_by only on first creation
+            if created:
+                config.created_by = request.user
+                config.save()
+
+            # Note: We don't automatically sync on OAuth callback to avoid blocking
+            # User can manually trigger sync after connecting
+            message = 'Google Business Profile connected successfully'
+            if not google_account_id:
+                message += '. Click "Sync Now" to fetch your locations and reviews.'
 
             return Response({
                 'success': True,
-                'message': 'Google Business Profile connected successfully',
-                'config_id': str(config.id)
+                'message': message,
+                'config_id': str(config.id),
+                'has_business_account': bool(google_account_id)
             }, status=status.HTTP_201_CREATED if created else status.HTTP_200_OK)
 
         except Exception as e:
@@ -787,13 +810,14 @@ class GoogleReviewsIntegrationViewSet(viewsets.GenericViewSet):
 
         try:
             if location_id:
-                # Sync specific location
-                result = sync_service.sync_reviews_for_location(location_id)
+                # Sync specific location - for now, sync all and filter later
+                # TODO: Add sync_reviews_for_location method to optimize single location sync
+                result = sync_service.sync_reviews()
                 message = f'Synced reviews for location {location_id}'
             else:
-                # Sync all locations
-                result = sync_service.sync_all_reviews()
-                message = 'Synced all reviews'
+                # Sync all locations and reviews
+                result = sync_service.sync_all()
+                message = 'Synced all locations and reviews'
 
             return Response({
                 'success': True,
@@ -905,7 +929,7 @@ class GoogleReviewsIntegrationViewSet(viewsets.GenericViewSet):
 
         unread_only = request.query_params.get('unread_only', 'false').lower() == 'true'
         if unread_only:
-            reviews = reviews.filter(read_at__isnull=True)
+            reviews = reviews.filter(needs_analysis=True)
 
         # Limit results
         limit = int(request.query_params.get('limit', 50))

@@ -323,6 +323,14 @@ TWILIO_ACCOUNT_SID = config('TWILIO_ACCOUNT_SID', default='')
 TWILIO_AUTH_TOKEN = config('TWILIO_AUTH_TOKEN', default='')
 TWILIO_PHONE_NUMBER = config('TWILIO_PHONE_NUMBER', default='')
 
+# Google Places API (for review analysis fallback)
+GOOGLE_PLACES_API_KEY = config('GOOGLE_PLACES_API_KEY', default='')
+
+# Google OAuth for Business Profile Integration
+GOOGLE_OAUTH_CLIENT_ID = config('GOOGLE_OAUTH_CLIENT_ID', default='')
+GOOGLE_OAUTH_CLIENT_SECRET = config('GOOGLE_OAUTH_CLIENT_SECRET', default='')
+GOOGLE_OAUTH_REDIRECT_URI = config('GOOGLE_OAUTH_REDIRECT_URI', default='http://localhost:3000/integrations/google-reviews')
+
 # Micro-check magic link base URL
 MICRO_CHECK_BASE_URL = config('MICRO_CHECK_BASE_URL', default='http://localhost:3000')
 ENABLE_BEDROCK_RECOMMENDATIONS = config('ENABLE_BEDROCK_RECOMMENDATIONS', default=False, cast=bool)
