@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useQuery, useMutation, useQueryClient } from 'react-query';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import {
@@ -173,11 +173,18 @@ export default function GoogleReviewsDetailPage() {
   const [oauthProcessing, setOauthProcessing] = useState(false);
   const [selectedLocation, setSelectedLocation] = useState<string | undefined>();
 
+  // Track processed OAuth codes to prevent duplicate submissions
+  const processedCodeRef = useRef<string | null>(null);
+
   // Handle OAuth callback
   useEffect(() => {
     const code = searchParams.get('code');
-    if (code) {
+
+    // Only process if we have a code and haven't processed this exact code before
+    if (code && code !== processedCodeRef.current) {
+      processedCodeRef.current = code;
       setOauthProcessing(true);
+
       googleReviewsAPI
         .handleOAuthCallback(code)
         .then(() => {
