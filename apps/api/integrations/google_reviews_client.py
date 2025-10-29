@@ -152,12 +152,15 @@ class GoogleReviewsClient:
         """Create requests session with retry logic"""
         session = requests.Session()
 
-        # Configure retries for transient errors
+        # Configure retries for transient errors only
+        # NOTE: 429 (rate limit) is intentionally excluded - we should not retry
+        # rate limits aggressively as it makes the problem worse. Google Business
+        # Profile API has very low quotas and retrying 429s burns through them quickly.
         retry_strategy = Retry(
-            total=3,
-            status_forcelist=[429, 500, 502, 503, 504],
+            total=2,  # Reduced from 3 to 2 retries
+            status_forcelist=[500, 502, 503, 504],  # Removed 429
             allowed_methods=["HEAD", "GET", "OPTIONS"],
-            backoff_factor=1
+            backoff_factor=2  # Increased from 1 to 2 for longer waits
         )
         adapter = HTTPAdapter(max_retries=retry_strategy)
         session.mount("https://", adapter)
