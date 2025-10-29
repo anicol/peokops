@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Your Review Analysis is Ready</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background-color: #f3f4f6;
+        }
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            background-color: #ffffff;
+        }
+        .header {
+            background: linear-gradient(135deg, #4F46E5 0%, #2563EB 100%);
+            padding: 40px 20px;
+            text-align: center;
+        }
+        .logo {
+            color: #ffffff;
+            font-size: 28px;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+        .header-subtitle {
+            color: #E0E7FF;
+            font-size: 16px;
+        }
+        .content {
+            padding: 40px 20px;
+        }
+        h1 {
+            color: #1F2937;
+            font-size: 24px;
+            margin-bottom: 16px;
+        }
+        .greeting {
+            color: #4B5563;
+            font-size: 16px;
+            margin-bottom: 24px;
+        }
+        .business-name {
+            color: #2563EB;
+            font-weight: bold;
+        }
+        .stats-grid {
+            display: table;
+            width: 100%;
+            margin: 24px 0;
+        }
+        .stat-card {
+            display: table-cell;
+            background-color: #F9FAFB;
+            border-radius: 8px;
+            padding: 20px;
+            text-align: center;
+            border: 1px solid #E5E7EB;
+        }
+        .stat-card + .stat-card {
+            border-left: none;
+        }
+        .stat-value {
+            font-size: 32px;
+            font-weight: bold;
+            color: #2563EB;
+            margin-bottom: 4px;
+        }
+        .stat-label {
+            font-size: 14px;
+            color: #6B7280;
+        }
+        .section {
+            margin: 32px 0;
+        }
+        .section-title {
+            font-size: 20px;
+            font-weight: bold;
+            color: #1F2937;
+            margin-bottom: 16px;
+        }
+        .issue-card {
+            background-color: #FEF3C7;
+            border-left: 4px solid #F59E0B;
+            padding: 16px;
+            margin-bottom: 12px;
+            border-radius: 4px;
+        }
+        .issue-title {
+            font-weight: bold;
+            color: #92400E;
+            margin-bottom: 4px;
+        }
+        .issue-mentions {
+            color: #78350F;
+            font-size: 14px;
+        }
+        .micro-check-card {
+            background-color: #F3F4F6;
+            border-left: 4px solid #10B981;
+            padding: 16px;
+            margin-bottom: 12px;
+            border-radius: 4px;
+        }
+        .micro-check-title {
+            font-weight: bold;
+            color: #065F46;
+            margin-bottom: 8px;
+        }
+        .micro-check-question {
+            color: #047857;
+            font-size: 14px;
+            margin-bottom: 4px;
+        }
+        .micro-check-criteria {
+            color: #6B7280;
+            font-size: 13px;
+        }
+        .rating-bar {
+            background-color: #E5E7EB;
+            height: 24px;
+            border-radius: 4px;
+            margin: 8px 0;
+            overflow: hidden;
+        }
+        .rating-fill {
+            height: 100%;
+            background-color: #10B981;
+            display: flex;
+            align-items: center;
+            padding: 0 8px;
+            color: white;
+            font-size: 12px;
+            font-weight: bold;
+        }
+        .rating-row {
+            display: flex;
+            align-items: center;
+            margin: 12px 0;
+        }
+        .rating-label {
+            width: 80px;
+            font-size: 14px;
+            color: #4B5563;
+        }
+        .rating-bar-container {
+            flex: 1;
+            margin: 0 12px;
+        }
+        .rating-count {
+            width: 100px;
+            text-align: right;
+            font-size: 14px;
+            color: #6B7280;
+        }
+        .cta-button {
+            display: inline-block;
+            background: linear-gradient(135deg, #2563EB 0%, #1D4ED8 100%);
+            color: #ffffff !important;
+            padding: 16px 32px;
+            border-radius: 8px;
+            text-decoration: none;
+            font-weight: bold;
+            font-size: 16px;
+            margin: 24px 0;
+        }
+        .cta-secondary {
+            display: inline-block;
+            background-color: #ffffff;
+            color: #2563EB !important;
+            padding: 16px 32px;
+            border: 2px solid #2563EB;
+            border-radius: 8px;
+            text-decoration: none;
+            font-weight: bold;
+            font-size: 16px;
+            margin-left: 12px;
+        }
+        .footer {
+            background-color: #F9FAFB;
+            padding: 32px 20px;
+            text-align: center;
+            color: #6B7280;
+            font-size: 14px;
+        }
+        .footer-logo {
+            color: #2563EB;
+            font-weight: bold;
+            font-size: 18px;
+            margin-bottom: 8px;
+        }
+        @media only screen and (max-width: 600px) {
+            .stat-card {
+                display: block;
+                margin-bottom: 12px;
+            }
+            .cta-secondary {
+                margin-left: 0;
+                margin-top: 12px;
+                display: block;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <div class="header">
+            <div class="logo">PeakOps</div>
+            <div class="header-subtitle">AI-Powered Review Analysis</div>
+        </div>
+
+        <!-- Content -->
+        <div class="content">
+            <h1>Your Review Analysis is Ready! 🎉</h1>
+
+            <div class="greeting">
+                Hi{% if analysis.contact_name %} {{ analysis.contact_name }}{% endif %},<br><br>
+                Your Google Reviews analysis for <span class="business-name">{{ analysis.business_name }}</span> is complete!
+            </div>
+
+            <!-- Stats -->
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-value">{{ analysis.google_rating|default:"N/A" }}⭐</div>
+                    <div class="stat-label">Google Rating</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value">{{ analysis.reviews_analyzed|default:0 }}</div>
+                    <div class="stat-label">Reviews Analyzed</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value">{{ key_issues|length }}</div>
+                    <div class="stat-label">Key Issues Found</div>
+                </div>
+            </div>
+
+            <!-- Key Issues -->
+            {% if key_issues %}
+            <div class="section">
+                <div class="section-title">🔍 Top Issues from Customer Reviews</div>
+                {% for issue in key_issues|slice:":3" %}
+                <div class="issue-card">
+                    <div class="issue-title">{{ issue.theme }}</div>
+                    <div class="issue-mentions">{{ issue.mentions }} mentions in reviews</div>
+                </div>
+                {% endfor %}
+            </div>
+            {% endif %}
+
+            <!-- Rating Distribution -->
+            {% if sentiment %}
+            <div class="section">
+                <div class="section-title">⭐ Rating Distribution</div>
+                {% for rating, count in rating_distribution.items %}
+                <div class="rating-row">
+                    <div class="rating-label">{{ rating }} ★</div>
+                    <div class="rating-bar-container">
+                        <div class="rating-bar">
+                            <div class="rating-fill" style="width: {{ count.percentage }}%;">
+                                {{ count.percentage }}%
+                            </div>
+                        </div>
+                    </div>
+                    <div class="rating-count">{{ count.count }} reviews</div>
+                </div>
+                {% endfor %}
+            </div>
+            {% endif %}
+
+            <!-- Micro-Check Recommendations -->
+            {% if micro_check_suggestions %}
+            <div class="section">
+                <div class="section-title">💡 Recommended Micro-Checks</div>
+                <p style="color: #6B7280; margin-bottom: 16px;">
+                    Daily checks to prevent these issues from happening:
+                </p>
+                {% for suggestion in micro_check_suggestions|slice:":3" %}
+                <div class="micro-check-card">
+                    <div class="micro-check-title">{{ suggestion.title }}</div>
+                    <div class="micro-check-question"><strong>Question:</strong> {{ suggestion.question }}</div>
+                    <div class="micro-check-criteria"><strong>Success Criteria:</strong> {{ suggestion.success_criteria }}</div>
+                </div>
+                {% endfor %}
+            </div>
+            {% endif %}
+
+            <!-- CTAs -->
+            <div style="text-align: center; margin: 40px 0;">
+                <a href="{{ view_url }}" class="cta-button">View Full Analysis →</a>
+                <br>
+                <a href="{{ trial_url }}" class="cta-secondary">Start Free Trial</a>
+            </div>
+
+            <div style="background-color: #EFF6FF; border-radius: 8px; padding: 20px; margin-top: 32px; border: 1px solid #DBEAFE;">
+                <h3 style="color: #1E40AF; margin-top: 0;">Ready to Fix These Issues?</h3>
+                <p style="color: #1E3A8A; margin-bottom: 16px;">
+                    Turn these insights into action with PeakOps. We'll deliver daily micro-checks to your team automatically.
+                </p>
+                <ul style="color: #1E3A8A; padding-left: 20px;">
+                    <li>Three quick questions delivered daily</li>
+                    <li>Automatic reminders and streak tracking</li>
+                    <li>Progress dashboard and insights</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <div class="footer">
+            <div class="footer-logo">PeakOps</div>
+            <p>AI-powered operations management for hospitality businesses</p>
+            <p style="margin-top: 16px;">
+                <a href="{{ frontend_url }}" style="color: #2563EB; text-decoration: none;">Visit PeakOps.com</a>
+            </p>
+            <p style="margin-top: 16px; font-size: 12px; color: #9CA3AF;">
+                You're receiving this email because you requested a review analysis on PeakOps.
+            </p>
+        </div>
+    </div>
+</body>
+</html>
