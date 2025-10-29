@@ -250,34 +250,6 @@ export default function BlogReviewsToAction() {
             <li><strong>Month 3:</strong> Compare review sentiment and ratings → Celebrate wins → Focus on next priority</li>
           </ol>
 
-          <h3 className="text-xl font-semibold text-gray-900 mt-8 mb-4">
-            Real Example: Bathroom Cleanliness Turnaround
-          </h3>
-
-          <p className="mb-4">
-            One operator I know had 8 reviews in March mentioning dirty bathrooms. She implemented three micro-checks:
-          </p>
-
-          <ul className="mb-4 space-y-2">
-            <li>Hourly restroom checks during operating hours</li>
-            <li>Pre-opening deep clean checklist</li>
-            <li>Manager verification at shift change</li>
-          </ul>
-
-          <p className="mb-4">
-            <strong>The results:</strong>
-          </p>
-
-          <ul className="mb-6 space-y-2">
-            <li>April: 3 bathroom mentions (62% reduction)</li>
-            <li>May: 1 bathroom mention (87% reduction)</li>
-            <li>June: Zero bathroom complaints</li>
-          </ul>
-
-          <p className="mb-8">
-            Her overall Google rating went from 3.8 to 4.3 stars in three months. All from focusing on what customers were already telling her needed fixing.
-          </p>
-
           <div className="bg-gradient-to-r from-green-50 to-teal-50 border border-green-200 rounded-lg p-6 my-8">
             <h3 className="text-lg font-semibold text-gray-900 mb-3 flex items-center">
               <TrendingUp className="w-5 h-5 mr-2 text-green-600" />
