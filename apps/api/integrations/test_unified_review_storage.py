@@ -85,8 +85,8 @@ class TestUnifiedReviewStorage(TestCase):
         self.assertEqual(GoogleReview.objects.count(), 0)
 
         # Step 2: Prospect converts to customer (trigger migration)
-        # Note: mark_converted expects a Brand instance
-        review_analysis.mark_converted(self.brand)
+        # Note: mark_converted expects a User instance
+        review_analysis.mark_converted(self.owner)
 
         # Verify migration worked
         self.assertEqual(GoogleReview.objects.count(), 2)
@@ -161,7 +161,7 @@ class TestUnifiedReviewStorage(TestCase):
             }
         )
 
-        review_analysis.mark_converted(self.brand)
+        review_analysis.mark_converted(self.owner)
 
         location = GoogleLocation.objects.get(google_location_name="Pizza Place")
         self.assertEqual(location.address, "456 Oak Ave")

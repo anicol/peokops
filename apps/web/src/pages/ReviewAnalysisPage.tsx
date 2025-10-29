@@ -227,17 +227,26 @@ export default function ReviewAnalysisPage() {
     return (
       <div className="min-h-screen bg-gradient-to-b from-blue-50 to-white py-12 px-4">
         <div className="max-w-2xl mx-auto">
-          {/* Header with link to marketing site */}
-          <div className="text-center mb-6">
+          {/* PeakOps Branding Header */}
+          <div className="text-center mb-8">
             <a
               href={import.meta.env.VITE_MARKETING_URL || 'http://localhost:5174'}
-              className="inline-flex items-center text-blue-600 hover:text-blue-700 transition-colors mb-4"
+              className="inline-flex items-center justify-center gap-3 mb-6 hover:opacity-80 transition-opacity"
             >
-              <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-              </svg>
-              Back to PeakOps
+              <img src="/logo.png" alt="PeakOps" className="w-10 h-10" />
+              <span className="text-2xl font-bold text-gray-900">PeakOps</span>
             </a>
+            <div className="inline-flex items-center text-sm text-blue-600 hover:text-blue-700 transition-colors">
+              <a
+                href={import.meta.env.VITE_MARKETING_URL || 'http://localhost:5174'}
+                className="inline-flex items-center"
+              >
+                <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                </svg>
+                Back to Main Site
+              </a>
+            </div>
           </div>
 
           <div className="text-center mb-8">
@@ -478,6 +487,16 @@ export default function ReviewAnalysisPage() {
     return (
       <div className="min-h-screen bg-gradient-to-b from-blue-50 to-white py-12 px-4">
         <div className="max-w-2xl mx-auto">
+          {/* PeakOps Branding Header */}
+          <div className="text-center mb-8">
+            <a
+              href={import.meta.env.VITE_MARKETING_URL || 'http://localhost:5174'}
+              className="inline-flex items-center justify-center gap-3 mb-6 hover:opacity-80 transition-opacity"
+            >
+              <img src="/logo.png" alt="PeakOps" className="w-10 h-10" />
+              <span className="text-2xl font-bold text-gray-900">PeakOps</span>
+            </a>
+          </div>
           <div className="bg-white rounded-lg shadow-lg p-8 text-center">
             <div className="text-red-600 text-5xl mb-4">⚠️</div>
             <h2 className="text-2xl font-bold text-gray-900 mb-4">Analysis Failed</h2>
@@ -521,11 +540,13 @@ function ReviewAnalysisResults({ results }: { results: AnalysisResults }) {
         <div className="bg-white rounded-lg shadow-md p-6 mb-8">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
-              <div className="bg-blue-600 text-white rounded-lg px-4 py-2 font-bold text-xl">
-                PeakOps
-              </div>
+              <img src="/logo.png" alt="PeakOps" className="w-12 h-12" />
               <div>
-                <h2 className="text-lg font-semibold text-gray-900">AI-Powered Review Analysis</h2>
+                <div className="flex items-center gap-2 mb-1">
+                  <h2 className="text-xl font-bold text-gray-900">PeakOps</h2>
+                  <span className="text-gray-400">|</span>
+                  <span className="text-lg font-semibold text-gray-700">AI-Powered Review Analysis</span>
+                </div>
                 <p className="text-sm text-gray-600">Turn customer feedback into actionable daily checks</p>
               </div>
             </div>

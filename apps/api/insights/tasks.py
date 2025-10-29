@@ -102,11 +102,26 @@ def process_review_analysis(self, analysis_id):
     try:
         analysis = ReviewAnalysis.objects.get(id=analysis_id)
 
-        # Step 1: Initialize
+        # Step 1: Initialize with engaging messages
         analysis.status = ReviewAnalysis.Status.PROCESSING
-        analysis.progress_message = f'🔍 Launching AI-powered analysis for {analysis.business_name}. Connecting to Google Maps...'
-        analysis.progress_percentage = 5
-        analysis.save()
+
+        # Cycle through fun messages to keep users engaged (like Claude's "thinking... pontificating...")
+        progress_messages = [
+            (f'🔍 Launching AI-powered analysis for {analysis.business_name}...', 5),
+            ('🤔 Warming up the review analysis engines...', 8),
+            ('👓 Putting on our reading glasses...', 10),
+            (f'🗺️ Searching for "{analysis.business_name}" in {analysis.location}...', 12),
+            ('🔮 Consulting the review oracle...', 14),
+            ('🎯 Locking onto customer feedback signals...', 16),
+            ('📡 Tuning into the voice of your customers...', 18),
+        ]
+
+        import time
+        for message, percentage in progress_messages[:3]:  # Show first 3 messages quickly
+            analysis.progress_message = message
+            analysis.progress_percentage = percentage
+            analysis.save()
+            time.sleep(0.8)  # Brief pause for visual effect
 
         # Step 2: Start scraping
         scraper = ScraperCommand()
@@ -114,9 +129,12 @@ def process_review_analysis(self, analysis_id):
 
         logger.info(f"Starting scrape for {analysis.business_name}")
 
-        analysis.progress_message = f'🗺️  Searching for "{analysis.business_name}" in {analysis.location}...'
-        analysis.progress_percentage = 15
-        analysis.save()
+        # Continue with remaining pre-scrape messages
+        for message, percentage in progress_messages[3:]:
+            analysis.progress_message = message
+            analysis.progress_percentage = percentage
+            analysis.save()
+            time.sleep(0.6)
 
         # Define progress callback to update analysis status
         # Use threading to avoid async context issues with Playwright
@@ -137,9 +155,8 @@ def process_review_analysis(self, analysis_id):
             thread.start()
 
         try:
-            # Add a small delay to avoid rate limiting from Google Maps
-            import time
-            time.sleep(2)
+            # Note: We already added delays with engaging messages above
+            # to avoid rate limiting and keep users entertained
 
             scraped_data = scraper.scrape_reviews(
                 business_name=analysis.business_name,
