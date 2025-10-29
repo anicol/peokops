@@ -643,7 +643,7 @@ class GoogleReviewsIntegrationViewSet(viewsets.GenericViewSet):
             ).count()
             data['unread_review_count'] = GoogleReview.objects.filter(
                 account=request.user.account,
-                read_at__isnull=True
+                needs_analysis=True
             ).count()
 
             return Response(data)
@@ -910,7 +910,7 @@ class GoogleReviewsIntegrationViewSet(viewsets.GenericViewSet):
 
         unread_only = request.query_params.get('unread_only', 'false').lower() == 'true'
         if unread_only:
-            reviews = reviews.filter(read_at__isnull=True)
+            reviews = reviews.filter(needs_analysis=True)
 
         # Limit results
         limit = int(request.query_params.get('limit', 50))
