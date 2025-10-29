@@ -583,3 +583,333 @@ class SevenShiftsIntegrationViewSet(viewsets.GenericViewSet):
                 {'error': 'Location mapping not found'},
                 status=status.HTTP_404_NOT_FOUND
             )
+
+
+# ============================================================================
+# Google Reviews Integration ViewSet
+# ============================================================================
+
+class GoogleReviewsIntegrationViewSet(viewsets.GenericViewSet):
+    """
+    ViewSet for managing Google Reviews integration per account.
+
+    Provides endpoints for:
+    - OAuth connection flow
+    - Viewing integration status
+    - Syncing reviews
+    - Managing locations
+    - Viewing reviews
+    - Disconnecting integration
+    """
+
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        """Filter configurations by user's account"""
+        from .models import GoogleReviewsConfig
+        if self.request.user.account:
+            return GoogleReviewsConfig.objects.filter(account=self.request.user.account)
+        return GoogleReviewsConfig.objects.none()
+
+    @action(detail=False, methods=['get'], url_path='status')
+    def get_status(self, request):
+        """
+        GET /api/integrations/google-reviews/status
+
+        Get current Google Reviews integration status for user's account.
+        """
+        from .models import GoogleReviewsConfig, GoogleLocation, GoogleReview
+        from .serializers import GoogleReviewsConfigSerializer
+
+        if not request.user.account:
+            return Response(
+                {'error': 'User not associated with an account'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        try:
+            config = GoogleReviewsConfig.objects.get(account=request.user.account)
+            serializer = GoogleReviewsConfigSerializer(config)
+
+            # Add location and review counts
+            data = serializer.data
+            data['is_configured'] = True
+            data['location_count'] = GoogleLocation.objects.filter(
+                account=request.user.account,
+                is_active=True
+            ).count()
+            data['review_count'] = GoogleReview.objects.filter(
+                account=request.user.account
+            ).count()
+            data['unread_review_count'] = GoogleReview.objects.filter(
+                account=request.user.account,
+                read_at__isnull=True
+            ).count()
+
+            return Response(data)
+
+        except GoogleReviewsConfig.DoesNotExist:
+            return Response({
+                'is_configured': False,
+                'message': 'Google Reviews integration not configured'
+            })
+
+    @action(detail=False, methods=['get'], url_path='oauth-url')
+    def get_oauth_url(self, request):
+        """
+        GET /api/integrations/google-reviews/oauth-url
+
+        Get the Google OAuth URL to start the connection process.
+        """
+        from .google_reviews_client import GoogleReviewsClient
+
+        try:
+            oauth_url = GoogleReviewsClient.get_oauth_authorization_url()
+            return Response({
+                'oauth_url': oauth_url,
+                'message': 'Redirect user to this URL to authorize Google Business Profile access'
+            })
+        except Exception as e:
+            logger.error(f"Failed to generate OAuth URL: {str(e)}")
+            return Response(
+                {'error': f'Failed to generate OAuth URL: {str(e)}'},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
+    @action(detail=False, methods=['post'], url_path='oauth-callback')
+    def oauth_callback(self, request):
+        """
+        POST /api/integrations/google-reviews/oauth-callback
+
+        Handle OAuth callback and exchange code for tokens.
+
+        Body:
+        {
+            "code": "oauth_authorization_code",
+            "state": "optional_csrf_token"
+        }
+        """
+        from .models import GoogleReviewsConfig
+        from .serializers import GoogleReviewsOAuthRequestSerializer
+        from .google_reviews_client import GoogleReviewsClient
+
+        if not request.user.account:
+            return Response(
+                {'error': 'User not associated with an account'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        serializer = GoogleReviewsOAuthRequestSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        code = serializer.validated_data['code']
+
+        try:
+            # Exchange code for tokens
+            token_data = GoogleReviewsClient.exchange_code_for_tokens(code)
+
+            # Encrypt tokens
+            encrypted_access_token = GoogleReviewsClient.encrypt_token(token_data['access_token'])
+            encrypted_refresh_token = GoogleReviewsClient.encrypt_token(token_data['refresh_token'])
+
+            # Calculate token expiration
+            expires_at = timezone.now() + timedelta(seconds=token_data.get('expires_in', 3600))
+
+            # Create or update configuration
+            config, created = GoogleReviewsConfig.objects.update_or_create(
+                account=request.user.account,
+                defaults={
+                    'access_token_encrypted': encrypted_access_token,
+                    'refresh_token_encrypted': encrypted_refresh_token,
+                    'token_expires_at': expires_at,
+                    'is_active': True,
+                    'created_by': request.user if created else None
+                }
+            )
+
+            # Trigger initial sync of locations
+            try:
+                from .google_reviews_sync import GoogleReviewsSyncService
+                sync_service = GoogleReviewsSyncService(config)
+                sync_service.sync_locations()
+            except Exception as e:
+                logger.error(f"Initial location sync failed: {str(e)}")
+                # Don't fail the OAuth connection if sync fails
+
+            return Response({
+                'success': True,
+                'message': 'Google Business Profile connected successfully',
+                'config_id': str(config.id)
+            }, status=status.HTTP_201_CREATED if created else status.HTTP_200_OK)
+
+        except Exception as e:
+            logger.error(f"OAuth callback failed: {str(e)}")
+            return Response(
+                {'error': f'OAuth callback failed: {str(e)}'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+    @action(detail=False, methods=['post'], url_path='sync')
+    def sync(self, request):
+        """
+        POST /api/integrations/google-reviews/sync
+
+        Manually trigger a sync operation.
+
+        Body:
+        {
+            "location_id": "optional_location_uuid"  # If not provided, syncs all locations
+        }
+        """
+        from .models import GoogleReviewsConfig
+        from .serializers import GoogleReviewsSyncRequestSerializer
+        from .google_reviews_sync import GoogleReviewsSyncService
+
+        if not request.user.account:
+            return Response(
+                {'error': 'User not associated with an account'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        try:
+            config = GoogleReviewsConfig.objects.get(account=request.user.account)
+        except GoogleReviewsConfig.DoesNotExist:
+            return Response(
+                {'error': 'Google Reviews integration not configured'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        serializer = GoogleReviewsSyncRequestSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        location_id = serializer.validated_data.get('location_id')
+        sync_service = GoogleReviewsSyncService(config)
+
+        try:
+            if location_id:
+                # Sync specific location
+                result = sync_service.sync_reviews_for_location(location_id)
+                message = f'Synced reviews for location {location_id}'
+            else:
+                # Sync all locations
+                result = sync_service.sync_all_reviews()
+                message = 'Synced all reviews'
+
+            return Response({
+                'success': True,
+                'message': message,
+                'result': result
+            })
+
+        except Exception as e:
+            logger.error(f"Sync failed: {str(e)}")
+            return Response(
+                {'error': f'Sync failed: {str(e)}'},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
+    @action(detail=False, methods=['delete'], url_path='disconnect')
+    def disconnect(self, request):
+        """
+        DELETE /api/integrations/google-reviews/disconnect
+
+        Disconnect Google Reviews integration (soft delete - deactivate).
+        """
+        from .models import GoogleReviewsConfig
+
+        if not request.user.account:
+            return Response(
+                {'error': 'User not associated with an account'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        try:
+            config = GoogleReviewsConfig.objects.get(account=request.user.account)
+            config.is_active = False
+            config.save()
+
+            return Response({
+                'success': True,
+                'message': 'Google Reviews integration disconnected'
+            })
+
+        except GoogleReviewsConfig.DoesNotExist:
+            return Response(
+                {'error': 'Google Reviews integration not configured'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+    @action(detail=False, methods=['get'], url_path='locations')
+    def list_locations(self, request):
+        """
+        GET /api/integrations/google-reviews/locations
+
+        List all Google Business locations for this account.
+        """
+        from .models import GoogleLocation
+        from .serializers import GoogleLocationSerializer
+
+        if not request.user.account:
+            return Response(
+                {'error': 'User not associated with an account'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        locations = GoogleLocation.objects.filter(
+            account=request.user.account,
+            is_active=True
+        ).order_by('google_location_name')
+
+        serializer = GoogleLocationSerializer(locations, many=True)
+        return Response(serializer.data)
+
+    @action(detail=False, methods=['get'], url_path='reviews')
+    def list_reviews(self, request):
+        """
+        GET /api/integrations/google-reviews/reviews
+
+        List reviews for the account.
+
+        Query params:
+        - location_id: Filter by location UUID
+        - min_rating: Minimum rating (1-5)
+        - max_rating: Maximum rating (1-5)
+        - unread_only: Show only unread reviews (true/false)
+        - limit: Number of reviews to return (default: 50)
+        """
+        from .models import GoogleReview
+        from .serializers import GoogleReviewSerializer
+
+        if not request.user.account:
+            return Response(
+                {'error': 'User not associated with an account'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        reviews = GoogleReview.objects.filter(
+            account=request.user.account
+        ).order_by('-review_created_at')
+
+        # Apply filters
+        location_id = request.query_params.get('location_id')
+        if location_id:
+            reviews = reviews.filter(location_id=location_id)
+
+        min_rating = request.query_params.get('min_rating')
+        if min_rating:
+            reviews = reviews.filter(rating__gte=int(min_rating))
+
+        max_rating = request.query_params.get('max_rating')
+        if max_rating:
+            reviews = reviews.filter(rating__lte=int(max_rating))
+
+        unread_only = request.query_params.get('unread_only', 'false').lower() == 'true'
+        if unread_only:
+            reviews = reviews.filter(read_at__isnull=True)
+
+        # Limit results
+        limit = int(request.query_params.get('limit', 50))
+        reviews = reviews[:limit]
+
+        serializer = GoogleReviewSerializer(reviews, many=True)
+        return Response(serializer.data)

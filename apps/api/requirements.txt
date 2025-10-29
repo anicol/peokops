@@ -32,6 +32,10 @@ Pillow>=10.1,<11.0
 cryptography>=42.0,<43.0  # For 7shifts token encryption
 requests>=2.31,<3.0  # HTTP client for API integrations
 
+# Web scraping
+playwright>=1.40,<2.0  # Browser automation for scraping
+beautifulsoup4>=4.12,<5.0  # HTML parsing
+
 # Configuration and deployment
 python-decouple>=3.8,<4.0
 gunicorn>=21.2,<22.0
