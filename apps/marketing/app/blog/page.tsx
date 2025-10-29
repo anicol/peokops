@@ -8,6 +8,16 @@ import NewsletterSignup from '../../components/NewsletterSignup';
 const Blog = () => {
   const blogPosts = [
     {
+      id: 'reviews-to-action',
+      title: 'From Reviews to Action: How Customer Feedback Drives Better Operations',
+      excerpt: 'Your customers are leaving you detailed reports every week about what\'s working and what\'s not. Learn how to transform Google reviews into actionable micro-checks that improve operations and drive measurable results.',
+      author: 'PeakOps Team',
+      date: '2024-10-29',
+      readTime: '7 min read',
+      category: 'Operations',
+      slug: '/blog/reviews-to-action'
+    },
+    {
       id: '7shifts-integration-milestone',
       title: 'Peak Ops Now Integrates with 7shifts: Zero Setup, Maximum Impact',
       excerpt: 'Delivering daily micro-checks to the manager currently on shift. No extra logins, no new apps, just operational excellence built into your existing workflow. This unlocks the most-requested feature from early pilots.',
