@@ -94,3 +94,7 @@ coverage.xml
 temp/
 # Allow Django uploads app
 !/apps/api/uploads/.env.bak
+
+# Test data files
+apps/api/analysis*.json
+
