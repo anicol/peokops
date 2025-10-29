@@ -124,7 +124,7 @@ class GoogleReviewsClient:
         """Decrypt a token from database
 
         Args:
-            encrypted_token: Encrypted token as bytes (from BinaryField)
+            encrypted_token: Encrypted token as bytes/memoryview (from BinaryField)
 
         Returns:
             Decrypted plain text token
@@ -133,11 +133,19 @@ class GoogleReviewsClient:
         # Ensure key is 32 bytes for Fernet
         key = base64.urlsafe_b64encode(secret_key[:32].ljust(32, b'0'))
         f = Fernet(key)
-        # Fernet.decrypt() expects the base64 token as bytes
-        # If it's already bytes from BinaryField, decode to string first for Fernet
+
+        # Convert memoryview to bytes if needed (Django BinaryField returns memoryview)
+        if isinstance(encrypted_token, memoryview):
+            encrypted_token = bytes(encrypted_token)
+
+        # Convert bytes to string for Fernet (Fernet expects base64 string as bytes)
         if isinstance(encrypted_token, bytes):
-            encrypted_token = encrypted_token.decode()
-        decrypted = f.decrypt(encrypted_token.encode())
+            encrypted_token_str = encrypted_token.decode()
+        else:
+            encrypted_token_str = encrypted_token
+
+        # Decrypt (Fernet expects string encoded as bytes)
+        decrypted = f.decrypt(encrypted_token_str.encode())
         return decrypted.decode()
 
     def _create_session(self) -> requests.Session:
