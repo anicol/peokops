@@ -170,12 +170,14 @@ export default function GoogleReviewsDetailPage() {
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [syncing, setSyncing] = useState(false);
+  const [oauthProcessing, setOauthProcessing] = useState(false);
   const [selectedLocation, setSelectedLocation] = useState<string | undefined>();
 
   // Handle OAuth callback
   useEffect(() => {
     const code = searchParams.get('code');
     if (code) {
+      setOauthProcessing(true);
       googleReviewsAPI
         .handleOAuthCallback(code)
         .then(() => {
@@ -187,6 +189,9 @@ export default function GoogleReviewsDetailPage() {
         })
         .catch((err) => {
           setError(`OAuth failed: ${err.message}`);
+        })
+        .finally(() => {
+          setOauthProcessing(false);
         });
     }
   }, [searchParams, queryClient]);
@@ -266,10 +271,15 @@ export default function GoogleReviewsDetailPage() {
     }
   };
 
-  if (isLoading) {
+  if (isLoading || oauthProcessing) {
     return (
       <div className="flex items-center justify-center min-h-screen">
-        <Loader2 className="w-8 h-8 animate-spin text-indigo-600" />
+        <div className="text-center">
+          <Loader2 className="w-8 h-8 animate-spin text-indigo-600 mx-auto mb-4" />
+          <p className="text-gray-600">
+            {oauthProcessing ? 'Connecting to Google Business Profile...' : 'Loading...'}
+          </p>
+        </div>
       </div>
     );
   }

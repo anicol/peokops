@@ -752,19 +752,17 @@ class GoogleReviewsIntegrationViewSet(viewsets.GenericViewSet):
                 config.created_by = request.user
                 config.save()
 
-            # Trigger initial sync of locations
-            try:
-                from .google_reviews_sync import GoogleReviewsSyncService
-                sync_service = GoogleReviewsSyncService(config)
-                sync_service.sync_locations()
-            except Exception as e:
-                logger.error(f"Initial location sync failed: {str(e)}")
-                # Don't fail the OAuth connection if sync fails
+            # Note: We don't automatically sync on OAuth callback to avoid blocking
+            # User can manually trigger sync after connecting
+            message = 'Google Business Profile connected successfully'
+            if not google_account_id:
+                message += '. Click "Sync Now" to fetch your locations and reviews.'
 
             return Response({
                 'success': True,
-                'message': 'Google Business Profile connected successfully',
-                'config_id': str(config.id)
+                'message': message,
+                'config_id': str(config.id),
+                'has_business_account': bool(google_account_id)
             }, status=status.HTTP_201_CREATED if created else status.HTTP_200_OK)
 
         except Exception as e:
