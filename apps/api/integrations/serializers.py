@@ -150,9 +150,10 @@ class GoogleReviewsConfigSerializer(serializers.ModelSerializer):
     class Meta:
         model = None  # Will be imported to avoid circular import
         fields = [
-            'id', 'account', 'is_active', 'google_business_account_id',
+            'id', 'account', 'is_active', 'google_account_id',
             'access_token_encrypted', 'refresh_token_encrypted', 'token_expires_at',
-            'last_sync_at', 'auto_sync_enabled', 'sync_frequency_hours',
+            'last_sync_at', 'sync_frequency', 'auto_generate_checks',
+            'min_rating_for_analysis', 'min_reviews_for_check',
             'created_at', 'updated_at', 'created_by'
         ]
         read_only_fields = ['id', 'created_at', 'updated_at', 'last_sync_at']

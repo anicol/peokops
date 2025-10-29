@@ -260,7 +260,8 @@ class GoogleReviewsConfig(models.Model):
     token_expires_at = models.DateTimeField(help_text="When the access token expires")
 
     # Google Business Profile info
-    google_account_id = models.CharField(max_length=200, help_text="Google Business Profile account ID")
+    google_account_id = models.CharField(max_length=200, blank=True, default='',
+                                         help_text="Google Business Profile account ID")
 
     # Integration status
     is_active = models.BooleanField(default=True, help_text="Whether integration is enabled")
