@@ -54,12 +54,12 @@ class TestUnifiedReviewStorage(TestCase):
 
         # Step 1: Create a review analysis (marketing tool scrapes reviews)
         review_analysis = ReviewAnalysis.objects.create(
-            business_name="Test Restaurant",
+            business_name="Prospect Restaurant",
             location="123 Main St",
             status=ReviewAnalysis.Status.COMPLETED,
             scraped_data={
                 'business_info': {
-                    'name': 'Test Restaurant',
+                    'name': 'Prospect Restaurant',
                     'address': '123 Main St',
                     'rating': 4.2,
                     'total_reviews': 150
@@ -94,7 +94,7 @@ class TestUnifiedReviewStorage(TestCase):
 
         # Check location was created correctly
         location = GoogleLocation.objects.first()
-        self.assertEqual(location.google_location_name, "Test Restaurant")
+        self.assertEqual(location.google_location_name, "Prospect Restaurant")
         self.assertEqual(location.address, "123 Main St")
         self.assertAlmostEqual(float(location.average_rating), 4.2, places=2)
         self.assertTrue(location.is_active)
