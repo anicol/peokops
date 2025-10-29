@@ -23,6 +23,8 @@ import ActionItemsPage from '@/pages/ActionItemsPage';
 import BrandsPage from '@/pages/BrandsPage';
 import AccountPage from '@/pages/AccountPage';
 import IntegrationsPage from '@/pages/IntegrationsPage';
+import SevenShiftsDetailPage from '@/pages/SevenShiftsDetailPage';
+import GoogleReviewsDetailPage from '@/pages/GoogleReviewsDetailPage';
 import IntegrationsSyncLogsPage from '@/pages/IntegrationsSyncLogsPage';
 import IntegrationsSyncLogDetailPage from '@/pages/IntegrationsSyncLogDetailPage';
 import SchedulePage from '@/pages/SchedulePage';
@@ -215,6 +217,30 @@ function AppRoutes() {
             isAuthenticated ? (
               <Layout>
                 <IntegrationsPage />
+              </Layout>
+            ) : (
+              <Navigate to="/login" replace />
+            )
+          }
+        />
+        <Route
+          path="/integrations/7shifts"
+          element={
+            isAuthenticated ? (
+              <Layout>
+                <SevenShiftsDetailPage />
+              </Layout>
+            ) : (
+              <Navigate to="/login" replace />
+            )
+          }
+        />
+        <Route
+          path="/integrations/google-reviews"
+          element={
+            isAuthenticated ? (
+              <Layout>
+                <GoogleReviewsDetailPage />
               </Layout>
             ) : (
               <Navigate to="/login" replace />
