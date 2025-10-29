@@ -8,7 +8,6 @@ import logging
 from datetime import datetime, timedelta
 from django.utils import timezone
 from django.conf import settings
-from cryptography.fernet import Fernet
 
 from .models import (
     GoogleReviewsConfig,
@@ -38,10 +37,9 @@ class GoogleReviewsSyncService:
         self.config = config
         self.account = config.account
 
-        # Decrypt tokens
-        fernet = Fernet(settings.SECRET_KEY.encode()[:32].ljust(32, b'='))
-        access_token = fernet.decrypt(config.access_token_encrypted).decode()
-        refresh_token = fernet.decrypt(config.refresh_token_encrypted).decode()
+        # Decrypt tokens using the proper method
+        access_token = GoogleReviewsClient.decrypt_token(config.access_token_encrypted)
+        refresh_token = GoogleReviewsClient.decrypt_token(config.refresh_token_encrypted)
 
         # Initialize API client
         self.client = GoogleReviewsClient(access_token, refresh_token)
@@ -62,9 +60,8 @@ class GoogleReviewsSyncService:
 
             token_data = self.client.refresh_access_token(client_id, client_secret)
 
-            # Encrypt and save new token
-            fernet = Fernet(settings.SECRET_KEY.encode()[:32].ljust(32, b'='))
-            encrypted_access_token = fernet.encrypt(token_data['access_token'].encode())
+            # Encrypt and save new token using the proper method
+            encrypted_access_token = GoogleReviewsClient.encrypt_token(token_data['access_token']).encode()
 
             self.config.access_token_encrypted = encrypted_access_token
             self.config.token_expires_at = timezone.now() + timedelta(seconds=token_data['expires_in'])
