@@ -792,13 +792,14 @@ class GoogleReviewsIntegrationViewSet(viewsets.GenericViewSet):
 
         try:
             if location_id:
-                # Sync specific location
-                result = sync_service.sync_reviews_for_location(location_id)
+                # Sync specific location - for now, sync all and filter later
+                # TODO: Add sync_reviews_for_location method to optimize single location sync
+                result = sync_service.sync_reviews()
                 message = f'Synced reviews for location {location_id}'
             else:
-                # Sync all locations
-                result = sync_service.sync_all_reviews()
-                message = 'Synced all reviews'
+                # Sync all locations and reviews
+                result = sync_service.sync_all()
+                message = 'Synced all locations and reviews'
 
             return Response({
                 'success': True,
