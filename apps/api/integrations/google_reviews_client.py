@@ -109,14 +109,15 @@ class GoogleReviewsClient:
             token: Plain text token
 
         Returns:
-            Encrypted token as base64 string
+            Encrypted token as base64 string (Fernet already returns base64-encoded)
         """
         secret_key = settings.SECRET_KEY.encode()
         # Ensure key is 32 bytes for Fernet
         key = base64.urlsafe_b64encode(secret_key[:32].ljust(32, b'0'))
         f = Fernet(key)
+        # Fernet.encrypt() already returns a URL-safe base64-encoded token
         encrypted = f.encrypt(token.encode())
-        return base64.b64encode(encrypted).decode()
+        return encrypted.decode()
 
     @staticmethod
     def decrypt_token(encrypted_token: str) -> str:
@@ -132,8 +133,8 @@ class GoogleReviewsClient:
         # Ensure key is 32 bytes for Fernet
         key = base64.urlsafe_b64encode(secret_key[:32].ljust(32, b'0'))
         f = Fernet(key)
-        encrypted_bytes = base64.b64decode(encrypted_token.encode())
-        decrypted = f.decrypt(encrypted_bytes)
+        # Fernet.decrypt() expects the base64 token as bytes
+        decrypted = f.decrypt(encrypted_token.encode())
         return decrypted.decode()
 
     def _create_session(self) -> requests.Session:
