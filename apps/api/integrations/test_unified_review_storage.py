@@ -49,6 +49,10 @@ class TestUnifiedReviewStorage(TestCase):
             phone="+15551234567"
         )
 
+        # Link user to account (so mark_converted reuses existing account)
+        self.owner.account = self.account
+        self.owner.save()
+
     def test_complete_unified_flow(self):
         """Test complete flow from scraping to OAuth deduplication"""
 

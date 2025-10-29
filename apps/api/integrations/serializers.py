@@ -138,3 +138,115 @@ class SevenShiftsLocationSerializer(serializers.Serializer):
                                             help_text="PeakOps store ID if mapped")
     mapped_store_name = serializers.CharField(required=False, allow_null=True,
                                               help_text="PeakOps store name if mapped")
+
+
+# ============================================================================
+# Google Reviews Integration Serializers
+# ============================================================================
+
+class GoogleReviewsConfigSerializer(serializers.ModelSerializer):
+    """Serializer for GoogleReviewsConfig model"""
+
+    class Meta:
+        model = None  # Will be imported to avoid circular import
+        fields = [
+            'id', 'account', 'is_active', 'google_business_account_id',
+            'access_token_encrypted', 'refresh_token_encrypted', 'token_expires_at',
+            'last_sync_at', 'auto_sync_enabled', 'sync_frequency_hours',
+            'created_at', 'updated_at', 'created_by'
+        ]
+        read_only_fields = ['id', 'created_at', 'updated_at', 'last_sync_at']
+        extra_kwargs = {
+            'access_token_encrypted': {'write_only': True},
+            'refresh_token_encrypted': {'write_only': True}
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Lazy import to avoid circular dependency
+        from .models import GoogleReviewsConfig
+        self.Meta.model = GoogleReviewsConfig
+
+
+class GoogleLocationSerializer(serializers.ModelSerializer):
+    """Serializer for GoogleLocation model"""
+
+    review_count = serializers.SerializerMethodField()
+    unread_review_count = serializers.SerializerMethodField()
+
+    class Meta:
+        model = None  # Will be imported to avoid circular import
+        fields = [
+            'id', 'account', 'google_location_id', 'google_location_name',
+            'address', 'phone', 'website', 'average_rating', 'total_review_count',
+            'is_active', 'last_sync_at', 'review_count', 'unread_review_count'
+        ]
+        read_only_fields = ['id', 'last_sync_at', 'review_count', 'unread_review_count']
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Lazy import to avoid circular dependency
+        from .models import GoogleLocation
+        self.Meta.model = GoogleLocation
+
+    def get_review_count(self, obj):
+        """Get count of reviews stored locally"""
+        return obj.reviews.count()
+
+    def get_unread_review_count(self, obj):
+        """Get count of unread reviews"""
+        return obj.reviews.filter(read_at__isnull=True).count()
+
+
+class GoogleReviewSerializer(serializers.ModelSerializer):
+    """Serializer for GoogleReview model"""
+
+    analysis = serializers.SerializerMethodField()
+
+    class Meta:
+        model = None  # Will be imported to avoid circular import
+        fields = [
+            'id', 'google_review_id', 'location', 'account', 'reviewer_name',
+            'reviewer_profile_photo_url', 'rating', 'review_text', 'review_reply',
+            'review_created_at', 'review_updated_at', 'reply_created_at',
+            'source', 'is_verified', 'read_at', 'flagged', 'analyzed_at',
+            'needs_analysis', 'analysis'
+        ]
+        read_only_fields = ['id', 'analyzed_at', 'analysis']
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Lazy import to avoid circular dependency
+        from .models import GoogleReview
+        self.Meta.model = GoogleReview
+
+    def get_analysis(self, obj):
+        """Get AI analysis if available"""
+        try:
+            analysis = obj.analysis
+            return {
+                'topics': analysis.topics,
+                'sentiment_score': analysis.sentiment_score,
+                'actionable_issues': analysis.actionable_issues,
+                'suggested_category': analysis.suggested_category,
+                'confidence': analysis.confidence
+            }
+        except:
+            return None
+
+
+class GoogleReviewsOAuthRequestSerializer(serializers.Serializer):
+    """Serializer for OAuth callback data"""
+
+    code = serializers.CharField(required=True, help_text="OAuth authorization code")
+    state = serializers.CharField(required=False, help_text="OAuth state parameter for CSRF protection")
+
+
+class GoogleReviewsSyncRequestSerializer(serializers.Serializer):
+    """Serializer for manual sync requests"""
+
+    location_id = serializers.UUIDField(
+        required=False,
+        allow_null=True,
+        help_text="Specific location ID to sync (if not provided, syncs all locations)"
+    )
