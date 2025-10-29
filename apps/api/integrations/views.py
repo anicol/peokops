@@ -716,6 +716,25 @@ class GoogleReviewsIntegrationViewSet(viewsets.GenericViewSet):
             # Calculate token expiration
             expires_at = timezone.now() + timedelta(seconds=token_data.get('expires_in', 3600))
 
+            # Fetch Google Business account ID
+            google_account_id = ''
+            try:
+                temp_client = GoogleReviewsClient(
+                    token_data['access_token'],
+                    token_data.get('refresh_token', '')
+                )
+                accounts = temp_client.list_accounts()
+                if accounts and len(accounts) > 0:
+                    # Use the first account (users typically have one business account)
+                    # Account name format: "accounts/12345"
+                    google_account_id = accounts[0].get('name', '')
+                    logger.info(f"Found Google Business account: {google_account_id}")
+                else:
+                    logger.warning("No Google Business accounts found for this user")
+            except Exception as e:
+                logger.error(f"Failed to fetch Google Business accounts: {e}")
+                # Continue anyway - user might not have set up their business profile yet
+
             # Create or update configuration
             config, created = GoogleReviewsConfig.objects.update_or_create(
                 account=request.user.account,
@@ -723,6 +742,7 @@ class GoogleReviewsIntegrationViewSet(viewsets.GenericViewSet):
                     'access_token_encrypted': encrypted_access_token,
                     'refresh_token_encrypted': encrypted_refresh_token,
                     'token_expires_at': expires_at,
+                    'google_account_id': google_account_id,
                     'is_active': True,
                 }
             )

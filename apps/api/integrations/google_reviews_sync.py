@@ -141,8 +141,13 @@ class GoogleReviewsSyncService:
 
         try:
             # Get locations from Google
+            # google_account_id is already in format "accounts/12345"
+            if not self.config.google_account_id:
+                logger.error(f"No Google Business account ID configured for {self.account.name}")
+                raise ValueError("Google Business account ID not set. Please reconnect your Google account.")
+
             google_locations = self.client.list_locations(
-                account_name=f"accounts/{self.config.google_account_id}"
+                account_name=self.config.google_account_id
             )
 
             synced_count = 0
