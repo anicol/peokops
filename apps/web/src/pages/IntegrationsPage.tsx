@@ -34,7 +34,9 @@ interface GoogleReviewsStatus {
 const integrationsAPI = {
   getSevenShiftsStatus: async (): Promise<SevenShiftsStatus> => {
     const response = await fetch(`${API_BASE_URL}/api/integrations/7shifts/status/`, {
-      credentials: 'include',
+      headers: {
+        'Authorization': `Bearer ${localStorage.getItem('access_token')}`,
+      },
     });
     if (!response.ok) throw new Error('Failed to fetch 7shifts status');
     return response.json();
@@ -42,7 +44,9 @@ const integrationsAPI = {
 
   getGoogleReviewsStatus: async (): Promise<GoogleReviewsStatus> => {
     const response = await fetch(`${API_BASE_URL}/api/integrations/google-reviews/status/`, {
-      credentials: 'include',
+      headers: {
+        'Authorization': `Bearer ${localStorage.getItem('access_token')}`,
+      },
     });
     if (!response.ok) throw new Error('Failed to fetch Google Reviews status');
     return response.json();

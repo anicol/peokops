@@ -76,7 +76,9 @@ interface GoogleReview {
 const googleReviewsAPI = {
   getStatus: async (): Promise<GoogleReviewsConfig> => {
     const response = await fetch(`${API_BASE_URL}/api/integrations/google-reviews/status/`, {
-      credentials: 'include',
+      headers: {
+        'Authorization': `Bearer ${localStorage.getItem('access_token')}`,
+      },
     });
     if (!response.ok) throw new Error('Failed to fetch status');
     return response.json();
@@ -84,7 +86,9 @@ const googleReviewsAPI = {
 
   getOAuthUrl: async (): Promise<{ oauth_url: string }> => {
     const response = await fetch(`${API_BASE_URL}/api/integrations/google-reviews/oauth-url/`, {
-      credentials: 'include',
+      headers: {
+        'Authorization': `Bearer ${localStorage.getItem('access_token')}`,
+      },
     });
     if (!response.ok) throw new Error('Failed to get OAuth URL');
     return response.json();
@@ -93,8 +97,10 @@ const googleReviewsAPI = {
   handleOAuthCallback: async (code: string) => {
     const response = await fetch(`${API_BASE_URL}/api/integrations/google-reviews/oauth-callback/`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      credentials: 'include',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${localStorage.getItem('access_token')}`,
+      },
       body: JSON.stringify({ code }),
     });
     if (!response.ok) throw new Error('OAuth callback failed');
@@ -104,8 +110,10 @@ const googleReviewsAPI = {
   sync: async (locationId?: string) => {
     const response = await fetch(`${API_BASE_URL}/api/integrations/google-reviews/sync/`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      credentials: 'include',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${localStorage.getItem('access_token')}`,
+      },
       body: JSON.stringify({ location_id: locationId }),
     });
     if (!response.ok) throw new Error('Sync failed');
@@ -115,7 +123,9 @@ const googleReviewsAPI = {
   disconnect: async () => {
     const response = await fetch(`${API_BASE_URL}/api/integrations/google-reviews/disconnect/`, {
       method: 'DELETE',
-      credentials: 'include',
+      headers: {
+        'Authorization': `Bearer ${localStorage.getItem('access_token')}`,
+      },
     });
     if (!response.ok) throw new Error('Disconnect failed');
     return response.json();
@@ -123,7 +133,9 @@ const googleReviewsAPI = {
 
   getLocations: async (): Promise<GoogleLocation[]> => {
     const response = await fetch(`${API_BASE_URL}/api/integrations/google-reviews/locations/`, {
-      credentials: 'include',
+      headers: {
+        'Authorization': `Bearer ${localStorage.getItem('access_token')}`,
+      },
     });
     if (!response.ok) throw new Error('Failed to fetch locations');
     return response.json();
@@ -137,7 +149,11 @@ const googleReviewsAPI = {
 
     const response = await fetch(
       `${API_BASE_URL}/api/integrations/google-reviews/reviews/?${queryParams}`,
-      { credentials: 'include' }
+      {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('access_token')}`,
+        },
+      }
     );
     if (!response.ok) throw new Error('Failed to fetch reviews');
     return response.json();
