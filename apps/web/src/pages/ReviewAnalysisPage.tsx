@@ -229,17 +229,14 @@ export default function ReviewAnalysisPage() {
         <div className="max-w-2xl mx-auto">
           {/* PeakOps Branding Header */}
           <div className="text-center mb-8">
-            <a
-              href={import.meta.env.VITE_MARKETING_URL || 'http://localhost:5174'}
-              className="inline-flex items-center justify-center gap-3 mb-6 hover:opacity-80 transition-opacity"
-            >
+            <div className="inline-flex items-center justify-center gap-3 mb-3">
               <img src="/logo.png" alt="PeakOps" className="w-10 h-10" />
               <span className="text-2xl font-bold text-gray-900">PeakOps</span>
-            </a>
-            <div className="inline-flex items-center text-sm text-blue-600 hover:text-blue-700 transition-colors">
+            </div>
+            <div className="block">
               <a
                 href={import.meta.env.VITE_MARKETING_URL || 'http://localhost:5174'}
-                className="inline-flex items-center"
+                className="inline-flex items-center text-sm text-blue-600 hover:text-blue-700 transition-colors"
               >
                 <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
@@ -491,7 +488,7 @@ export default function ReviewAnalysisPage() {
           <div className="text-center mb-8">
             <a
               href={import.meta.env.VITE_MARKETING_URL || 'http://localhost:5174'}
-              className="inline-flex items-center justify-center gap-3 mb-6 hover:opacity-80 transition-opacity"
+              className="inline-flex items-center justify-center gap-3 hover:opacity-80 transition-opacity"
             >
               <img src="/logo.png" alt="PeakOps" className="w-10 h-10" />
               <span className="text-2xl font-bold text-gray-900">PeakOps</span>
