@@ -85,8 +85,8 @@ export default function ReviewAnalysisPage() {
     if (analysisId && !results) {
       loadResults(analysisId);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
     // Note: 'results' is intentionally omitted to only load when analysisId changes
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [analysisId]);
 
   const loadResults = async (id: string) => {

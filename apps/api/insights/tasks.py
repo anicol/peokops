@@ -320,6 +320,17 @@ def send_analysis_email(analysis_id):
         subject = f"Your Review Analysis for {analysis.business_name} is Ready!"
         
         # Plain text version
+        key_issues = analysis.key_issues or []
+        num_issues = len(key_issues)
+        num_suggestions = len(analysis.micro_check_suggestions or [])
+
+        # Build top issues section
+        top_issues_text = ''
+        if key_issues:
+            top_issues_text = '🔍 Top Issues from Customer Reviews:\n'
+            top_issues_text += chr(10).join([f"{i+1}. {issue['theme']}: {issue['mentions']} mentions" for i, issue in enumerate(key_issues[:3])])
+            top_issues_text += '\n\n'
+
         message = f"""
 Hi{' ' + analysis.contact_name if analysis.contact_name else ''},
 
@@ -327,13 +338,10 @@ Your Google Reviews analysis for {analysis.business_name} is complete!
 
 📊 Overview:
 - Google Rating: {analysis.google_rating or 'N/A'} stars
-- Reviews Analyzed: {analysis.reviews_analyzed}
-- Key Issues Found: {len(analysis.key_issues)}
+- Reviews Analyzed: {analysis.reviews_analyzed or 0}
+- Key Issues Found: {num_issues}
 
-🔍 Top Issues from Customer Reviews:
-{chr(10).join([f"{i+1}. {issue['theme']}: {issue['mentions']} mentions" for i, issue in enumerate(analysis.key_issues[:3])])}
-
-💡 We've generated {len(analysis.micro_check_suggestions or [])} targeted micro-check recommendations to address these issues.
+{top_issues_text}💡 We've generated {num_suggestions} targeted micro-check recommendations to address these issues.
 
 View your full analysis here:
 {analysis.get_public_url()}
