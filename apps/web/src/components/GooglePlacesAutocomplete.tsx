@@ -144,7 +144,11 @@ export default function GooglePlacesAutocomplete({
         google.maps.event.clearInstanceListeners(autocompleteRef.current);
       }
     };
-  }, [isLoaded, error]); // Removed onChange and onPlaceSelected from dependencies
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    // Note: onChange and onPlaceSelected are intentionally omitted from dependencies
+    // to prevent infinite re-initialization loop. These functions are captured in
+    // the closure when autocomplete is initialized and remain stable.
+  }, [isLoaded, error]);
 
   // If Google Maps failed to load, render regular input
   if (error) {
