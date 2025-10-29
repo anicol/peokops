@@ -723,9 +723,13 @@ class GoogleReviewsIntegrationViewSet(viewsets.GenericViewSet):
                     'refresh_token_encrypted': encrypted_refresh_token,
                     'token_expires_at': expires_at,
                     'is_active': True,
-                    'created_by': request.user if created else None
                 }
             )
+
+            # Set created_by only on first creation
+            if created:
+                config.created_by = request.user
+                config.save()
 
             # Trigger initial sync of locations
             try:
