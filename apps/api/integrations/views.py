@@ -707,10 +707,11 @@ class GoogleReviewsIntegrationViewSet(viewsets.GenericViewSet):
         try:
             # Exchange code for tokens
             token_data = GoogleReviewsClient.exchange_code_for_tokens(code)
+            logger.info(f"Token exchange successful. Keys in response: {list(token_data.keys())}")
 
-            # Encrypt tokens
-            encrypted_access_token = GoogleReviewsClient.encrypt_token(token_data['access_token'])
-            encrypted_refresh_token = GoogleReviewsClient.encrypt_token(token_data['refresh_token'])
+            # Encrypt tokens (returns str, convert to bytes for BinaryField)
+            encrypted_access_token = GoogleReviewsClient.encrypt_token(token_data['access_token']).encode()
+            encrypted_refresh_token = GoogleReviewsClient.encrypt_token(token_data['refresh_token']).encode()
 
             # Calculate token expiration
             expires_at = timezone.now() + timedelta(seconds=token_data.get('expires_in', 3600))

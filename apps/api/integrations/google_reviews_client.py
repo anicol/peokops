@@ -120,11 +120,11 @@ class GoogleReviewsClient:
         return encrypted.decode()
 
     @staticmethod
-    def decrypt_token(encrypted_token: str) -> str:
+    def decrypt_token(encrypted_token: bytes) -> str:
         """Decrypt a token from database
 
         Args:
-            encrypted_token: Encrypted token as base64 string
+            encrypted_token: Encrypted token as bytes (from BinaryField)
 
         Returns:
             Decrypted plain text token
@@ -134,6 +134,9 @@ class GoogleReviewsClient:
         key = base64.urlsafe_b64encode(secret_key[:32].ljust(32, b'0'))
         f = Fernet(key)
         # Fernet.decrypt() expects the base64 token as bytes
+        # If it's already bytes from BinaryField, decode to string first for Fernet
+        if isinstance(encrypted_token, bytes):
+            encrypted_token = encrypted_token.decode()
         decrypted = f.decrypt(encrypted_token.encode())
         return decrypted.decode()
 
