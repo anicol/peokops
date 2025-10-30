@@ -408,7 +408,7 @@ Focus on identifying specific, actionable operational issues that could be addre
 
             # Call Claude via Bedrock
             response = bedrock.invoke_model(
-                modelId='anthropic.claude-3-5-sonnet-20240620-v1:0',
+                modelId='anthropic.claude-sonnet-4-20250514-v1:0',
                 body=json.dumps({
                     "anthropic_version": "bedrock-2023-05-31",
                     "max_tokens": 4000,
@@ -607,7 +607,7 @@ Focus on:
             for attempt in range(max_retries):
                 try:
                     response = bedrock.invoke_model(
-                        modelId='anthropic.claude-3-5-sonnet-20240620-v1:0',
+                        modelId='anthropic.claude-sonnet-4-20250514-v1:0',
                         body=json.dumps({
                             "anthropic_version": "bedrock-2023-05-31",
                             "max_tokens": 3000,
