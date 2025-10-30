@@ -248,22 +248,36 @@ class Command(BaseCommand):
                     else:
                         logger.warning("Reviews button not found - may already be on reviews")
 
-                    # Sort by newest (optional but helpful)
-                    try:
-                        logger.info("Looking for sort button...")
-                        sort_button = page.query_selector('button[aria-label*="Sort" i]')
-                        if sort_button:
-                            logger.info("Found sort button, clicking...")
-                            sort_button.click()
-                            time.sleep(1)
-                            newest_option = page.query_selector('div[role="menuitemradio"]:has-text("Newest")')
-                            if newest_option:
-                                logger.info("Selecting 'Newest' sort option...")
-                                newest_option.click()
-                                time.sleep(2)
-                    except Exception as e:
-                        logger.warning(f"Error with sort button: {e}")
-                        pass
+                    # Sort by newest - DISABLED: Causes worker to freeze in production
+                    # Works fine locally but hangs indefinitely in production environment
+                    # Default sort order (relevance/most helpful) is still useful
+                    # TODO: Re-enable once we fix the production hanging issue
+                    ENABLE_SORTING = False
+                    if ENABLE_SORTING:
+                        try:
+                            logger.info("Looking for sort button...")
+                            sort_button = page.query_selector('button[aria-label*="Sort" i]')
+                            if sort_button:
+                                logger.info("Found sort button, clicking...")
+                                sort_button.click()
+                                time.sleep(1)
+                                newest_option = page.query_selector('div[role="menuitemradio"]:has-text("Newest")')
+                                if newest_option:
+                                    logger.info("Selecting 'Newest' sort option...")
+                                    try:
+                                        newest_option.click()
+                                        logger.info("Clicked 'Newest' option, waiting for sort to apply...")
+                                        time.sleep(3)
+                                        logger.info("Sort applied, continuing...")
+                                    except Exception as click_error:
+                                        logger.warning(f"Error clicking Newest option: {click_error}")
+                                else:
+                                    logger.warning("Could not find 'Newest' sort option")
+                        except Exception as e:
+                            logger.warning(f"Error with sort button: {e}")
+                            pass
+                    else:
+                        logger.info("Sorting disabled (using default order) - prevents production freeze")
 
                     # Scrape reviews
                     self.stdout.write(f'Scrolling to load reviews (max {max_reviews})...')
