@@ -408,7 +408,7 @@ Focus on identifying specific, actionable operational issues that could be addre
 
             # Call Claude via Bedrock
             response = bedrock.invoke_model(
-                modelId='anthropic.claude-3-5-sonnet-20240620-v1:0',
+                modelId='anthropic.claude-sonnet-4-20250514-v1:0',
                 body=json.dumps({
                     "anthropic_version": "bedrock-2023-05-31",
                     "max_tokens": 4000,
@@ -562,9 +562,9 @@ Focus on identifying specific, actionable operational issues that could be addre
         try:
             # Add delay before making AI call to avoid throttling
             # (this is called right after the main analysis AI call)
-            # AWS Bedrock has strict rate limits, need much longer delay
-            logger.info("Waiting 30 seconds before generating micro-checks to avoid throttling...")
-            time.sleep(30)
+            # With 200 RPM quota, 5 second delay should be sufficient
+            logger.info("Waiting 5 seconds before generating micro-checks to avoid throttling...")
+            time.sleep(5)
 
             bedrock = boto3.client('bedrock-runtime', region_name='us-east-1')
 
@@ -602,12 +602,12 @@ Focus on:
 
             # Retry logic with exponential backoff for throttling
             max_retries = 3
-            base_delay = 10  # Increased from 5s to 10s for very strict rate limits
+            base_delay = 3  # With 200 RPM quota, moderate delays should work
 
             for attempt in range(max_retries):
                 try:
                     response = bedrock.invoke_model(
-                        modelId='anthropic.claude-3-5-sonnet-20240620-v1:0',
+                        modelId='anthropic.claude-sonnet-4-20250514-v1:0',
                         body=json.dumps({
                             "anthropic_version": "bedrock-2023-05-31",
                             "max_tokens": 3000,
@@ -630,7 +630,7 @@ Focus on:
                     error_code = ce.response.get('Error', {}).get('Code', '')
 
                     if error_code == 'ThrottlingException' and attempt < max_retries - 1:
-                        # Exponential backoff: 10s, 20s, 40s
+                        # Exponential backoff: 3s, 6s, 12s
                         delay = base_delay * (2 ** attempt)
                         logger.warning(f"Throttling detected, retrying in {delay}s (attempt {attempt + 1}/{max_retries})")
                         time.sleep(delay)
