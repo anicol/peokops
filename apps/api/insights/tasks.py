@@ -240,7 +240,10 @@ def process_review_analysis(self, analysis_id):
         # Extract review date range
         oldest_date, newest_date = extract_review_date_range(scraped_data['reviews'])
 
-        analysis.progress_message = f'✅ Found {business_info.get("name", analysis.business_name)}! Overall rating: {rating} ⭐ ({total_reviews:,} total reviews). Successfully loaded {review_count} recent reviews for analysis.'
+        # Truncate progress message to 200 chars to fit database field
+        business_display_name = business_info.get("name", analysis.business_name)
+        progress_msg = f'✅ Found {business_display_name}! Overall rating: {rating} ⭐ ({total_reviews:,} total reviews). Successfully loaded {review_count} recent reviews for analysis.'
+        analysis.progress_message = progress_msg[:200]
         analysis.progress_percentage = 30
         analysis.scraped_data = scraped_data
         analysis.google_rating = rating
@@ -252,12 +255,12 @@ def process_review_analysis(self, analysis_id):
         analysis.save()
 
         # Step 4: Reading reviews
-        analysis.progress_message = f'📖 Reading through {review_count} customer reviews to understand their experiences...'
+        analysis.progress_message = f'📖 Reading through {review_count} customer reviews to understand their experiences...'[:200]
         analysis.progress_percentage = 45
         analysis.save()
 
         # Step 5: Analyzing sentiment
-        analysis.progress_message = f'🎯 Analyzing customer sentiment across all {review_count} reviews and identifying recurring patterns...'
+        analysis.progress_message = f'🎯 Analyzing customer sentiment across all {review_count} reviews and identifying recurring patterns...'[:200]
         analysis.progress_percentage = 60
         analysis.save()
 
@@ -268,13 +271,13 @@ def process_review_analysis(self, analysis_id):
         insights = analyzer.analyze_reviews(reviews_formatted)
 
         # Step 6: Identifying issues
-        analysis.progress_message = f'🔎 Identified key themes from customer feedback. Now pinpointing specific operational issues...'
+        analysis.progress_message = f'🔎 Identified key themes from customer feedback. Now pinpointing specific operational issues...'[:200]
         analysis.progress_percentage = 75
         analysis.insights = insights
         analysis.save()
 
         # Step 7: Generate recommendations
-        analysis.progress_message = '💡 Generating personalized micro-check recommendations based on customer feedback patterns...'
+        analysis.progress_message = '💡 Generating personalized micro-check recommendations based on customer feedback patterns...'[:200]
         analysis.progress_percentage = 90
         analysis.save()
 
@@ -286,7 +289,7 @@ def process_review_analysis(self, analysis_id):
         analysis.status = ReviewAnalysis.Status.COMPLETED
         num_issues = len(analysis.key_issues) if analysis.key_issues else 0
         num_suggestions = len(micro_check_suggestions) if micro_check_suggestions else 0
-        analysis.progress_message = f'🎉 Analysis complete! Identified {num_issues} key operational areas and generated {num_suggestions} targeted micro-check recommendations.'
+        analysis.progress_message = f'🎉 Analysis complete! Identified {num_issues} key operational areas and generated {num_suggestions} targeted micro-check recommendations.'[:200]
         analysis.progress_percentage = 100
         analysis.completed_at = timezone.now()
         analysis.save()
