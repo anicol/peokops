@@ -82,6 +82,17 @@ services:
         value: alistair@getpeakops.com
       - key: SERVER_EMAIL
         value: alistair@getpeakops.com
+      # Google APIs Configuration
+      - key: GOOGLE_PLACES_API_KEY
+        sync: false
+      - key: GOOGLE_OAUTH_CLIENT_ID
+        sync: false
+      - key: GOOGLE_OAUTH_CLIENT_SECRET
+        sync: false
+      - key: GOOGLE_OAUTH_REDIRECT_URI
+        value: https://peakops-web.onrender.com/integrations/google-reviews
+      - key: FRONTEND_URL
+        value: https://peakops-web.onrender.com
     healthCheckPath: /health/
 
   # Celery Worker
@@ -151,6 +162,26 @@ services:
         value: peakops-media
       - key: AWS_S3_REGION_NAME
         value: us-east-1
+      - key: GOOGLE_PLACES_API_KEY
+        fromService:
+          type: web
+          name: peakops-api
+          envVarKey: GOOGLE_PLACES_API_KEY
+      - key: GOOGLE_OAUTH_CLIENT_ID
+        fromService:
+          type: web
+          name: peakops-api
+          envVarKey: GOOGLE_OAUTH_CLIENT_ID
+      - key: GOOGLE_OAUTH_CLIENT_SECRET
+        fromService:
+          type: web
+          name: peakops-api
+          envVarKey: GOOGLE_OAUTH_CLIENT_SECRET
+      - key: FRONTEND_URL
+        fromService:
+          type: web
+          name: peakops-api
+          envVarKey: FRONTEND_URL
 
   # Celery Beat Scheduler
   - type: worker
@@ -219,6 +250,26 @@ services:
         value: peakops-media
       - key: AWS_S3_REGION_NAME
         value: us-east-1
+      - key: GOOGLE_PLACES_API_KEY
+        fromService:
+          type: web
+          name: peakops-api
+          envVarKey: GOOGLE_PLACES_API_KEY
+      - key: GOOGLE_OAUTH_CLIENT_ID
+        fromService:
+          type: web
+          name: peakops-api
+          envVarKey: GOOGLE_OAUTH_CLIENT_ID
+      - key: GOOGLE_OAUTH_CLIENT_SECRET
+        fromService:
+          type: web
+          name: peakops-api
+          envVarKey: GOOGLE_OAUTH_CLIENT_SECRET
+      - key: FRONTEND_URL
+        fromService:
+          type: web
+          name: peakops-api
+          envVarKey: FRONTEND_URL
 
   # React Web App
   - type: web
