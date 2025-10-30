@@ -422,9 +422,12 @@ class Command(BaseCommand):
         """Scroll through reviews and extract data"""
         logger.info("=== SCROLL_AND_EXTRACT_REVIEWS FUNCTION ENTRY v2 ===")
         logger.info(f"Parameters: page={type(page)}, max_reviews={max_reviews}")
+
+        # Initialize outside try block so we can return partial results on crash
+        reviews = []
+        seen_review_texts = set()
+
         try:
-            reviews = []
-            seen_review_texts = set()  # Avoid duplicates
             last_review_count = 0
             no_new_reviews_count = 0
 
@@ -518,7 +521,8 @@ class Command(BaseCommand):
 
         except Exception as e:
             logger.error(f"Exception in scroll_and_extract_reviews: {str(e)}", exc_info=True)
-            return []
+            logger.warning(f"Browser crashed but returning {len(reviews)} reviews collected before crash")
+            return reviews  # Return partial results instead of empty list
 
     def extract_review_data(self, elem, page):
         """Extract data from a single review element"""

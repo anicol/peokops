@@ -161,7 +161,7 @@ def process_review_analysis(self, analysis_id):
             scraped_data = scraper.scrape_reviews(
                 business_name=analysis.business_name,
                 location=analysis.location,
-                max_reviews=100,  # Reduced to 100 to prevent browser crashes
+                max_reviews=200,  # Try for 200, gracefully return what we get
                 headless=True,
                 progress_callback=update_progress
             )
