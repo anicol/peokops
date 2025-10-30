@@ -35,14 +35,6 @@ export default function GooglePlacesAutocomplete({
 
     // Check if API key is configured
     const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
-
-    // Debug logging to help troubleshoot missing API key
-    console.log('Environment check:', {
-      hasApiKey: !!apiKey,
-      apiKeyLength: apiKey?.length || 0,
-      allEnvVars: Object.keys(import.meta.env).filter(k => k.startsWith('VITE_'))
-    });
-
     if (!apiKey) {
       console.warn('Google Maps API key not configured. Falling back to regular input.');
       setError('API key not configured');
@@ -96,14 +88,9 @@ export default function GooglePlacesAutocomplete({
   }, []);
 
   useEffect(() => {
-    console.log('Autocomplete effect running. isLoaded:', isLoaded, 'error:', error, 'inputRef.current:', !!inputRef.current);
-
     if (!isLoaded || !inputRef.current || error) {
-      console.log('Skipping autocomplete initialization');
       return;
     }
-
-    console.log('Initializing Google Places Autocomplete');
 
     // Initialize autocomplete
     autocompleteRef.current = new google.maps.places.Autocomplete(inputRef.current, {
@@ -111,43 +98,26 @@ export default function GooglePlacesAutocomplete({
       fields: ['name', 'formatted_address', 'address_components', 'place_id'],
     });
 
-    console.log('Autocomplete initialized:', autocompleteRef.current);
-
     // Listen for place selection
     autocompleteRef.current.addListener('place_changed', () => {
-      console.log('*** place_changed event fired ***');
       const place = autocompleteRef.current?.getPlace();
-      console.log('Place object from getPlace():', place);
 
       if (place && place.name) {
-        console.log('Place has name, calling onChange with:', place.name);
         onChange(place.name);
 
-        // Call onPlaceSelected immediately with all available data
-        // The address_components should be available since we requested them in fields
+        // Call onPlaceSelected with all available data
         if (onPlaceSelected) {
-          console.log('Calling onPlaceSelected callback');
-          console.log('Place selected:', place);
-          console.log('Address components:', place.address_components);
-
           onPlaceSelected({
             name: place.name || '',
             formatted_address: place.formatted_address || '',
             address_components: place.address_components,
           });
-        } else {
-          console.warn('onPlaceSelected callback is not defined');
         }
-      } else {
-        console.warn('Place object missing or has no name:', place);
       }
     });
 
-    console.log('Event listener added for place_changed');
-
     return () => {
       // Cleanup autocomplete listeners
-      console.log('Cleaning up autocomplete listeners');
       if (autocompleteRef.current) {
         google.maps.event.clearInstanceListeners(autocompleteRef.current);
       }
