@@ -163,7 +163,8 @@ def process_review_analysis(self, analysis_id):
                 location=analysis.location,
                 max_reviews=200,  # Try for 200, gracefully return what we get
                 headless=True,
-                progress_callback=update_progress
+                progress_callback=update_progress,
+                place_id=analysis.place_id if hasattr(analysis, 'place_id') and analysis.place_id else None
             )
 
             logger.info(f"Scraper returned: {type(scraped_data)}")

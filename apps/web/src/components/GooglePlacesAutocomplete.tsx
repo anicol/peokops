@@ -4,6 +4,7 @@ interface PlaceResult {
   name: string;
   formatted_address?: string;
   address_components?: google.maps.GeocoderAddressComponent[];
+  place_id?: string;
 }
 
 interface GooglePlacesAutocompleteProps {
@@ -111,6 +112,7 @@ export default function GooglePlacesAutocomplete({
             name: place.name || '',
             formatted_address: place.formatted_address || '',
             address_components: place.address_components,
+            place_id: place.place_id || '',
           });
         }
       }

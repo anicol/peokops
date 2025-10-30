@@ -40,6 +40,7 @@ export default function ReviewAnalysisPage() {
   const [businessName, setBusinessName] = useState('');
   const [location, setLocation] = useState('');
   const [selectedPlace, setSelectedPlace] = useState<any>(null);
+  const [placeId, setPlaceId] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Processing state
@@ -109,9 +110,13 @@ export default function ReviewAnalysisPage() {
     setIsSubmitting(true);
 
     try {
+      // Use full formatted address if available, otherwise fall back to city, state
+      const searchLocation = selectedPlace?.formatted_address || location;
+
       const response = await insightsAPI.startAnalysis({
         business_name: businessName,
-        location: location,
+        location: searchLocation,
+        place_id: placeId || undefined, // Send place_id if available
         source: 'website',
       });
 
@@ -152,8 +157,12 @@ export default function ReviewAnalysisPage() {
       return;
     }
 
-    // Store the full place object
+    // Store the full place object and place_id
     setSelectedPlace(place);
+    if (place.place_id) {
+      setPlaceId(place.place_id);
+      console.log('Stored place_id:', place.place_id);
+    }
 
     let city = '';
     let state = '';

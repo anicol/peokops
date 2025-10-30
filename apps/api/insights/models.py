@@ -18,6 +18,7 @@ class ReviewAnalysis(models.Model):
     # Business information
     business_name = models.CharField(max_length=200)
     location = models.CharField(max_length=200, blank=True)
+    place_id = models.CharField(max_length=200, blank=True, help_text='Google Places ID for direct navigation')
 
     # Contact information (optional, collected if they want email)
     contact_email = models.EmailField(blank=True)
