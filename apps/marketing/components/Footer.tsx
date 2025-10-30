@@ -2,6 +2,7 @@
 
 import React from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 
 const Footer = () => {
   return (
@@ -121,10 +122,121 @@ const Footer = () => {
           </div>
         </div>
 
+        {/* Ask AI Section */}
+        <div className="border-t border-gray-800 mt-8 pt-8">
+          <div className="flex flex-col items-center space-y-6">
+            <h3 className="text-gray-400 text-sm font-medium">
+              Ask AI for a summary of PeakOps
+            </h3>
+
+            <div className="flex items-center gap-4 flex-wrap justify-center">
+              {/* ChatGPT */}
+              <a
+                href={`https://chat.openai.com/?q=${encodeURIComponent("As a multi-unit restaurant operator, I want to understand what makes PeakOps the best way to improve consistency and operational excellence across my locations — and why an AI-driven habit platform could be a fit for my business. Summarize the highlights from PeakOps' website: https://getpeakops.com")}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="group"
+                title="Ask ChatGPT"
+              >
+                <div className="w-12 h-12 rounded-xl overflow-hidden transition-opacity hover:opacity-80">
+                  <Image
+                    src="/icons/chatgpt.png"
+                    alt="ChatGPT"
+                    width={48}
+                    height={48}
+                    className="w-full h-full object-cover"
+                  />
+                </div>
+              </a>
+
+              {/* Claude */}
+              <a
+                href={`https://claude.ai/new?q=${encodeURIComponent("As a multi-unit restaurant operator, I want to understand what makes PeakOps the best way to improve consistency and operational excellence across my locations — and why an AI-driven habit platform could be a fit for my business. Summarize the highlights from PeakOps' website: https://getpeakops.com")}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="group"
+                title="Ask Claude"
+              >
+                <div className="w-12 h-12 rounded-xl overflow-hidden transition-opacity hover:opacity-80">
+                  <Image
+                    src="/icons/claude.webp"
+                    alt="Claude"
+                    width={48}
+                    height={48}
+                    className="w-full h-full object-cover"
+                  />
+                </div>
+              </a>
+
+              {/* Gemini */}
+              <a
+                href={`https://gemini.google.com/app?q=${encodeURIComponent("As a multi-unit restaurant operator, I want to understand what makes PeakOps the best way to improve consistency and operational excellence across my locations — and why an AI-driven habit platform could be a fit for my business. Summarize the highlights from PeakOps' website: https://getpeakops.com")}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="group"
+                title="Ask Gemini"
+              >
+                <div className="w-12 h-12 rounded-xl overflow-hidden transition-opacity hover:opacity-80">
+                  <Image
+                    src="/icons/gemini.webp"
+                    alt="Gemini"
+                    width={48}
+                    height={48}
+                    className="w-full h-full object-cover"
+                  />
+                </div>
+              </a>
+
+              {/* Grok */}
+              <a
+                href={`https://x.com/i/grok?q=${encodeURIComponent("As a multi-unit restaurant operator, I want to understand what makes PeakOps the best way to improve consistency and operational excellence across my locations — and why an AI-driven habit platform could be a fit for my business. Summarize the highlights from PeakOps' website: https://getpeakops.com")}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="group"
+                title="Ask Grok"
+              >
+                <div className="w-12 h-12 rounded-xl overflow-hidden transition-opacity hover:opacity-80">
+                  <Image
+                    src="/icons/grok.webp"
+                    alt="Grok"
+                    width={48}
+                    height={48}
+                    className="w-full h-full object-cover"
+                  />
+                </div>
+              </a>
+
+              {/* Perplexity */}
+              <a
+                href={`https://www.perplexity.ai/?q=${encodeURIComponent("As a multi-unit restaurant operator, I want to understand what makes PeakOps the best way to improve consistency and operational excellence across my locations — and why an AI-driven habit platform could be a fit for my business. Summarize the highlights from PeakOps' website: https://getpeakops.com")}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="group"
+                title="Ask Perplexity"
+              >
+                <div className="w-12 h-12 rounded-xl overflow-hidden transition-opacity hover:opacity-80">
+                  <Image
+                    src="/icons/perplexity.webp"
+                    alt="Perplexity"
+                    width={48}
+                    height={48}
+                    className="w-full h-full object-cover"
+                  />
+                </div>
+              </a>
+            </div>
+          </div>
+        </div>
+
         <div className="border-t border-gray-800 mt-8 pt-8 flex flex-col md:flex-row justify-between items-center">
-          <p className="text-gray-400 text-sm">
-            © 2024 PeakOps. All rights reserved.
-          </p>
+          <div className="flex flex-col md:flex-row items-center gap-2 md:gap-4">
+            <p className="text-gray-400 text-sm">
+              © 2025 PeakOps. All rights reserved.
+            </p>
+            <a href="mailto:hello@getpeakops.com" className="text-gray-400 hover:text-white text-sm transition-colors">
+              hello@getpeakops.com
+            </a>
+          </div>
           <div className="flex space-x-6 mt-4 md:mt-0">
             <a href="#twitter" className="text-gray-400 hover:text-white transition-colors">
               <span className="sr-only">Twitter</span>

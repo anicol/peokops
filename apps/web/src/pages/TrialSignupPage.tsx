@@ -79,7 +79,7 @@ export default function TrialSignupPage() {
         <div className="max-w-md w-full text-center">
           <div className="bg-white rounded-2xl shadow-lg p-8">
             <CheckCircle className="h-16 w-16 text-green-500 mx-auto mb-4" />
-            <h2 className="text-2xl font-bold text-gray-900 mb-2">Welcome to InspectAI!</h2>
+            <h2 className="text-2xl font-bold text-gray-900 mb-2">Welcome to PeakOps!</h2>
             <p className="text-gray-600 mb-4">Your trial account has been created successfully.</p>
             <div className="flex items-center justify-center text-sm text-gray-500">
               <Loader2 className="h-4 w-4 animate-spin mr-2" />
