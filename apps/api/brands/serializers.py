@@ -24,6 +24,37 @@ class StoreSerializer(serializers.ModelSerializer):
 class StoreListSerializer(serializers.ModelSerializer):
     brand_name = serializers.CharField(source='brand.name', read_only=True)
 
+    # Google location data (OneToOne relationship)
+    google_rating = serializers.SerializerMethodField()
+    google_review_count = serializers.SerializerMethodField()
+    google_location_name = serializers.SerializerMethodField()
+    google_synced_at = serializers.SerializerMethodField()
+
     class Meta:
         model = Store
-        fields = ('id', 'name', 'code', 'brand', 'brand_name', 'city', 'state', 'is_active', 'created_at', 'phone', 'manager_email', 'address', 'zip_code', 'timezone', 'updated_at')
+        fields = ('id', 'name', 'code', 'brand', 'brand_name', 'city', 'state', 'is_active', 'created_at', 'phone', 'manager_email', 'address', 'zip_code', 'timezone', 'updated_at', 'google_rating', 'google_review_count', 'google_location_name', 'google_synced_at')
+
+    def get_google_rating(self, obj):
+        """Get average rating from linked Google location"""
+        if hasattr(obj, 'google_location') and obj.google_location:
+            rating = obj.google_location.average_rating
+            return float(rating) if rating is not None else None
+        return None
+
+    def get_google_review_count(self, obj):
+        """Get total review count from linked Google location"""
+        if hasattr(obj, 'google_location') and obj.google_location:
+            return obj.google_location.total_review_count
+        return None
+
+    def get_google_location_name(self, obj):
+        """Get Google business name from linked Google location"""
+        if hasattr(obj, 'google_location') and obj.google_location:
+            return obj.google_location.google_location_name
+        return None
+
+    def get_google_synced_at(self, obj):
+        """Get last sync timestamp from linked Google location"""
+        if hasattr(obj, 'google_location') and obj.google_location:
+            return obj.google_location.synced_at
+        return None

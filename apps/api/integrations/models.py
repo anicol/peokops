@@ -321,10 +321,10 @@ class GoogleLocation(models.Model):
                                            help_text="Location name from Google")
     address = models.TextField(blank=True, help_text="Full address from Google")
 
-    # PeakOps store mapping
-    store = models.ForeignKey('brands.Store', on_delete=models.CASCADE, null=True, blank=True,
-                             related_name='google_locations',
-                             help_text="PeakOps store this location maps to")
+    # PeakOps store mapping (OneToOne - each store has at most one Google location)
+    store = models.OneToOneField('brands.Store', on_delete=models.CASCADE, null=True, blank=True,
+                                 related_name='google_location',
+                                 help_text="PeakOps store this location maps to")
 
     # Location metadata
     is_active = models.BooleanField(default=True, help_text="Location is active in Google")

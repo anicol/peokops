@@ -15,10 +15,13 @@ import {
   Building2,
   Mail,
   Phone,
+  Star,
+  Link as LinkIcon,
 } from 'lucide-react';
 import { storesAPI, brandsAPI } from '@/services/api';
 import type { Store, Brand } from '@/types';
 import { useAuth } from '@/hooks/useAuth';
+import axios from 'axios';
 
 export default function StoresPage() {
   const { user: currentUser } = useAuth();

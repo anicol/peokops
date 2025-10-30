@@ -34,13 +34,16 @@ class StoreListCreateView(generics.ListCreateAPIView):
         from accounts.models import User
         user = self.request.user
 
+        # Base queryset with Google location data pre-fetched (optimization for OneToOne relationship)
+        base_qs = Store.objects.select_related('google_location', 'brand')
+
         # SUPER_ADMIN and ADMIN see all stores across all tenants
         if user.role in [User.Role.SUPER_ADMIN, User.Role.ADMIN]:
-            return Store.objects.filter(is_active=True)
+            return base_qs.filter(is_active=True)
 
         # Other roles see stores in their brand
         if user.store and user.store.brand:
-            return Store.objects.filter(brand=user.store.brand, is_active=True)
+            return base_qs.filter(brand=user.store.brand, is_active=True)
 
         return Store.objects.none()
 
