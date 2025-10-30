@@ -55,8 +55,8 @@ RUN useradd -m -u 1000 celeryuser && \
 # Switch to non-root user
 USER celeryuser
 
-# Start Celery worker with memory optimizations
-# concurrency=1: Process one task at a time to reduce memory usage
-# max-tasks-per-child=5: Restart worker after 5 tasks to free memory
-# max-memory-per-child=480000: Limit memory per worker to 480MB (close to 512MB limit)
-CMD ["celery", "-A", "peakops", "worker", "-l", "info", "--concurrency=1", "--max-tasks-per-child=5", "--max-memory-per-child=480000"]
+# Start Celery worker optimized for 2GB memory
+# concurrency=2: Process two tasks concurrently with 2GB available
+# max-tasks-per-child=10: Restart worker after 10 tasks to prevent memory leaks
+# max-memory-per-child=1800000: Limit memory per worker to 1.8GB (leaving 200MB overhead)
+CMD ["celery", "-A", "peakops", "worker", "-l", "info", "--concurrency=2", "--max-tasks-per-child=10", "--max-memory-per-child=1800000"]
