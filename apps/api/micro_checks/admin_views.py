@@ -23,6 +23,7 @@ from .models import (
 )
 from brands.models import Store, Brand
 from accounts.models import User
+from insights.models import ReviewAnalysis
 
 
 class IsSuperAdmin(BasePermission):
@@ -500,6 +501,101 @@ class AdminAnalyticsViewSet(viewsets.ViewSet):
                 'hour': f"{peak_hour}:00",
                 'count': peak_count
             }
+        })
+
+    @action(detail=False, methods=['get'])
+    def review_analysis_overview(self, request):
+        """
+        Get Google Reviews Analysis engagement metrics.
+
+        Returns:
+        - Total analyses submitted (30 days)
+        - Status breakdown (completed, pending, failed)
+        - Email capture rate
+        - View rate (viewed_at not null)
+        - Conversion rate (converted_to_trial)
+        - Conversion funnel
+        - Recent activity feed
+        - Average time to conversion
+        """
+        now = timezone.now()
+        thirty_days_ago = now - timedelta(days=30)
+
+        # Get all analyses from last 30 days
+        analyses = ReviewAnalysis.objects.filter(created_at__gte=thirty_days_ago)
+        total_analyses = analyses.count()
+
+        # Status breakdown
+        status_counts = {
+            'completed': analyses.filter(status=ReviewAnalysis.Status.COMPLETED).count(),
+            'processing': analyses.filter(status=ReviewAnalysis.Status.PROCESSING).count(),
+            'pending': analyses.filter(status=ReviewAnalysis.Status.PENDING).count(),
+            'failed': analyses.filter(status=ReviewAnalysis.Status.FAILED).count(),
+        }
+
+        # Email capture rate
+        with_email = analyses.exclude(contact_email='').count()
+        email_capture_rate = (with_email / total_analyses * 100) if total_analyses > 0 else 0
+
+        # View rate
+        viewed = analyses.exclude(viewed_at__isnull=True).count()
+        view_rate = (viewed / total_analyses * 100) if total_analyses > 0 else 0
+
+        # Conversion rate
+        converted = analyses.filter(converted_to_trial=True).count()
+        conversion_rate = (converted / total_analyses * 100) if total_analyses > 0 else 0
+
+        # Conversion funnel
+        completed_analyses = analyses.filter(status=ReviewAnalysis.Status.COMPLETED)
+        completed_count = completed_analyses.count()
+
+        conversion_funnel = [
+            {'stage': 'Submitted', 'count': total_analyses, 'percentage': 100},
+            {'stage': 'Completed', 'count': completed_count, 'percentage': (completed_count / total_analyses * 100) if total_analyses > 0 else 0},
+            {'stage': 'Viewed', 'count': viewed, 'percentage': (viewed / total_analyses * 100) if total_analyses > 0 else 0},
+            {'stage': 'Email Captured', 'count': with_email, 'percentage': (with_email / total_analyses * 100) if total_analyses > 0 else 0},
+            {'stage': 'Converted to Trial', 'count': converted, 'percentage': (converted / total_analyses * 100) if total_analyses > 0 else 0},
+        ]
+
+        # Average time to conversion
+        converted_analyses = analyses.filter(converted_to_trial=True, converted_at__isnull=False)
+        avg_time_to_conversion = None
+        if converted_analyses.exists():
+            time_deltas = []
+            for analysis in converted_analyses:
+                if analysis.converted_at and analysis.created_at:
+                    delta = (analysis.converted_at - analysis.created_at).total_seconds() / 3600  # hours
+                    time_deltas.append(delta)
+            if time_deltas:
+                avg_time_to_conversion = sum(time_deltas) / len(time_deltas)
+
+        # Recent activity (last 20 analyses)
+        recent_analyses = analyses.order_by('-created_at')[:20]
+        recent_activity = []
+        for analysis in recent_analyses:
+            recent_activity.append({
+                'id': str(analysis.id),
+                'business_name': analysis.business_name,
+                'location': analysis.location,
+                'status': analysis.status,
+                'created_at': analysis.created_at,
+                'viewed_at': analysis.viewed_at,
+                'converted_to_trial': analysis.converted_to_trial,
+                'converted_at': analysis.converted_at,
+                'contact_email': analysis.contact_email if analysis.contact_email else None,
+                'google_rating': analysis.google_rating,
+                'reviews_analyzed': analysis.reviews_analyzed,
+            })
+
+        return Response({
+            'total_analyses': total_analyses,
+            'status_breakdown': status_counts,
+            'email_capture_rate': round(email_capture_rate, 1),
+            'view_rate': round(view_rate, 1),
+            'conversion_rate': round(conversion_rate, 1),
+            'conversion_funnel': conversion_funnel,
+            'avg_hours_to_conversion': round(avg_time_to_conversion, 1) if avg_time_to_conversion else None,
+            'recent_activity': recent_activity
         })
 
 

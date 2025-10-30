@@ -408,7 +408,7 @@ Focus on identifying specific, actionable operational issues that could be addre
 
             # Call Claude via Bedrock
             response = bedrock.invoke_model(
-                modelId='anthropic.claude-sonnet-4-20250514-v1:0',
+                modelId='us.anthropic.claude-sonnet-4-20250514-v1:0',
                 body=json.dumps({
                     "anthropic_version": "bedrock-2023-05-31",
                     "max_tokens": 4000,
@@ -422,13 +422,28 @@ Focus on identifying specific, actionable operational issues that could be addre
             )
 
             response_body = json.loads(response['body'].read())
-            ai_analysis = json.loads(response_body['content'][0]['text'])
+            response_text = response_body['content'][0]['text']
+
+            # Strip markdown code blocks if present
+            response_text = response_text.strip()
+            if response_text.startswith('```'):
+                # Remove opening ```json or ```
+                lines = response_text.split('\n')
+                if lines[0].startswith('```'):
+                    lines = lines[1:]
+                # Remove closing ```
+                if lines and lines[-1].strip() == '```':
+                    lines = lines[:-1]
+                response_text = '\n'.join(lines)
+
+            ai_analysis = json.loads(response_text)
 
             logger.info("AI analysis completed successfully")
             return ai_analysis
 
         except Exception as e:
             logger.error(f"Error in AI analysis: {str(e)}")
+            logger.error(f"Response text was: {response_text[:500] if 'response_text' in locals() else 'N/A'}")
             # Fall back to keyword-based analysis
             logger.info("Falling back to keyword-based analysis")
             return None
@@ -607,7 +622,7 @@ Focus on:
             for attempt in range(max_retries):
                 try:
                     response = bedrock.invoke_model(
-                        modelId='anthropic.claude-sonnet-4-20250514-v1:0',
+                        modelId='us.anthropic.claude-sonnet-4-20250514-v1:0',
                         body=json.dumps({
                             "anthropic_version": "bedrock-2023-05-31",
                             "max_tokens": 3000,
@@ -621,7 +636,21 @@ Focus on:
                     )
 
                     response_body = json.loads(response['body'].read())
-                    ai_suggestions = json.loads(response_body['content'][0]['text'])
+                    response_text = response_body['content'][0]['text']
+
+                    # Strip markdown code blocks if present
+                    response_text = response_text.strip()
+                    if response_text.startswith('```'):
+                        # Remove opening ```json or ```
+                        lines = response_text.split('\n')
+                        if lines[0].startswith('```'):
+                            lines = lines[1:]
+                        # Remove closing ```
+                        if lines and lines[-1].strip() == '```':
+                            lines = lines[:-1]
+                        response_text = '\n'.join(lines)
+
+                    ai_suggestions = json.loads(response_text)
 
                     logger.info(f"AI generated {len(ai_suggestions)} micro-check suggestions")
                     return ai_suggestions
@@ -640,6 +669,7 @@ Focus on:
 
         except Exception as e:
             logger.error(f"Error generating AI micro-checks: {str(e)}")
+            logger.error(f"Response text was: {response_text[:500] if 'response_text' in locals() else 'N/A'}")
             return None
 
     def generate_microcheck_suggestions(self, insights):

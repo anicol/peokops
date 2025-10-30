@@ -465,7 +465,7 @@ class Command(BaseCommand):
                         review_data = self.extract_review_data(elem, page)
 
                         # Skip reviews with no text (likely extraction failure)
-                        if not review_data.get('text') or len(review_data['text'].strip()) < 10:
+                        if not review_data.get('text') or len(review_data['text'].strip()) < 5:
                             logger.debug(f"Skipping review with insufficient text: author={review_data.get('author')}, text_len={len(review_data.get('text', ''))}")
                             continue
 
