@@ -14,6 +14,7 @@ __pycache__/
 build/
 develop-eggs/
 dist/
+dev-dist/
 downloads/
 eggs/
 .eggs/
@@ -94,3 +95,7 @@ coverage.xml
 temp/
 # Allow Django uploads app
 !/apps/api/uploads/.env.bak
+
+# Test data files
+apps/api/analysis*.json
+

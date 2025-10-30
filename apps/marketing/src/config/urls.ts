@@ -23,3 +23,6 @@ export const LOGIN_URL = `${APP_URLS.webApp}/login`;
 
 // Trial signup URL - routes to /start page
 export const TRIAL_SIGNUP_URL = `${APP_URLS.webApp}/start`;
+
+// Review Analysis URL - free Google Reviews analysis tool
+export const REVIEW_ANALYSIS_URL = `${APP_URLS.webApp}/review-analysis`;

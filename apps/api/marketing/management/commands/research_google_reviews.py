@@ -390,14 +390,14 @@ Please provide a JSON response with this structure:
     }}
   ],
   "operational_themes": {{
-    "cleanliness": {{"count": 0, "sentiment": "positive|negative|mixed", "examples": [{{"snippet": "...", "rating": 4}}]}},
-    "service_speed": {{"count": 0, "sentiment": "positive|negative|mixed", "examples": []}},
-    "food_quality": {{"count": 0, "sentiment": "positive|negative|mixed", "examples": []}},
-    "staff_attitude": {{"count": 0, "sentiment": "positive|negative|mixed", "examples": []}},
-    "wait_time": {{"count": 0, "sentiment": "positive|negative|mixed", "examples": []}},
-    "temperature": {{"count": 0, "sentiment": "positive|negative|mixed", "examples": []}},
-    "accuracy": {{"count": 0, "sentiment": "positive|negative|mixed", "examples": []}},
-    "ambiance": {{"count": 0, "sentiment": "positive|negative|mixed", "examples": []}}
+    "cleanliness": {{"count": 0, "sentiment": "positive|negative|mixed", "positive_count": 0, "neutral_count": 0, "negative_count": 0, "examples": [{{"snippet": "...", "rating": 4}}]}},
+    "service_speed": {{"count": 0, "sentiment": "positive|negative|mixed", "positive_count": 0, "neutral_count": 0, "negative_count": 0, "examples": []}},
+    "food_quality": {{"count": 0, "sentiment": "positive|negative|mixed", "positive_count": 0, "neutral_count": 0, "negative_count": 0, "examples": []}},
+    "staff_attitude": {{"count": 0, "sentiment": "positive|negative|mixed", "positive_count": 0, "neutral_count": 0, "negative_count": 0, "examples": []}},
+    "wait_time": {{"count": 0, "sentiment": "positive|negative|mixed", "positive_count": 0, "neutral_count": 0, "negative_count": 0, "examples": []}},
+    "temperature": {{"count": 0, "sentiment": "positive|negative|mixed", "positive_count": 0, "neutral_count": 0, "negative_count": 0, "examples": []}},
+    "accuracy": {{"count": 0, "sentiment": "positive|negative|mixed", "positive_count": 0, "neutral_count": 0, "negative_count": 0, "examples": []}},
+    "ambiance": {{"count": 0, "sentiment": "positive|negative|mixed", "positive_count": 0, "neutral_count": 0, "negative_count": 0, "examples": []}}
   }}
 }}
 
@@ -438,14 +438,14 @@ Focus on identifying specific, actionable operational issues that could be addre
             'common_complaints': [],
             'common_praise': [],
             'operational_themes': {
-                'cleanliness': {'count': 0, 'examples': []},
-                'service_speed': {'count': 0, 'examples': []},
-                'food_quality': {'count': 0, 'examples': []},
-                'staff_attitude': {'count': 0, 'examples': []},
-                'wait_time': {'count': 0, 'examples': []},
-                'temperature': {'count': 0, 'examples': []},
-                'accuracy': {'count': 0, 'examples': []},
-                'ambiance': {'count': 0, 'examples': []},
+                'cleanliness': {'count': 0, 'positive_count': 0, 'neutral_count': 0, 'negative_count': 0, 'examples': []},
+                'service_speed': {'count': 0, 'positive_count': 0, 'neutral_count': 0, 'negative_count': 0, 'examples': []},
+                'food_quality': {'count': 0, 'positive_count': 0, 'neutral_count': 0, 'negative_count': 0, 'examples': []},
+                'staff_attitude': {'count': 0, 'positive_count': 0, 'neutral_count': 0, 'negative_count': 0, 'examples': []},
+                'wait_time': {'count': 0, 'positive_count': 0, 'neutral_count': 0, 'negative_count': 0, 'examples': []},
+                'temperature': {'count': 0, 'positive_count': 0, 'neutral_count': 0, 'negative_count': 0, 'examples': []},
+                'accuracy': {'count': 0, 'positive_count': 0, 'neutral_count': 0, 'negative_count': 0, 'examples': []},
+                'ambiance': {'count': 0, 'positive_count': 0, 'neutral_count': 0, 'negative_count': 0, 'examples': []},
             },
             'negative_reviews': [],
             'positive_reviews': []
@@ -454,28 +454,80 @@ Focus on identifying specific, actionable operational issues that could be addre
         # Try AI analysis first
         ai_insights = self.analyze_reviews_with_ai(reviews)
         if ai_insights:
-            # Merge AI insights with basic stats
+            # Use AI insights directly - trust the AI's analysis completely
             insights['operational_themes'] = ai_insights.get('operational_themes', insights['operational_themes'])
             insights['key_issues'] = ai_insights.get('key_issues', [])
+
+            # Calculate sentiment percentages from AI's count data
+            for theme_name, theme_data in insights['operational_themes'].items():
+                total_count = theme_data.get('count', 0)
+
+                # If AI didn't provide sentiment breakdown, estimate from examples
+                if total_count > 0 and theme_data.get('positive_count', 0) == 0 and theme_data.get('negative_count', 0) == 0:
+                    examples = theme_data.get('examples', [])
+                    positive = sum(1 for ex in examples if ex.get('rating', 0) >= 4)
+                    neutral = sum(1 for ex in examples if ex.get('rating', 0) == 3)
+                    negative = sum(1 for ex in examples if ex.get('rating', 0) <= 2)
+
+                    # Extrapolate from examples to total count
+                    if len(examples) > 0:
+                        total_examples = len(examples)
+                        theme_data['positive_count'] = round((positive / total_examples) * total_count)
+                        theme_data['neutral_count'] = round((neutral / total_examples) * total_count)
+                        theme_data['negative_count'] = round((negative / total_examples) * total_count)
+                    else:
+                        # No examples, assume neutral distribution
+                        theme_data['positive_count'] = 0
+                        theme_data['neutral_count'] = 0
+                        theme_data['negative_count'] = 0
+                else:
+                    # Ensure fields exist even if AI provided them
+                    theme_data.setdefault('positive_count', 0)
+                    theme_data.setdefault('neutral_count', 0)
+                    theme_data.setdefault('negative_count', 0)
+        else:
+            # Fallback to keyword-based analysis only if AI completely fails
+            theme_keywords = {
+                'cleanliness': ['dirty', 'clean', 'sanit', 'mess', 'floor', 'table', 'bathroom', 'wipe'],
+                'service_speed': ['slow', 'fast', 'quick', 'wait', 'long time', 'forever', 'efficient'],
+                'food_quality': ['cold', 'hot', 'fresh', 'stale', 'delicious', 'terrible', 'overcooked', 'undercooked', 'raw'],
+                'staff_attitude': ['rude', 'friendly', 'polite', 'attitude', 'smile', 'helpful', 'unprofessional'],
+                'wait_time': ['wait', 'line', 'queue', 'busy', 'crowded', 'reservation'],
+                'temperature': ['cold', 'hot', 'warm', 'freezing', 'temperature', 'lukewarm'],
+                'accuracy': ['wrong', 'mistake', 'missing', 'forgot', 'error', 'correct order'],
+                'ambiance': ['noise', 'loud', 'atmosphere', 'music', 'lighting', 'decor', 'uncomfortable']
+            }
+
+            for review in reviews:
+                rating = review.get('rating', 0)
+                text = review.get('text', '').lower()
+
+                for theme, keywords in theme_keywords.items():
+                    for keyword in keywords:
+                        if keyword in text:
+                            insights['operational_themes'][theme]['count'] += 1
+
+                            if rating >= 4:
+                                insights['operational_themes'][theme]['positive_count'] += 1
+                            elif rating == 3:
+                                insights['operational_themes'][theme]['neutral_count'] += 1
+                            else:
+                                insights['operational_themes'][theme]['negative_count'] += 1
+
+                            if len(insights['operational_themes'][theme]['examples']) < 3:
+                                snippet = self.extract_snippet(text, keyword)
+                                insights['operational_themes'][theme]['examples'].append({
+                                    'rating': rating,
+                                    'snippet': snippet
+                                })
+                            break
 
         # Add time-series trend analysis
         insights['trend_data'] = self.analyze_review_trends(reviews)
 
-        # Keywords for each operational theme
-        theme_keywords = {
-            'cleanliness': ['dirty', 'clean', 'sanit', 'mess', 'floor', 'table', 'bathroom', 'wipe'],
-            'service_speed': ['slow', 'fast', 'quick', 'wait', 'long time', 'forever', 'efficient'],
-            'food_quality': ['cold', 'hot', 'fresh', 'stale', 'delicious', 'terrible', 'overcooked', 'undercooked', 'raw'],
-            'staff_attitude': ['rude', 'friendly', 'polite', 'attitude', 'smile', 'helpful', 'unprofessional'],
-            'wait_time': ['wait', 'line', 'queue', 'busy', 'crowded', 'reservation'],
-            'temperature': ['cold', 'hot', 'warm', 'freezing', 'temperature', 'lukewarm'],
-            'accuracy': ['wrong', 'mistake', 'missing', 'forgot', 'error', 'correct order'],
-            'ambiance': ['noise', 'loud', 'atmosphere', 'music', 'lighting', 'decor', 'uncomfortable']
-        }
-
+        # Always calculate rating distribution and categorize reviews
         for review in reviews:
             rating = review.get('rating', 0)
-            text = review.get('text', '').lower()
 
             # Rating distribution
             insights['rating_distribution'][rating] += 1
@@ -485,19 +537,6 @@ Focus on identifying specific, actionable operational issues that could be addre
                 insights['negative_reviews'].append(review)
             elif rating >= 4:
                 insights['positive_reviews'].append(review)
-
-            # Detect themes
-            for theme, keywords in theme_keywords.items():
-                for keyword in keywords:
-                    if keyword in text:
-                        insights['operational_themes'][theme]['count'] += 1
-                        if len(insights['operational_themes'][theme]['examples']) < 3:
-                            snippet = self.extract_snippet(text, keyword)
-                            insights['operational_themes'][theme]['examples'].append({
-                                'rating': rating,
-                                'snippet': snippet
-                            })
-                        break
 
         return insights
 

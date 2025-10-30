@@ -529,6 +529,243 @@ export default function ReviewAnalysisPage() {
 function ReviewAnalysisResults({ results }: { results: AnalysisResults }) {
   const sentiment = results.sentiment_summary;
   const [showShareModal, setShowShareModal] = useState(false);
+  const [copyStatus, setCopyStatus] = useState<string>('');
+
+  // Generate HTML email content
+  const generateEmailHTML = (): string => {
+    const ratingDist = results.insights?.rating_distribution || {};
+    const reviewsAnalyzed = results.reviews_analyzed || 0;
+
+    // Calculate rating distribution percentages
+    const getRatingPercentage = (rating: number) => {
+      const count = ratingDist[rating] || 0;
+      return reviewsAnalyzed > 0 ? ((count / reviewsAnalyzed) * 100).toFixed(0) : '0';
+    };
+
+    // Get top 3 operational themes
+    const topThemes = results.insights?.operational_themes
+      ? Object.entries(results.insights.operational_themes)
+          .filter(([_, data]: [string, any]) => data.count > 0)
+          .sort(([_, a]: [string, any], [__, b]: [string, any]) => b.count - a.count)
+          .slice(0, 3)
+      : [];
+
+    // Get top 3 micro-check suggestions sorted by severity
+    const topSuggestions = results.micro_check_suggestions
+      ?.slice()
+      .sort((a: any, b: any) => {
+        // Sort by severity: CRITICAL > HIGH > MEDIUM > LOW
+        const severityOrder = { 'CRITICAL': 0, 'HIGH': 1, 'MEDIUM': 2, 'LOW': 3 };
+        const severityA = severityOrder[a.severity as keyof typeof severityOrder] ?? 999;
+        const severityB = severityOrder[b.severity as keyof typeof severityOrder] ?? 999;
+        return severityA - severityB;
+      })
+      .slice(0, 3) || [];
+
+    // Get key issues
+    const keyIssues = results.insights?.key_issues?.slice(0, 3) || [];
+
+    return `<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Review Analysis for ${results.business_name}</title>
+</head>
+<body style="margin: 0; padding: 20px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background-color: #f3f4f6;">
+    <div style="max-width: 600px; margin: 0 auto; background-color: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
+
+        <!-- Header -->
+        <div style="background: linear-gradient(135deg, #4F46E5 0%, #2563EB 100%); padding: 40px 20px; text-align: center;">
+            <div style="color: #ffffff; font-size: 28px; font-weight: bold; margin-bottom: 10px;">PeakOps</div>
+            <div style="color: #E0E7FF; font-size: 16px;">AI-Powered Review Analysis</div>
+        </div>
+
+        <!-- Content -->
+        <div style="padding: 40px 20px;">
+            <h1 style="color: #1F2937; font-size: 24px; margin-bottom: 16px; margin-top: 0;">Review Analysis for ${results.business_name}</h1>
+
+            <div style="color: #4B5563; font-size: 16px; margin-bottom: 24px; line-height: 1.6;">
+                Here's the AI-powered analysis of Google Reviews:
+            </div>
+
+            <!-- Stats -->
+            <table style="width: 100%; margin: 24px 0; border-collapse: collapse;">
+                <tr>
+                    <td style="background-color: #F9FAFB; border-radius: 8px; padding: 20px; text-align: center; border: 1px solid #E5E7EB; width: 33%;">
+                        <div style="font-size: 32px; font-weight: bold; color: #2563EB; margin-bottom: 4px;">${results.google_rating || 'N/A'}⭐</div>
+                        <div style="font-size: 14px; color: #6B7280;">Google Rating</div>
+                    </td>
+                    <td style="width: 2%;"></td>
+                    <td style="background-color: #F9FAFB; border-radius: 8px; padding: 20px; text-align: center; border: 1px solid #E5E7EB; width: 33%;">
+                        <div style="font-size: 32px; font-weight: bold; color: #2563EB; margin-bottom: 4px;">${reviewsAnalyzed}</div>
+                        <div style="font-size: 14px; color: #6B7280;">Reviews Analyzed</div>
+                    </td>
+                    <td style="width: 2%;"></td>
+                    <td style="background-color: #F9FAFB; border-radius: 8px; padding: 20px; text-align: center; border: 1px solid #E5E7EB; width: 33%;">
+                        <div style="font-size: 32px; font-weight: bold; color: #2563EB; margin-bottom: 4px;">${topThemes.length}</div>
+                        <div style="font-size: 14px; color: #6B7280;">Key Issues Found</div>
+                    </td>
+                </tr>
+            </table>
+
+            ${keyIssues.length > 0 ? `
+            <!-- Key Priority Issues -->
+            <div style="margin: 32px 0; background: linear-gradient(to right, #FFF7ED, #FEE2E2); border: 2px solid #FDBA74; border-radius: 8px; padding: 20px;">
+                <div style="font-size: 20px; font-weight: bold; color: #1F2937; margin-bottom: 8px;">⚠️ Top Priority Issues</div>
+                <div style="color: #6B7280; font-size: 14px; margin-bottom: 16px;">AI-identified issues from customer feedback:</div>
+                ${keyIssues.map((issue: any) => {
+                  const severityColor = issue.severity === 'HIGH' || issue.severity === 'CRITICAL' ? '#EF4444' : issue.severity === 'MEDIUM' ? '#F59E0B' : '#9CA3AF';
+                  const severityBg = issue.severity === 'HIGH' || issue.severity === 'CRITICAL' ? '#FEE2E2' : issue.severity === 'MEDIUM' ? '#FEF3C7' : '#F3F4F6';
+                  const severityText = issue.severity === 'HIGH' || issue.severity === 'CRITICAL' ? '#991B1B' : issue.severity === 'MEDIUM' ? '#92400E' : '#4B5563';
+
+                  return `
+                <div style="background-color: #FFFFFF; border-left: 4px solid ${severityColor}; padding: 16px; margin-bottom: 12px; border-radius: 4px;">
+                    <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 8px;">
+                        <div style="font-weight: bold; color: #1F2937; font-size: 16px;">${issue.theme}</div>
+                        <div style="display: flex; gap: 8px;">
+                            <span style="background-color: ${severityBg}; color: ${severityText}; padding: 4px 12px; border-radius: 9999px; font-size: 11px; font-weight: 700;">${issue.severity}</span>
+                            <span style="background-color: #DBEAFE; color: #1E40AF; padding: 4px 12px; border-radius: 9999px; font-size: 11px; font-weight: 700;">${issue.mentions} mentions</span>
+                        </div>
+                    </div>
+                    <div style="color: #4B5563; font-size: 14px; line-height: 1.5;">${issue.summary}</div>
+                    ${issue.examples && issue.examples.length > 0 ? `
+                    <div style="margin-top: 12px;">
+                        ${issue.examples.slice(0, 1).map((ex: any) => `
+                        <div style="background-color: #F9FAFB; padding: 12px; border-left: 2px solid #D1D5DB; border-radius: 4px;">
+                            <div style="color: #F59E0B; font-size: 12px; margin-bottom: 4px;">${'⭐'.repeat(ex.rating)} (${ex.rating}/5)</div>
+                            <div style="color: #6B7280; font-size: 13px; font-style: italic;">"${ex.snippet}"</div>
+                        </div>
+                        `).join('')}
+                    </div>
+                    ` : ''}
+                </div>
+                  `;
+                }).join('')}
+
+                <!-- One-line CTA -->
+                <div style="margin-top: 16px; padding: 16px; background-color: #EFF6FF; border-left: 4px solid #3B82F6; border-radius: 4px;">
+                    <p style="margin: 0; font-size: 14px; color: #374151;">
+                        <span style="margin-right: 8px;">👇</span>
+                        <strong>These issues automatically generate daily checks</strong> in your PeakOps plan.
+                    </p>
+                </div>
+            </div>
+            ` : ''}
+
+            ${topThemes.length > 0 ? `
+            <!-- Key Topics & Sentiment -->
+            <div style="margin: 32px 0;">
+                <div style="font-size: 20px; font-weight: bold; color: #1F2937; margin-bottom: 16px;">🔍 Key Topics & Sentiment</div>
+                ${topThemes.map(([theme, data]: [string, any]) => {
+                  const totalCount = data.count || 0;
+                  const positiveCount = data.positive_count || 0;
+                  const positivePercent = totalCount > 0 ? Math.round((positiveCount / totalCount) * 100) : 0;
+
+                  // Determine sentiment label and colors
+                  let sentimentLabel = '';
+                  let sentimentColor = '';
+                  let barColor = '';
+                  if (positivePercent >= 90) {
+                    sentimentLabel = 'Excellent';
+                    sentimentColor = '#15803D';
+                    barColor = '#10B981';
+                  } else if (positivePercent >= 50) {
+                    sentimentLabel = 'Mostly Positive';
+                    sentimentColor = '#A16207';
+                    barColor = '#F59E0B';
+                  } else {
+                    sentimentLabel = 'Needs Attention';
+                    sentimentColor = '#991B1B';
+                    barColor = '#EF4444';
+                  }
+
+                  return `
+                <div style="display: flex; align-items: center; margin-bottom: 12px;">
+                    <div style="width: 150px; flex-shrink: 0;">
+                        <span style="font-size: 14px; font-weight: 500; color: #374151; text-transform: capitalize;">
+                            ${theme.replace(/_/g, ' ')}
+                        </span>
+                    </div>
+                    <div style="flex: 1; display: flex; align-items: center; gap: 8px;">
+                        <div style="flex: 1; background-color: #E5E7EB; border-radius: 9999px; height: 24px; overflow: hidden;">
+                            <div style="height: 100%; background-color: ${barColor}; width: ${positivePercent}%; display: flex; align-items: center; padding: 0 8px;">
+                                <span style="color: white; font-size: 11px; font-weight: 600;">${positivePercent >= 15 ? positivePercent + '%' : ''}</span>
+                            </div>
+                        </div>
+                        <span style="font-size: 14px; font-weight: 600; color: ${sentimentColor}; width: 130px; text-align: right;">
+                            ${sentimentLabel}
+                        </span>
+                    </div>
+                </div>
+                  `;
+                }).join('')}
+            </div>
+            ` : ''}
+
+
+            ${topSuggestions.length > 0 ? `
+            <!-- Micro-Check Recommendations -->
+            <div style="margin: 32px 0;">
+                <div style="font-size: 20px; font-weight: bold; color: #1F2937; margin-bottom: 16px;">💡 Recommended Micro-Checks</div>
+                <p style="color: #6B7280; margin-bottom: 16px;">
+                    Daily checks to prevent these issues from happening:
+                </p>
+                ${topSuggestions.map((suggestion: any) => `
+                <div style="background-color: #F3F4F6; border-left: 4px solid #10B981; padding: 16px; margin-bottom: 12px; border-radius: 4px;">
+                    <div style="font-weight: bold; color: #065F46; margin-bottom: 8px;">${suggestion.title}</div>
+                    <div style="color: #047857; font-size: 14px; margin-bottom: 4px;"><strong>Question:</strong> ${suggestion.question}</div>
+                    <div style="color: #6B7280; font-size: 13px;"><strong>Success Criteria:</strong> ${suggestion.success_criteria}</div>
+                </div>
+                `).join('')}
+            </div>
+            ` : ''}
+
+            <!-- CTA -->
+            <div style="text-align: center; margin: 40px 0;">
+                <a href="${window.location.origin}/review-analysis" style="display: inline-block; background: linear-gradient(135deg, #2563EB 0%, #1D4ED8 100%); color: #ffffff; padding: 16px 32px; border-radius: 8px; text-decoration: none; font-weight: bold; font-size: 16px;">View Full Analysis →</a>
+            </div>
+
+            <div style="background-color: #EFF6FF; border-radius: 8px; padding: 20px; margin-top: 32px; border: 1px solid #DBEAFE;">
+                <h3 style="color: #1E40AF; margin-top: 0; font-size: 18px;">Ready to Fix These Issues?</h3>
+                <p style="color: #1E3A8A; margin-bottom: 16px; line-height: 1.6;">
+                    Turn these insights into action with PeakOps. We'll deliver daily micro-checks to your team automatically — right when they're on shift.
+                </p>
+                <ul style="color: #1E3A8A; padding-left: 20px; line-height: 1.8;">
+                    <li>Three quick questions delivered daily</li>
+                    <li>Automatic reminders and streak tracking</li>
+                    <li>Progress dashboard and insights</li>
+                    <li>Integrates with 7shifts for seamless delivery</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <div style="background-color: #F9FAFB; padding: 32px 20px; text-align: center; color: #6B7280; font-size: 14px;">
+            <div style="color: #2563EB; font-weight: bold; font-size: 18px; margin-bottom: 8px;">PeakOps</div>
+            <p style="margin: 8px 0;">AI-powered operations management for hospitality businesses</p>
+            <p style="margin-top: 16px;">
+                <a href="${window.location.origin}" style="color: #2563EB; text-decoration: none;">Visit PeakOps</a>
+            </p>
+        </div>
+    </div>
+</body>
+</html>`;
+  };
+
+  // Copy HTML to clipboard
+  const handleCopyHTML = async () => {
+    try {
+      const htmlContent = generateEmailHTML();
+      await navigator.clipboard.writeText(htmlContent);
+      setCopyStatus('Copied!');
+      setTimeout(() => setCopyStatus(''), 3000);
+    } catch (err) {
+      console.error('Failed to copy:', err);
+      setCopyStatus('Failed to copy');
+      setTimeout(() => setCopyStatus(''), 3000);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-blue-50 to-white py-12 px-4">
@@ -547,167 +784,251 @@ function ReviewAnalysisResults({ results }: { results: AnalysisResults }) {
                 <p className="text-sm text-gray-600">Turn customer feedback into actionable daily checks</p>
               </div>
             </div>
-            <button
-              onClick={() => setShowShareModal(true)}
-              className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
-            >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
-              </svg>
-              Share
-            </button>
+            <div className="flex items-center gap-3">
+              <button
+                onClick={handleCopyHTML}
+                className="flex items-center gap-2 bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors relative"
+                title="Copy HTML for email clients"
+              >
+                {copyStatus ? (
+                  <>
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                    </svg>
+                    {copyStatus}
+                  </>
+                ) : (
+                  <>
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                    </svg>
+                    Copy HTML
+                  </>
+                )}
+              </button>
+              <button
+                onClick={() => setShowShareModal(true)}
+                className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
+                </svg>
+                Share
+              </button>
+            </div>
           </div>
         </div>
 
-        {/* Business Header */}
-        <div className="text-center mb-8">
-          <h1 className="text-4xl font-bold text-gray-900 mb-2">
-            {results.business_name}
-          </h1>
-          <p className="text-gray-600">{results.google_address}</p>
-          {results.google_rating && (
-            <div className="mt-4 inline-flex items-center gap-2 bg-yellow-100 px-4 py-2 rounded-full">
-              <span className="text-2xl font-bold text-yellow-800">
-                {results.google_rating}
-              </span>
-              <span className="text-yellow-800">⭐</span>
-              <span className="text-sm text-gray-600">
-                ({results.total_reviews_found} reviews)
-              </span>
-            </div>
-          )}
-        </div>
+        {/* 1. HEADER SUMMARY - One Glance View */}
+        <div className="bg-white rounded-lg shadow-lg p-4 sm:p-6 mb-8">
+          <div className="text-center mb-4 sm:mb-6">
+            <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-900 mb-2 px-2">
+              {results.business_name}
+            </h1>
+            <p className="text-gray-600 text-xs sm:text-sm px-2">{results.google_address}</p>
+          </div>
 
-        {/* Summary Cards */}
-        <div className="grid md:grid-cols-3 gap-6 mb-8">
-          <div className="bg-white rounded-lg shadow p-6">
-            <div className="text-3xl font-bold text-blue-600 mb-2">
-              {results.reviews_analyzed}
-            </div>
-            <div className="text-gray-600">Reviews Analyzed</div>
-            {results.review_timeframe && (
-              <div className="text-sm text-gray-500 mt-1">
-                {results.review_timeframe}
+          {/* Snapshot Metrics */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-2 sm:gap-4">
+            {results.google_rating && (
+              <div className="text-center p-3 sm:p-4 bg-yellow-50 rounded-lg border border-yellow-200">
+                <div className="text-xl sm:text-2xl md:text-3xl font-bold text-yellow-700">
+                  {results.google_rating}⭐
+                </div>
+                <div className="text-xs text-gray-600 mt-1">Google Rating</div>
               </div>
             )}
+
+            <div className="text-center p-3 sm:p-4 bg-blue-50 rounded-lg border border-blue-200">
+              <div className="text-xl sm:text-2xl md:text-3xl font-bold text-blue-700">
+                {results.reviews_analyzed}
+              </div>
+              <div className="text-xs text-gray-600 mt-1">Reviews Analyzed</div>
+            </div>
+
+            {sentiment && (
+              <>
+                <div className="text-center p-3 sm:p-4 bg-green-50 rounded-lg border border-green-200">
+                  <div className="text-xl sm:text-2xl md:text-3xl font-bold text-green-700">
+                    {sentiment.positive_percentage}%
+                  </div>
+                  <div className="text-xs text-gray-600 mt-1">Positive</div>
+                </div>
+
+                <div className="text-center p-3 sm:p-4 bg-red-50 rounded-lg border border-red-200">
+                  <div className="text-xl sm:text-2xl md:text-3xl font-bold text-red-700">
+                    {sentiment.negative_percentage}%
+                  </div>
+                  <div className="text-xs text-gray-600 mt-1">Negative</div>
+                </div>
+              </>
+            )}
           </div>
-
-          {sentiment && (
-            <>
-              <div className="bg-white rounded-lg shadow p-6">
-                <div className="text-3xl font-bold text-green-600 mb-2">
-                  {sentiment.positive_percentage}%
-                </div>
-                <div className="text-gray-600">Positive Reviews</div>
-              </div>
-
-              <div className="bg-white rounded-lg shadow p-6">
-                <div className="text-3xl font-bold text-red-600 mb-2">
-                  {sentiment.negative_percentage}%
-                </div>
-                <div className="text-gray-600">Negative Reviews</div>
-              </div>
-            </>
-          )}
         </div>
 
-        {/* Trend Chart - only show if we have multiple time periods */}
-        {results.insights?.trend_data &&
-         results.insights.trend_data.series &&
-         results.insights.trend_data.series.length > 1 &&
-         results.insights.trend_data.total_periods >= 2 && (
-          <ReviewTrendChart trendData={results.insights.trend_data} />
-        )}
-
-        {/* Star Rating Breakdown */}
-        {results.insights?.rating_distribution && (
-          <div className="bg-white rounded-lg shadow-lg p-8 mb-8">
-            <h2 className="text-2xl font-bold text-gray-900 mb-6">
-              ⭐ Rating Distribution
-            </h2>
+        {/* 2. TOP ISSUES - AI Insights (Top 2-3 most critical) */}
+        {results.insights?.key_issues && results.insights.key_issues.length > 0 && (
+          <div className="bg-gradient-to-r from-orange-50 to-red-50 border-2 border-orange-200 rounded-lg shadow-lg p-6 mb-8">
+            <div className="flex items-center gap-2 mb-3">
+              <span className="text-xl">⚠️</span>
+              <h2 className="text-xl font-bold text-gray-900">
+                Top Priority Issues
+              </h2>
+            </div>
             <div className="space-y-3">
-              {[5, 4, 3, 2, 1].map((rating) => {
-                const count = results.insights.rating_distribution[rating] || 0;
-                const reviewsAnalyzed = results.reviews_analyzed || 0;
-                const percentage = reviewsAnalyzed > 0
-                  ? (count / reviewsAnalyzed * 100).toFixed(1)
-                  : '0';
-                return (
-                  <div key={rating} className="flex items-center gap-4">
-                    <div className="w-20 flex items-center gap-1">
-                      <span className="font-semibold">{rating}</span>
-                      <span className="text-yellow-500">★</span>
-                    </div>
-                    <div className="flex-1">
-                      <div className="w-full bg-gray-200 rounded-full h-6 overflow-hidden">
-                        <div
-                          className={`h-6 rounded-full transition-all ${
-                            rating >= 4 ? 'bg-green-500' : rating === 3 ? 'bg-yellow-500' : 'bg-red-500'
-                          }`}
-                          style={{ width: `${percentage}%` }}
-                        />
-                      </div>
-                    </div>
-                    <div className="w-24 text-right">
-                      <span className="font-semibold">{count}</span>
-                      <span className="text-gray-500 text-sm ml-2">({percentage}%)</span>
+              {results.insights.key_issues.slice(0, 3).map((issue: any, index: number) => (
+                <div
+                  key={index}
+                  className={`bg-white rounded-lg p-4 border-l-4 ${
+                    issue.severity === 'HIGH' || issue.severity === 'CRITICAL'
+                      ? 'border-red-500'
+                      : issue.severity === 'MEDIUM'
+                      ? 'border-yellow-500'
+                      : 'border-gray-400'
+                  }`}
+                >
+                  <div className="flex items-start justify-between mb-2">
+                    <h3 className="font-bold text-gray-900 flex items-center">
+                      <span className="mr-2">{issue.severity === 'HIGH' || issue.severity === 'CRITICAL' ? '🔴' : issue.severity === 'MEDIUM' ? '🟡' : '⚪'}</span>
+                      {issue.theme}
+                    </h3>
+                    <div className="flex items-center gap-2 flex-shrink-0 ml-2">
+                      <span className={`px-2 py-0.5 rounded-full text-xs font-bold ${
+                        issue.severity === 'HIGH' || issue.severity === 'CRITICAL'
+                          ? 'bg-red-100 text-red-800'
+                          : issue.severity === 'MEDIUM'
+                          ? 'bg-yellow-100 text-yellow-800'
+                          : 'bg-gray-100 text-gray-800'
+                      }`}>
+                        {issue.severity}
+                      </span>
+                      <span className="text-gray-500 text-xs font-medium">
+                        {issue.mentions} mentions
+                      </span>
                     </div>
                   </div>
-                );
-              })}
+                  <p className="text-sm text-gray-700 mb-2">{issue.summary}</p>
+                  {issue.examples && issue.examples.length > 0 && issue.examples[0] && (
+                    <div className="bg-gray-50 p-2 rounded text-xs text-gray-600 italic border-l-2 border-gray-300">
+                      <span className="text-yellow-500 mr-1">{'⭐'.repeat(issue.examples[0].rating)}</span>
+                      "{issue.examples[0].snippet}"
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+
+            {/* One-line CTA */}
+            <div className="mt-4 p-4 bg-blue-50 border-l-4 border-blue-500 rounded">
+              <p className="text-sm text-gray-700 flex items-center gap-2">
+                <span>👇</span>
+                <span><strong>These issues automatically generate daily checks</strong> in your PeakOps plan.</span>
+              </p>
             </div>
           </div>
         )}
 
-        {/* Category Breakdown */}
+        {/* 3. THEME BREAKDOWN - Quick Sentiment Bars */}
         {results.insights?.operational_themes && (
-          <div className="bg-white rounded-lg shadow-lg p-8 mb-8">
-            <h2 className="text-2xl font-bold text-gray-900 mb-6">
-              🔍 Topics Mentioned in Reviews
+          <div className="bg-white rounded-lg shadow-lg p-6 mb-8">
+            <h2 className="text-xl font-bold text-gray-900 mb-4">
+              🔍 Key Topics & Sentiment
             </h2>
-            <div className="grid md:grid-cols-2 gap-4">
+            <div className="space-y-3">
               {Object.entries(results.insights.operational_themes)
                 .filter(([_, data]: [string, any]) => data.count > 0)
                 .sort(([_, a]: [string, any], [__, b]: [string, any]) => b.count - a.count)
-                .map(([theme, data]: [string, any]) => (
-                  <div key={theme} className="border border-gray-200 rounded-lg p-4">
-                    <div className="flex items-center justify-between mb-2">
-                      <h3 className="font-semibold text-gray-900 capitalize">
-                        {theme.replace(/_/g, ' ')}
-                      </h3>
-                      <span className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm font-medium">
-                        {data.count} mentions
-                      </span>
+                .map(([theme, data]: [string, any]) => {
+                  const totalCount = data.count || 0;
+                  const positiveCount = data.positive_count || 0;
+
+                  // Calculate percentage positive
+                  const positivePercent = totalCount > 0 ? Math.round((positiveCount / totalCount) * 100) : 0;
+
+                  // Determine sentiment label
+                  let sentimentLabel = '';
+                  let sentimentColor = '';
+                  let barColor = '';
+                  if (positivePercent >= 90) {
+                    sentimentLabel = 'Excellent';
+                    sentimentColor = 'text-green-700';
+                    barColor = 'bg-green-500';
+                  } else if (positivePercent >= 50) {
+                    sentimentLabel = 'Mostly Positive';
+                    sentimentColor = 'text-yellow-700';
+                    barColor = 'bg-yellow-500';
+                  } else {
+                    sentimentLabel = 'Needs Attention';
+                    sentimentColor = 'text-red-700';
+                    barColor = 'bg-red-500';
+                  }
+
+                  return (
+                    <div key={theme} className="flex items-center gap-3">
+                      <div className="w-32 flex-shrink-0">
+                        <span className="text-sm font-medium text-gray-700 capitalize">
+                          {theme.replace(/_/g, ' ')}
+                        </span>
+                      </div>
+                      <div className="flex-1 flex items-center gap-2">
+                        <div className="flex-1 bg-gray-200 rounded-full h-6 overflow-hidden">
+                          <div
+                            className={`h-full flex items-center justify-start px-2 text-xs font-medium text-white transition-all ${barColor}`}
+                            style={{ width: `${positivePercent}%` }}
+                          >
+                            {positivePercent >= 15 && `${positivePercent}%`}
+                          </div>
+                        </div>
+                        <span className={`text-sm font-semibold w-32 text-right ${sentimentColor}`}>
+                          {sentimentLabel}
+                        </span>
+                      </div>
                     </div>
-                    {data.examples && data.examples[0] && (
-                      <p className="text-sm text-gray-600 italic">
-                        "{data.examples[0].snippet}"
-                      </p>
-                    )}
-                  </div>
-                ))}
+                  );
+                })}
             </div>
           </div>
         )}
 
-        {/* Micro-Check Recommendations */}
+        {/* 4. EXAMPLE REVIEWS - Representative Quotes (Minimal) */}
+        {results.insights && (
+          (results.insights.negative_reviews?.filter((r: any) => r.text && r.text.trim()).length > 0) ||
+          (results.insights.positive_reviews?.filter((r: any) => r.text && r.text.trim()).length > 0)
+        ) && (
+          <CustomerVoicesSection
+            negativeReviews={results.insights.negative_reviews?.filter((r: any) => r.text && r.text.trim()) || []}
+            positiveReviews={results.insights.positive_reviews?.filter((r: any) => r.text && r.text.trim()) || []}
+          />
+        )}
+
+        {/* 5. RECOMMENDED MICRO-CHECKS - Tied to Top Issues */}
         {results.micro_check_suggestions && results.micro_check_suggestions.length > 0 && (
-          <div className="bg-white rounded-lg shadow-lg p-8 mb-8">
-            <h2 className="text-2xl font-bold text-gray-900 mb-2">
-              Recommended Micro-Checks
+          <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border-2 border-blue-200 rounded-lg shadow-lg p-6 mb-8">
+            <h2 className="text-xl font-bold text-gray-900 mb-2 flex items-center gap-2">
+              <span>✅</span>
+              Recommended Actions
             </h2>
-            <p className="text-gray-600 mb-6">
-              Daily checks to prevent these issues from happening
+            <p className="text-sm text-gray-700 mb-4">
+              Daily micro-checks designed to prevent the issues identified above:
             </p>
 
-            <div className="space-y-6">
-              {results.micro_check_suggestions.map((suggestion: any, index: number) => (
-                <div key={index} className="border border-gray-200 rounded-lg p-6">
-                  <div className="flex items-start justify-between mb-3">
-                    <h3 className="text-lg font-semibold text-gray-900">
+            <div className="space-y-4">
+              {results.micro_check_suggestions
+                .slice()
+                .sort((a: any, b: any) => {
+                  // Sort by severity: CRITICAL > HIGH > MEDIUM > LOW
+                  const severityOrder = { 'CRITICAL': 0, 'HIGH': 1, 'MEDIUM': 2, 'LOW': 3 };
+                  const severityA = severityOrder[a.severity as keyof typeof severityOrder] ?? 999;
+                  const severityB = severityOrder[b.severity as keyof typeof severityOrder] ?? 999;
+                  return severityA - severityB;
+                })
+                .map((suggestion: any, index: number) => (
+                <div key={index} className="bg-white border border-gray-200 rounded-lg p-4">
+                  <div className="flex items-start justify-between mb-2">
+                    <h3 className="font-semibold text-gray-900">
                       {suggestion.title}
                     </h3>
-                    <span className={`px-3 py-1 rounded-full text-xs font-medium ${
+                    <span className={`px-2 py-0.5 rounded-full text-xs font-medium flex-shrink-0 ml-2 ${
                       suggestion.severity === 'HIGH' || suggestion.severity === 'CRITICAL'
                         ? 'bg-red-100 text-red-800'
                         : suggestion.severity === 'MEDIUM'
@@ -718,16 +1039,16 @@ function ReviewAnalysisResults({ results }: { results: AnalysisResults }) {
                     </span>
                   </div>
 
-                  <p className="text-gray-700 mb-2">
-                    <strong>Question:</strong> {suggestion.question}
+                  <p className="text-sm text-gray-700 mb-2">
+                    <span className="font-medium">Question:</span> {suggestion.question}
                   </p>
 
-                  <p className="text-gray-600 text-sm mb-3">
-                    <strong>Success Criteria:</strong> {suggestion.success_criteria}
+                  <p className="text-xs text-gray-600 mb-2">
+                    <span className="font-medium">Success:</span> {suggestion.success_criteria}
                   </p>
 
-                  <div className="text-sm text-gray-500">
-                    Based on {suggestion.mentions_in_reviews} customer reviews
+                  <div className="text-xs text-gray-500">
+                    📊 Based on {suggestion.mentions_in_reviews} customer reviews
                   </div>
                 </div>
               ))}
@@ -764,6 +1085,97 @@ function ReviewAnalysisResults({ results }: { results: AnalysisResults }) {
             businessName={results.business_name}
             onClose={() => setShowShareModal(false)}
           />
+        )}
+      </div>
+    </div>
+  );
+}
+
+// Customer Voices Section Component with Show More
+function CustomerVoicesSection({ negativeReviews, positiveReviews }: { negativeReviews: any[]; positiveReviews: any[] }) {
+  const [expandedReviews, setExpandedReviews] = useState<{ [key: string]: boolean }>({});
+
+  const toggleReview = (type: string, index: number) => {
+    const key = `${type}-${index}`;
+    setExpandedReviews(prev => ({ ...prev, [key]: !prev[key] }));
+  };
+
+  const ReviewCard = ({ review, index, type, bgColor, borderColor }: {
+    review: any;
+    index: number;
+    type: string;
+    bgColor: string;
+    borderColor: string;
+  }) => {
+    const key = `${type}-${index}`;
+    const isExpanded = expandedReviews[key];
+
+    return (
+      <div className={`${bgColor} border-l-3 ${borderColor} p-4 rounded`}>
+        <p className={`text-sm text-gray-700 italic leading-relaxed ${!isExpanded ? 'line-clamp-3' : ''}`}>
+          "{review.text}"
+        </p>
+        {review.text && review.text.length > 150 && (
+          <button
+            onClick={() => toggleReview(type, index)}
+            className="text-xs text-blue-600 hover:text-blue-800 mt-2 font-medium"
+          >
+            {isExpanded ? 'Show less' : 'Show more'}
+          </button>
+        )}
+      </div>
+    );
+  };
+
+  return (
+    <div className="bg-white rounded-lg shadow-lg p-6 mb-8">
+      <h2 className="text-xl font-bold text-gray-900 mb-4">
+        💬 Customer Voices
+      </h2>
+
+      <div className="grid md:grid-cols-2 gap-4">
+        {/* Critical Feedback */}
+        {negativeReviews.length > 0 && (
+          <div>
+            <h3 className="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-1">
+              <span className="text-red-500">👎</span>
+              Critical ({negativeReviews.length})
+            </h3>
+            <div className="space-y-3">
+              {negativeReviews.slice(0, 2).map((review: any, idx: number) => (
+                <ReviewCard
+                  key={idx}
+                  review={review}
+                  index={idx}
+                  type="negative"
+                  bgColor="bg-red-50"
+                  borderColor="border-red-400"
+                />
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Positive Feedback */}
+        {positiveReviews.length > 0 && (
+          <div>
+            <h3 className="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-1">
+              <span className="text-green-500">👍</span>
+              Positive ({positiveReviews.length})
+            </h3>
+            <div className="space-y-3">
+              {positiveReviews.slice(0, 2).map((review: any, idx: number) => (
+                <ReviewCard
+                  key={idx}
+                  review={review}
+                  index={idx}
+                  type="positive"
+                  bgColor="bg-green-50"
+                  borderColor="border-green-400"
+                />
+              ))}
+            </div>
+          </div>
         )}
       </div>
     </div>

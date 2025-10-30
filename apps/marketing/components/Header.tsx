@@ -4,7 +4,7 @@ import React, { useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { Menu, X, ChevronDown } from 'lucide-react';
-import { TRIAL_SIGNUP_URL, LOGIN_URL } from '../src/config/urls';
+import { TRIAL_SIGNUP_URL, LOGIN_URL, REVIEW_ANALYSIS_URL } from '../src/config/urls';
 
 const Header = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);

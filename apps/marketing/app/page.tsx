@@ -3,7 +3,7 @@
 import React from 'react';
 import Link from 'next/link';
 import { Play, CheckCircle, Shield, TrendingUp, Clock, Users, Brain, Compass, Search } from 'lucide-react';
-import { TRIAL_SIGNUP_URL } from '../src/config/urls';
+import { TRIAL_SIGNUP_URL, REVIEW_ANALYSIS_URL } from '../src/config/urls';
 
 export default function HomePage() {
   return (
@@ -70,6 +70,53 @@ export default function HomePage() {
 
               {/* Subtle gradient overlay for better contrast */}
               <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent pointer-events-none"></div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Free Review Analysis CTA - Full Width */}
+      <section className="relative bg-gradient-to-br from-blue-700 via-blue-800 to-blue-900 text-white py-12 border-y-2 border-teal-400/30">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="p-8 bg-gradient-to-r from-teal-500/20 via-blue-500/15 to-teal-500/20 backdrop-blur-sm rounded-2xl border-2 border-teal-400/40 shadow-2xl hover:shadow-3xl hover:border-teal-300/60 transition-all duration-300 group/card">
+            <div className="flex flex-col lg:flex-row items-start lg:items-center gap-6 lg:gap-8">
+              {/* Icon with FREE badge */}
+              <div className="flex-shrink-0 relative">
+                <div className="w-20 h-20 bg-gradient-to-br from-teal-400 to-teal-600 rounded-2xl flex items-center justify-center shadow-xl group-hover/card:scale-110 group-hover/card:rotate-3 transition-transform duration-300">
+                  <svg className="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M10.5 8.5l2 2 3-3" />
+                  </svg>
+                </div>
+                {/* FREE badge */}
+                <div className="absolute -top-2 -right-2 bg-yellow-400 text-yellow-900 text-xs font-black px-3 py-1.5 rounded-full shadow-xl animate-pulse">
+                  FREE
+                </div>
+              </div>
+
+              {/* Content */}
+              <div className="flex-1">
+                <h3 className="text-white text-xl lg:text-2xl font-bold mb-2 flex flex-wrap items-center gap-2">
+                  Free Google Reviews Analysis
+                  <span className="text-teal-300 text-sm lg:text-base font-semibold">→ Get insights in 60 seconds</span>
+                </h3>
+                <p className="text-blue-50 text-sm lg:text-base mb-2 leading-relaxed max-w-3xl">
+                  Instantly see what guests are saying across your locations. Get a personalized report with top 3 improvement opportunities — no signup required.
+                </p>
+              </div>
+
+              {/* CTA Button */}
+              <div className="flex-shrink-0">
+                <a
+                  href={REVIEW_ANALYSIS_URL}
+                  className="inline-flex items-center px-6 py-3 bg-white text-blue-700 rounded-xl font-bold text-base transition-all shadow-xl hover:shadow-2xl hover:scale-105 transform group/btn"
+                >
+                  Analyze My Reviews
+                  <svg className="ml-2 w-5 h-5 group-hover/btn:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M17 8l4 4m0 0l-4 4m4-4H3" />
+                  </svg>
+                </a>
+              </div>
             </div>
           </div>
         </div>
