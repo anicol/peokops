@@ -4,7 +4,7 @@ services:
     name: peakops-api
     env: python
     rootDir: apps/api
-    region: ohio
+    region: oregon
     buildCommand: |
       python3.11 -m pip install --upgrade pip --break-system-packages
       python3.11 -m pip install -r requirements.txt --break-system-packages
@@ -99,7 +99,7 @@ services:
   - type: worker
     name: peakops-celery
     env: docker
-    region: ohio
+    region: oregon
     dockerfilePath: apps/api/Dockerfile.celery
     dockerContext: apps/api
     plan: starter
@@ -169,7 +169,6 @@ services:
   - type: worker
     name: peakops-celery-beat
     env: python
-    region: ohio
     rootDir: apps/api
     buildCommand: |
       python3.11 -m pip install --upgrade pip --break-system-packages --quiet
@@ -279,7 +278,6 @@ services:
   - type: web
     name: peakops-marketing-web
     env: node
-    region: ohio
     rootDir: apps/marketing
     buildCommand: npm install --production=false && npm run build
     startCommand: npm run start
@@ -288,14 +286,12 @@ services:
   # Redis Cache/Queue
   - type: redis
     name: peakops-redis
-    region: ohio
     plan: starter
     maxmemoryPolicy: allkeys-lru
     ipAllowList: []
 
 databases:
   - name: peakops-db
-    region: ohio
     databaseName: peakops
     user: peakops_user
     plan: Basic-256mb
