@@ -105,6 +105,9 @@ class Command(BaseCommand):
 
             if search_data.get('status') != 'OK' or not search_data.get('candidates'):
                 self.stdout.write(self.style.WARNING(f'Status: {search_data.get("status")}'))
+                if search_data.get('error_message'):
+                    self.stdout.write(self.style.ERROR(f'Error: {search_data.get("error_message")}'))
+                self.stdout.write(self.style.WARNING(f'Full API response: {search_data}'))
                 self.stdout.write(self.style.WARNING(f'No results found for "{search_query}"'))
                 return None
 
