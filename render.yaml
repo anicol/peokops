@@ -223,7 +223,7 @@ services:
   # React Web App
   - type: web
     name: peakops-web
-    env: node
+    env: static
     buildCommand: |
       cd apps/web &&
       npm install &&
