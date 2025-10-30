@@ -808,38 +808,6 @@ function ReviewAnalysisResults({ results }: { results: AnalysisResults }) {
   return (
     <div className="min-h-screen bg-gradient-to-b from-blue-50 to-white py-12 px-4">
       <div className="max-w-4xl mx-auto">
-        {/* Business Details Header */}
-        <div className="bg-white rounded-lg shadow-md p-6 mb-6">
-          <div className="flex items-start">
-            <div className="flex-shrink-0">
-              <svg className="w-10 h-10 text-blue-600 mt-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
-              </svg>
-            </div>
-            <div className="ml-4 flex-1">
-              <h1 className="text-2xl font-bold text-gray-900 mb-1">{results.business_name}</h1>
-              {results.google_address && (
-                <p className="text-sm text-gray-600 mb-2">{results.google_address}</p>
-              )}
-              {results.location && (
-                <p className="text-sm text-blue-700 font-medium">
-                  📍 {results.location}
-                </p>
-              )}
-              {results.google_rating && (
-                <div className="mt-3 flex items-center gap-4">
-                  <div className="text-3xl font-bold text-gray-900">{results.google_rating} ⭐</div>
-                  {results.total_reviews_found && (
-                    <div className="text-sm text-gray-600">
-                      {results.total_reviews_found.toLocaleString()} total reviews
-                    </div>
-                  )}
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-
         {/* PeakOps Branding Header */}
         <div className="bg-white rounded-lg shadow-md p-6 mb-8">
           <div className="flex items-center justify-between">
