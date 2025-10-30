@@ -205,8 +205,8 @@ class Command(BaseCommand):
                     business_info = self.extract_business_info(page)
                     logger.info(f"Extracted business info: {business_info}")
 
-                    # Validate we found a real business
-                    if business_info["name"] == "Unknown" or business_info["total_reviews"] == 0:
+                    # Validate we found a real business (only fail if BOTH name and reviews are missing)
+                    if business_info["name"] == "Unknown" and business_info["total_reviews"] == 0:
                         self.stdout.write(self.style.ERROR('❌ Could not find valid business information'))
                         self.stdout.write(f'Debug: name={business_info["name"]}, reviews={business_info["total_reviews"]}')
                         logger.error(f"Failed to extract valid business info: name={business_info['name']}, reviews={business_info['total_reviews']}, rating={business_info['rating']}")
