@@ -98,30 +98,9 @@ services:
   # Celery Worker
   - type: worker
     name: peakops-celery
-    env: python
-    rootDir: apps/api
-    buildCommand: |
-      python3.11 -m pip install --upgrade pip --break-system-packages --quiet
-      python3.11 -m pip install -r requirements.txt --break-system-packages --quiet
-      echo "Installing Playwright browsers for review scraping..."
-      python3.11 -m playwright install chromium
-    startCommand: |
-      echo "Starting Celery worker with dependency check..."
-      
-      # Quick dependency check and install if needed
-      python3.11 -c "from decouple import config" 2>/dev/null || {
-        echo "Installing missing dependencies..."
-        python3.11 -m pip install python-decouple --break-system-packages --quiet
-      }
-      
-      # Verify critical imports work
-      python3.11 -c "from decouple import config; import django; import celery" || {
-        echo "Installing requirements.txt..."
-        python3.11 -m pip install -r requirements.txt --break-system-packages --quiet
-      }
-      
-      echo "Starting Celery worker with memory optimizations..."
-      python3.11 -m celery -A peakops worker -l info --concurrency=1 --max-tasks-per-child=5 --max-memory-per-child=400000
+    env: docker
+    dockerfilePath: apps/api/Dockerfile.celery
+    dockerContext: apps/api
     plan: starter
     envVars:
       - key: DJANGO_SETTINGS_MODULE
