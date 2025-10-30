@@ -556,7 +556,15 @@ Focus on identifying specific, actionable operational issues that could be addre
 
     def generate_microcheck_suggestions_with_ai(self, insights):
         """Use AI to generate highly relevant micro-check suggestions"""
+        import time
+        from botocore.exceptions import ClientError
+
         try:
+            # Add delay before making AI call to avoid throttling
+            # (this is called right after the main analysis AI call)
+            logger.info("Waiting 3 seconds before generating micro-checks to avoid throttling...")
+            time.sleep(3)
+
             bedrock = boto3.client('bedrock-runtime', region_name='us-east-1')
 
             # Prepare key issues for context
@@ -591,25 +599,43 @@ Focus on:
 3. Preventable operational problems
 4. Clear pass/fail criteria"""
 
-            response = bedrock.invoke_model(
-                modelId='anthropic.claude-3-5-sonnet-20240620-v1:0',
-                body=json.dumps({
-                    "anthropic_version": "bedrock-2023-05-31",
-                    "max_tokens": 3000,
-                    "messages": [
-                        {
-                            "role": "user",
-                            "content": prompt
-                        }
-                    ]
-                })
-            )
+            # Retry logic with exponential backoff for throttling
+            max_retries = 3
+            base_delay = 2
 
-            response_body = json.loads(response['body'].read())
-            ai_suggestions = json.loads(response_body['content'][0]['text'])
+            for attempt in range(max_retries):
+                try:
+                    response = bedrock.invoke_model(
+                        modelId='anthropic.claude-3-5-sonnet-20240620-v1:0',
+                        body=json.dumps({
+                            "anthropic_version": "bedrock-2023-05-31",
+                            "max_tokens": 3000,
+                            "messages": [
+                                {
+                                    "role": "user",
+                                    "content": prompt
+                                }
+                            ]
+                        })
+                    )
 
-            logger.info(f"AI generated {len(ai_suggestions)} micro-check suggestions")
-            return ai_suggestions
+                    response_body = json.loads(response['body'].read())
+                    ai_suggestions = json.loads(response_body['content'][0]['text'])
+
+                    logger.info(f"AI generated {len(ai_suggestions)} micro-check suggestions")
+                    return ai_suggestions
+
+                except ClientError as ce:
+                    error_code = ce.response.get('Error', {}).get('Code', '')
+
+                    if error_code == 'ThrottlingException' and attempt < max_retries - 1:
+                        # Exponential backoff: 2s, 4s, 8s
+                        delay = base_delay * (2 ** attempt)
+                        logger.warning(f"Throttling detected, retrying in {delay}s (attempt {attempt + 1}/{max_retries})")
+                        time.sleep(delay)
+                    else:
+                        # Last attempt or different error
+                        raise
 
         except Exception as e:
             logger.error(f"Error generating AI micro-checks: {str(e)}")
