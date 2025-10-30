@@ -562,8 +562,9 @@ Focus on identifying specific, actionable operational issues that could be addre
         try:
             # Add delay before making AI call to avoid throttling
             # (this is called right after the main analysis AI call)
-            logger.info("Waiting 3 seconds before generating micro-checks to avoid throttling...")
-            time.sleep(3)
+            # AWS Bedrock has strict rate limits, need longer delay
+            logger.info("Waiting 10 seconds before generating micro-checks to avoid throttling...")
+            time.sleep(10)
 
             bedrock = boto3.client('bedrock-runtime', region_name='us-east-1')
 
@@ -601,7 +602,7 @@ Focus on:
 
             # Retry logic with exponential backoff for throttling
             max_retries = 3
-            base_delay = 2
+            base_delay = 5  # Increased from 2s to 5s for stricter rate limits
 
             for attempt in range(max_retries):
                 try:
