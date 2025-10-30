@@ -168,7 +168,7 @@ class Command(BaseCommand):
                     browser.close()
                     return None
 
-                human_delay(6, 10)  # Wait for page to fully load (random to appear human)
+                human_delay(2, 4)  # Wait for page to fully load (reduced for production speed)
 
                 # Check if Google is blocking us
                 page_content = page.content()
@@ -215,7 +215,7 @@ class Command(BaseCommand):
                             pass
                         raise PlaywrightTimeout("No search results found")
 
-                    human_delay(3, 5)
+                    human_delay(1.5, 3)
 
                     # Try multiple selectors to find clickable business listings
                     self.stdout.write('Looking for business listings...')
@@ -231,19 +231,21 @@ class Command(BaseCommand):
                     ]
 
                     for selector in selectors:
-                        first_result = page.query_selector(selector)
-                        if first_result:
-                            self.stdout.write(f'Found result with selector: {selector}')
-                            logger.info(f"Found clickable business with selector: {selector}")
-                            break
-                        else:
-                            logger.debug(f"Selector '{selector}' didn't match any elements")
+                        try:
+                            first_result = page.query_selector(selector, timeout=5000)
+                            if first_result:
+                                self.stdout.write(f'Found result with selector: {selector}')
+                                logger.info(f"Found clickable business with selector: {selector}")
+                                break
+                        except:
+                            logger.debug(f"Selector '{selector}' timed out or failed")
+                            continue
 
                     if first_result:
                         self.stdout.write('Clicking on first search result...')
                         logger.info("Clicking on first search result...")
                         first_result.click()
-                        human_delay(3, 5)  # Wait for business page to load
+                        human_delay(1.5, 3)  # Wait for business page to load
                         logger.info("Clicked successfully, waiting for page to load...")
                     else:
                         self.stdout.write(self.style.WARNING('No clickable result found - checking if already on business page...'))
@@ -280,11 +282,15 @@ class Command(BaseCommand):
                     # Click on reviews tab
                     self.stdout.write('\nNavigating to reviews...')
                     logger.info("Looking for reviews button...")
-                    reviews_button = page.query_selector('button[aria-label*="reviews" i], button:has-text("Reviews")')
+                    try:
+                        reviews_button = page.query_selector('button[aria-label*="reviews" i], button:has-text("Reviews")', timeout=5000)
+                    except:
+                        reviews_button = None
+
                     if reviews_button:
                         logger.info("Found reviews button, clicking...")
                         reviews_button.click()
-                        human_delay(1.5, 3)
+                        human_delay(1, 2)
                         logger.info("Clicked reviews button")
                     else:
                         logger.warning("Reviews button not found - may already be on reviews")
@@ -364,9 +370,9 @@ class Command(BaseCommand):
                 return None
 
     def extract_business_info(self, page):
-        """Extract business information from the page"""
+        """Extract business information from the page with aggressive timeouts"""
         try:
-            # Extract business name - try multiple selectors
+            # Extract business name - try multiple selectors with 3s timeout each
             name_text = 'Unknown'
             name_selectors = [
                 'h1[class*="fontHeadlineLarge"]',  # Google Maps typical class
@@ -380,21 +386,24 @@ class Command(BaseCommand):
             invalid_names = ['Results', 'Unknown', '', 'Search', 'Maps']
 
             for selector in name_selectors:
-                name_elem = page.query_selector(selector)
-                if name_elem:
-                    text = name_elem.inner_text().strip()
-                    if text and text not in invalid_names:
-                        name_text = text
-                        logger.info(f"Found business name with selector '{selector}': {name_text}")
-                        break
-                    elif text in invalid_names:
-                        logger.debug(f"Skipping invalid name '{text}' from selector '{selector}'")
+                try:
+                    name_elem = page.query_selector(selector, timeout=3000)  # 3s timeout
+                    if name_elem:
+                        text = name_elem.inner_text().strip()
+                        if text and text not in invalid_names:
+                            name_text = text
+                            logger.info(f"Found business name with selector '{selector}': {name_text}")
+                            break
+                        elif text in invalid_names:
+                            logger.debug(f"Skipping invalid name '{text}' from selector '{selector}'")
+                except:
+                    continue  # Timeout or error, try next selector
 
-            # Extract rating and review count
+            # Extract rating and review count with timeouts
             rating = 0
             total_reviews = 0
 
-            # Strategy 1: Try to find rating in various aria-labels
+            # Strategy 1: Try to find rating in various aria-labels (3s timeout each)
             rating_selectors = [
                 '[aria-label*="stars" i]',
                 'div[aria-label*="star" i]',
@@ -404,36 +413,28 @@ class Command(BaseCommand):
 
             rating_elem = None
             for selector in rating_selectors:
-                rating_elem = page.query_selector(selector)
-                if rating_elem:
-                    aria_label = rating_elem.get_attribute('aria-label')
-                    if aria_label:
-                        rating_match = re.search(r'([\d.]+)\s*stars?', aria_label, re.IGNORECASE)
-                        reviews_match = re.search(r'(\d+(?:,\d+)*)\s*reviews?', aria_label, re.IGNORECASE)
+                try:
+                    rating_elem = page.query_selector(selector, timeout=3000)
+                    if rating_elem:
+                        aria_label = rating_elem.get_attribute('aria-label')
+                        if aria_label:
+                            rating_match = re.search(r'([\d.]+)\s*stars?', aria_label, re.IGNORECASE)
+                            reviews_match = re.search(r'(\d+(?:,\d+)*)\s*reviews?', aria_label, re.IGNORECASE)
 
-                        if rating_match:
-                            rating = float(rating_match.group(1))
-                        if reviews_match:
-                            total_reviews = int(reviews_match.group(1).replace(',', ''))
+                            if rating_match:
+                                rating = float(rating_match.group(1))
+                            if reviews_match:
+                                total_reviews = int(reviews_match.group(1).replace(',', ''))
 
-                        if rating > 0 or total_reviews > 0:
-                            break
+                            if rating > 0 or total_reviews > 0:
+                                break
+                except:
+                    continue  # Timeout or error, try next selector
 
-            # Strategy 2: Look for rating as text (e.g., "4.3" followed by stars)
-            if rating == 0:
-                # Try to find rating display text
-                rating_text_elems = page.query_selector_all('span, div')
-                for elem in rating_text_elems:
-                    try:
-                        text = elem.inner_text().strip()
-                        # Match patterns like "4.3", "3.5", etc.
-                        if re.match(r'^\d\.\d$', text):
-                            rating = float(text)
-                            break
-                    except:
-                        continue
+            # Strategy 2: Look for rating in more specific selectors (REMOVED expensive query_selector_all)
+            # Skip this strategy as it's too slow - we'll rely on Strategy 1 and 3
 
-            # Strategy 3: Find review count from button text or nearby elements
+            # Strategy 3: Find review count from button text or nearby elements (3s timeout each)
             if total_reviews == 0:
                 # Try multiple patterns for review count
                 review_patterns = [
@@ -444,15 +445,18 @@ class Command(BaseCommand):
                 ]
 
                 for pattern in review_patterns:
-                    review_elem = page.query_selector(pattern)
-                    if review_elem:
-                        text = review_elem.inner_text()
-                        reviews_match = re.search(r'(\d+(?:,\d+)*)\s*reviews?', text, re.IGNORECASE)
-                        if reviews_match:
-                            total_reviews = int(reviews_match.group(1).replace(',', ''))
-                            break
+                    try:
+                        review_elem = page.query_selector(pattern, timeout=3000)
+                        if review_elem:
+                            text = review_elem.inner_text()
+                            reviews_match = re.search(r'(\d+(?:,\d+)*)\s*reviews?', text, re.IGNORECASE)
+                            if reviews_match:
+                                total_reviews = int(reviews_match.group(1).replace(',', ''))
+                                break
+                    except:
+                        continue  # Timeout or error, try next selector
 
-            # Extract address
+            # Extract address (3s timeout each)
             address = ''
             address_selectors = [
                 'button[data-item-id="address"]',
@@ -461,10 +465,13 @@ class Command(BaseCommand):
             ]
 
             for selector in address_selectors:
-                address_elem = page.query_selector(selector)
-                if address_elem:
-                    address = address_elem.inner_text().strip()
-                    break
+                try:
+                    address_elem = page.query_selector(selector, timeout=3000)
+                    if address_elem:
+                        address = address_elem.inner_text().strip()
+                        break
+                except:
+                    continue  # Timeout or error, try next selector
 
             return {
                 'name': name_text,
@@ -581,7 +588,7 @@ class Command(BaseCommand):
                     # If scrolling fails, try window scroll as fallback
                     page.evaluate('window.scrollBy(0, 1000)')
 
-                human_delay(2, 3.5)  # Random wait time to let reviews load and appear human
+                human_delay(1.5, 2.5)  # Random wait time to let reviews load and appear human
                 scroll_attempts += 1
 
             logger.info(f"Scroll loop completed. Total reviews: {len(reviews)}, Scroll attempts: {scroll_attempts}")
