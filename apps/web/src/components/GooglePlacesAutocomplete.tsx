@@ -111,6 +111,7 @@ export default function GooglePlacesAutocomplete({
             name: place.name || '',
             formatted_address: place.formatted_address || '',
             address_components: place.address_components,
+            place_id: place.place_id || '',
           });
         }
       }

@@ -73,12 +73,13 @@ class Command(BaseCommand):
                 json.dump(full_data, f, indent=2)
             self.stdout.write(self.style.SUCCESS(f'✓ Full analysis saved to {analysis_output}'))
 
-    def scrape_reviews(self, business_name, location, max_reviews, headless, progress_callback=None):
+    def scrape_reviews(self, business_name, location, max_reviews, headless, progress_callback=None, place_id=None):
         """Scrape reviews using Playwright browser automation
 
         Args:
             business_name: Name of the business to search for
             location: Location to search in
+            place_id: Google Places ID for direct navigation (optional)
             max_reviews: Maximum number of reviews to scrape
             headless: Whether to run in headless mode
             progress_callback: Optional callback function(message, percentage) for progress updates
@@ -98,17 +99,24 @@ class Command(BaseCommand):
             logger.info("Browser launched successfully")
 
             try:
-                # Search for the business on Google Maps
-                # Put location first if provided to help Google prioritize the right city
-                if location:
-                    search_query = f"{business_name} {location}"
+                # Use place_id for direct navigation if available, otherwise search
+                if place_id:
+                    search_url = f"https://www.google.com/maps/place/?q=place_id:{place_id}"
+                    self.stdout.write(f'Navigating directly to place_id: {place_id}')
+                    logger.info(f"Using place_id for direct navigation: '{place_id}'")
                 else:
-                    search_query = business_name
+                    # Search for the business on Google Maps
+                    # Put location first if provided to help Google prioritize the right city
+                    if location:
+                        search_query = f"{business_name} {location}"
+                    else:
+                        search_query = business_name
 
-                self.stdout.write(f'Searching for: {search_query}')
-                logger.info(f"Search query: '{search_query}'")
+                    self.stdout.write(f'Searching for: {search_query}')
+                    logger.info(f"Search query: '{search_query}'")
 
-                search_url = f"https://www.google.com/maps/search/{search_query.replace(' ', '+')}"
+                    search_url = f"https://www.google.com/maps/search/{search_query.replace(' ', '+')}"
+
                 logger.info(f"Navigating to: {search_url}")
 
                 try:
