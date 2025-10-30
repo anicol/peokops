@@ -109,9 +109,12 @@ export default function ReviewAnalysisPage() {
     setIsSubmitting(true);
 
     try {
+      // Use full formatted address if available, otherwise fall back to city, state
+      const searchLocation = selectedPlace?.formatted_address || location;
+
       const response = await insightsAPI.startAnalysis({
         business_name: businessName,
-        location: location,
+        location: searchLocation,
         source: 'website',
       });
 
