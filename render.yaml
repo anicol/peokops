@@ -95,9 +95,100 @@ services:
         value: https://peakops-web.onrender.com
     healthCheckPath: /health/
 
-  # Celery Worker
+  # Celery Worker (Old - Python)
   - type: worker
     name: peakops-celery
+    env: python
+    region: oregon
+    rootDir: apps/api
+    buildCommand: |
+      python3.11 -m pip install --upgrade pip --break-system-packages --quiet
+      python3.11 -m pip install -r requirements.txt --break-system-packages --quiet
+      echo "Installing Playwright browsers for review scraping..."
+      python3.11 -m playwright install chromium
+    startCommand: |
+      echo "Starting Celery worker with dependency check..."
+
+      # Quick dependency check and install if needed
+      python3.11 -c "from decouple import config" 2>/dev/null || {
+        echo "Installing missing dependencies..."
+        python3.11 -m pip install python-decouple --break-system-packages --quiet
+      }
+
+      # Verify critical imports work
+      python3.11 -c "from decouple import config; import django; import celery" || {
+        echo "Installing requirements.txt..."
+        python3.11 -m pip install -r requirements.txt --break-system-packages --quiet
+      }
+
+      echo "Starting Celery worker with memory optimizations..."
+      python3.11 -m celery -A peakops worker -l info --concurrency=1 --max-tasks-per-child=5 --max-memory-per-child=400000
+    plan: starter
+    envVars:
+      - key: DJANGO_SETTINGS_MODULE
+        value: peakops.settings
+      - key: SECRET_KEY
+        fromService:
+          type: web
+          name: peakops-api
+          envVarKey: SECRET_KEY
+      - key: DATABASE_URL
+        fromDatabase:
+          name: peakops-db
+          property: connectionString
+      - key: REDIS_URL
+        fromService:
+          type: redis
+          name: peakops-redis
+          property: connectionString
+      - key: CELERY_BROKER_URL
+        fromService:
+          type: redis
+          name: peakops-redis
+          property: connectionString
+      - key: CELERY_RESULT_BACKEND
+        fromService:
+          type: redis
+          name: peakops-redis
+          property: connectionString
+      - key: AWS_ACCESS_KEY_ID
+        fromService:
+          type: web
+          name: peakops-api
+          envVarKey: AWS_ACCESS_KEY_ID
+      - key: AWS_SECRET_ACCESS_KEY
+        fromService:
+          type: web
+          name: peakops-api
+          envVarKey: AWS_SECRET_ACCESS_KEY
+      - key: AWS_STORAGE_BUCKET_NAME
+        value: peakops-media
+      - key: AWS_S3_REGION_NAME
+        value: us-east-1
+      - key: GOOGLE_PLACES_API_KEY
+        fromService:
+          type: web
+          name: peakops-api
+          envVarKey: GOOGLE_PLACES_API_KEY
+      - key: GOOGLE_OAUTH_CLIENT_ID
+        fromService:
+          type: web
+          name: peakops-api
+          envVarKey: GOOGLE_OAUTH_CLIENT_ID
+      - key: GOOGLE_OAUTH_CLIENT_SECRET
+        fromService:
+          type: web
+          name: peakops-api
+          envVarKey: GOOGLE_OAUTH_CLIENT_SECRET
+      - key: FRONTEND_URL
+        fromService:
+          type: web
+          name: peakops-api
+          envVarKey: FRONTEND_URL
+
+  # Celery Worker (New - Docker with Playwright)
+  - type: worker
+    name: peakops-celery-docker
     env: docker
     region: oregon
     dockerfilePath: apps/api/Dockerfile.celery
