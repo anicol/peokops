@@ -103,6 +103,8 @@ services:
     buildCommand: |
       python3.11 -m pip install --upgrade pip --break-system-packages --quiet
       python3.11 -m pip install -r requirements.txt --break-system-packages --quiet
+      echo "Installing Playwright browsers for review scraping..."
+      python3.11 -m playwright install --with-deps chromium
     startCommand: |
       echo "Starting Celery worker with dependency check..."
       
