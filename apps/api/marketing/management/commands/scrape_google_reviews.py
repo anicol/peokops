@@ -264,6 +264,11 @@ class Command(BaseCommand):
                     reviews = self.scroll_and_extract_reviews(page, max_reviews, progress_callback)
                     logger.info(f"scroll_and_extract_reviews returned: type={type(reviews)}, value={reviews if reviews is None else f'list with {len(reviews)} items'}")
 
+                    # Fallback: If extracted name is invalid, use input business_name
+                    if business_info['name'] in ['Unknown', 'Results', 'Search', 'Maps', '']:
+                        logger.warning(f"Extracted invalid business name '{business_info['name']}', using input: {business_name}")
+                        business_info['name'] = business_name
+
                     browser.close()
 
                     return {
@@ -300,13 +305,27 @@ class Command(BaseCommand):
         try:
             # Extract business name - try multiple selectors
             name_text = 'Unknown'
-            name_selectors = ['h1', 'h1[class*="title"]', 'div[role="main"] h1']
+            name_selectors = [
+                'h1[class*="fontHeadlineLarge"]',  # Google Maps typical class
+                'button[data-item-id*="authority"] h1',  # Business name in button
+                'div[role="main"] h1',
+                'h1',
+                '[aria-label*="Information for"]',  # Fallback
+            ]
+
+            # Invalid names to skip
+            invalid_names = ['Results', 'Unknown', '', 'Search', 'Maps']
+
             for selector in name_selectors:
                 name_elem = page.query_selector(selector)
                 if name_elem:
-                    name_text = name_elem.inner_text().strip()
-                    if name_text and name_text != 'Unknown':
+                    text = name_elem.inner_text().strip()
+                    if text and text not in invalid_names:
+                        name_text = text
+                        logger.info(f"Found business name with selector '{selector}': {name_text}")
                         break
+                    elif text in invalid_names:
+                        logger.debug(f"Skipping invalid name '{text}' from selector '{selector}'")
 
             # Extract rating and review count
             rating = 0
