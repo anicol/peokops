@@ -140,7 +140,7 @@ const Footer = () => {
               >
                 <div className="w-12 h-12 rounded-xl overflow-hidden transition-opacity hover:opacity-80">
                   <Image
-                    src="/icons/chatgpt.webp"
+                    src="/icons/chatgpt.png"
                     alt="ChatGPT"
                     width={48}
                     height={48}
