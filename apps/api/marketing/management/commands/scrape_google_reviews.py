@@ -264,6 +264,11 @@ class Command(BaseCommand):
                     reviews = self.scroll_and_extract_reviews(page, max_reviews, progress_callback)
                     logger.info(f"scroll_and_extract_reviews returned: type={type(reviews)}, value={reviews if reviews is None else f'list with {len(reviews)} items'}")
 
+                    # Fallback: If extracted name is invalid, use input business_name
+                    if business_info['name'] in ['Unknown', 'Results', 'Search', 'Maps', '']:
+                        logger.warning(f"Extracted invalid business name '{business_info['name']}', using input: {business_name}")
+                        business_info['name'] = business_name
+
                     browser.close()
 
                     return {
@@ -300,13 +305,27 @@ class Command(BaseCommand):
         try:
             # Extract business name - try multiple selectors
             name_text = 'Unknown'
-            name_selectors = ['h1', 'h1[class*="title"]', 'div[role="main"] h1']
+            name_selectors = [
+                'h1[class*="fontHeadlineLarge"]',  # Google Maps typical class
+                'button[data-item-id*="authority"] h1',  # Business name in button
+                'div[role="main"] h1',
+                'h1',
+                '[aria-label*="Information for"]',  # Fallback
+            ]
+
+            # Invalid names to skip
+            invalid_names = ['Results', 'Unknown', '', 'Search', 'Maps']
+
             for selector in name_selectors:
                 name_elem = page.query_selector(selector)
                 if name_elem:
-                    name_text = name_elem.inner_text().strip()
-                    if name_text and name_text != 'Unknown':
+                    text = name_elem.inner_text().strip()
+                    if text and text not in invalid_names:
+                        name_text = text
+                        logger.info(f"Found business name with selector '{selector}': {name_text}")
                         break
+                    elif text in invalid_names:
+                        logger.debug(f"Skipping invalid name '{text}' from selector '{selector}'")
 
             # Extract rating and review count
             rating = 0
@@ -403,9 +422,12 @@ class Command(BaseCommand):
         """Scroll through reviews and extract data"""
         logger.info("=== SCROLL_AND_EXTRACT_REVIEWS FUNCTION ENTRY v2 ===")
         logger.info(f"Parameters: page={type(page)}, max_reviews={max_reviews}")
+
+        # Initialize outside try block so we can return partial results on crash
+        reviews = []
+        seen_review_texts = set()
+
         try:
-            reviews = []
-            seen_review_texts = set()  # Avoid duplicates
             last_review_count = 0
             no_new_reviews_count = 0
 
@@ -442,13 +464,20 @@ class Command(BaseCommand):
                     try:
                         review_data = self.extract_review_data(elem, page)
 
+                        # Skip reviews with no text (likely extraction failure)
+                        if not review_data.get('text') or len(review_data['text'].strip()) < 5:
+                            logger.debug(f"Skipping review with insufficient text: author={review_data.get('author')}, text_len={len(review_data.get('text', ''))}")
+                            continue
+
                         # Avoid duplicates
                         review_text_signature = f"{review_data['author']}_{review_data['text'][:50]}"
                         if review_text_signature not in seen_review_texts:
                             reviews.append(review_data)
                             seen_review_texts.add(review_text_signature)
+                        else:
+                            logger.debug(f"Skipping duplicate review from {review_data['author']}")
                     except Exception as e:
-                        logger.debug(f"Error extracting review data: {e}")
+                        logger.warning(f"Error extracting review data: {e}", exc_info=True)
                         continue
 
                 logger.info(f"After extraction: Total reviews collected = {len(reviews)}")
@@ -499,7 +528,8 @@ class Command(BaseCommand):
 
         except Exception as e:
             logger.error(f"Exception in scroll_and_extract_reviews: {str(e)}", exc_info=True)
-            return []
+            logger.warning(f"Browser crashed but returning {len(reviews)} reviews collected before crash")
+            return reviews  # Return partial results instead of empty list
 
     def extract_review_data(self, elem, page):
         """Extract data from a single review element"""
@@ -526,28 +556,44 @@ class Command(BaseCommand):
             if rating_match:
                 rating = int(rating_match.group(1))
 
-        # Review text
-        text_elem = elem.query_selector('span[data-review-id], span[class*="review" i], div[class*="review-text" i]')
-        if not text_elem:
-            # Try to find "More" button and click it to expand full text
+        # Review text - try to expand "More" button first
+        try:
             more_button = elem.query_selector('button[aria-label*="See more" i], button:has-text("More")')
             if more_button:
                 try:
                     more_button.click()
-                    time.sleep(0.3)
+                    time.sleep(0.2)
                 except:
                     pass
+        except:
+            pass
 
-            # Try finding text in span tags
+        # Try multiple selectors for review text
+        text = ''
+        text_selectors = [
+            'span[data-review-id]',  # Primary selector
+            'div[class*="review-text" i]',
+            'div[jslog*="review"] > span',
+            'span[jslog] > span',  # Nested span structure
+        ]
+
+        for selector in text_selectors:
+            text_elem = elem.query_selector(selector)
+            if text_elem:
+                text = text_elem.inner_text().strip()
+                if len(text) > 20:  # Found substantial text
+                    break
+
+        # If still no text found, try finding longest span content
+        if not text or len(text) < 20:
             text_spans = elem.query_selector_all('span')
-            text_parts = []
+            longest_text = ''
             for span in text_spans:
                 text_content = span.inner_text().strip()
-                if len(text_content) > 20 and text_content not in text_parts:  # Likely review text
-                    text_parts.append(text_content)
-            text = ' '.join(text_parts) if text_parts else ''
-        else:
-            text = text_elem.inner_text().strip()
+                if len(text_content) > len(longest_text):
+                    longest_text = text_content
+            if len(longest_text) > 20:
+                text = longest_text
 
         # Time
         time_elem = elem.query_selector('span[class*="date" i], span:has-text(" ago")')

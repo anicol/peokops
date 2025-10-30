@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { insightsAPI } from '@/services/api';
-import LocationTypeahead from '@/components/LocationTypeahead';
 import GooglePlacesAutocomplete from '@/components/GooglePlacesAutocomplete';
 import ReviewTrendChart from '@/components/ReviewTrendChart';
 
@@ -40,6 +39,7 @@ export default function ReviewAnalysisPage() {
   // Form state
   const [businessName, setBusinessName] = useState('');
   const [location, setLocation] = useState('');
+  const [selectedPlace, setSelectedPlace] = useState<any>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Processing state
@@ -151,6 +151,9 @@ export default function ReviewAnalysisPage() {
       console.warn('No place data provided');
       return;
     }
+
+    // Store the full place object
+    setSelectedPlace(place);
 
     let city = '';
     let state = '';
@@ -269,24 +272,35 @@ export default function ReviewAnalysisPage() {
                   className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 />
                 <p className="mt-1 text-sm text-gray-500">
-                  Start typing to search for your business. Location will auto-fill when selected.
+                  Search for your business using Google Places. Location will be automatically detected.
                 </p>
               </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Location (City, State) *
-                </label>
-                <LocationTypeahead
-                  value={location}
-                  onChange={setLocation}
-                  placeholder="e.g., Toledo, OH"
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                />
-                <p className="mt-2 text-sm text-gray-500">
-                  <strong>Required for chains with multiple locations.</strong> Helps us find the correct business.
-                </p>
-              </div>
+              {/* Display selected business details */}
+              {selectedPlace && (
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                  <div className="flex items-start">
+                    <div className="flex-shrink-0">
+                      <svg className="w-5 h-5 text-blue-600 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                      </svg>
+                    </div>
+                    <div className="ml-3 flex-1">
+                      <h4 className="text-sm font-semibold text-gray-900 mb-1">Selected Business</h4>
+                      <p className="text-sm font-medium text-gray-800">{selectedPlace.name}</p>
+                      {selectedPlace.formatted_address && (
+                        <p className="text-sm text-gray-600 mt-1">{selectedPlace.formatted_address}</p>
+                      )}
+                      {location && (
+                        <p className="text-xs text-blue-700 font-medium mt-2">
+                          📍 {location}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )}
 
               <button
                 type="submit"
@@ -343,6 +357,30 @@ export default function ReviewAnalysisPage() {
       <div className="min-h-screen bg-gradient-to-b from-blue-50 to-white py-12 px-4">
         <div className="max-w-3xl mx-auto">
           <div className="bg-white rounded-lg shadow-lg p-8">
+            {/* Business Details Header */}
+            {(businessName || location || selectedPlace) && (
+              <div className="mb-8 pb-6 border-b border-gray-200">
+                <div className="flex items-start">
+                  <div className="flex-shrink-0">
+                    <svg className="w-8 h-8 text-blue-600 mt-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                    </svg>
+                  </div>
+                  <div className="ml-3 flex-1">
+                    <h3 className="text-lg font-semibold text-gray-900">{businessName}</h3>
+                    {selectedPlace?.formatted_address && (
+                      <p className="text-sm text-gray-600 mt-1">{selectedPlace.formatted_address}</p>
+                    )}
+                    {location && (
+                      <p className="text-sm text-blue-700 font-medium mt-1">
+                        📍 {location}
+                      </p>
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
+
             <div className="text-center mb-8">
               <div className="inline-flex items-center justify-center w-16 h-16 bg-blue-100 rounded-full mb-4">
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>

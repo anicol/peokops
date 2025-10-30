@@ -24,6 +24,10 @@ import {
   Camera,
   Clock,
   Store,
+  Star,
+  TrendingUp,
+  Mail,
+  Eye,
 } from 'lucide-react';
 
 export function AdminEngagementOverview() {
@@ -40,6 +44,11 @@ export function AdminEngagementOverview() {
   const { data: storesList } = useQuery({
     queryKey: ['admin-analytics', 'stores'],
     queryFn: adminAnalyticsAPI.getStoresList,
+  });
+
+  const { data: reviewAnalytics } = useQuery({
+    queryKey: ['admin-analytics', 'review-analysis'],
+    queryFn: adminAnalyticsAPI.getReviewAnalysisOverview,
   });
 
   if (isLoading) {
@@ -201,6 +210,227 @@ export function AdminEngagementOverview() {
             </div>
           )}
         </div>
+
+        {/* Google Reviews Analysis Section */}
+        {reviewAnalytics && (
+          <div className="mt-6 space-y-6">
+            <div className="flex items-center justify-between">
+              <h2 className="text-xl font-bold text-gray-900 flex items-center">
+                <Star className="w-6 h-6 mr-2 text-yellow-500" />
+                Google Reviews Analysis - Prospect Engagement
+              </h2>
+            </div>
+
+            {/* Review Analytics KPI Grid */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+              <KPICard
+                title="Total Analyses (30d)"
+                value={reviewAnalytics.total_analyses}
+                subtitle={`${reviewAnalytics.status_breakdown.completed} completed`}
+                icon={<BarChart3 className="w-5 h-5" />}
+              />
+
+              <KPICard
+                title="Email Capture Rate"
+                value={`${reviewAnalytics.email_capture_rate}%`}
+                subtitle="Prospects shared email"
+                icon={<Mail className="w-5 h-5" />}
+              />
+
+              <KPICard
+                title="View Rate"
+                value={`${reviewAnalytics.view_rate}%`}
+                subtitle="Analyses viewed"
+                icon={<Eye className="w-5 h-5" />}
+              />
+
+              <KPICard
+                title="Conversion Rate"
+                value={`${reviewAnalytics.conversion_rate}%`}
+                subtitle={reviewAnalytics.avg_hours_to_conversion
+                  ? `Avg: ${Math.round(reviewAnalytics.avg_hours_to_conversion)}h to convert`
+                  : 'To trial signup'}
+                icon={<TrendingUp className="w-5 h-5" />}
+              />
+            </div>
+
+            {/* Charts Grid */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
+              {/* Conversion Funnel */}
+              <div className="bg-white rounded-lg border border-gray-200 p-4 sm:p-6">
+                <h3 className="text-lg font-semibold text-gray-900 mb-4">
+                  Review Analysis Conversion Funnel
+                </h3>
+                <ResponsiveContainer width="100%" height={300}>
+                  <BarChart data={reviewAnalytics.conversion_funnel}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="stage" tick={{ fontSize: 11 }} angle={-15} textAnchor="end" height={80} />
+                    <YAxis tick={{ fontSize: 12 }} />
+                    <Tooltip />
+                    <Bar dataKey="count" fill="#f59e0b" />
+                  </BarChart>
+                </ResponsiveContainer>
+                <div className="mt-4 space-y-2">
+                  {reviewAnalytics.conversion_funnel.map((stage: any) => (
+                    <div key={stage.stage} className="flex justify-between text-sm">
+                      <span className="text-gray-600">{stage.stage}</span>
+                      <span className="font-medium text-gray-900">
+                        {stage.count} ({stage.percentage.toFixed(1)}%)
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Status Breakdown */}
+              <div className="bg-white rounded-lg border border-gray-200 p-4 sm:p-6">
+                <h3 className="text-lg font-semibold text-gray-900 mb-4">
+                  Analysis Status Breakdown
+                </h3>
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center">
+                      <div className="w-3 h-3 rounded-full bg-green-500 mr-2"></div>
+                      <span className="text-sm text-gray-600">Completed</span>
+                    </div>
+                    <span className="text-lg font-semibold text-gray-900">
+                      {reviewAnalytics.status_breakdown.completed}
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center">
+                      <div className="w-3 h-3 rounded-full bg-blue-500 mr-2"></div>
+                      <span className="text-sm text-gray-600">Processing</span>
+                    </div>
+                    <span className="text-lg font-semibold text-gray-900">
+                      {reviewAnalytics.status_breakdown.processing}
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center">
+                      <div className="w-3 h-3 rounded-full bg-yellow-500 mr-2"></div>
+                      <span className="text-sm text-gray-600">Pending</span>
+                    </div>
+                    <span className="text-lg font-semibold text-gray-900">
+                      {reviewAnalytics.status_breakdown.pending}
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center">
+                      <div className="w-3 h-3 rounded-full bg-red-500 mr-2"></div>
+                      <span className="text-sm text-gray-600">Failed</span>
+                    </div>
+                    <span className="text-lg font-semibold text-gray-900">
+                      {reviewAnalytics.status_breakdown.failed}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Recent Activity Table */}
+            <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+              <div className="p-4 sm:p-6 border-b border-gray-200">
+                <h3 className="text-lg font-semibold text-gray-900">
+                  Recent Review Analyses
+                </h3>
+                <p className="text-sm text-gray-600 mt-1">
+                  Last 20 prospect submissions
+                </p>
+              </div>
+
+              <div className="overflow-x-auto">
+                <table className="min-w-full divide-y divide-gray-200">
+                  <thead className="bg-gray-50">
+                    <tr>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                        Business
+                      </th>
+                      <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase">
+                        Status
+                      </th>
+                      <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">
+                        Rating
+                      </th>
+                      <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">
+                        Reviews
+                      </th>
+                      <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase">
+                        Email
+                      </th>
+                      <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase">
+                        Viewed
+                      </th>
+                      <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase">
+                        Converted
+                      </th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                        Created
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody className="bg-white divide-y divide-gray-200">
+                    {reviewAnalytics.recent_activity.map((analysis: any) => (
+                      <tr key={analysis.id} className="hover:bg-gray-50">
+                        <td className="px-4 py-3">
+                          <div className="text-sm font-medium text-gray-900">
+                            {analysis.business_name}
+                          </div>
+                          <div className="text-xs text-gray-500">{analysis.location}</div>
+                        </td>
+                        <td className="px-4 py-3 text-center">
+                          <span
+                            className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${
+                              analysis.status === 'COMPLETED'
+                                ? 'bg-green-100 text-green-800'
+                                : analysis.status === 'PROCESSING'
+                                ? 'bg-blue-100 text-blue-800'
+                                : analysis.status === 'FAILED'
+                                ? 'bg-red-100 text-red-800'
+                                : 'bg-yellow-100 text-yellow-800'
+                            }`}
+                          >
+                            {analysis.status}
+                          </span>
+                        </td>
+                        <td className="px-4 py-3 text-right text-sm text-gray-900">
+                          {analysis.google_rating ? `${analysis.google_rating} ⭐` : '-'}
+                        </td>
+                        <td className="px-4 py-3 text-right text-sm text-gray-900">
+                          {analysis.reviews_analyzed || '-'}
+                        </td>
+                        <td className="px-4 py-3 text-center">
+                          {analysis.contact_email ? (
+                            <Mail className="w-4 h-4 mx-auto text-green-600" />
+                          ) : (
+                            <span className="text-gray-300">-</span>
+                          )}
+                        </td>
+                        <td className="px-4 py-3 text-center">
+                          {analysis.viewed_at ? (
+                            <Eye className="w-4 h-4 mx-auto text-blue-600" />
+                          ) : (
+                            <span className="text-gray-300">-</span>
+                          )}
+                        </td>
+                        <td className="px-4 py-3 text-center">
+                          {analysis.converted_to_trial ? (
+                            <CheckCircle className="w-4 h-4 mx-auto text-green-600" />
+                          ) : (
+                            <span className="text-gray-300">-</span>
+                          )}
+                        </td>
+                        <td className="px-4 py-3 text-sm text-gray-600">
+                          {new Date(analysis.created_at).toLocaleDateString()}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Stores Table */}
         {storesList && storesList.length > 0 && (

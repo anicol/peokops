@@ -58,5 +58,5 @@ USER celeryuser
 # Start Celery worker with memory optimizations
 # concurrency=1: Process one task at a time to reduce memory usage
 # max-tasks-per-child=5: Restart worker after 5 tasks to free memory
-# max-memory-per-child=400000: Limit memory per worker to 400MB
-CMD ["celery", "-A", "peakops", "worker", "-l", "info", "--concurrency=1", "--max-tasks-per-child=5", "--max-memory-per-child=400000"]
+# max-memory-per-child=480000: Limit memory per worker to 480MB (close to 512MB limit)
+CMD ["celery", "-A", "peakops", "worker", "-l", "info", "--concurrency=1", "--max-tasks-per-child=5", "--max-memory-per-child=480000"]

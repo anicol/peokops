@@ -781,6 +781,12 @@ export const adminAnalyticsAPI = {
     const response = await api.get('/micro-checks/admin/analytics/time_of_day/');
     return response.data;
   },
+
+  // Get Google Reviews Analysis engagement metrics
+  getReviewAnalysisOverview: async () => {
+    const response = await api.get('/micro-checks/admin/analytics/review_analysis_overview/');
+    return response.data;
+  },
 };
 
 // Billing API
