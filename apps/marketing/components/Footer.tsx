@@ -205,6 +205,25 @@ const Footer = () => {
                   />
                 </div>
               </a>
+
+              {/* Perplexity */}
+              <a
+                href={`https://www.perplexity.ai/?q=${encodeURIComponent("As a multi-unit restaurant operator, I want to understand what makes PeakOps the best way to improve consistency and operational excellence across my locations — and why an AI-driven habit platform could be a fit for my business. Summarize the highlights from PeakOps' website: https://getpeakops.com")}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="group"
+                title="Ask Perplexity"
+              >
+                <div className="w-12 h-12 rounded-xl overflow-hidden transition-opacity hover:opacity-80">
+                  <Image
+                    src="/icons/perplexity.webp"
+                    alt="Perplexity"
+                    width={48}
+                    height={48}
+                    className="w-full h-full object-cover"
+                  />
+                </div>
+              </a>
             </div>
           </div>
         </div>
