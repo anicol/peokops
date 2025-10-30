@@ -121,9 +121,9 @@ services:
         python3.11 -m pip install -r requirements.txt --break-system-packages --quiet
       }
 
-      echo "Starting Celery worker with memory optimizations..."
-      python3.11 -m celery -A peakops worker -l info --concurrency=1 --max-tasks-per-child=5 --max-memory-per-child=400000
-    plan: starter
+      echo "Starting Celery worker with 2GB memory..."
+      python3.11 -m celery -A peakops worker -l info --concurrency=2 --max-tasks-per-child=10 --max-memory-per-child=1800000
+    plan: standard
     envVars:
       - key: DJANGO_SETTINGS_MODULE
         value: peakops.settings
@@ -193,7 +193,7 @@ services:
     region: oregon
     dockerfilePath: apps/api/Dockerfile.celery
     dockerContext: apps/api
-    plan: starter
+    plan: standard
     envVars:
       - key: DJANGO_SETTINGS_MODULE
         value: peakops.settings

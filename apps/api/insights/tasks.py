@@ -154,18 +154,37 @@ def process_review_analysis(self, analysis_id):
             thread = threading.Thread(target=_update)
             thread.start()
 
+        # Rate limiting: Check scrape attempts in the past hour
+        # If more than 10, skip web scraping and use API fallback to avoid bot detection
+        one_hour_ago = timezone.now() - timedelta(hours=1)
+        recent_scrapes = ReviewAnalysis.objects.filter(
+            created_at__gte=one_hour_ago,
+            status__in=[ReviewAnalysis.Status.PROCESSING, ReviewAnalysis.Status.COMPLETED]
+        ).count()
+
+        skip_web_scraping = recent_scrapes > 10
+        if skip_web_scraping:
+            logger.info(f"Rate limit reached ({recent_scrapes} scrapes in past hour). Skipping web scraping, using API fallback.")
+            scraped_data = None  # Force API fallback
+        else:
+            logger.info(f"Rate limit OK ({recent_scrapes}/10 scrapes in past hour). Proceeding with web scraping.")
+
         try:
             # Note: We already added delays with engaging messages above
             # to avoid rate limiting and keep users entertained
 
-            scraped_data = scraper.scrape_reviews(
-                business_name=analysis.business_name,
-                location=analysis.location,
-                max_reviews=200,  # Try for 200, gracefully return what we get
-                headless=True,
-                progress_callback=update_progress,
-                place_id=analysis.place_id if hasattr(analysis, 'place_id') and analysis.place_id else None
-            )
+            if skip_web_scraping:
+                # Skip web scraping due to rate limit
+                scraped_data = None
+            else:
+                scraped_data = scraper.scrape_reviews(
+                    business_name=analysis.business_name,
+                    location=analysis.location,
+                    max_reviews=200,  # Try for 200, gracefully return what we get
+                    headless=True,
+                    progress_callback=update_progress,
+                    place_id=analysis.place_id if hasattr(analysis, 'place_id') and analysis.place_id else None
+                )
 
             logger.info(f"Scraper returned: {type(scraped_data)}")
             if scraped_data:
