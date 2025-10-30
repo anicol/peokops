@@ -8,12 +8,20 @@ Usage:
 import json
 import time
 import re
+import random
 import logging
 from datetime import datetime
 from django.core.management.base import BaseCommand
 from playwright.sync_api import sync_playwright, TimeoutError as PlaywrightTimeout
 
 logger = logging.getLogger(__name__)
+
+
+def human_delay(min_seconds=1.5, max_seconds=3.5):
+    """Sleep for a random duration to mimic human behavior"""
+    delay = random.uniform(min_seconds, max_seconds)
+    time.sleep(delay)
+    return delay
 
 
 class Command(BaseCommand):
@@ -88,15 +96,48 @@ class Command(BaseCommand):
         with sync_playwright() as p:
             # Launch browser
             self.stdout.write('Launching browser...')
-            logger.info("Starting Playwright browser...")
+            logger.info("Starting Playwright browser with anti-detection measures...")
 
-            browser = p.chromium.launch(headless=headless)
-            context = browser.new_context(
-                viewport={'width': 1920, 'height': 1080},
-                user_agent='Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36'
+            # Anti-detection: Hide automation flags
+            browser = p.chromium.launch(
+                headless=headless,
+                args=[
+                    '--disable-blink-features=AutomationControlled',  # Hide webdriver flag
+                    '--disable-dev-shm-usage',
+                    '--no-sandbox',
+                    '--disable-setuid-sandbox',
+                    '--disable-web-security',
+                ]
             )
+
+            # Randomize viewport to appear more human
+            viewport_width = random.randint(1200, 1920)
+            viewport_height = random.randint(800, 1080)
+
+            # Use realistic user agents
+            user_agents = [
+                'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+                'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+                'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36',
+            ]
+
+            context = browser.new_context(
+                viewport={'width': viewport_width, 'height': viewport_height},
+                user_agent=random.choice(user_agents),
+                locale='en-US',
+                timezone_id='America/New_York',
+            )
+
             page = context.new_page()
-            logger.info("Browser launched successfully")
+
+            # Remove webdriver property that Google checks
+            page.add_init_script("""
+                Object.defineProperty(navigator, 'webdriver', {
+                    get: () => undefined
+                });
+            """)
+
+            logger.info(f"Browser launched (viewport: {viewport_width}x{viewport_height})")
 
             try:
                 # Use place_id for direct navigation if available, otherwise search
@@ -127,7 +168,7 @@ class Command(BaseCommand):
                     browser.close()
                     return None
 
-                time.sleep(8)  # Wait for page to fully load and animations
+                human_delay(6, 10)  # Wait for page to fully load (random to appear human)
 
                 # Check if Google is blocking us
                 page_content = page.content()
@@ -174,7 +215,7 @@ class Command(BaseCommand):
                             pass
                         raise PlaywrightTimeout("No search results found")
 
-                    time.sleep(4)
+                    human_delay(3, 5)
 
                     # Try multiple selectors to find clickable business listings
                     self.stdout.write('Looking for business listings...')
@@ -202,7 +243,7 @@ class Command(BaseCommand):
                         self.stdout.write('Clicking on first search result...')
                         logger.info("Clicking on first search result...")
                         first_result.click()
-                        time.sleep(4)  # Wait for business page to load
+                        human_delay(3, 5)  # Wait for business page to load
                         logger.info("Clicked successfully, waiting for page to load...")
                     else:
                         self.stdout.write(self.style.WARNING('No clickable result found - checking if already on business page...'))
@@ -243,7 +284,7 @@ class Command(BaseCommand):
                     if reviews_button:
                         logger.info("Found reviews button, clicking...")
                         reviews_button.click()
-                        time.sleep(2)
+                        human_delay(1.5, 3)
                         logger.info("Clicked reviews button")
                     else:
                         logger.warning("Reviews button not found - may already be on reviews")
@@ -260,14 +301,14 @@ class Command(BaseCommand):
                             if sort_button:
                                 logger.info("Found sort button, clicking...")
                                 sort_button.click()
-                                time.sleep(1)
+                                human_delay(0.8, 1.5)
                                 newest_option = page.query_selector('div[role="menuitemradio"]:has-text("Newest")')
                                 if newest_option:
                                     logger.info("Selecting 'Newest' sort option...")
                                     try:
                                         newest_option.click()
                                         logger.info("Clicked 'Newest' option, waiting for sort to apply...")
-                                        time.sleep(3)
+                                        human_delay(2, 4)
                                         logger.info("Sort applied, continuing...")
                                     except Exception as click_error:
                                         logger.warning(f"Error clicking Newest option: {click_error}")
@@ -540,7 +581,7 @@ class Command(BaseCommand):
                     # If scrolling fails, try window scroll as fallback
                     page.evaluate('window.scrollBy(0, 1000)')
 
-                time.sleep(2.5)  # Increased wait time to let reviews load
+                human_delay(2, 3.5)  # Random wait time to let reviews load and appear human
                 scroll_attempts += 1
 
             logger.info(f"Scroll loop completed. Total reviews: {len(reviews)}, Scroll attempts: {scroll_attempts}")
@@ -584,7 +625,7 @@ class Command(BaseCommand):
             if more_button:
                 try:
                     more_button.click()
-                    time.sleep(0.2)
+                    human_delay(0.1, 0.3)
                 except:
                     pass
         except:
