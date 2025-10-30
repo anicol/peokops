@@ -843,6 +843,7 @@ export const insightsAPI = {
   startAnalysis: async (data: {
     business_name: string;
     location: string;
+    place_id?: string;
     source?: string;
   }): Promise<{ id: string; status: string; message: string }> => {
     const response = await api.post('/insights/start/', data, {
