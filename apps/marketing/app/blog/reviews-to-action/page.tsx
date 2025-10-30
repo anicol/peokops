@@ -389,7 +389,7 @@ export default function BlogReviewsToAction() {
 
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Link
-                href="/review-analysis"
+                href="/reviews"
                 className="px-8 py-4 bg-white text-blue-600 rounded-lg hover:bg-gray-100 transition-all font-bold text-lg shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
               >
                 Analyze My Reviews Free →
