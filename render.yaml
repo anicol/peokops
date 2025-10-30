@@ -99,6 +99,7 @@ services:
   - type: worker
     name: peakops-celery
     env: docker
+    region: oregon
     dockerfilePath: apps/api/Dockerfile.celery
     dockerContext: apps/api
     plan: starter
