@@ -223,7 +223,7 @@ services:
   # React Web App
   - type: web
     name: peakops-web
-    env: static
+    env: node
     buildCommand: |
       cd apps/web &&
       npm install &&
@@ -236,6 +236,10 @@ services:
     envVars:
       - key: VITE_API_URL
         value: https://peakops-api.onrender.com
+      - key: VITE_GOOGLE_MAPS_API_KEY
+        sync: false
+      - key: VITE_MARKETING_URL
+        value: https://peakops-marketing-web.onrender.com
 
   # Marketing Site (Next.js SSR) - New service to replace static site
   - type: web

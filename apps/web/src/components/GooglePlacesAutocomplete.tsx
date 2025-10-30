@@ -35,6 +35,14 @@ export default function GooglePlacesAutocomplete({
 
     // Check if API key is configured
     const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
+
+    // Debug logging to help troubleshoot missing API key
+    console.log('Environment check:', {
+      hasApiKey: !!apiKey,
+      apiKeyLength: apiKey?.length || 0,
+      allEnvVars: Object.keys(import.meta.env).filter(k => k.startsWith('VITE_'))
+    });
+
     if (!apiKey) {
       console.warn('Google Maps API key not configured. Falling back to regular input.');
       setError('API key not configured');
