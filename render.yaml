@@ -258,7 +258,6 @@ services:
   - type: web
     name: peakops-web
     env: static
-    region: ohio
     buildCommand: |
       cd apps/web &&
       npm install &&
