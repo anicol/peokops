@@ -43,7 +43,7 @@ const MicroCheckTemplatesPage = () => {
   const [categoryFilter, setCategoryFilter] = useState<string>('');
   const [severityFilter, setSeverityFilter] = useState<string>('');
   const [sourceFilter, setSourceFilter] = useState<string>('');
-  const [showFilters, setShowFilters] = useState(false);
+  const [showFilters, setShowFilters] = useState(true);
   const [availableCategories, setAvailableCategories] = useState<Set<MicroCheckCategory>>(new Set());
   const [showModal, setShowModal] = useState(false);
   const [modalMode, setModalMode] = useState<'create' | 'edit'>('create');
