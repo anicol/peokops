@@ -43,6 +43,9 @@ import MicroCheckTemplatesPage from '@/pages/MicroCheckTemplatesPage';
 import ReviewAnalysisPage from '@/pages/ReviewAnalysisPage';
 import InsightsPage from '@/pages/InsightsPage';
 import ProfilePage from '@/pages/ProfilePage';
+import MyProgressPage from '@/pages/MyProgressPage';
+import StorePerformancePage from '@/pages/StorePerformancePage';
+import SecurityCompliancePage from '@/pages/SecurityCompliancePage';
 import LockedFeatureView from '@/components/LockedFeatureView';
 import { MobileCaptureProvider } from '@/pages/MobileCaptureContext';
 import { AdminEngagementOverview } from '@/pages/admin/AdminEngagementOverview';
@@ -397,6 +400,42 @@ function AppRoutes() {
             isAuthenticated ? (
               <Layout>
                 <ProfilePage />
+              </Layout>
+            ) : (
+              <Navigate to="/login" replace />
+            )
+          }
+        />
+        <Route
+          path="/my-progress"
+          element={
+            isAuthenticated ? (
+              <Layout>
+                <MyProgressPage />
+              </Layout>
+            ) : (
+              <Navigate to="/login" replace />
+            )
+          }
+        />
+        <Route
+          path="/store-performance"
+          element={
+            isAuthenticated ? (
+              <Layout>
+                <StorePerformancePage />
+              </Layout>
+            ) : (
+              <Navigate to="/login" replace />
+            )
+          }
+        />
+        <Route
+          path="/security-compliance"
+          element={
+            isAuthenticated ? (
+              <Layout>
+                <SecurityCompliancePage />
               </Layout>
             ) : (
               <Navigate to="/login" replace />
