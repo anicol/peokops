@@ -173,9 +173,12 @@ def prepare_training_data(
 
     for response in responses:
         try:
-            # Extract features at the time of the response
-            # Note: This is retrospective - we're using historical data
-            features = extract_features_for_template(response.store, response.template)
+            # Extract features at the time of the response to avoid time-travel leakage
+            features = extract_features_for_template(
+                response.store, 
+                response.template,
+                as_of=response.completed_at
+            )
 
             # Target: 1 if FAIL/NEEDS_ATTENTION, 0 otherwise
             y = 1 if response.status in TARGET_STATUSES else 0
