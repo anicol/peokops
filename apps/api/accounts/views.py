@@ -4,6 +4,7 @@ from rest_framework.permissions import AllowAny, IsAuthenticated, IsAdminUser
 from rest_framework.response import Response
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.exceptions import TokenError
+from rest_framework_simplejwt.token_blacklist.models import BlacklistedToken
 from django.contrib.auth import login
 from django.utils import timezone
 from django.db.models import Q
@@ -104,7 +105,7 @@ def logout_view(request):
     Returns:
     - 200: Successfully logged out
     - 400: Missing or invalid refresh token
-    - 401: Unauthenticated or token already blacklisted
+    - 401: Token already blacklisted
     """
     refresh_token = request.data.get('refresh')
     
@@ -115,7 +116,17 @@ def logout_view(request):
         )
     
     try:
+        # Validate and decode the token
         token = RefreshToken(refresh_token)
+        jti = token['jti']
+        
+        # Check if token is already blacklisted
+        if BlacklistedToken.objects.filter(token__jti=jti).exists():
+            return Response(
+                {'error': 'Token already blacklisted'},
+                status=status.HTTP_401_UNAUTHORIZED
+            )
+        
         token.blacklist()
         
         return Response(
