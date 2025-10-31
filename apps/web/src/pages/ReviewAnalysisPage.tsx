@@ -57,6 +57,7 @@ export default function ReviewAnalysisPage() {
 
   // Results state
   const [results, setResults] = useState<AnalysisResults | null>(null);
+  const [partialResults, setPartialResults] = useState<AnalysisResults | null>(null);
 
   // Poll for status when processing
   useEffect(() => {
@@ -73,6 +74,16 @@ export default function ReviewAnalysisPage() {
           // Load full results
           const resultsData = await insightsAPI.getResults(currentAnalysisId);
           setResults(resultsData);
+        } else if (statusData.status === 'PROCESSING' && statusData.progress_percentage >= 25) {
+          // Check for partial results (initial API reviews)
+          try {
+            const resultsData = await insightsAPI.getResults(currentAnalysisId);
+            if (resultsData.scraped_data?.is_partial && !partialResults) {
+              setPartialResults(resultsData);
+            }
+          } catch (error) {
+            // Partial results not ready yet, continue waiting
+          }
         }
       } catch (error) {
         console.error('Error polling status:', error);
@@ -84,7 +95,7 @@ export default function ReviewAnalysisPage() {
     pollStatus(); // Initial poll
 
     return () => clearInterval(interval);
-  }, [currentAnalysisId, status?.status]);
+  }, [currentAnalysisId, status?.status, partialResults]);
 
   // Load results if analysisId in URL
   useEffect(() => {
@@ -417,6 +428,63 @@ export default function ReviewAnalysisPage() {
                 {status.progress_percentage}% complete
               </p>
             </div>
+
+            {/* First Look Preview - Shows when partial results arrive */}
+            {partialResults && (
+              <div className="mb-8 bg-gradient-to-br from-green-50 to-blue-50 border-2 border-green-300 rounded-lg p-6 shadow-lg transition-all duration-500 ease-in">
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="flex-shrink-0">
+                    <div className="w-12 h-12 bg-green-500 rounded-full flex items-center justify-center">
+                      <svg className="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                      </svg>
+                    </div>
+                  </div>
+                  <div className="flex-1">
+                    <h3 className="text-xl font-bold text-gray-900">
+                      🎉 Found Your Business!
+                    </h3>
+                    <p className="text-sm text-gray-600 mt-1">
+                      Here's a quick preview while we gather more insights...
+                    </p>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-4">
+                  {partialResults.google_rating && (
+                    <div className="bg-white rounded-lg p-4 text-center shadow-sm">
+                      <div className="text-3xl font-bold text-yellow-600 mb-1">
+                        {partialResults.google_rating} ⭐
+                      </div>
+                      <div className="text-xs text-gray-600">Google Rating</div>
+                    </div>
+                  )}
+
+                  <div className="bg-white rounded-lg p-4 text-center shadow-sm">
+                    <div className="text-3xl font-bold text-blue-600 mb-1">
+                      {partialResults.reviews_analyzed || 5}
+                    </div>
+                    <div className="text-xs text-gray-600">Reviews Found</div>
+                  </div>
+
+                  {partialResults.total_reviews_found && (
+                    <div className="bg-white rounded-lg p-4 text-center shadow-sm">
+                      <div className="text-3xl font-bold text-purple-600 mb-1">
+                        {partialResults.total_reviews_found}
+                      </div>
+                      <div className="text-xs text-gray-600">Total on Google</div>
+                    </div>
+                  )}
+                </div>
+
+                <div className="bg-blue-100 border-l-4 border-blue-500 rounded p-3 flex items-center gap-2">
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
+                  <p className="text-sm text-blue-900 font-medium">
+                    Loading more reviews and running full AI analysis...
+                  </p>
+                </div>
+              </div>
+            )}
 
             {/* Step indicators */}
             <div className="mb-8 space-y-3">
