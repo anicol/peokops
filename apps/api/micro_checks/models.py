@@ -718,3 +718,85 @@ class CorrectiveAction(models.Model):
 
     def __str__(self):
         return f"CA: {self.response.template.title} ({self.status})"
+
+
+class StoreTemplateStats(models.Model):
+    """Store-level performance statistics for templates (local prior for ML)"""
+
+    store = models.ForeignKey('brands.Store', on_delete=models.CASCADE, db_index=True)
+    template = models.ForeignKey(MicroCheckTemplate, on_delete=models.CASCADE)
+
+    # Performance metrics
+    fails = models.IntegerField(default=0, help_text="Count of FAIL + NEEDS_ATTENTION responses")
+    total = models.IntegerField(default=0, help_text="Count of all responded checks")
+
+    # Maintenance
+    last_updated_at = models.DateTimeField(auto_now=True)
+
+    # Auditing
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = 'store_template_stats'
+        unique_together = [('store', 'template')]
+        indexes = [
+            models.Index(fields=['store', 'template']),
+            models.Index(fields=['last_updated_at']),
+        ]
+
+    def __str__(self):
+        return f"{self.store} - {self.template.title} ({self.fails}/{self.total})"
+
+
+class MicroCheckMLMetrics(models.Model):
+    """ML scoring metrics for selected templates (observability)"""
+
+    class SelectionMethod(models.TextChoices):
+        ML_HYBRID = 'ML_HYBRID', 'ML Hybrid'
+        RULE_BASED = 'RULE_BASED', 'Rule Based'
+        FALLBACK = 'FALLBACK', 'Fallback (No Model)'
+
+    run_item = models.OneToOneField(
+        MicroCheckRunItem,
+        on_delete=models.CASCADE,
+        related_name='ml_metrics',
+        help_text="Run item this scoring applies to"
+    )
+    template = models.ForeignKey(MicroCheckTemplate, on_delete=models.CASCADE)
+    store = models.ForeignKey('brands.Store', on_delete=models.CASCADE, db_index=True)
+
+    # Scoring components
+    rule_score = models.FloatField(help_text="Rule-based priority score")
+    ml_score = models.FloatField(null=True, blank=True, help_text="ML-predicted usefulness probability (p_personalized)")
+    personalized_score = models.FloatField(null=True, blank=True, help_text="Blended score (rule + ML)")
+    final_score = models.FloatField(help_text="Final normalized score after constraints")
+
+    # Selection method
+    selection_method = models.CharField(
+        max_length=20,
+        choices=SelectionMethod.choices,
+        default=SelectionMethod.RULE_BASED
+    )
+
+    # Model metadata
+    model_version = models.CharField(max_length=100, blank=True, help_text="Model identifier/version used")
+    training_date = models.DateTimeField(null=True, blank=True, help_text="When the model was trained")
+    training_f1_score = models.FloatField(null=True, blank=True, help_text="F1 score of the model used")
+
+    # Local prior info
+    local_prior = models.FloatField(null=True, blank=True, help_text="Local failure rate (Beta-smoothed)")
+    local_total = models.IntegerField(null=True, blank=True, help_text="Number of responses at store+template")
+
+    # Auditing
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = 'micro_check_ml_metrics'
+        indexes = [
+            models.Index(fields=['store', 'created_at']),
+            models.Index(fields=['selection_method', 'created_at']),
+            models.Index(fields=['template', 'created_at']),
+        ]
+
+    def __str__(self):
+        return f"{self.run_item} - {self.selection_method} (score={self.final_score:.2f})"

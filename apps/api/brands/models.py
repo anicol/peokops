@@ -113,6 +113,11 @@ class Brand(models.Model):
 
 
 class Store(models.Model):
+    class StoreSegment(models.TextChoices):
+        LOW_VOL = 'low_vol', 'Low Volume'
+        MED_VOL = 'med_vol', 'Medium Volume'
+        HIGH_VOL = 'high_vol', 'High Volume'
+
     account = models.ForeignKey('accounts.Account', on_delete=models.CASCADE, null=True, blank=True,
                                 related_name='stores', help_text="Franchisee account that operates this store")
     brand = models.ForeignKey(Brand, on_delete=models.CASCADE, related_name='stores',
@@ -127,6 +132,14 @@ class Store(models.Model):
     phone = models.CharField(max_length=20, blank=True)
     manager_email = models.EmailField(blank=True)
     timezone = models.CharField(max_length=50, default='America/New_York')
+    segment = models.CharField(
+        max_length=20,
+        choices=StoreSegment.choices,
+        null=True,
+        blank=True,
+        db_index=True,
+        help_text="Store segment for ML model grouping (low/med/high volume)"
+    )
     is_active = models.BooleanField(default=True)
 
     # Micro-check scheduling

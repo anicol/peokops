@@ -181,12 +181,12 @@ def _create_run_for_store(store, scheduled_date):
         status='PENDING'
     )
 
-    # Select 3 templates using smart rotation
+    # Select 3 templates using ML-enhanced smart rotation
     selected = select_templates_for_run(store, num_items=3)
 
-    # Create run items
-    for order, (template, coverage, photo_required, photo_reason) in enumerate(selected, start=1):
-        MicroCheckRunItem.objects.create(
+    # Create run items and ML metrics
+    for order, (template, coverage, photo_required, photo_reason, metrics_data) in enumerate(selected, start=1):
+        run_item = MicroCheckRunItem.objects.create(
             run=run,
             template=template,
             order=order,
@@ -198,6 +198,26 @@ def _create_run_for_store(store, scheduled_date):
             category_snapshot=template.category,
             severity_snapshot=template.severity,
             success_criteria_snapshot=template.success_criteria
+        )
+
+        # Save ML scoring metrics for observability
+        from .models import MicroCheckMLMetrics
+        model_metadata = metrics_data.get('model_metadata') or {}
+
+        MicroCheckMLMetrics.objects.create(
+            run_item=run_item,
+            template=template,
+            store=store,
+            rule_score=metrics_data.get('rule_score', 0),
+            ml_score=metrics_data.get('ml_score'),
+            personalized_score=metrics_data.get('personalized_score'),
+            final_score=metrics_data.get('final_score', 0),
+            selection_method=metrics_data.get('selection_method', 'RULE_BASED'),
+            model_version=model_metadata.get('training_date', ''),
+            training_date=model_metadata.get('training_date'),
+            training_f1_score=model_metadata.get('f1_score'),
+            local_prior=metrics_data.get('local_prior'),
+            local_total=metrics_data.get('local_total'),
         )
 
         # Coverage tracking is updated when responses are submitted
@@ -713,3 +733,100 @@ def rotate_expired_magic_links():
 
     logger.info(f"Rotated {rotated_count} magic links")
     return {'rotated': rotated_count}
+
+
+@shared_task(queue='maintenance')
+def refresh_store_template_stats():
+    """
+    Refresh StoreTemplateStats with yesterday's micro-check responses.
+
+    This task runs nightly at 2 AM to update local prior statistics
+    for ML-based template selection.
+    """
+    from .models import MicroCheckResponse, StoreTemplateStats
+    from datetime import timedelta
+
+    logger.info("Starting StoreTemplateStats refresh")
+
+    # Get yesterday's date
+    yesterday = (timezone.now() - timedelta(days=1)).date()
+
+    # Get all responses from yesterday
+    responses = MicroCheckResponse.objects.filter(
+        local_completed_date=yesterday
+    ).select_related('store', 'template')
+
+    logger.info(f"Found {responses.count()} responses from {yesterday}")
+
+    # Track updates
+    updated_count = 0
+    created_count = 0
+
+    # Group responses by (store, template)
+    from collections import defaultdict
+    stats_map = defaultdict(lambda: {'fails': 0, 'total': 0})
+
+    for response in responses:
+        key = (response.store_id, response.template_id)
+        stats_map[key]['total'] += 1
+        if response.status in ['FAIL', 'NEEDS_ATTENTION']:
+            stats_map[key]['fails'] += 1
+
+    # Update or create StoreTemplateStats
+    for (store_id, template_id), counts in stats_map.items():
+        stats, created = StoreTemplateStats.objects.get_or_create(
+            store_id=store_id,
+            template_id=template_id,
+            defaults={
+                'fails': 0,
+                'total': 0
+            }
+        )
+
+        # Increment counters
+        stats.fails += counts['fails']
+        stats.total += counts['total']
+        stats.save()
+
+        if created:
+            created_count += 1
+        else:
+            updated_count += 1
+
+    logger.info(f"StoreTemplateStats refresh complete: {created_count} created, {updated_count} updated")
+    return {
+        'responses_processed': responses.count(),
+        'stats_created': created_count,
+        'stats_updated': updated_count,
+    }
+
+
+@shared_task(queue='ml')
+def train_micro_check_ml_models(dry_run=False):
+    """
+    Train ML models for all brands (weekly task).
+
+    This task runs every Sunday at 3 AM to retrain failure prediction models
+    using the latest response data.
+
+    Args:
+        dry_run: If True, don't save models (for testing)
+    """
+    from .ml_training import train_all_brand_models
+
+    logger.info("Starting weekly ML model training")
+
+    results = train_all_brand_models(dry_run=dry_run)
+
+    # Log summary
+    successful = sum(1 for r in results if r.get('success'))
+    failed = len(results) - successful
+
+    logger.info(f"ML model training complete: {successful} successful, {failed} failed")
+
+    return {
+        'total': len(results),
+        'successful': successful,
+        'failed': failed,
+        'results': results
+    }
