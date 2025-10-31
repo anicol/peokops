@@ -62,13 +62,17 @@ class MicroCheckTemplateViewSet(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated]
     filterset_fields = ['category', 'severity', 'is_active', 'brand', 'is_local', 'source']
     search_fields = ['title', 'description', 'success_criteria']
-    ordering_fields = ['created_at', 'category', 'severity', 'rotation_priority', 'title']
+    ordering_fields = ['created_at', 'category', 'severity', 'rotation_priority', 'title', 'times_used']
     ordering = ['-created_at']  # Show newest templates first
 
     def get_queryset(self):
         """Filter templates based on user role and brand access"""
         user = self.request.user
-        queryset = self.queryset
+
+        # Annotate with usage count for sorting
+        queryset = self.queryset.annotate(
+            times_used=Count('microcheckresponse')
+        )
 
         # ADMIN sees all templates
         if user.role == 'ADMIN':
