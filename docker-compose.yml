@@ -48,6 +48,7 @@ services:
       - redis
     env_file:
       - .env
+    stop_grace_period: 10m  # Wait 10 minutes for running tasks to complete before force stop
     deploy:
       resources:
         limits:
