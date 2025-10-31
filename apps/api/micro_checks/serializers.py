@@ -27,6 +27,7 @@ class MicroCheckTemplateSerializer(serializers.ModelSerializer):
         fields = [
             'id', 'brand', 'category', 'category_display', 'severity', 'severity_display',
             'title', 'description', 'success_criteria',
+            'source',
             'version', 'parent_template',
             'default_photo_required', 'default_video_required', 'expected_completion_seconds',
             'ai_validation_enabled', 'ai_validation_prompt',
