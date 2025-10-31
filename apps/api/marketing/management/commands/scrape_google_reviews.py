@@ -178,8 +178,21 @@ class Command(BaseCommand):
                     browser.close()
                     return None
 
-                # Check if we found results
-                try:
+                # If using place_id, we're already on the business page - skip search/click
+                if place_id:
+                    self.stdout.write('✓ Using place_id - already on business page, skipping search')
+                    logger.info("Using place_id - skipping search and click, directly on business page")
+
+                    # Wait for business detail panel to load
+                    try:
+                        page.wait_for_selector('h1[class*="fontHeadlineLarge"], div[role="main"] h1',
+                                             timeout=10000, state='visible')
+                        logger.info("Business detail panel loaded successfully (place_id navigation)")
+                    except Exception as e:
+                        logger.warning(f"Business detail panel may not have loaded: {str(e)[:100]}")
+
+                else:
+                    # No place_id - need to search and click on business
                     # Wait for search results to appear
                     self.stdout.write('Waiting for search results...')
                     logger.info(f"Waiting for search results to load...")
@@ -213,7 +226,8 @@ class Command(BaseCommand):
                             logger.info(f"Screenshot saved to {screenshot_path}")
                         except:
                             pass
-                        raise PlaywrightTimeout("No search results found")
+                        browser.close()
+                        return None
 
                     human_delay(1.5, 3)
 
@@ -278,7 +292,8 @@ class Command(BaseCommand):
                         except Exception as debug_error:
                             logger.error(f"Could not save debug files: {str(debug_error)}")
 
-                    # Get business info
+                # Get business info (runs after either place_id or search path)
+                try:
                     logger.info("Extracting business information...")
                     business_info = self.extract_business_info(page)
                     logger.info(f"Extracted business info: {business_info}")
