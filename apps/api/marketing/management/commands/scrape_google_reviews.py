@@ -222,34 +222,61 @@ class Command(BaseCommand):
                     logger.info("Searching for clickable business listings...")
                     first_result = None
 
-                    # Try different selectors for search results
+                    # Try different selectors for search results - using wait_for_selector for proper waiting
                     selectors = [
                         'a[href*="/maps/place/"]',  # Direct place links
                         'div[role="article"] a',    # Article wrapper links
                         'a.hfpxzc',                 # Google Maps specific class
                         'div[role="feed"] > div > div > a',  # Feed items
+                        'div[jsaction*="mouseover"] a',  # Hover action links
+                        'div[data-result-index] a',  # Indexed results
                     ]
 
                     for selector in selectors:
                         try:
-                            first_result = page.query_selector(selector, timeout=5000)
+                            # Use wait_for_selector which properly waits for elements
+                            page.wait_for_selector(selector, timeout=5000, state='visible')
+                            first_result = page.query_selector(selector)
                             if first_result:
                                 self.stdout.write(f'Found result with selector: {selector}')
                                 logger.info(f"Found clickable business with selector: {selector}")
                                 break
-                        except:
-                            logger.debug(f"Selector '{selector}' timed out or failed")
+                        except Exception as e:
+                            logger.debug(f"Selector '{selector}' timed out or failed: {str(e)[:100]}")
                             continue
 
                     if first_result:
                         self.stdout.write('Clicking on first search result...')
                         logger.info("Clicking on first search result...")
                         first_result.click()
-                        human_delay(1.5, 3)  # Wait for business page to load
-                        logger.info("Clicked successfully, waiting for page to load...")
+                        human_delay(2, 4)  # Wait for business detail panel to load
+
+                        # Wait for business detail panel to appear after click
+                        try:
+                            page.wait_for_selector('h1[class*="fontHeadlineLarge"], div[role="main"] h1',
+                                                 timeout=10000, state='visible')
+                            logger.info("Business detail panel loaded successfully")
+                        except Exception as e:
+                            logger.warning(f"Business detail panel may not have loaded: {str(e)[:100]}")
+
                     else:
                         self.stdout.write(self.style.WARNING('No clickable result found - checking if already on business page...'))
                         logger.warning("No clickable business found with any selector")
+
+                        # Debug: Save screenshot and HTML to understand what's on the page
+                        try:
+                            timestamp = int(time.time())
+                            screenshot_path = f"/tmp/maps_no_click_{timestamp}.png"
+                            html_path = f"/tmp/maps_no_click_{timestamp}.html"
+
+                            page.screenshot(path=screenshot_path)
+                            with open(html_path, 'w', encoding='utf-8') as f:
+                                f.write(page.content())
+
+                            logger.error(f"Debug files saved - Screenshot: {screenshot_path}, HTML: {html_path}")
+                            self.stdout.write(self.style.WARNING(f'Debug screenshot: {screenshot_path}'))
+                        except Exception as debug_error:
+                            logger.error(f"Could not save debug files: {str(debug_error)}")
 
                     # Get business info
                     logger.info("Extracting business information...")
@@ -370,9 +397,17 @@ class Command(BaseCommand):
                 return None
 
     def extract_business_info(self, page):
-        """Extract business information from the page with aggressive timeouts"""
+        """Extract business information from the page with explicit waits"""
         try:
-            # Extract business name - try multiple selectors with 3s timeout each
+            # Wait for business detail content to load before extraction
+            logger.info("Waiting for business detail content to load...")
+            try:
+                page.wait_for_selector('h1, [aria-label*="star" i]', timeout=8000, state='visible')
+                logger.info("Business detail content appears to be loaded")
+            except Exception as wait_error:
+                logger.warning(f"Timeout waiting for business details, will try extraction anyway: {str(wait_error)[:100]}")
+
+            # Extract business name - try multiple selectors
             name_text = 'Unknown'
             name_selectors = [
                 'h1[class*="fontHeadlineLarge"]',  # Google Maps typical class
@@ -387,7 +422,9 @@ class Command(BaseCommand):
 
             for selector in name_selectors:
                 try:
-                    name_elem = page.query_selector(selector, timeout=3000)  # 3s timeout
+                    # Use wait_for_selector then query_selector (query_selector doesn't accept timeout)
+                    page.wait_for_selector(selector, timeout=2000, state='visible')
+                    name_elem = page.query_selector(selector)
                     if name_elem:
                         text = name_elem.inner_text().strip()
                         if text and text not in invalid_names:
@@ -414,27 +451,33 @@ class Command(BaseCommand):
             rating_elem = None
             for selector in rating_selectors:
                 try:
-                    rating_elem = page.query_selector(selector, timeout=3000)
+                    # Wait for element, then query it
+                    page.wait_for_selector(selector, timeout=3000, state='visible')
+                    rating_elem = page.query_selector(selector)
                     if rating_elem:
                         aria_label = rating_elem.get_attribute('aria-label')
                         if aria_label:
+                            logger.debug(f"Found aria-label: {aria_label}")
                             rating_match = re.search(r'([\d.]+)\s*stars?', aria_label, re.IGNORECASE)
                             reviews_match = re.search(r'(\d+(?:,\d+)*)\s*reviews?', aria_label, re.IGNORECASE)
 
                             if rating_match:
                                 rating = float(rating_match.group(1))
+                                logger.info(f"Extracted rating: {rating}")
                             if reviews_match:
                                 total_reviews = int(reviews_match.group(1).replace(',', ''))
+                                logger.info(f"Extracted total reviews: {total_reviews}")
 
                             if rating > 0 or total_reviews > 0:
                                 break
-                except:
+                except Exception as e:
+                    logger.debug(f"Selector '{selector}' failed: {str(e)[:100]}")
                     continue  # Timeout or error, try next selector
 
             # Strategy 2: Look for rating in more specific selectors (REMOVED expensive query_selector_all)
             # Skip this strategy as it's too slow - we'll rely on Strategy 1 and 3
 
-            # Strategy 3: Find review count from button text or nearby elements (3s timeout each)
+            # Strategy 3: Find review count from button text or nearby elements
             if total_reviews == 0:
                 # Try multiple patterns for review count
                 review_patterns = [
@@ -446,17 +489,20 @@ class Command(BaseCommand):
 
                 for pattern in review_patterns:
                     try:
-                        review_elem = page.query_selector(pattern, timeout=3000)
+                        page.wait_for_selector(pattern, timeout=2000, state='visible')
+                        review_elem = page.query_selector(pattern)
                         if review_elem:
                             text = review_elem.inner_text()
                             reviews_match = re.search(r'(\d+(?:,\d+)*)\s*reviews?', text, re.IGNORECASE)
                             if reviews_match:
                                 total_reviews = int(reviews_match.group(1).replace(',', ''))
+                                logger.info(f"Extracted review count from pattern '{pattern}': {total_reviews}")
                                 break
-                    except:
+                    except Exception as e:
+                        logger.debug(f"Pattern '{pattern}' failed: {str(e)[:100]}")
                         continue  # Timeout or error, try next selector
 
-            # Extract address (3s timeout each)
+            # Extract address
             address = ''
             address_selectors = [
                 'button[data-item-id="address"]',
@@ -466,11 +512,14 @@ class Command(BaseCommand):
 
             for selector in address_selectors:
                 try:
-                    address_elem = page.query_selector(selector, timeout=3000)
+                    page.wait_for_selector(selector, timeout=2000, state='visible')
+                    address_elem = page.query_selector(selector)
                     if address_elem:
                         address = address_elem.inner_text().strip()
+                        logger.info(f"Extracted address: {address}")
                         break
-                except:
+                except Exception as e:
+                    logger.debug(f"Address selector '{selector}' failed: {str(e)[:100]}")
                     continue  # Timeout or error, try next selector
 
             return {
