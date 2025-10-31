@@ -48,7 +48,7 @@ export default defineConfig({
         ]
       },
       devOptions: {
-        enabled: true,
+        enabled: false,  // Disabled in dev to prevent sw.js errors
         type: 'module'
       }
     })
