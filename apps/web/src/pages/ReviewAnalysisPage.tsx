@@ -1144,7 +1144,11 @@ function ReviewAnalysisResults({ results }: { results: AnalysisResults }) {
         {/* All Reviews Modal */}
         {showAllReviewsModal && (
           <AllReviewsModal
-            reviews={results.scraped_data?.reviews || []}
+            reviews={[
+              ...(results.insights?.negative_reviews || []),
+              ...(results.insights?.positive_reviews || []),
+              ...(results.insights?.neutral_reviews || [])
+            ]}
             businessName={results.business_name}
             onClose={() => setShowAllReviewsModal(false)}
           />
