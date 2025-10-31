@@ -104,6 +104,9 @@ const MicroCheckTemplatesPage = () => {
       if (severityFilter) params.severity = severityFilter;
       if (searchTerm) params.search = searchTerm;
 
+      // Order by updated date (most recent first)
+      params.ordering = '-updated_at';
+
       console.log('[MicroCheckTemplatesPage] Fetching with params:', params);
 
       const response = await microCheckAPI.getTemplates(params);
