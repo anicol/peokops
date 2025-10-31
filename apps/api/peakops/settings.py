@@ -3,6 +3,7 @@ from pathlib import Path
 from datetime import timedelta
 from decouple import config
 import dj_database_url
+import logging.config
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -66,6 +67,7 @@ LOCAL_APPS = [
 INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + LOCAL_APPS
 
 MIDDLEWARE = [
+    'core.logging.RequestIdMiddleware',
     'corsheaders.middleware.CorsMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'whitenoise.middleware.WhiteNoiseMiddleware',
@@ -429,3 +431,95 @@ STRIPE_WEBHOOK_SECRET = config('STRIPE_WEBHOOK_SECRET', default='')
 
 # Frontend URL for Stripe redirects
 FRONTEND_URL = config('FRONTEND_URL', default='http://localhost:5174' if DEBUG else 'https://app.getpeakops.com')
+
+# Sentry Configuration
+SENTRY_DSN = config('SENTRY_DSN', default='')
+SENTRY_ENVIRONMENT = config('SENTRY_ENVIRONMENT', default='development' if DEBUG else 'production')
+SENTRY_TRACES_SAMPLE_RATE = config('SENTRY_TRACES_SAMPLE_RATE', default=0.1, cast=float)
+
+if SENTRY_DSN:
+    import sentry_sdk
+    from sentry_sdk.integrations.django import DjangoIntegration
+    from sentry_sdk.integrations.celery import CeleryIntegration
+    from sentry_sdk.integrations.redis import RedisIntegration
+    
+    sentry_sdk.init(
+        dsn=SENTRY_DSN,
+        integrations=[
+            DjangoIntegration(),
+            CeleryIntegration(),
+            RedisIntegration(),
+        ],
+        environment=SENTRY_ENVIRONMENT,
+        traces_sample_rate=SENTRY_TRACES_SAMPLE_RATE,
+        send_default_pii=False,
+        attach_stacktrace=True,
+        before_send=lambda event, hint: event if not DEBUG else None,
+    )
+
+# Structured Logging Configuration
+LOGGING_HANDLERS = {
+    'console': {
+        'class': 'logging.StreamHandler',
+        'formatter': 'json' if not DEBUG else 'verbose',
+        'filters': ['request_id'],
+    },
+}
+
+if SENTRY_DSN:
+    try:
+        import sentry_sdk
+        LOGGING_HANDLERS['sentry'] = {
+            'level': 'ERROR',
+            'class': 'sentry_sdk.integrations.logging.EventHandler',
+        }
+        DEFAULT_HANDLERS = ['console', 'sentry']
+    except ImportError:
+        DEFAULT_HANDLERS = ['console']
+else:
+    DEFAULT_HANDLERS = ['console']
+
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'formatters': {
+        'json': {
+            '()': 'core.logging.JsonFormatter',
+        },
+        'verbose': {
+            'format': '{levelname} {asctime} {module} {process:d} {thread:d} {message}',
+            'style': '{',
+        },
+        'simple': {
+            'format': '{levelname} {message}',
+            'style': '{',
+        },
+    },
+    'filters': {
+        'request_id': {
+            '()': 'core.logging.RequestIdFilter',
+        },
+    },
+    'handlers': LOGGING_HANDLERS,
+    'root': {
+        'handlers': DEFAULT_HANDLERS,
+        'level': 'INFO',
+    },
+    'loggers': {
+        'django': {
+            'handlers': DEFAULT_HANDLERS,
+            'level': 'INFO',
+            'propagate': False,
+        },
+        'django.request': {
+            'handlers': DEFAULT_HANDLERS,
+            'level': 'ERROR',
+            'propagate': False,
+        },
+        'celery': {
+            'handlers': DEFAULT_HANDLERS,
+            'level': 'INFO',
+            'propagate': False,
+        },
+    },
+}
