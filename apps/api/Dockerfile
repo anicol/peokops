@@ -30,6 +30,13 @@ COPY . .
 # Collect static files
 RUN python manage.py collectstatic --noinput --settings=peakops.settings
 
+# Create non-root user for security
+RUN useradd -m -u 1000 appuser && \
+    chown -R appuser:appuser /app
+
+# Switch to non-root user
+USER appuser
+
 # Expose port
 EXPOSE $PORT
 

@@ -178,8 +178,21 @@ class Command(BaseCommand):
                     browser.close()
                     return None
 
-                # Check if we found results
-                try:
+                # If using place_id, we're already on the business page - skip search/click
+                if place_id:
+                    self.stdout.write('✓ Using place_id - already on business page, skipping search')
+                    logger.info("Using place_id - skipping search and click, directly on business page")
+
+                    # Wait for business detail panel to load
+                    try:
+                        page.wait_for_selector('h1[class*="fontHeadlineLarge"], div[role="main"] h1',
+                                             timeout=15000, state='visible')  # Increased from 10s to 15s
+                        logger.info("Business detail panel loaded successfully (place_id navigation)")
+                    except Exception as e:
+                        logger.warning(f"Business detail panel may not have loaded: {str(e)[:100]}")
+
+                else:
+                    # No place_id - need to search and click on business
                     # Wait for search results to appear
                     self.stdout.write('Waiting for search results...')
                     logger.info(f"Waiting for search results to load...")
@@ -213,7 +226,8 @@ class Command(BaseCommand):
                             logger.info(f"Screenshot saved to {screenshot_path}")
                         except:
                             pass
-                        raise PlaywrightTimeout("No search results found")
+                        browser.close()
+                        return None
 
                     human_delay(1.5, 3)
 
@@ -278,7 +292,8 @@ class Command(BaseCommand):
                         except Exception as debug_error:
                             logger.error(f"Could not save debug files: {str(debug_error)}")
 
-                    # Get business info
+                # Get business info (runs after either place_id or search path)
+                try:
                     logger.info("Extracting business information...")
                     business_info = self.extract_business_info(page)
                     logger.info(f"Extracted business info: {business_info}")
@@ -310,7 +325,9 @@ class Command(BaseCommand):
                     self.stdout.write('\nNavigating to reviews...')
                     logger.info("Looking for reviews button...")
                     try:
-                        reviews_button = page.query_selector('button[aria-label*="reviews" i], button:has-text("Reviews")', timeout=5000)
+                        # Wait for reviews button to appear, then query it
+                        page.wait_for_selector('button[aria-label*="reviews" i], button:has-text("Reviews")', timeout=5000, state='visible')
+                        reviews_button = page.query_selector('button[aria-label*="reviews" i], button:has-text("Reviews")')
                     except:
                         reviews_button = None
 
@@ -402,7 +419,7 @@ class Command(BaseCommand):
             # Wait for business detail content to load before extraction
             logger.info("Waiting for business detail content to load...")
             try:
-                page.wait_for_selector('h1, [aria-label*="star" i]', timeout=8000, state='visible')
+                page.wait_for_selector('h1, [aria-label*="star" i]', timeout=15000, state='visible')  # Increased from 8s to 15s
                 logger.info("Business detail content appears to be loaded")
             except Exception as wait_error:
                 logger.warning(f"Timeout waiting for business details, will try extraction anyway: {str(wait_error)[:100]}")
@@ -423,7 +440,7 @@ class Command(BaseCommand):
             for selector in name_selectors:
                 try:
                     # Use wait_for_selector then query_selector (query_selector doesn't accept timeout)
-                    page.wait_for_selector(selector, timeout=2000, state='visible')
+                    page.wait_for_selector(selector, timeout=5000, state='visible')  # Increased from 2s to 5s
                     name_elem = page.query_selector(selector)
                     if name_elem:
                         text = name_elem.inner_text().strip()
@@ -452,7 +469,7 @@ class Command(BaseCommand):
             for selector in rating_selectors:
                 try:
                     # Wait for element, then query it
-                    page.wait_for_selector(selector, timeout=3000, state='visible')
+                    page.wait_for_selector(selector, timeout=5000, state='visible')  # Increased from 3s to 5s
                     rating_elem = page.query_selector(selector)
                     if rating_elem:
                         aria_label = rating_elem.get_attribute('aria-label')
@@ -489,7 +506,7 @@ class Command(BaseCommand):
 
                 for pattern in review_patterns:
                     try:
-                        page.wait_for_selector(pattern, timeout=2000, state='visible')
+                        page.wait_for_selector(pattern, timeout=4000, state='visible')  # Increased from 2s to 4s
                         review_elem = page.query_selector(pattern)
                         if review_elem:
                             text = review_elem.inner_text()
@@ -512,7 +529,7 @@ class Command(BaseCommand):
 
             for selector in address_selectors:
                 try:
-                    page.wait_for_selector(selector, timeout=2000, state='visible')
+                    page.wait_for_selector(selector, timeout=4000, state='visible')  # Increased from 2s to 4s
                     address_elem = page.query_selector(selector)
                     if address_elem:
                         address = address_elem.inner_text().strip()
@@ -637,7 +654,7 @@ class Command(BaseCommand):
                     # If scrolling fails, try window scroll as fallback
                     page.evaluate('window.scrollBy(0, 1000)')
 
-                human_delay(1.5, 2.5)  # Random wait time to let reviews load and appear human
+                human_delay(2, 3)  # Random wait time to let reviews load and appear human (increased for reliability)
                 scroll_attempts += 1
 
             logger.info(f"Scroll loop completed. Total reviews: {len(reviews)}, Scroll attempts: {scroll_attempts}")

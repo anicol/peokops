@@ -30,6 +30,11 @@ interface AnalysisResults {
   sentiment_summary?: any;
   error_message?: string;
   public_url: string;
+  scraped_data?: {
+    reviews?: any[];
+    business_info?: any;
+    is_partial?: boolean;
+  };
 }
 
 export default function ReviewAnalysisPage() {
@@ -52,6 +57,7 @@ export default function ReviewAnalysisPage() {
 
   // Results state
   const [results, setResults] = useState<AnalysisResults | null>(null);
+  const [partialResults, setPartialResults] = useState<AnalysisResults | null>(null);
 
   // Poll for status when processing
   useEffect(() => {
@@ -68,6 +74,16 @@ export default function ReviewAnalysisPage() {
           // Load full results
           const resultsData = await insightsAPI.getResults(currentAnalysisId);
           setResults(resultsData);
+        } else if (statusData.status === 'PROCESSING' && statusData.progress_percentage >= 25) {
+          // Check for partial results (initial API reviews)
+          try {
+            const resultsData = await insightsAPI.getResults(currentAnalysisId);
+            if (resultsData.scraped_data?.is_partial && !partialResults) {
+              setPartialResults(resultsData);
+            }
+          } catch (error) {
+            // Partial results not ready yet, continue waiting
+          }
         }
       } catch (error) {
         console.error('Error polling status:', error);
@@ -79,7 +95,7 @@ export default function ReviewAnalysisPage() {
     pollStatus(); // Initial poll
 
     return () => clearInterval(interval);
-  }, [currentAnalysisId, status?.status]);
+  }, [currentAnalysisId, status?.status, partialResults]);
 
   // Load results if analysisId in URL
   useEffect(() => {
@@ -413,6 +429,63 @@ export default function ReviewAnalysisPage() {
               </p>
             </div>
 
+            {/* First Look Preview - Shows when partial results arrive */}
+            {partialResults && (
+              <div className="mb-8 bg-gradient-to-br from-green-50 to-blue-50 border-2 border-green-300 rounded-lg p-6 shadow-lg transition-all duration-500 ease-in">
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="flex-shrink-0">
+                    <div className="w-12 h-12 bg-green-500 rounded-full flex items-center justify-center">
+                      <svg className="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                      </svg>
+                    </div>
+                  </div>
+                  <div className="flex-1">
+                    <h3 className="text-xl font-bold text-gray-900">
+                      🎉 Found Your Business!
+                    </h3>
+                    <p className="text-sm text-gray-600 mt-1">
+                      Here's a quick preview while we gather more insights...
+                    </p>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-4">
+                  {partialResults.google_rating && (
+                    <div className="bg-white rounded-lg p-4 text-center shadow-sm">
+                      <div className="text-3xl font-bold text-yellow-600 mb-1">
+                        {partialResults.google_rating} ⭐
+                      </div>
+                      <div className="text-xs text-gray-600">Google Rating</div>
+                    </div>
+                  )}
+
+                  <div className="bg-white rounded-lg p-4 text-center shadow-sm">
+                    <div className="text-3xl font-bold text-blue-600 mb-1">
+                      {partialResults.reviews_analyzed || 5}
+                    </div>
+                    <div className="text-xs text-gray-600">Reviews Found</div>
+                  </div>
+
+                  {partialResults.total_reviews_found && (
+                    <div className="bg-white rounded-lg p-4 text-center shadow-sm">
+                      <div className="text-3xl font-bold text-purple-600 mb-1">
+                        {partialResults.total_reviews_found}
+                      </div>
+                      <div className="text-xs text-gray-600">Total on Google</div>
+                    </div>
+                  )}
+                </div>
+
+                <div className="bg-blue-100 border-l-4 border-blue-500 rounded p-3 flex items-center gap-2">
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
+                  <p className="text-sm text-blue-900 font-medium">
+                    Loading more reviews and running full AI analysis...
+                  </p>
+                </div>
+              </div>
+            )}
+
             {/* Step indicators */}
             <div className="mb-8 space-y-3">
               {steps.map((step, index) => {
@@ -576,6 +649,7 @@ export default function ReviewAnalysisPage() {
 function ReviewAnalysisResults({ results }: { results: AnalysisResults }) {
   const sentiment = results.sentiment_summary;
   const [showShareModal, setShowShareModal] = useState(false);
+  const [showAllReviewsModal, setShowAllReviewsModal] = useState(false);
   const [copyStatus, setCopyStatus] = useState<string>('');
 
   // Generate HTML email content
@@ -1045,6 +1119,7 @@ function ReviewAnalysisResults({ results }: { results: AnalysisResults }) {
           <CustomerVoicesSection
             negativeReviews={results.insights.negative_reviews?.filter((r: any) => r.text && r.text.trim()) || []}
             positiveReviews={results.insights.positive_reviews?.filter((r: any) => r.text && r.text.trim()) || []}
+            onViewAllClick={() => setShowAllReviewsModal(true)}
           />
         )}
 
@@ -1133,13 +1208,34 @@ function ReviewAnalysisResults({ results }: { results: AnalysisResults }) {
             onClose={() => setShowShareModal(false)}
           />
         )}
+
+        {/* All Reviews Modal */}
+        {showAllReviewsModal && (
+          <AllReviewsModal
+            reviews={[
+              ...(results.insights?.negative_reviews || []),
+              ...(results.insights?.positive_reviews || []),
+              ...(results.insights?.neutral_reviews || [])
+            ]}
+            businessName={results.business_name}
+            onClose={() => setShowAllReviewsModal(false)}
+          />
+        )}
       </div>
     </div>
   );
 }
 
 // Customer Voices Section Component with Show More
-function CustomerVoicesSection({ negativeReviews, positiveReviews }: { negativeReviews: any[]; positiveReviews: any[] }) {
+function CustomerVoicesSection({
+  negativeReviews,
+  positiveReviews,
+  onViewAllClick
+}: {
+  negativeReviews: any[];
+  positiveReviews: any[];
+  onViewAllClick: () => void;
+}) {
   const [expandedReviews, setExpandedReviews] = useState<{ [key: string]: boolean }>({});
 
   const toggleReview = (type: string, index: number) => {
@@ -1176,9 +1272,20 @@ function CustomerVoicesSection({ negativeReviews, positiveReviews }: { negativeR
 
   return (
     <div className="bg-white rounded-lg shadow-lg p-6 mb-8">
-      <h2 className="text-xl font-bold text-gray-900 mb-4">
-        💬 Customer Voices
-      </h2>
+      <div className="flex items-center justify-between mb-4">
+        <h2 className="text-xl font-bold text-gray-900">
+          💬 Customer Voices
+        </h2>
+        <button
+          onClick={onViewAllClick}
+          className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium"
+        >
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 10h16M4 14h16M4 18h16" />
+          </svg>
+          View All Reviews
+        </button>
+      </div>
 
       <div className="grid md:grid-cols-2 gap-4">
         {/* Critical Feedback */}
@@ -1383,6 +1490,163 @@ function ShareAnalysisModal({ analysisId, businessName, onClose }: { analysisId:
             </form>
           </>
         )}
+      </div>
+    </div>
+  );
+}
+
+// All Reviews Modal Component
+function AllReviewsModal({
+  reviews,
+  businessName,
+  onClose
+}: {
+  reviews: any[];
+  businessName: string;
+  onClose: () => void;
+}) {
+  const [filterRating, setFilterRating] = useState<number | null>(null);
+  const [sortBy, setSortBy] = useState<'rating' | 'date'>('rating');
+
+  // Filter and sort reviews
+  const filteredReviews = reviews.filter(review => {
+    if (filterRating === null) return true;
+    return review.rating === filterRating;
+  });
+
+  const sortedReviews = [...filteredReviews].sort((a, b) => {
+    if (sortBy === 'rating') {
+      return b.rating - a.rating;
+    }
+    // For date sorting, try timestamp first, then time text
+    const aTime = a.timestamp || 0;
+    const bTime = b.timestamp || 0;
+    return bTime - aTime;
+  });
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] flex flex-col">
+        {/* Header */}
+        <div className="flex justify-between items-center p-6 border-b border-gray-200">
+          <div>
+            <h3 className="text-2xl font-bold text-gray-900">All Reviews</h3>
+            <p className="text-sm text-gray-600 mt-1">{businessName}</p>
+          </div>
+          <button
+            onClick={onClose}
+            className="text-gray-400 hover:text-gray-600"
+          >
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+
+        {/* Filters */}
+        <div className="px-6 py-4 border-b border-gray-200 bg-gray-50">
+          <div className="flex flex-wrap gap-4 items-center">
+            <div className="flex items-center gap-2">
+              <span className="text-sm font-medium text-gray-700">Filter by rating:</span>
+              <div className="flex gap-1">
+                <button
+                  onClick={() => setFilterRating(null)}
+                  className={`px-3 py-1 rounded-lg text-sm font-medium transition-colors ${
+                    filterRating === null
+                      ? 'bg-blue-600 text-white'
+                      : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
+                  }`}
+                >
+                  All
+                </button>
+                {[5, 4, 3, 2, 1].map(rating => (
+                  <button
+                    key={rating}
+                    onClick={() => setFilterRating(rating)}
+                    className={`px-3 py-1 rounded-lg text-sm font-medium transition-colors ${
+                      filterRating === rating
+                        ? 'bg-blue-600 text-white'
+                        : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
+                    }`}
+                  >
+                    {rating}⭐
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <span className="text-sm font-medium text-gray-700">Sort by:</span>
+              <select
+                value={sortBy}
+                onChange={(e) => setSortBy(e.target.value as 'rating' | 'date')}
+                className="px-3 py-1 border border-gray-300 rounded-lg text-sm bg-white"
+              >
+                <option value="rating">Rating</option>
+                <option value="date">Date</option>
+              </select>
+            </div>
+
+            <div className="ml-auto text-sm text-gray-600">
+              Showing {sortedReviews.length} of {reviews.length} reviews
+            </div>
+          </div>
+        </div>
+
+        {/* Reviews List */}
+        <div className="flex-1 overflow-y-auto p-6">
+          {sortedReviews.length === 0 ? (
+            <div className="text-center py-12 text-gray-500">
+              <p>No reviews found matching your filters</p>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {sortedReviews.map((review, index) => (
+                <div
+                  key={index}
+                  className={`border rounded-lg p-4 ${
+                    review.rating >= 4
+                      ? 'border-green-200 bg-green-50'
+                      : review.rating === 3
+                      ? 'border-yellow-200 bg-yellow-50'
+                      : 'border-red-200 bg-red-50'
+                  }`}
+                >
+                  <div className="flex items-start justify-between mb-2">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className="font-semibold text-gray-900">
+                          {review.author || 'Anonymous'}
+                        </span>
+                        <span className="text-yellow-500 text-sm">
+                          {'⭐'.repeat(review.rating)}
+                        </span>
+                      </div>
+                      {review.time && (
+                        <p className="text-xs text-gray-500">{review.time}</p>
+                      )}
+                    </div>
+                  </div>
+                  {review.text && (
+                    <p className="text-sm text-gray-700 leading-relaxed">
+                      {review.text}
+                    </p>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Footer */}
+        <div className="px-6 py-4 border-t border-gray-200 bg-gray-50">
+          <button
+            onClick={onClose}
+            className="w-full bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors font-medium"
+          >
+            Close
+          </button>
+        </div>
       </div>
     </div>
   );
