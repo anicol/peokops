@@ -42,6 +42,7 @@ const MicroCheckTemplatesPage = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [categoryFilter, setCategoryFilter] = useState<string>('');
   const [severityFilter, setSeverityFilter] = useState<string>('');
+  const [sourceFilter, setSourceFilter] = useState<string>('');
   const [showFilters, setShowFilters] = useState(false);
   const [availableCategories, setAvailableCategories] = useState<Set<MicroCheckCategory>>(new Set());
   const [showModal, setShowModal] = useState(false);
@@ -102,6 +103,7 @@ const MicroCheckTemplatesPage = () => {
       // Backend filtering
       if (categoryFilter) params.category = categoryFilter;
       if (severityFilter) params.severity = severityFilter;
+      if (sourceFilter) params.source = sourceFilter;
       if (searchTerm) params.search = searchTerm;
 
       // Order by updated date (most recent first)
@@ -132,7 +134,7 @@ const MicroCheckTemplatesPage = () => {
       setLoading(false);
       setIsSearching(false);
     }
-  }, [activeTab, categoryFilter, severityFilter, searchTerm, user?.brand_id, templates.length]);
+  }, [activeTab, categoryFilter, severityFilter, sourceFilter, searchTerm, user?.brand_id, templates.length]);
 
   // Fetch categories when tab or user changes
   useEffect(() => {
@@ -155,7 +157,7 @@ const MicroCheckTemplatesPage = () => {
       // Immediately fetch for filter changes
       fetchTemplates(1, false);
     }
-  }, [canManage, searchTerm, categoryFilter, severityFilter, activeTab, user?.brand_id, fetchTemplates]);
+  }, [canManage, searchTerm, categoryFilter, severityFilter, sourceFilter, activeTab, user?.brand_id, fetchTemplates]);
 
   const handleCreateTemplate = () => {
     setModalMode('create');
@@ -499,7 +501,7 @@ const MicroCheckTemplatesPage = () => {
           </div>
 
           {showFilters && (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4 pt-4 border-t border-gray-200">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4 pt-4 border-t border-gray-200">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">Category</label>
                 <select
@@ -529,6 +531,19 @@ const MicroCheckTemplatesPage = () => {
                   <option value="LOW">Low</option>
                 </select>
               </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Source</label>
+                <select
+                  value={sourceFilter}
+                  onChange={(e) => setSourceFilter(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
+                >
+                  <option value="">All Sources</option>
+                  <option value="google_reviews">Google Reviews</option>
+                  <option value="manual">Manual</option>
+                  <option value="ai_generated">AI Generated</option>
+                </select>
+              </div>
             </div>
           )}
         </div>
@@ -548,13 +563,13 @@ const MicroCheckTemplatesPage = () => {
               {activeTab === 'starters' ? 'No Starter Templates Found' : 'No Custom Templates Yet'}
             </h3>
             <p className="text-gray-600 mb-6">
-              {searchTerm || categoryFilter || severityFilter
+              {searchTerm || categoryFilter || severityFilter || sourceFilter
                 ? 'Try adjusting your filters'
                 : activeTab === 'starters'
                 ? 'Starter templates will appear here'
                 : 'Create your first template or duplicate a starter template'}
             </p>
-            {activeTab === 'my-templates' && !searchTerm && !categoryFilter && !severityFilter && (
+            {activeTab === 'my-templates' && !searchTerm && !categoryFilter && !severityFilter && !sourceFilter && (
               <button
                 onClick={handleCreateTemplate}
                 className="px-6 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors font-medium"
