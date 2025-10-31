@@ -21,6 +21,30 @@ class MicroCheckTemplateSerializer(serializers.ModelSerializer):
     category_display = serializers.CharField(source='get_category_display', read_only=True)
     severity_display = serializers.CharField(source='get_severity_display', read_only=True)
     created_by_name = serializers.CharField(source='created_by.get_full_name', read_only=True)
+    usage_stats = serializers.SerializerMethodField()
+
+    def get_usage_stats(self, obj):
+        """Calculate usage statistics for this template"""
+        from django.db.models import Count, Q
+
+        # Count total responses for this template
+        responses = MicroCheckResponse.objects.filter(template=obj)
+        total_count = responses.count()
+
+        if total_count == 0:
+            return {
+                'times_used': 0,
+                'pass_rate': None
+            }
+
+        # Count passed responses
+        passed_count = responses.filter(status='PASS').count()
+        pass_rate = round((passed_count / total_count) * 100, 1) if total_count > 0 else None
+
+        return {
+            'times_used': total_count,
+            'pass_rate': pass_rate
+        }
 
     class Meta:
         model = MicroCheckTemplate
@@ -33,6 +57,7 @@ class MicroCheckTemplateSerializer(serializers.ModelSerializer):
             'ai_validation_enabled', 'ai_validation_prompt',
             'is_local', 'include_in_rotation', 'rotation_priority',
             'visual_reference_image', 'is_active',
+            'usage_stats',
             'created_at', 'created_by', 'created_by_name', 'updated_at', 'updated_by'
         ]
         read_only_fields = ['id', 'brand', 'version', 'parent_template', 'created_at', 'created_by', 'updated_at', 'updated_by']
