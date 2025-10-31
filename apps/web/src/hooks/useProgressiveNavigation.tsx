@@ -57,6 +57,24 @@ export function useProgressiveNavigation(): NavigationState {
     const isGM = role === 'GM'; // Store Manager
     const isInspector = role === 'INSPECTOR';
 
+    // Navigation mode detection - determines which navigation structure to show
+    const storeCount = user?.accessible_stores_count || 0;
+    let navigationMode: 'TRIAL_MODE' | 'MULTI_STORE_MODE' | 'ENTERPRISE_MODE' | 'SUPER_ADMIN_MODE' = 'TRIAL_MODE';
+
+    if (isSuperAdmin) {
+      navigationMode = 'SUPER_ADMIN_MODE';
+    } else if (isAdmin) {
+      navigationMode = 'ENTERPRISE_MODE';
+    } else if (isInspector) {
+      navigationMode = 'ENTERPRISE_MODE';
+    } else if (isOwner) {
+      navigationMode = 'MULTI_STORE_MODE';
+    } else if (isGM && storeCount > 1) {
+      navigationMode = 'MULTI_STORE_MODE';
+    } else if (isTrialAdmin || (isGM && storeCount <= 1)) {
+      navigationMode = 'TRIAL_MODE';
+    }
+
     // Default state - non-trial users get role-based access
     if (!user?.is_trial_user) {
       // Super Admin - Full system access
