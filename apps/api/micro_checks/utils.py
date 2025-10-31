@@ -155,11 +155,15 @@ def select_templates_for_run(store, num_items=3):
     from django.db.models import Q
     import random
 
-    # Get all active templates for this store's brand (or global templates)
+    # Get templates at all hierarchy levels for this store
+    # STORE level (highest priority) > ACCOUNT level > BRAND level
     active_templates = MicroCheckTemplate.objects.filter(
-        is_active=True
+        is_active=True,
+        include_in_rotation=True
     ).filter(
-        Q(brand=store.brand) | Q(brand__isnull=True)
+        Q(level='BRAND', brand=store.brand) |
+        Q(level='ACCOUNT', account=store.account) |
+        Q(level='STORE', store=store)
     )
 
     # Get coverage data for this store
@@ -168,27 +172,35 @@ def select_templates_for_run(store, num_items=3):
         for c in CheckCoverage.objects.filter(store=store)
     }
 
-    # Build selection pool with weights
+    # Build selection pool with hierarchical priority weights
     selection_pool = []
     for template in active_templates:
         coverage = coverage_map.get(template.id)
 
-        # Calculate priority score
-        priority = 100  # Base priority
+        # Base priority by template level (Store > Account > Brand)
+        if template.level == 'STORE':
+            base_priority = 300  # Highest - store-specific issues
+        elif template.level == 'ACCOUNT':
+            base_priority = 200  # Medium - franchisee patterns
+        else:  # BRAND
+            base_priority = 100  # Base - brand standards
 
+        priority = base_priority
+
+        # Store-level usage adjustments (most impactful)
         if coverage:
-            # Reduce priority based on recent usage
+            # Days since last check at this store
             days_since_use = (timezone.now() - coverage.last_visual_verified_at).days
-            priority += days_since_use * 2
+            priority += days_since_use * 3  # Store recency weighted heavily
 
-            # Increase priority if last check failed
+            # Recent failures get high priority
             if coverage.last_visual_status == 'FAIL':
-                priority += 30
+                priority += 50  # Failed checks need attention
         else:
-            # Never seen before - high priority
+            # Never checked at this store - very high priority
             priority += 200
 
-        # Increase priority for high severity items
+        # Severity adjustments (universal across all levels)
         if template.severity == 'CRITICAL':
             priority += 50
         elif template.severity == 'HIGH':

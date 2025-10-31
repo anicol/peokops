@@ -60,7 +60,7 @@ class MicroCheckTemplateViewSet(viewsets.ModelViewSet):
     queryset = MicroCheckTemplate.objects.all()
     serializer_class = MicroCheckTemplateSerializer
     permission_classes = [IsAuthenticated]
-    filterset_fields = ['category', 'severity', 'is_active', 'brand', 'is_local', 'source']
+    filterset_fields = ['category', 'severity', 'is_active', 'brand', 'is_local', 'source', 'level']
     search_fields = ['title', 'description', 'success_criteria']
     ordering_fields = ['created_at', 'category', 'severity', 'rotation_priority', 'title', 'times_used']
     ordering = ['-created_at']  # Show newest templates first

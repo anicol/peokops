@@ -34,9 +34,12 @@ export type PhotoRequiredReason = 'ALWAYS' | 'NEVER' | 'FIRST_TIME' | 'AFTER_FAI
 
 export type TemplateSource = 'PEAKOPS' | 'LOCAL' | 'google_reviews';
 
+export type TemplateLevel = 'BRAND' | 'ACCOUNT' | 'STORE';
+
 export interface TemplateUsageStats {
   times_used: number;
   pass_rate: number | null;
+  context: 'store' | 'account' | 'brand';
 }
 
 export interface MicroCheckTemplate {
@@ -52,6 +55,14 @@ export interface MicroCheckTemplate {
 
   // Source
   source: TemplateSource; // PEAKOPS = starter templates, LOCAL = user-created/customized
+
+  // Multi-level hierarchy
+  level: TemplateLevel;
+  level_display: string;
+  account: number | null;
+  account_name: string | null;
+  store: number | null;
+  store_name: string | null;
 
   // Versioning
   version: number;

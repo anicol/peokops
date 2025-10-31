@@ -46,6 +46,7 @@ const MicroCheckTemplatesPage = () => {
   const [categoryFilter, setCategoryFilter] = useState<string>('');
   const [severityFilter, setSeverityFilter] = useState<string>('');
   const [sourceFilter, setSourceFilter] = useState<string>('');
+  const [levelFilter, setLevelFilter] = useState<string>('');
   const [showFilters, setShowFilters] = useState(true);
   const [sortField, setSortField] = useState<string>('updated_at');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
@@ -135,6 +136,7 @@ const MicroCheckTemplatesPage = () => {
       if (categoryFilter) params.category = categoryFilter;
       if (severityFilter) params.severity = severityFilter;
       if (sourceFilter) params.source = sourceFilter;
+      if (levelFilter) params.level = levelFilter;
       if (searchTerm) params.search = searchTerm;
 
       // Ordering
@@ -165,7 +167,7 @@ const MicroCheckTemplatesPage = () => {
       setLoading(false);
       setIsSearching(false);
     }
-  }, [activeTab, categoryFilter, severityFilter, sourceFilter, searchTerm, sortField, sortDirection, user?.brand_id, templates.length]);
+  }, [activeTab, categoryFilter, severityFilter, sourceFilter, levelFilter, searchTerm, sortField, sortDirection, user?.brand_id, templates.length]);
 
   // Fetch categories when tab or user changes
   useEffect(() => {
@@ -188,7 +190,7 @@ const MicroCheckTemplatesPage = () => {
       // Immediately fetch for filter changes
       fetchTemplates(1, false);
     }
-  }, [canManage, searchTerm, categoryFilter, severityFilter, sourceFilter, activeTab, user?.brand_id, fetchTemplates]);
+  }, [canManage, searchTerm, categoryFilter, severityFilter, sourceFilter, levelFilter, activeTab, user?.brand_id, fetchTemplates]);
 
   const handleCreateTemplate = () => {
     setModalMode('create');
@@ -575,6 +577,19 @@ const MicroCheckTemplatesPage = () => {
                   <option value="ai_generated">AI Generated</option>
                 </select>
               </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Level</label>
+                <select
+                  value={levelFilter}
+                  onChange={(e) => setLevelFilter(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
+                >
+                  <option value="">All Levels</option>
+                  <option value="BRAND">🏢 Brand</option>
+                  <option value="ACCOUNT">🏪 Account</option>
+                  <option value="STORE">📍 Store</option>
+                </select>
+              </div>
             </div>
           )}
         </div>
@@ -594,13 +609,13 @@ const MicroCheckTemplatesPage = () => {
               {activeTab === 'starters' ? 'No Starter Templates Found' : 'No Custom Templates Yet'}
             </h3>
             <p className="text-gray-600 mb-6">
-              {searchTerm || categoryFilter || severityFilter || sourceFilter
+              {searchTerm || categoryFilter || severityFilter || sourceFilter || levelFilter
                 ? 'Try adjusting your filters'
                 : activeTab === 'starters'
                 ? 'Starter templates will appear here'
                 : 'Create your first template or duplicate a starter template'}
             </p>
-            {activeTab === 'my-templates' && !searchTerm && !categoryFilter && !severityFilter && !sourceFilter && (
+            {activeTab === 'my-templates' && !searchTerm && !categoryFilter && !severityFilter && !sourceFilter && !levelFilter && (
               <button
                 onClick={handleCreateTemplate}
                 className="px-6 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors font-medium"
@@ -643,6 +658,9 @@ const MicroCheckTemplatesPage = () => {
                       Severity
                       {renderSortIcon('severity')}
                     </div>
+                  </th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-28">
+                    Level
                   </th>
                   <th
                     className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-28 cursor-pointer hover:bg-gray-100 transition-colors"
@@ -709,6 +727,19 @@ const MicroCheckTemplatesPage = () => {
                     <td className="px-4 py-3">
                       <span className={`px-2 py-1 rounded text-xs font-medium border ${getSeverityBadgeColor(template.severity)}`}>
                         {template.severity_display}
+                      </span>
+                    </td>
+
+                    {/* Level */}
+                    <td className="px-4 py-3">
+                      <span className={`px-2 py-1 rounded text-xs font-medium ${
+                        template.level === 'STORE' ? 'bg-green-100 text-green-700 border border-green-300' :
+                        template.level === 'ACCOUNT' ? 'bg-purple-100 text-purple-700 border border-purple-300' :
+                        'bg-blue-100 text-blue-700 border border-blue-300'
+                      }`}>
+                        {template.level === 'STORE' ? '📍 Store' :
+                         template.level === 'ACCOUNT' ? '🏪 Account' :
+                         '🏢 Brand'}
                       </span>
                     </td>
 

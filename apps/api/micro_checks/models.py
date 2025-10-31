@@ -9,6 +9,11 @@ import pytz
 class MicroCheckTemplate(models.Model):
     """Base template for micro-check items"""
 
+    class TemplateLevel(models.TextChoices):
+        BRAND = 'BRAND', 'Brand Level'
+        ACCOUNT = 'ACCOUNT', 'Account Level'
+        STORE = 'STORE', 'Store Level'
+
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
 
     # Category alignment with Finding model
@@ -39,6 +44,32 @@ class MicroCheckTemplate(models.Model):
     brand = models.ForeignKey('brands.Brand', on_delete=models.CASCADE, null=True, blank=True,
                               help_text="Brand that owns this template (null = global/system template)",
                               related_name='micro_check_templates')
+
+    # Multi-level hierarchy
+    level = models.CharField(
+        max_length=20,
+        choices=TemplateLevel.choices,
+        default=TemplateLevel.BRAND,
+        db_index=True,
+        help_text="Template hierarchy level: BRAND (franchisor), ACCOUNT (franchisee), or STORE (location-specific)"
+    )
+    account = models.ForeignKey(
+        'accounts.Account',
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+        related_name='micro_check_templates',
+        help_text="Account for ACCOUNT/STORE level templates"
+    )
+    store = models.ForeignKey(
+        'brands.Store',
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+        related_name='micro_check_templates',
+        help_text="Store for STORE level templates only"
+    )
+
     is_local = models.BooleanField(default=False,
                                    help_text="Local template (franchise-specific) vs global (brand-wide)")
 
@@ -88,7 +119,57 @@ class MicroCheckTemplate(models.Model):
         indexes = [
             models.Index(fields=['category', 'is_active']),
             models.Index(fields=['version', 'parent_template']),
+            models.Index(fields=['level', 'brand']),
+            models.Index(fields=['level', 'account']),
+            models.Index(fields=['level', 'store']),
         ]
+
+    def clean(self):
+        """Validate template hierarchy rules"""
+        from django.core.exceptions import ValidationError
+
+        if self.level == self.TemplateLevel.BRAND:
+            # Brand templates: account and store must be null
+            if self.account is not None or self.store is not None:
+                raise ValidationError({
+                    'level': 'BRAND level templates cannot have account or store associations'
+                })
+
+        elif self.level == self.TemplateLevel.ACCOUNT:
+            # Account templates: account required, store must be null
+            if self.account is None:
+                raise ValidationError({
+                    'account': 'ACCOUNT level templates must have an account'
+                })
+            if self.store is not None:
+                raise ValidationError({
+                    'store': 'ACCOUNT level templates cannot have a store association'
+                })
+            # Ensure brand matches account's brand
+            if self.brand and self.account and self.brand != self.account.brand:
+                raise ValidationError({
+                    'brand': 'Brand must match the account\'s brand'
+                })
+
+        elif self.level == self.TemplateLevel.STORE:
+            # Store templates: both account and store required
+            if self.account is None:
+                raise ValidationError({
+                    'account': 'STORE level templates must have an account'
+                })
+            if self.store is None:
+                raise ValidationError({
+                    'store': 'STORE level templates must have a store'
+                })
+            # Ensure store belongs to account and brand matches
+            if self.store.account != self.account:
+                raise ValidationError({
+                    'store': 'Store must belong to the specified account'
+                })
+            if self.brand and self.store.brand != self.brand:
+                raise ValidationError({
+                    'brand': 'Brand must match the store\'s brand'
+                })
 
     def __str__(self):
         return f"{self.get_category_display()} - {self.title} (v{self.version})"
