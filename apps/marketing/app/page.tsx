@@ -32,6 +32,9 @@ export default function HomePage() {
             {/* Main Headline */}
             <h1 className="text-5xl md:text-7xl font-bold leading-tight mb-8 tracking-tight">
               Operational Excellence, Made a Daily Habit
+              <span className="block text-2xl md:text-3xl font-normal mt-4 text-blue-100">
+                Powered by Habit and AI.
+              </span>
             </h1>
 
             {/* Subhead */}
