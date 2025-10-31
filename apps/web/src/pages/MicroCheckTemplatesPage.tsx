@@ -21,6 +21,9 @@ import {
   Wrench,
   Users,
   Package,
+  ArrowUpDown,
+  ArrowUp,
+  ArrowDown,
   FileText,
   Building2,
   Bug,
@@ -44,6 +47,8 @@ const MicroCheckTemplatesPage = () => {
   const [severityFilter, setSeverityFilter] = useState<string>('');
   const [sourceFilter, setSourceFilter] = useState<string>('');
   const [showFilters, setShowFilters] = useState(true);
+  const [sortField, setSortField] = useState<string>('updated_at');
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
   const [availableCategories, setAvailableCategories] = useState<Set<MicroCheckCategory>>(new Set());
   const [showModal, setShowModal] = useState(false);
   const [modalMode, setModalMode] = useState<'create' | 'edit'>('create');
@@ -57,6 +62,32 @@ const MicroCheckTemplatesPage = () => {
   const isAdmin = user?.role === 'ADMIN';
   const isOperator = user?.role === 'GM' || user?.role === 'OWNER' || user?.role === 'TRIAL_ADMIN';
   const canManage = isAdmin || isOperator;
+
+  // Handle column sorting
+  const handleSort = (field: string) => {
+    if (sortField === field) {
+      // Toggle direction if same field
+      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
+    } else {
+      // New field, default to descending
+      setSortField(field);
+      setSortDirection('desc');
+    }
+    // Reset to first page when sorting changes
+    setCurrentPage(1);
+  };
+
+  // Render sort icon for column headers
+  const renderSortIcon = (field: string) => {
+    if (sortField !== field) {
+      return <ArrowUpDown className="w-4 h-4 opacity-40" />;
+    }
+    return sortDirection === 'asc' ? (
+      <ArrowUp className="w-4 h-4" />
+    ) : (
+      <ArrowDown className="w-4 h-4" />
+    );
+  };
 
   const fetchCategories = useCallback(async () => {
     try {
@@ -106,8 +137,8 @@ const MicroCheckTemplatesPage = () => {
       if (sourceFilter) params.source = sourceFilter;
       if (searchTerm) params.search = searchTerm;
 
-      // Order by updated date (most recent first)
-      params.ordering = '-updated_at';
+      // Ordering
+      params.ordering = sortDirection === 'desc' ? `-${sortField}` : sortField;
 
       console.log('[MicroCheckTemplatesPage] Fetching with params:', params);
 
@@ -134,7 +165,7 @@ const MicroCheckTemplatesPage = () => {
       setLoading(false);
       setIsSearching(false);
     }
-  }, [activeTab, categoryFilter, severityFilter, sourceFilter, searchTerm, user?.brand_id, templates.length]);
+  }, [activeTab, categoryFilter, severityFilter, sourceFilter, searchTerm, sortField, sortDirection, user?.brand_id, templates.length]);
 
   // Fetch categories when tab or user changes
   useEffect(() => {
@@ -586,14 +617,32 @@ const MicroCheckTemplatesPage = () => {
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-20">
                     Image
                   </th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-40">
-                    Category
+                  <th
+                    className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-40 cursor-pointer hover:bg-gray-100 transition-colors"
+                    onClick={() => handleSort('category')}
+                  >
+                    <div className="flex items-center gap-2">
+                      Category
+                      {renderSortIcon('category')}
+                    </div>
                   </th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Template
+                  <th
+                    className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition-colors"
+                    onClick={() => handleSort('title')}
+                  >
+                    <div className="flex items-center gap-2">
+                      Template
+                      {renderSortIcon('title')}
+                    </div>
                   </th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-28">
-                    Severity
+                  <th
+                    className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-28 cursor-pointer hover:bg-gray-100 transition-colors"
+                    onClick={() => handleSort('severity')}
+                  >
+                    <div className="flex items-center gap-2">
+                      Severity
+                      {renderSortIcon('severity')}
+                    </div>
                   </th>
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-28">
                     Stats
