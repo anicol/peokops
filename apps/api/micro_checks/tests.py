@@ -148,8 +148,8 @@ class TemplateSelectionTests(TestCase):
 
         for item in result:
             self.assertIsInstance(item, tuple)
-            self.assertEqual(len(item), 4)  # (template, coverage, photo_required, photo_reason)
-            template, coverage, photo_required, photo_reason = item
+            self.assertEqual(len(item), 5)  # (template, coverage, photo_required, photo_reason, metrics_data)
+            template, coverage, photo_required, photo_reason, metrics_data = item
             self.assertIsInstance(template, MicroCheckTemplate)
 
     def test_select_templates_no_duplicates(self):

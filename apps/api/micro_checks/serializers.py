@@ -20,18 +20,70 @@ class MicroCheckTemplateSerializer(serializers.ModelSerializer):
     """Template serializer with version tracking"""
     category_display = serializers.CharField(source='get_category_display', read_only=True)
     severity_display = serializers.CharField(source='get_severity_display', read_only=True)
+    level_display = serializers.CharField(source='get_level_display', read_only=True)
     created_by_name = serializers.CharField(source='created_by.get_full_name', read_only=True)
+    account_name = serializers.CharField(source='account.name', read_only=True, allow_null=True)
+    store_name = serializers.CharField(source='store.name', read_only=True, allow_null=True)
+    usage_stats = serializers.SerializerMethodField()
+
+    def get_usage_stats(self, obj):
+        """Calculate context-aware usage statistics for this template"""
+        from django.db.models import Count, Q
+
+        # Get viewing context from request
+        request = self.context.get('request')
+        store_id = request.query_params.get('store') if request else None
+        account_id = request.query_params.get('account') if request else None
+
+        # Build filter based on context
+        responses = MicroCheckResponse.objects.filter(template=obj)
+
+        if store_id:
+            # Store context: show store-level stats
+            responses = responses.filter(store_id=store_id)
+            context = 'store'
+        elif account_id:
+            # Account context: aggregate across account's stores
+            responses = responses.filter(store__account_id=account_id)
+            context = 'account'
+        else:
+            # Brand context: aggregate across all stores in brand (if template has brand)
+            if obj.brand:
+                responses = responses.filter(store__brand=obj.brand)
+            context = 'brand'
+
+        total_count = responses.count()
+
+        if total_count == 0:
+            return {
+                'times_used': 0,
+                'pass_rate': None,
+                'context': context
+            }
+
+        # Count passed responses
+        passed_count = responses.filter(status='PASS').count()
+        pass_rate = round((passed_count / total_count) * 100, 1) if total_count > 0 else None
+
+        return {
+            'times_used': total_count,
+            'pass_rate': pass_rate,
+            'context': context
+        }
 
     class Meta:
         model = MicroCheckTemplate
         fields = [
             'id', 'brand', 'category', 'category_display', 'severity', 'severity_display',
             'title', 'description', 'success_criteria',
+            'source',
+            'level', 'level_display', 'account', 'account_name', 'store', 'store_name',
             'version', 'parent_template',
             'default_photo_required', 'default_video_required', 'expected_completion_seconds',
             'ai_validation_enabled', 'ai_validation_prompt',
             'is_local', 'include_in_rotation', 'rotation_priority',
             'visual_reference_image', 'is_active',
+            'usage_stats',
             'created_at', 'created_by', 'created_by_name', 'updated_at', 'updated_by'
         ]
         read_only_fields = ['id', 'brand', 'version', 'parent_template', 'created_at', 'created_by', 'updated_at', 'updated_by']

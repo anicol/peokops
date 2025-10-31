@@ -92,6 +92,11 @@ export interface Store {
   is_active: boolean;
   created_at: string;
   updated_at: string;
+  // Google location data (from linked GoogleLocation)
+  google_rating?: number | null;
+  google_review_count?: number | null;
+  google_location_name?: string | null;
+  google_synced_at?: string | null;
 }
 
 export interface Video {

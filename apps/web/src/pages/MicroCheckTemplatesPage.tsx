@@ -14,6 +14,19 @@ import {
   ChevronDown,
   Sparkles,
   TrendingUp,
+  Star,
+  Shield,
+  ShieldCheck,
+  Utensils,
+  Wrench,
+  Users,
+  Package,
+  ArrowUpDown,
+  ArrowUp,
+  ArrowDown,
+  FileText,
+  Building2,
+  Bug,
 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { microCheckAPI } from '@/services/api';
@@ -25,13 +38,18 @@ const MicroCheckTemplatesPage = () => {
   const [activeTab, setActiveTab] = useState<'starters' | 'my-templates'>('my-templates');
   const [templates, setTemplates] = useState<MicroCheckTemplate[]>([]);
   const [loading, setLoading] = useState(true);
+  const [isSearching, setIsSearching] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [hasMore, setHasMore] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [searchTerm, setSearchTerm] = useState('');
   const [categoryFilter, setCategoryFilter] = useState<string>('');
   const [severityFilter, setSeverityFilter] = useState<string>('');
-  const [showFilters, setShowFilters] = useState(false);
+  const [sourceFilter, setSourceFilter] = useState<string>('');
+  const [levelFilter, setLevelFilter] = useState<string>('');
+  const [showFilters, setShowFilters] = useState(true);
+  const [sortField, setSortField] = useState<string>('updated_at');
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
   const [availableCategories, setAvailableCategories] = useState<Set<MicroCheckCategory>>(new Set());
   const [showModal, setShowModal] = useState(false);
   const [modalMode, setModalMode] = useState<'create' | 'edit'>('create');
@@ -45,6 +63,32 @@ const MicroCheckTemplatesPage = () => {
   const isAdmin = user?.role === 'ADMIN';
   const isOperator = user?.role === 'GM' || user?.role === 'OWNER' || user?.role === 'TRIAL_ADMIN';
   const canManage = isAdmin || isOperator;
+
+  // Handle column sorting
+  const handleSort = (field: string) => {
+    if (sortField === field) {
+      // Toggle direction if same field
+      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
+    } else {
+      // New field, default to descending
+      setSortField(field);
+      setSortDirection('desc');
+    }
+    // Reset to first page when sorting changes
+    setCurrentPage(1);
+  };
+
+  // Render sort icon for column headers
+  const renderSortIcon = (field: string) => {
+    if (sortField !== field) {
+      return <ArrowUpDown className="w-4 h-4 opacity-40" />;
+    }
+    return sortDirection === 'asc' ? (
+      <ArrowUp className="w-4 h-4" />
+    ) : (
+      <ArrowDown className="w-4 h-4" />
+    );
+  };
 
   const fetchCategories = useCallback(async () => {
     try {
@@ -68,7 +112,12 @@ const MicroCheckTemplatesPage = () => {
 
   const fetchTemplates = useCallback(async (page: number = 1, append: boolean = false) => {
     try {
-      setLoading(true);
+      // Use isSearching for subsequent fetches if templates already loaded
+      if (templates.length > 0 && !append) {
+        setIsSearching(true);
+      } else {
+        setLoading(true);
+      }
       setError(null);
       const params: any = { page };
 
@@ -86,7 +135,12 @@ const MicroCheckTemplatesPage = () => {
       // Backend filtering
       if (categoryFilter) params.category = categoryFilter;
       if (severityFilter) params.severity = severityFilter;
+      if (sourceFilter) params.source = sourceFilter;
+      if (levelFilter) params.level = levelFilter;
       if (searchTerm) params.search = searchTerm;
+
+      // Ordering
+      params.ordering = sortDirection === 'desc' ? `-${sortField}` : sortField;
 
       console.log('[MicroCheckTemplatesPage] Fetching with params:', params);
 
@@ -111,8 +165,9 @@ const MicroCheckTemplatesPage = () => {
       setError('Unable to load templates');
     } finally {
       setLoading(false);
+      setIsSearching(false);
     }
-  }, [activeTab, categoryFilter, severityFilter, searchTerm, user?.brand_id]);
+  }, [activeTab, categoryFilter, severityFilter, sourceFilter, levelFilter, searchTerm, sortField, sortDirection, user?.brand_id, templates.length]);
 
   // Fetch categories when tab or user changes
   useEffect(() => {
@@ -135,7 +190,7 @@ const MicroCheckTemplatesPage = () => {
       // Immediately fetch for filter changes
       fetchTemplates(1, false);
     }
-  }, [canManage, searchTerm, categoryFilter, severityFilter, activeTab, user?.brand_id, fetchTemplates]);
+  }, [canManage, searchTerm, categoryFilter, severityFilter, sourceFilter, levelFilter, activeTab, user?.brand_id, fetchTemplates]);
 
   const handleCreateTemplate = () => {
     setModalMode('create');
@@ -332,6 +387,29 @@ const MicroCheckTemplatesPage = () => {
     return colors[severity] || 'bg-gray-100 text-gray-700';
   };
 
+  const getCategoryIcon = (category: MicroCheckCategory) => {
+    const iconProps = { className: "w-3.5 h-3.5" };
+    const icons: Record<MicroCheckCategory, React.ReactElement> = {
+      PPE: <Shield {...iconProps} />,
+      SAFETY: <ShieldCheck {...iconProps} />,
+      CLEANLINESS: <Sparkles {...iconProps} />,
+      FOOD_HANDLING: <Utensils {...iconProps} />,
+      FOOD_SAFETY: <ShieldCheck {...iconProps} />,
+      EQUIPMENT: <Wrench {...iconProps} />,
+      OPERATIONAL: <Settings {...iconProps} />,
+      UNIFORM: <Users {...iconProps} />,
+      STAFF_BEHAVIOR: <Users {...iconProps} />,
+      FOOD_QUALITY: <Star {...iconProps} />,
+      MENU_BOARD: <FileText {...iconProps} />,
+      WASTE_MANAGEMENT: <Trash2 {...iconProps} />,
+      PEST_CONTROL: <Bug {...iconProps} />,
+      STORAGE: <Package {...iconProps} />,
+      DOCUMENTATION: <FileText {...iconProps} />,
+      FACILITY: <Building2 {...iconProps} />,
+    };
+    return icons[category] || <Settings {...iconProps} />;
+  };
+
   if (!canManage) {
     return (
       <div className="p-4 lg:p-8">
@@ -413,12 +491,15 @@ const MicroCheckTemplatesPage = () => {
             <div className="flex-1">
               <div className="relative">
                 <Search className="w-5 h-5 text-gray-400 absolute left-3 top-1/2 transform -translate-y-1/2" />
+                {isSearching && (
+                  <Loader2 className="w-5 h-5 text-teal-600 animate-spin absolute right-3 top-1/2 transform -translate-y-1/2" />
+                )}
                 <input
                   type="text"
                   placeholder="Search templates..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
+                  className="w-full pl-10 pr-10 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
                 />
               </div>
             </div>
@@ -453,7 +534,7 @@ const MicroCheckTemplatesPage = () => {
           </div>
 
           {showFilters && (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4 pt-4 border-t border-gray-200">
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mt-4 pt-4 border-t border-gray-200">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">Category</label>
                 <select
@@ -483,6 +564,32 @@ const MicroCheckTemplatesPage = () => {
                   <option value="LOW">Low</option>
                 </select>
               </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Source</label>
+                <select
+                  value={sourceFilter}
+                  onChange={(e) => setSourceFilter(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
+                >
+                  <option value="">All Sources</option>
+                  <option value="google_reviews">Google Reviews</option>
+                  <option value="manual">Manual</option>
+                  <option value="ai_generated">AI Generated</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Level</label>
+                <select
+                  value={levelFilter}
+                  onChange={(e) => setLevelFilter(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
+                >
+                  <option value="">All Levels</option>
+                  <option value="BRAND">🏢 Brand</option>
+                  <option value="ACCOUNT">🏪 Account</option>
+                  <option value="STORE">📍 Store</option>
+                </select>
+              </div>
             </div>
           )}
         </div>
@@ -502,13 +609,13 @@ const MicroCheckTemplatesPage = () => {
               {activeTab === 'starters' ? 'No Starter Templates Found' : 'No Custom Templates Yet'}
             </h3>
             <p className="text-gray-600 mb-6">
-              {searchTerm || categoryFilter || severityFilter
+              {searchTerm || categoryFilter || severityFilter || sourceFilter || levelFilter
                 ? 'Try adjusting your filters'
                 : activeTab === 'starters'
                 ? 'Starter templates will appear here'
                 : 'Create your first template or duplicate a starter template'}
             </p>
-            {activeTab === 'my-templates' && !searchTerm && !categoryFilter && !severityFilter && (
+            {activeTab === 'my-templates' && !searchTerm && !categoryFilter && !severityFilter && !sourceFilter && !levelFilter && (
               <button
                 onClick={handleCreateTemplate}
                 className="px-6 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors font-medium"
@@ -518,106 +625,191 @@ const MicroCheckTemplatesPage = () => {
             )}
           </div>
         ) : (
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {filteredTemplates.map((template) => (
-              <div
-                key={template.id}
-                className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow"
-              >
-                <div className="flex items-start justify-between mb-4">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2 mb-2">
-                      <h3 className="text-lg font-semibold text-gray-900">{template.title}</h3>
-                      {!template.is_active && (
-                        <span className="px-2 py-1 bg-gray-100 text-gray-600 text-xs rounded">Inactive</span>
-                      )}
-                      {template.source === 'PEAKOPS' && (
-                        <span className="px-2 py-1 bg-blue-100 text-blue-700 text-xs rounded flex items-center">
-                          <Sparkles className="w-3 h-3 mr-1" />
-                          Starter
-                        </span>
-                      )}
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+            <table className="min-w-full divide-y divide-gray-200">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-20">
+                    Image
+                  </th>
+                  <th
+                    className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-40 cursor-pointer hover:bg-gray-100 transition-colors"
+                    onClick={() => handleSort('category')}
+                  >
+                    <div className="flex items-center gap-2">
+                      Category
+                      {renderSortIcon('category')}
                     </div>
-                    <p className="text-sm text-gray-600 mb-3">{template.description}</p>
-
+                  </th>
+                  <th
+                    className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition-colors"
+                    onClick={() => handleSort('title')}
+                  >
+                    <div className="flex items-center gap-2">
+                      Template
+                      {renderSortIcon('title')}
+                    </div>
+                  </th>
+                  <th
+                    className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-28 cursor-pointer hover:bg-gray-100 transition-colors"
+                    onClick={() => handleSort('severity')}
+                  >
+                    <div className="flex items-center gap-2">
+                      Severity
+                      {renderSortIcon('severity')}
+                    </div>
+                  </th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-28">
+                    Level
+                  </th>
+                  <th
+                    className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-28 cursor-pointer hover:bg-gray-100 transition-colors"
+                    onClick={() => handleSort('times_used')}
+                  >
+                    <div className="flex items-center gap-2">
+                      Stats
+                      {renderSortIcon('times_used')}
+                    </div>
+                  </th>
+                  <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider w-32">
+                    Actions
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {filteredTemplates.map((template) => (
+                  <tr key={template.id} className="hover:bg-gray-50 transition-colors">
                     {/* Reference Image */}
-                    {template.visual_reference_image && (
-                      <div className="mb-3">
+                    <td className="px-4 py-3">
+                      {template.visual_reference_image ? (
                         <img
                           src={template.visual_reference_image}
                           alt={`Reference for ${template.title}`}
-                          className="w-full h-32 object-cover rounded-lg border border-gray-200"
+                          className="w-12 h-12 object-cover rounded border border-gray-200"
                         />
-                      </div>
-                    )}
+                      ) : (
+                        <div className="w-12 h-12 bg-gray-100 rounded border border-gray-200" />
+                      )}
+                    </td>
 
-                    <div className="flex flex-wrap gap-2 mb-3">
-                      <span className={`px-2 py-1 rounded text-xs font-medium ${getCategoryBadgeColor(template.category)}`}>
+                    {/* Category */}
+                    <td className="px-4 py-3">
+                      <span className={`px-2 py-1 rounded text-xs font-medium flex items-center gap-1 w-fit ${getCategoryBadgeColor(template.category)}`}>
+                        {getCategoryIcon(template.category)}
                         {template.category_display}
                       </span>
+                    </td>
+
+                    {/* Template Info (2 lines) */}
+                    <td className="px-4 py-3">
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className="font-medium text-gray-900">{template.title}</span>
+                        {!template.is_active && (
+                          <span className="px-2 py-0.5 bg-gray-100 text-gray-600 text-xs rounded">Inactive</span>
+                        )}
+                        {template.source === 'google_reviews' && (
+                          <span className="px-2 py-0.5 bg-green-100 text-green-700 text-xs rounded flex items-center">
+                            <Star className="w-3 h-3 mr-1 fill-current" />
+                            Reviews
+                          </span>
+                        )}
+                        {template.source === 'PEAKOPS' && (
+                          <span className="px-2 py-0.5 bg-blue-100 text-blue-700 text-xs rounded flex items-center">
+                            <Sparkles className="w-3 h-3 mr-1" />
+                            Starter
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-sm text-gray-600 line-clamp-1">{template.description}</p>
+                    </td>
+
+                    {/* Severity */}
+                    <td className="px-4 py-3">
                       <span className={`px-2 py-1 rounded text-xs font-medium border ${getSeverityBadgeColor(template.severity)}`}>
                         {template.severity_display}
                       </span>
-                      {template.default_photo_required && (
-                        <span className="px-2 py-1 bg-blue-100 text-blue-700 text-xs rounded">Photo Required</span>
-                      )}
-                    </div>
+                    </td>
 
-                    {/* Usage Stats */}
-                    {template.usage_stats && activeTab === 'my-templates' && (
-                      <div className="flex items-center gap-4 text-xs text-gray-500 mb-2">
-                        <span className="flex items-center">
-                          <TrendingUp className="w-3 h-3 mr-1" />
-                          Used {template.usage_stats.times_used} times
-                        </span>
-                        {template.usage_stats.pass_rate !== null && (
-                          <span>Pass rate: {Math.round(template.usage_stats.pass_rate)}%</span>
+                    {/* Level */}
+                    <td className="px-4 py-3">
+                      <span className={`px-2 py-1 rounded text-xs font-medium ${
+                        template.level === 'STORE' ? 'bg-green-100 text-green-700 border border-green-300' :
+                        template.level === 'ACCOUNT' ? 'bg-purple-100 text-purple-700 border border-purple-300' :
+                        'bg-blue-100 text-blue-700 border border-blue-300'
+                      }`}>
+                        {template.level === 'STORE' ? '📍 Store' :
+                         template.level === 'ACCOUNT' ? '🏪 Account' :
+                         '🏢 Brand'}
+                      </span>
+                    </td>
+
+                    {/* Stats */}
+                    <td className="px-4 py-3">
+                      <div className="flex flex-col gap-1 text-xs text-gray-600">
+                        {template.default_photo_required && (
+                          <span className="text-xs text-blue-600">📷 Photo Required</span>
+                        )}
+                        {template.usage_stats && activeTab === 'my-templates' && (
+                          <>
+                            <span className="flex items-center">
+                              <TrendingUp className="w-3 h-3 mr-1" />
+                              {template.usage_stats.times_used} uses
+                            </span>
+                            {template.usage_stats.pass_rate !== null && (
+                              <span>
+                                {Math.round(template.usage_stats.pass_rate)}% pass
+                              </span>
+                            )}
+                          </>
                         )}
                       </div>
-                    )}
-                  </div>
-                </div>
+                    </td>
 
-                {/* Actions */}
-                <div className="flex flex-wrap gap-2 pt-4 border-t border-gray-200">
-                  {activeTab === 'starters' ? (
-                    <button
-                      onClick={() => handleDuplicateTemplate(template)}
-                      className="px-3 py-1.5 bg-teal-50 text-teal-700 rounded hover:bg-teal-100 transition-colors text-sm font-medium flex items-center"
-                    >
-                      <Copy className="w-4 h-4 mr-1" />
-                      Duplicate to My Templates
-                    </button>
-                  ) : (
-                    <>
-                      <button
-                        onClick={() => handleEditTemplate(template)}
-                        className="px-3 py-1.5 bg-blue-50 text-blue-700 rounded hover:bg-blue-100 transition-colors text-sm font-medium flex items-center"
-                      >
-                        <Edit className="w-4 h-4 mr-1" />
-                        Edit
-                      </button>
-                      <button
-                        onClick={() => handleArchiveTemplate(template)}
-                        className="px-3 py-1.5 bg-orange-50 text-orange-700 rounded hover:bg-orange-100 transition-colors text-sm font-medium flex items-center"
-                      >
-                        <Archive className="w-4 h-4 mr-1" />
-                        Archive
-                      </button>
-                      {isAdmin && (
-                        <button
-                          onClick={() => handleDeleteTemplate(template)}
-                          className="px-3 py-1.5 bg-red-50 text-red-700 rounded hover:bg-red-100 transition-colors text-sm font-medium flex items-center"
-                        >
-                          <Trash2 className="w-4 h-4 mr-1" />
-                          Delete
-                        </button>
-                      )}
-                    </>
-                  )}
-                </div>
-              </div>
-            ))}
+                    {/* Actions */}
+                    <td className="px-4 py-3">
+                      <div className="flex justify-end gap-2">
+                        {activeTab === 'starters' ? (
+                          <button
+                            onClick={() => handleDuplicateTemplate(template)}
+                            className="px-3 py-1.5 bg-teal-50 text-teal-700 rounded hover:bg-teal-100 transition-colors text-sm font-medium flex items-center"
+                            title="Duplicate to My Templates"
+                          >
+                            <Copy className="w-4 h-4 mr-1" />
+                            Duplicate
+                          </button>
+                        ) : (
+                          <>
+                            <button
+                              onClick={() => handleEditTemplate(template)}
+                              className="p-1.5 bg-blue-50 text-blue-700 rounded hover:bg-blue-100 transition-colors"
+                              title="Edit Template"
+                            >
+                              <Edit className="w-4 h-4" />
+                            </button>
+                            <button
+                              onClick={() => handleArchiveTemplate(template)}
+                              className="p-1.5 bg-orange-50 text-orange-700 rounded hover:bg-orange-100 transition-colors"
+                              title="Archive Template"
+                            >
+                              <Archive className="w-4 h-4" />
+                            </button>
+                            {isAdmin && (
+                              <button
+                                onClick={() => handleDeleteTemplate(template)}
+                                className="p-1.5 bg-red-50 text-red-700 rounded hover:bg-red-100 transition-colors"
+                                title="Delete Template"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </button>
+                            )}
+                          </>
+                        )}
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         )}
 

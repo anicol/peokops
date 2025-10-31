@@ -9,6 +9,11 @@ import pytz
 class MicroCheckTemplate(models.Model):
     """Base template for micro-check items"""
 
+    class TemplateLevel(models.TextChoices):
+        BRAND = 'BRAND', 'Brand Level'
+        ACCOUNT = 'ACCOUNT', 'Account Level'
+        STORE = 'STORE', 'Store Level'
+
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
 
     # Category alignment with Finding model
@@ -39,6 +44,32 @@ class MicroCheckTemplate(models.Model):
     brand = models.ForeignKey('brands.Brand', on_delete=models.CASCADE, null=True, blank=True,
                               help_text="Brand that owns this template (null = global/system template)",
                               related_name='micro_check_templates')
+
+    # Multi-level hierarchy
+    level = models.CharField(
+        max_length=20,
+        choices=TemplateLevel.choices,
+        default=TemplateLevel.BRAND,
+        db_index=True,
+        help_text="Template hierarchy level: BRAND (franchisor), ACCOUNT (franchisee), or STORE (location-specific)"
+    )
+    account = models.ForeignKey(
+        'accounts.Account',
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+        related_name='micro_check_templates',
+        help_text="Account for ACCOUNT/STORE level templates"
+    )
+    store = models.ForeignKey(
+        'brands.Store',
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+        related_name='micro_check_templates',
+        help_text="Store for STORE level templates only"
+    )
+
     is_local = models.BooleanField(default=False,
                                    help_text="Local template (franchise-specific) vs global (brand-wide)")
 
@@ -88,7 +119,57 @@ class MicroCheckTemplate(models.Model):
         indexes = [
             models.Index(fields=['category', 'is_active']),
             models.Index(fields=['version', 'parent_template']),
+            models.Index(fields=['level', 'brand']),
+            models.Index(fields=['level', 'account']),
+            models.Index(fields=['level', 'store']),
         ]
+
+    def clean(self):
+        """Validate template hierarchy rules"""
+        from django.core.exceptions import ValidationError
+
+        if self.level == self.TemplateLevel.BRAND:
+            # Brand templates: account and store must be null
+            if self.account is not None or self.store is not None:
+                raise ValidationError({
+                    'level': 'BRAND level templates cannot have account or store associations'
+                })
+
+        elif self.level == self.TemplateLevel.ACCOUNT:
+            # Account templates: account required, store must be null
+            if self.account is None:
+                raise ValidationError({
+                    'account': 'ACCOUNT level templates must have an account'
+                })
+            if self.store is not None:
+                raise ValidationError({
+                    'store': 'ACCOUNT level templates cannot have a store association'
+                })
+            # Ensure brand matches account's brand
+            if self.brand and self.account and self.brand != self.account.brand:
+                raise ValidationError({
+                    'brand': 'Brand must match the account\'s brand'
+                })
+
+        elif self.level == self.TemplateLevel.STORE:
+            # Store templates: both account and store required
+            if self.account is None:
+                raise ValidationError({
+                    'account': 'STORE level templates must have an account'
+                })
+            if self.store is None:
+                raise ValidationError({
+                    'store': 'STORE level templates must have a store'
+                })
+            # Ensure store belongs to account and brand matches
+            if self.store.account != self.account:
+                raise ValidationError({
+                    'store': 'Store must belong to the specified account'
+                })
+            if self.brand and self.store.brand != self.brand:
+                raise ValidationError({
+                    'brand': 'Brand must match the store\'s brand'
+                })
 
     def __str__(self):
         return f"{self.get_category_display()} - {self.title} (v{self.version})"
@@ -637,3 +718,85 @@ class CorrectiveAction(models.Model):
 
     def __str__(self):
         return f"CA: {self.response.template.title} ({self.status})"
+
+
+class StoreTemplateStats(models.Model):
+    """Store-level performance statistics for templates (local prior for ML)"""
+
+    store = models.ForeignKey('brands.Store', on_delete=models.CASCADE, db_index=True)
+    template = models.ForeignKey(MicroCheckTemplate, on_delete=models.CASCADE)
+
+    # Performance metrics
+    fails = models.IntegerField(default=0, help_text="Count of FAIL + NEEDS_ATTENTION responses")
+    total = models.IntegerField(default=0, help_text="Count of all responded checks")
+
+    # Maintenance
+    last_updated_at = models.DateTimeField(auto_now=True)
+
+    # Auditing
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = 'store_template_stats'
+        unique_together = [('store', 'template')]
+        indexes = [
+            models.Index(fields=['store', 'template']),
+            models.Index(fields=['last_updated_at']),
+        ]
+
+    def __str__(self):
+        return f"{self.store} - {self.template.title} ({self.fails}/{self.total})"
+
+
+class MicroCheckMLMetrics(models.Model):
+    """ML scoring metrics for selected templates (observability)"""
+
+    class SelectionMethod(models.TextChoices):
+        ML_HYBRID = 'ML_HYBRID', 'ML Hybrid'
+        RULE_BASED = 'RULE_BASED', 'Rule Based'
+        FALLBACK = 'FALLBACK', 'Fallback (No Model)'
+
+    run_item = models.OneToOneField(
+        MicroCheckRunItem,
+        on_delete=models.CASCADE,
+        related_name='ml_metrics',
+        help_text="Run item this scoring applies to"
+    )
+    template = models.ForeignKey(MicroCheckTemplate, on_delete=models.CASCADE)
+    store = models.ForeignKey('brands.Store', on_delete=models.CASCADE, db_index=True)
+
+    # Scoring components
+    rule_score = models.FloatField(help_text="Rule-based priority score")
+    ml_score = models.FloatField(null=True, blank=True, help_text="ML-predicted usefulness probability (p_personalized)")
+    personalized_score = models.FloatField(null=True, blank=True, help_text="Blended score (rule + ML)")
+    final_score = models.FloatField(help_text="Final normalized score after constraints")
+
+    # Selection method
+    selection_method = models.CharField(
+        max_length=20,
+        choices=SelectionMethod.choices,
+        default=SelectionMethod.RULE_BASED
+    )
+
+    # Model metadata
+    model_version = models.CharField(max_length=100, blank=True, help_text="Model identifier/version used")
+    training_date = models.DateTimeField(null=True, blank=True, help_text="When the model was trained")
+    training_f1_score = models.FloatField(null=True, blank=True, help_text="F1 score of the model used")
+
+    # Local prior info
+    local_prior = models.FloatField(null=True, blank=True, help_text="Local failure rate (Beta-smoothed)")
+    local_total = models.IntegerField(null=True, blank=True, help_text="Number of responses at store+template")
+
+    # Auditing
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = 'micro_check_ml_metrics'
+        indexes = [
+            models.Index(fields=['store', 'created_at']),
+            models.Index(fields=['selection_method', 'created_at']),
+            models.Index(fields=['template', 'created_at']),
+        ]
+
+    def __str__(self):
+        return f"{self.run_item} - {self.selection_method} (score={self.final_score:.2f})"

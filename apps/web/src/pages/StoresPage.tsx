@@ -15,10 +15,13 @@ import {
   Building2,
   Mail,
   Phone,
+  Star,
+  Link as LinkIcon,
 } from 'lucide-react';
 import { storesAPI, brandsAPI } from '@/services/api';
 import type { Store, Brand } from '@/types';
 import { useAuth } from '@/hooks/useAuth';
+import axios from 'axios';
 
 export default function StoresPage() {
   const { user: currentUser } = useAuth();
@@ -324,6 +327,9 @@ export default function StoresPage() {
                     Status
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Google Reviews
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Created
                   </th>
                   <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -386,6 +392,22 @@ export default function StoresPage() {
                           </>
                         )}
                       </span>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      {store.google_rating ? (
+                        <div className="text-sm">
+                          <div className="flex items-center text-gray-900 mb-1">
+                            <Star className="h-4 w-4 mr-1 fill-yellow-400 text-yellow-400" />
+                            <span className="font-medium">{store.google_rating}</span>
+                            <span className="text-gray-500 ml-1">/ 5.0</span>
+                          </div>
+                          <div className="text-xs text-gray-500">
+                            {store.google_review_count || 0} reviews
+                          </div>
+                        </div>
+                      ) : (
+                        <span className="text-sm text-gray-400">Not linked</span>
+                      )}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
                       {store.created_at && !isNaN(new Date(store.created_at).getTime())
@@ -461,6 +483,13 @@ function StoreFormModal({ store, brands, currentUser, onClose }: StoreFormModalP
     is_active: store?.is_active ?? true,
   });
 
+  // Google location linking state
+  const [googleSearchQuery, setGoogleSearchQuery] = useState('');
+  const [googleSearchResults, setGoogleSearchResults] = useState<any>(null);
+  const [isSearching, setIsSearching] = useState(false);
+  const [isLinking, setIsLinking] = useState(false);
+  const [linkError, setLinkError] = useState('');
+
   const mutation = useMutation(
     (data: typeof formData) => {
       if (store) {
@@ -479,6 +508,56 @@ function StoreFormModal({ store, brands, currentUser, onClose }: StoreFormModalP
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     mutation.mutate(formData);
+  };
+
+  // Google location search handler
+  const handleGoogleSearch = async () => {
+    if (!googleSearchQuery.trim()) return;
+
+    setIsSearching(true);
+    setLinkError('');
+
+    try {
+      const response = await axios.post('/api/integrations/google-reviews/search-business', {
+        business_name: googleSearchQuery,
+        location: `${formData.city}, ${formData.state}`.trim()
+      });
+
+      setGoogleSearchResults(response.data);
+    } catch (error: any) {
+      setLinkError(error.response?.data?.error || 'Failed to search for business');
+      setGoogleSearchResults(null);
+    } finally {
+      setIsSearching(false);
+    }
+  };
+
+  // Link Google location to store
+  const handleLinkGoogleLocation = async () => {
+    if (!store || !googleSearchResults) return;
+
+    setIsLinking(true);
+    setLinkError('');
+
+    try {
+      await axios.post('/api/integrations/google-reviews/link-location', {
+        store_id: store.id,
+        business_name: googleSearchResults.business_name,
+        place_url: googleSearchResults.place_url,
+        place_id: googleSearchResults.place_id
+      });
+
+      // Refresh stores list to show new Google location data
+      queryClient.invalidateQueries('stores');
+      setGoogleSearchResults(null);
+      setGoogleSearchQuery('');
+
+      alert('Google location linked successfully! Review scraping started in background.');
+    } catch (error: any) {
+      setLinkError(error.response?.data?.error || 'Failed to link Google location');
+    } finally {
+      setIsLinking(false);
+    }
   };
 
   const usStates = [
@@ -652,6 +731,130 @@ function StoreFormModal({ store, brands, currentUser, onClose }: StoreFormModalP
               <option value="Pacific/Honolulu">Hawaii (HST)</option>
             </select>
           </div>
+
+          {/* Google Location Linking - Only show for existing stores */}
+          {store && (
+            <div className="border-t pt-4">
+              <h3 className="text-sm font-medium text-gray-900 mb-3 flex items-center">
+                <LinkIcon className="h-4 w-4 mr-2" />
+                Link Google Location
+              </h3>
+
+              {/* Show current Google location if linked */}
+              {store.google_location_name && (
+                <div className="bg-green-50 border border-green-200 rounded-lg p-3 mb-3">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-medium text-green-900">
+                        {store.google_location_name}
+                      </p>
+                      <div className="flex items-center gap-3 mt-1">
+                        {store.google_rating && (
+                          <div className="flex items-center text-sm text-green-700">
+                            <Star className="h-3 w-3 mr-1 fill-yellow-400 text-yellow-400" />
+                            {store.google_rating} / 5.0
+                          </div>
+                        )}
+                        {store.google_review_count !== null && (
+                          <span className="text-sm text-green-700">
+                            {store.google_review_count} reviews
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Search for Google location */}
+              {!store.google_location_name && (
+                <>
+                  <div className="flex gap-2 mb-3">
+                    <input
+                      type="text"
+                      value={googleSearchQuery}
+                      onChange={(e) => setGoogleSearchQuery(e.target.value)}
+                      placeholder="Search for business on Google Maps..."
+                      className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                      onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), handleGoogleSearch())}
+                    />
+                    <button
+                      type="button"
+                      onClick={handleGoogleSearch}
+                      disabled={isSearching || !googleSearchQuery.trim()}
+                      className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50 flex items-center"
+                    >
+                      {isSearching ? (
+                        <>
+                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                          Searching...
+                        </>
+                      ) : (
+                        <>
+                          <Search className="h-4 w-4 mr-2" />
+                          Search
+                        </>
+                      )}
+                    </button>
+                  </div>
+
+                  {/* Search results */}
+                  {googleSearchResults && (
+                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                      <div className="flex items-start justify-between mb-2">
+                        <div className="flex-1">
+                          <p className="text-sm font-medium text-blue-900">
+                            {googleSearchResults.business_name}
+                          </p>
+                          <p className="text-xs text-blue-700 mt-1">
+                            {googleSearchResults.address}
+                          </p>
+                          <div className="flex items-center gap-3 mt-2">
+                            {googleSearchResults.average_rating && (
+                              <div className="flex items-center text-sm text-blue-700">
+                                <Star className="h-3 w-3 mr-1 fill-yellow-400 text-yellow-400" />
+                                {googleSearchResults.average_rating} / 5.0
+                              </div>
+                            )}
+                            {googleSearchResults.total_reviews !== null && (
+                              <span className="text-sm text-blue-700">
+                                {googleSearchResults.total_reviews} reviews
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={handleLinkGoogleLocation}
+                        disabled={isLinking}
+                        className="w-full mt-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 flex items-center justify-center"
+                      >
+                        {isLinking ? (
+                          <>
+                            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                            Linking...
+                          </>
+                        ) : (
+                          <>
+                            <LinkIcon className="h-4 w-4 mr-2" />
+                            Link This Location
+                          </>
+                        )}
+                      </button>
+                    </div>
+                  )}
+
+                  {/* Link error */}
+                  {linkError && (
+                    <div className="bg-red-50 border border-red-200 rounded-lg p-3 mt-2">
+                      <p className="text-red-700 text-sm">{linkError}</p>
+                    </div>
+                  )}
+                </>
+              )}
+            </div>
+          )}
 
           <div className="flex items-center">
             <input

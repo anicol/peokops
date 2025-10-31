@@ -136,27 +136,42 @@ def should_require_photo(template, coverage):
 
 def select_templates_for_run(store, num_items=3):
     """
-    Select templates for a micro-check run using smart rotation.
+    Select templates for a micro-check run using ML-enhanced smart rotation.
 
-    Strategy:
-    1. Prioritize templates not seen recently (by last_used_date)
-    2. Balance across categories
-    3. Weight by consecutive fails (more fails = higher priority)
-    4. Ensure no duplicates within the same run
+    Strategy (ML Hybrid):
+    1. Compute rule-based score (hierarchy, recency, failures, severity)
+    2. Extract ML features and get personalized prediction (blend brand model with local prior)
+    3. Combine: final_score = 0.6 * rule_score + 0.4 * normalized(p_personalized)
+    4. Weighted random selection based on final scores
+    5. Track scoring metrics for observability
 
     Args:
         store: Store instance
         num_items: Number of templates to select (default 3)
 
     Returns:
-        list: List of (template, coverage, photo_required, photo_reason) tuples
+        list: List of (template, coverage, photo_required, photo_reason, metrics_data) tuples
     """
     from .models import MicroCheckTemplate, CheckCoverage
+    from .ml_features import extract_features_for_template
+    from .ml_models import MLModelManager
+    from .ml_config import RULE_WEIGHT, ML_WEIGHT, LAMBDA_K
     from django.db.models import Q
     import random
+    import logging
 
-    # Get all active templates
-    active_templates = MicroCheckTemplate.objects.filter(is_active=True)
+    logger = logging.getLogger(__name__)
+
+    # Get templates at all hierarchy levels for this store
+    # STORE level (highest priority) > ACCOUNT level > BRAND level
+    active_templates = MicroCheckTemplate.objects.filter(
+        is_active=True,
+        include_in_rotation=True
+    ).filter(
+        Q(level='BRAND', brand=store.brand) |
+        Q(level='ACCOUNT', account=store.account) |
+        Q(level='STORE', store=store)
+    )
 
     # Get coverage data for this store
     coverage_map = {
@@ -164,53 +179,173 @@ def select_templates_for_run(store, num_items=3):
         for c in CheckCoverage.objects.filter(store=store)
     }
 
-    # Build selection pool with weights
-    selection_pool = []
+    # Try to load ML model for this brand/segment
+    model_manager = MLModelManager()
+    model = model_manager.load_model(store.brand.id, store.segment)
+    model_metadata = model_manager.get_model_metadata(store.brand.id, store.segment)
+
+    selection_method = 'ML_HYBRID' if model is not None else 'FALLBACK'
+    if model is None:
+        logger.warning(f"No ML model found for brand={store.brand.id}, segment={store.segment}. Using fallback.")
+
+    # Build selection pool with hybrid scoring
+    scored_candidates = []
+
     for template in active_templates:
         coverage = coverage_map.get(template.id)
 
-        # Calculate priority score
-        priority = 100  # Base priority
+        # Step 1: Compute rule-based score (existing logic)
+        rule_score = _compute_rule_score(template, coverage, store)
 
-        if coverage:
-            # Reduce priority based on recent usage
-            days_since_use = (timezone.now() - coverage.last_visual_verified_at).days
-            priority += days_since_use * 2
+        # Step 2: Extract features and compute ML score
+        ml_score = None
+        p_personalized = None
+        local_prior = None
+        local_total = None
 
-            # Increase priority if last check failed
-            if coverage.last_visual_status == 'FAIL':
-                priority += 30
+        if model is not None:
+            try:
+                # Extract features
+                features = extract_features_for_template(store, template)
+
+                # Get ML prediction probability
+                p_ml = model.predict_proba([features.X])[0][1]  # Probability of class 1 (FAIL)
+
+                # Blend with local prior using adaptive weight
+                lam = features.local_total / (features.local_total + LAMBDA_K)
+                p_personalized = lam * features.p_prior + (1.0 - lam) * p_ml
+
+                ml_score = p_ml
+                local_prior = features.p_prior
+                local_total = features.local_total
+
+            except Exception as e:
+                logger.error(f"Error computing ML score for template {template.id}: {e}")
+                p_personalized = None
+
+        scored_candidates.append({
+            'template': template,
+            'coverage': coverage,
+            'rule_score': rule_score,
+            'ml_score': ml_score,
+            'p_personalized': p_personalized,
+            'local_prior': local_prior,
+            'local_total': local_total,
+        })
+
+    # Step 3: Normalize p_personalized across all candidates
+    p_pers_values = [c['p_personalized'] for c in scored_candidates if c['p_personalized'] is not None]
+
+    if p_pers_values:
+        p_min, p_max = min(p_pers_values), max(p_pers_values)
+        p_range = p_max - p_min if p_max > p_min else 1.0
+
+        for candidate in scored_candidates:
+            if candidate['p_personalized'] is not None:
+                # Min-max normalization to [0, 1]
+                candidate['p_pers_normalized'] = (candidate['p_personalized'] - p_min) / p_range
+            else:
+                candidate['p_pers_normalized'] = 0.0
+    else:
+        # No ML scores available - use 0
+        for candidate in scored_candidates:
+            candidate['p_pers_normalized'] = 0.0
+
+    # Step 4: Compute final score
+    for candidate in scored_candidates:
+        if model is not None and candidate['p_personalized'] is not None:
+            # Hybrid: combine rule and ML
+            candidate['final_score'] = (
+                RULE_WEIGHT * candidate['rule_score'] +
+                ML_WEIGHT * candidate['p_pers_normalized'] * 100  # Scale to match rule_score magnitude
+            )
         else:
-            # Never seen before - high priority
-            priority += 200
+            # Fallback: use rule score only
+            candidate['final_score'] = candidate['rule_score']
 
-        # Increase priority for high severity items
-        if template.severity == 'CRITICAL':
-            priority += 50
-        elif template.severity == 'HIGH':
-            priority += 25
+        # Ensure positive scores
+        candidate['final_score'] = max(1, candidate['final_score'])
 
-        selection_pool.append((template, coverage, max(1, priority)))
-
-    # Weighted random selection
+    # Step 5: Weighted random selection
     selected = []
-    for _ in range(min(num_items, len(selection_pool))):
-        if not selection_pool:
+    remaining_candidates = scored_candidates.copy()
+
+    for _ in range(min(num_items, len(remaining_candidates))):
+        if not remaining_candidates:
             break
 
         # Weight-based selection
-        weights = [item[2] for item in selection_pool]
-        template, coverage, _ = random.choices(selection_pool, weights=weights, k=1)[0]
+        weights = [c['final_score'] for c in remaining_candidates]
+        candidate = random.choices(remaining_candidates, weights=weights, k=1)[0]
+
+        template = candidate['template']
+        coverage = candidate['coverage']
 
         # Determine photo requirement
         photo_required, photo_reason = should_require_photo(template, coverage)
 
-        selected.append((template, coverage, photo_required, photo_reason))
+        # Package metrics data for later storage
+        metrics_data = {
+            'rule_score': candidate['rule_score'],
+            'ml_score': candidate['ml_score'],
+            'personalized_score': candidate['p_personalized'],
+            'final_score': candidate['final_score'],
+            'selection_method': selection_method,
+            'local_prior': candidate['local_prior'],
+            'local_total': candidate['local_total'],
+            'model_metadata': model_metadata,
+        }
+
+        selected.append((template, coverage, photo_required, photo_reason, metrics_data))
 
         # Remove selected template from pool to avoid duplicates
-        selection_pool = [item for item in selection_pool if item[0].id != template.id]
+        remaining_candidates = [c for c in remaining_candidates if c['template'].id != template.id]
 
     return selected
+
+
+def _compute_rule_score(template, coverage, store):
+    """
+    Compute rule-based priority score (existing logic).
+
+    Args:
+        template: MicroCheckTemplate instance
+        coverage: CheckCoverage instance or None
+        store: Store instance
+
+    Returns:
+        float: Rule-based score
+    """
+    # Base priority by template level (Store > Account > Brand)
+    if template.level == 'STORE':
+        base_priority = 300  # Highest - store-specific issues
+    elif template.level == 'ACCOUNT':
+        base_priority = 200  # Medium - franchisee patterns
+    else:  # BRAND
+        base_priority = 100  # Base - brand standards
+
+    priority = base_priority
+
+    # Store-level usage adjustments (most impactful)
+    if coverage:
+        # Days since last check at this store
+        days_since_use = (timezone.now() - coverage.last_visual_verified_at).days
+        priority += days_since_use * 3  # Store recency weighted heavily
+
+        # Recent failures get high priority
+        if coverage.last_visual_status == 'FAIL':
+            priority += 50  # Failed checks need attention
+    else:
+        # Never checked at this store - very high priority
+        priority += 200
+
+    # Severity adjustments (universal across all levels)
+    if template.severity == 'CRITICAL':
+        priority += 50
+    elif template.severity == 'HIGH':
+        priority += 25
+
+    return priority
 
 
 def update_streak(store, manager, completed_date, passed):

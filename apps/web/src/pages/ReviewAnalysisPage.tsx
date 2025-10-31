@@ -1112,7 +1112,7 @@ function ReviewAnalysisResults({ results }: { results: AnalysisResults }) {
             Start your free trial and implement these micro-checks today
           </p>
           <button
-            onClick={() => window.location.href = '/trial-signup?source=review-analysis'}
+            onClick={() => window.location.href = `/trial-signup?source=review-analysis&analysis_id=${results.id}`}
             className="bg-white text-blue-600 py-3 px-8 rounded-lg font-bold text-lg hover:bg-blue-50 transition-colors"
           >
             Start Free Trial

@@ -91,6 +91,134 @@ class ReviewAnalysis(models.Model):
             self.viewed_at = timezone.now()
             self.save(update_fields=['viewed_at'])
 
+    def _detect_industry_and_subtype(self):
+        """
+        Use AI to detect industry and subtype from business name and Google data.
+
+        Returns:
+            tuple: (industry, subtype) using Brand.Industry and Brand.Subtype choices
+        """
+        import boto3
+        import json
+        import logging
+        from brands.models import Brand
+
+        logger = logging.getLogger(__name__)
+
+        # Default fallback
+        default_industry = Brand.Industry.RESTAURANT
+        default_subtype = Brand.Subtype.CASUAL_DINING
+
+        try:
+            # Get business info from scraped data
+            business_info = {}
+            if self.scraped_data:
+                business_info = self.scraped_data.get('business_info', {})
+
+            # Prepare data for AI analysis
+            business_name = self.business_name or "Unknown"
+            location = self.location or ""
+            rating = business_info.get('rating') or self.google_rating
+            total_reviews = business_info.get('total_reviews') or self.total_reviews_found
+
+            # Build prompt for Claude
+            prompt = f"""Based on the business information below, identify the industry and subtype.
+
+Business Name: {business_name}
+Location: {location}
+Google Rating: {rating}/5.0
+Total Reviews: {total_reviews}
+
+Available Industries:
+- RESTAURANT: Restaurant / Food Service
+- RETAIL: Retail Store
+- HOSPITALITY: Hotel / Lodging
+- OTHER: Other Industry
+
+Available Subtypes (for restaurants):
+- QSR: Quick Service / Fast Food
+- FAST_CASUAL: Fast Casual
+- CASUAL_DINING: Casual Dining
+- FINE_DINING: Fine Dining
+- CAFE: Cafe / Coffee Shop
+- BAR_PUB: Bar / Pub
+- FOOD_TRUCK: Food Truck
+- CATERING: Catering
+- BAKERY: Bakery / Dessert Shop
+
+Available Subtypes (for retail):
+- GROCERY: Grocery Store
+- CONVENIENCE: Convenience Store
+- FASHION: Fashion Retail
+
+Available Subtypes (for hospitality):
+- HOTEL: Hotel
+
+Generic Subtype:
+- OTHER_SUBTYPE: Other
+
+Respond in JSON format:
+{{
+  "industry": "RESTAURANT|RETAIL|HOSPITALITY|OTHER",
+  "subtype": "QSR|FAST_CASUAL|CASUAL_DINING|etc",
+  "confidence": "high|medium|low",
+  "reasoning": "brief explanation"
+}}"""
+
+            # Call AWS Bedrock
+            bedrock = boto3.client('bedrock-runtime', region_name='us-east-1')
+
+            response = bedrock.invoke_model(
+                modelId='us.anthropic.claude-sonnet-4-20250514-v1:0',
+                body=json.dumps({
+                    "anthropic_version": "bedrock-2023-05-31",
+                    "max_tokens": 500,
+                    "messages": [
+                        {
+                            "role": "user",
+                            "content": prompt
+                        }
+                    ]
+                })
+            )
+
+            # Parse response
+            response_body = json.loads(response['body'].read())
+            response_text = response_body['content'][0]['text']
+
+            # Extract JSON from response (Claude might wrap it in markdown)
+            import re
+            json_match = re.search(r'\{[^}]+\}', response_text, re.DOTALL)
+            if json_match:
+                result = json.loads(json_match.group(0))
+
+                # Validate and return
+                industry_str = result.get('industry', '').upper()
+                subtype_str = result.get('subtype', '').upper()
+
+                # Map to actual enum values
+                try:
+                    industry = Brand.Industry[industry_str]
+                except KeyError:
+                    logger.warning(f"Invalid industry '{industry_str}', using default")
+                    industry = default_industry
+
+                try:
+                    subtype = Brand.Subtype[subtype_str]
+                except KeyError:
+                    logger.warning(f"Invalid subtype '{subtype_str}', using default")
+                    subtype = default_subtype
+
+                logger.info(f"AI detected industry={industry}, subtype={subtype}, confidence={result.get('confidence')}")
+                return (industry, subtype)
+            else:
+                logger.warning("Could not parse JSON from AI response")
+                return (default_industry, default_subtype)
+
+        except Exception as e:
+            logger.error(f"Error detecting industry/subtype: {e}")
+            return (default_industry, default_subtype)
+
     def mark_converted(self, user, account=None):
         """
         Mark as converted to trial and auto-populate account with review data.
@@ -132,7 +260,11 @@ class ReviewAnalysis(models.Model):
             # Create trial brand
             brand = Brand.create_trial_brand(user)
             brand.name = brand_name
-            brand.industry = Brand.Industry.RESTAURANT  # Default to restaurant
+
+            # Use AI to detect industry and subtype from business data
+            industry, subtype = self._detect_industry_and_subtype()
+            brand.industry = industry
+            brand.subtype = subtype
             brand.save()
 
             # Create account for the user
@@ -177,8 +309,8 @@ class ReviewAnalysis(models.Model):
         # This allows multiple review analyses to contribute templates
         self._create_microcheck_templates(brand, user)
 
-        # Migrate scraped reviews to integrations
-        self.migrate_reviews_to_integrations()
+        # Migrate scraped reviews to integrations and link GoogleLocation to Store
+        self.migrate_reviews_to_integrations(store)
 
         return (brand, account, store)
 
@@ -315,10 +447,13 @@ class ReviewAnalysis(models.Model):
         logger.info(f"Created {templates_created} micro-check templates from review analysis")
         return templates_created
 
-    def migrate_reviews_to_integrations(self):
+    def migrate_reviews_to_integrations(self, store=None):
         """
         Migrate scraped reviews from JSON to GoogleReview table (unified storage).
         Called automatically when prospect converts to customer.
+
+        Args:
+            store: Optional Store instance to link the GoogleLocation to
         """
         from integrations.models import GoogleLocation, GoogleReview, GoogleReviewAnalysis as IntegrationAnalysis
         from ai_services.bedrock_service import BedrockRecommendationService
@@ -342,16 +477,22 @@ class ReviewAnalysis(models.Model):
 
         # Create or get location for this business
         business_info = self.scraped_data.get('business_info', {})
+        defaults = {
+            'google_location_id': f'scraped_{self.id}',  # Temporary ID until OAuth connects
+            'address': business_info.get('address', self.location),
+            'average_rating': business_info.get('rating'),
+            'total_review_count': business_info.get('total_reviews', 0),
+            'is_active': True
+        }
+
+        # Link to store if provided (OneToOne relationship)
+        if store:
+            defaults['store'] = store
+
         location, created = GoogleLocation.objects.get_or_create(
             account=account,
             google_location_name=self.business_name,
-            defaults={
-                'google_location_id': f'scraped_{self.id}',  # Temporary ID until OAuth connects
-                'address': business_info.get('address', self.location),
-                'average_rating': business_info.get('rating'),
-                'total_review_count': business_info.get('total_reviews', 0),
-                'is_active': True
-            }
+            defaults=defaults
         )
 
         # Migrate each scraped review to GoogleReview table

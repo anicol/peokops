@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { Eye, EyeOff, Loader2, CheckCircle, AlertCircle } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { API_CONFIG, API_ENDPOINTS } from '@/config/api';
@@ -12,6 +12,9 @@ interface TrialSignupData {
 }
 
 export default function TrialSignupPage() {
+  const [searchParams] = useSearchParams();
+  const analysisId = searchParams.get('analysis_id');
+
   const [formData, setFormData] = useState<TrialSignupData>({
     email: '',
     password: '',
@@ -31,15 +34,22 @@ export default function TrialSignupPage() {
     setError('');
 
     try {
+      const requestBody: any = {
+        email: formData.email,
+        password: formData.password,
+        first_name: formData.first_name,
+        last_name: formData.last_name,
+      };
+
+      // Include analysis_id if available (for review-analysis conversions)
+      if (analysisId) {
+        requestBody.analysis_id = analysisId;
+      }
+
       const response = await fetch(`${API_CONFIG.baseURL}${API_ENDPOINTS.auth.trialSignup}`, {
         method: 'POST',
         headers: API_CONFIG.headers,
-        body: JSON.stringify({
-          email: formData.email,
-          password: formData.password,
-          first_name: formData.first_name,
-          last_name: formData.last_name,
-        }),
+        body: JSON.stringify(requestBody),
       });
 
       const data = await response.json();

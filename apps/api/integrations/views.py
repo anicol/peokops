@@ -937,3 +937,197 @@ class GoogleReviewsIntegrationViewSet(viewsets.GenericViewSet):
 
         serializer = GoogleReviewSerializer(reviews, many=True)
         return Response(serializer.data)
+
+    @action(detail=False, methods=['post'], url_path='search-business')
+    def search_google_business(self, request):
+        """
+        POST /api/integrations/google-reviews/search-business
+
+        Search for a business on Google Maps by name and return basic info.
+
+        Body:
+        {
+            "business_name": "Marco's Pizza Cleveland",
+            "location": "Cleveland, OH"  (optional, improves accuracy)
+        }
+
+        Returns:
+        {
+            "business_name": str,
+            "place_url": str,
+            "average_rating": float,
+            "total_reviews": int,
+            "address": str,
+            "place_id": str (optional)
+        }
+        """
+        from marketing.management.commands.scrape_google_reviews import Command as ScraperCommand
+        import logging
+
+        logger = logging.getLogger(__name__)
+
+        business_name = request.data.get('business_name')
+        location = request.data.get('location', '')
+
+        if not business_name:
+            return Response(
+                {'error': 'business_name is required'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        try:
+            # Use scraper to get basic business info
+            scraper = ScraperCommand()
+            search_query = f"{business_name} {location}".strip()
+
+            logger.info(f"Searching for business: {search_query}")
+
+            # Call scraper's method to get business info (not full review scrape)
+            # This will use Playwright to load Google Maps and extract business data
+            result = scraper.get_business_info(search_query)
+
+            if result and result.get('business_name'):
+                return Response({
+                    'business_name': result.get('business_name'),
+                    'place_url': result.get('place_url', ''),
+                    'average_rating': result.get('rating'),
+                    'total_reviews': result.get('total_reviews', 0),
+                    'address': result.get('address', ''),
+                    'place_id': result.get('place_id', '')
+                })
+            else:
+                return Response(
+                    {'error': 'Business not found. Please check the name and try again.'},
+                    status=status.HTTP_404_NOT_FOUND
+                )
+
+        except Exception as e:
+            logger.error(f"Business search failed: {str(e)}")
+            return Response(
+                {'error': f'Search failed: {str(e)}'},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
+    @action(detail=False, methods=['post'], url_path='link-location')
+    def link_google_location(self, request):
+        """
+        POST /api/integrations/google-reviews/link-location
+
+        Link a Google location to a store and trigger review scraping.
+
+        Body:
+        {
+            "store_id": "uuid",
+            "business_name": "Marco's Pizza",
+            "place_url": "https://www.google.com/maps/...",
+            "place_id": "ChIJ..." (optional)
+        }
+
+        Returns:
+        {
+            "success": true,
+            "message": "Location linked and review scraping started",
+            "location_id": "uuid",
+            "scraping_task_id": "celery_task_id"
+        }
+        """
+        from integrations.models import GoogleLocation
+        from brands.models import Store
+        from insights.tasks import process_review_analysis
+        from marketing.management.commands.scrape_google_reviews import Command as ScraperCommand
+        import logging
+        import uuid
+
+        logger = logging.getLogger(__name__)
+
+        if not request.user.account:
+            return Response(
+                {'error': 'User not associated with an account'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        store_id = request.data.get('store_id')
+        business_name = request.data.get('business_name')
+        place_url = request.data.get('place_url')
+        place_id = request.data.get('place_id', '')
+
+        if not all([store_id, business_name, place_url]):
+            return Response(
+                {'error': 'store_id, business_name, and place_url are required'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        # Verify store belongs to user's account
+        try:
+            store = Store.objects.get(id=store_id, account=request.user.account)
+        except Store.DoesNotExist:
+            return Response(
+                {'error': 'Store not found or does not belong to your account'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        # Check if store already has a linked Google location (OneToOne relationship)
+        if hasattr(store, 'google_location') and store.google_location:
+            return Response(
+                {'error': f'Store already linked to Google location: {store.google_location.google_location_name}'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        try:
+            # Scrape basic business info from place_url
+            scraper = ScraperCommand()
+            business_info = scraper.scrape_business_from_url(place_url)
+
+            if not business_info:
+                return Response(
+                    {'error': 'Failed to fetch business information from Google Maps'},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+
+            # Create GoogleLocation and link to Store
+            location = GoogleLocation.objects.create(
+                account=request.user.account,
+                store=store,  # OneToOne link
+                google_location_id=place_id or f'manual_{uuid.uuid4()}',
+                google_location_name=business_name,
+                address=business_info.get('address', ''),
+                average_rating=business_info.get('rating'),
+                total_review_count=business_info.get('total_reviews', 0),
+                is_active=True,
+                synced_at=timezone.now()
+            )
+
+            logger.info(f"Linked Google location {business_name} to store {store.name}")
+
+            # Trigger Celery task to scrape reviews for this location
+            # We'll create a temporary ReviewAnalysis to track the scraping
+            from insights.models import ReviewAnalysis
+
+            analysis = ReviewAnalysis.objects.create(
+                business_name=business_name,
+                location=store.city or store.state,
+                place_id=place_id,
+                google_address=business_info.get('address', ''),
+                google_rating=business_info.get('rating'),
+                total_reviews_found=business_info.get('total_reviews', 0),
+                status=ReviewAnalysis.Status.PENDING,
+                account=store.brand,  # Link to brand for reference
+                converted_to_trial=True  # Already converted
+            )
+
+            # Queue scraping task
+            task = process_review_analysis.delay(str(analysis.id))
+
+            return Response({
+                'success': True,
+                'message': 'Google location linked successfully. Review scraping started in background.',
+                'location_id': str(location.id),
+                'scraping_task_id': task.id
+            }, status=status.HTTP_201_CREATED)
+
+        except Exception as e:
+            logger.error(f"Failed to link Google location: {str(e)}")
+            return Response(
+                {'error': f'Failed to link location: {str(e)}'},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
