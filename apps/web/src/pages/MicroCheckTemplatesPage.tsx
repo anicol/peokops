@@ -568,16 +568,19 @@ const MicroCheckTemplatesPage = () => {
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-20">
                     Image
                   </th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-40">
+                    Category
+                  </th>
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Template
                   </th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-48">
-                    Category & Info
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-28">
+                    Severity
                   </th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-32">
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-28">
                     Stats
                   </th>
-                  <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider w-40">
+                  <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider w-32">
                     Actions
                   </th>
                 </tr>
@@ -596,6 +599,14 @@ const MicroCheckTemplatesPage = () => {
                       ) : (
                         <div className="w-12 h-12 bg-gray-100 rounded border border-gray-200" />
                       )}
+                    </td>
+
+                    {/* Category */}
+                    <td className="px-4 py-3">
+                      <span className={`px-2 py-1 rounded text-xs font-medium flex items-center gap-1 w-fit ${getCategoryBadgeColor(template.category)}`}>
+                        {getCategoryIcon(template.category)}
+                        {template.category_display}
+                      </span>
                     </td>
 
                     {/* Template Info (2 lines) */}
@@ -621,17 +632,11 @@ const MicroCheckTemplatesPage = () => {
                       <p className="text-sm text-gray-600 line-clamp-1">{template.description}</p>
                     </td>
 
-                    {/* Category & Info */}
+                    {/* Severity */}
                     <td className="px-4 py-3">
-                      <div className="flex flex-col gap-1.5">
-                        <span className={`px-2 py-1 rounded text-xs font-medium flex items-center gap-1 w-fit ${getCategoryBadgeColor(template.category)}`}>
-                          {getCategoryIcon(template.category)}
-                          {template.category_display}
-                        </span>
-                        <span className={`px-2 py-1 rounded text-xs font-medium border w-fit ${getSeverityBadgeColor(template.severity)}`}>
-                          {template.severity_display}
-                        </span>
-                      </div>
+                      <span className={`px-2 py-1 rounded text-xs font-medium border ${getSeverityBadgeColor(template.severity)}`}>
+                        {template.severity_display}
+                      </span>
                     </td>
 
                     {/* Stats */}
