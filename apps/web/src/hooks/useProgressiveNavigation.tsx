@@ -75,16 +75,17 @@ export function useProgressiveNavigation(): NavigationState {
       navigationMode = 'TRIAL_MODE';
     }
 
-    // Default state - non-trial users get role-based access
+    // Mode-based navigation structure
+    // Non-trial users get navigation based on their mode
     if (!user?.is_trial_user) {
-      // Super Admin - Full system access
-      if (isSuperAdmin) {
+      // SUPER ADMIN MODE - Full system access including System Administration
+      if (navigationMode === 'SUPER_ADMIN_MODE') {
         return {
           showLogo: true,
           showUserEmail: true,
           showSkipToDashboard: false,
 
-          // Main navigation
+          // Main navigation - Full Enterprise Mode + System Admin
           home: 'enabled',
           microChecks: 'enabled',
           aiCoach: 'enabled',
@@ -95,7 +96,7 @@ export function useProgressiveNavigation(): NavigationState {
           settings: 'enabled',
           integrations: 'enabled',
 
-          // System Administration
+          // System Administration (Super Admin only)
           systemBrands: 'enabled',
           systemUsers: 'enabled',
           systemQueue: 'enabled',
@@ -119,50 +120,54 @@ export function useProgressiveNavigation(): NavigationState {
         };
       }
 
-      // Trial Admin - Full access for trial accounts
-      if (isTrialAdmin) {
-        return {
-          showLogo: true,
-          showUserEmail: true,
-          showSkipToDashboard: false,
+      // ENTERPRISE MODE - Corporate/Brand HQ (ADMIN, INSPECTOR)
+      // Operations: Dashboard, Stores, Walkthroughs, Micro-Checks
+      // Management: Template Library, Reports & Trends, Users & Roles
+      // Admin: Settings, Security & Compliance
+      if (navigationMode === 'ENTERPRISE_MODE') {
+        // Inspector has limited Enterprise access
+        if (isInspector) {
+          return {
+            showLogo: true,
+            showUserEmail: true,
+            showSkipToDashboard: false,
 
-          // Main navigation
-          home: 'enabled',
-          microChecks: 'enabled',
-          aiCoach: isUnlocked('ai-coach') ? 'enabled' : 'teaser',
-          inspections: isUnlocked('inspections') ? 'enabled' : 'teaser',
-          actions: 'enabled',
-          insights: isUnlocked('insights') ? 'enabled' : 'teaser',
-          profile: 'enabled',
-          settings: 'enabled',
-          integrations: 'enabled',
+            // Main navigation - Inspector workspace
+            home: 'enabled', // Assigned inspections and deadlines
+            microChecks: 'hidden',
+            aiCoach: 'hidden',
+            inspections: 'enabled', // Video review workspace
+            actions: 'enabled', // Tasks from their reviews
+            insights: 'enabled', // Personal stats
+            profile: 'enabled',
+            settings: 'enabled', // Profile, notifications
+            integrations: 'hidden',
 
-          // System Administration
-          systemBrands: 'hidden',
-          systemUsers: 'hidden',
-          systemQueue: 'hidden',
+            // System Administration
+            systemBrands: 'hidden',
+            systemUsers: 'hidden',
+            systemQueue: 'hidden',
 
-          // Legacy navigation
-          dashboard: 'enabled',
-          checks: 'enabled',
-          walkthroughs: 'enabled',
-          templates: 'enabled',
-          videos: 'enabled',
-          actionItems: 'enabled',
-          stores: 'enabled',
-          users: 'enabled',
-          brands: 'hidden',
-          inspectorQueue: 'hidden',
-          adminQueue: 'hidden',
-          adminUsers: 'hidden',
-          billing: 'hidden',
-          teamManagement: 'hidden',
-          apiAccess: 'hidden',
-        };
-      }
+            // Legacy navigation
+            dashboard: 'enabled',
+            checks: 'hidden',
+            walkthroughs: 'hidden',
+            templates: 'hidden',
+            videos: 'enabled',
+            actionItems: 'enabled',
+            stores: 'hidden',
+            users: 'hidden',
+            brands: 'hidden',
+            inspectorQueue: 'enabled',
+            adminQueue: 'hidden',
+            adminUsers: 'hidden',
+            billing: 'hidden',
+            teamManagement: 'hidden',
+            apiAccess: 'hidden',
+          };
+        }
 
-      // Enterprise User (ADMIN) - Corporate/Brand HQ
-      if (isAdmin) {
+        // Full Enterprise Mode (ADMIN)
         return {
           showLogo: true,
           showUserEmail: true,
@@ -179,7 +184,7 @@ export function useProgressiveNavigation(): NavigationState {
           settings: 'enabled', // Manage inspectors, standards
           integrations: 'enabled',
 
-          // System Administration
+          // System Administration (Admin has access)
           systemBrands: 'enabled',
           systemUsers: 'enabled',
           systemQueue: 'enabled',
@@ -203,62 +208,22 @@ export function useProgressiveNavigation(): NavigationState {
         };
       }
 
-      // Inspector - Video review and verification
-      if (isInspector) {
-        return {
-          showLogo: true,
-          showUserEmail: true,
-          showSkipToDashboard: false,
-
-          // Main navigation - Inspector workspace
-          home: 'enabled', // Assigned inspections and deadlines
-          microChecks: 'hidden',
-          aiCoach: 'hidden',
-          inspections: 'enabled', // Video review workspace
-          actions: 'enabled', // Tasks from their reviews
-          insights: 'enabled', // Personal stats
-          profile: 'enabled',
-          settings: 'enabled', // Profile, notifications
-          integrations: 'hidden',
-
-          // System Administration
-          systemBrands: 'hidden',
-          systemUsers: 'hidden',
-          systemQueue: 'hidden',
-
-          // Legacy navigation
-          dashboard: 'enabled',
-          checks: 'hidden',
-          walkthroughs: 'hidden',
-          templates: 'hidden',
-          videos: 'enabled',
-          actionItems: 'enabled',
-          stores: 'hidden',
-          users: 'hidden',
-          brands: 'hidden',
-          inspectorQueue: 'enabled',
-          adminQueue: 'hidden',
-          adminUsers: 'hidden',
-          billing: 'hidden',
-          teamManagement: 'hidden',
-          apiAccess: 'hidden',
-        };
-      }
-
-      // Multi-Store Manager (OWNER) - 2-20 stores
-      if (isOwner) {
+      // MULTI-STORE MODE - Multi-Store Owner (OWNER, GM with 2+ stores)
+      // Daily Actions: Overview, Micro-Checks, AI Walkthroughs
+      // Insights & Setup: Store Performance, Templates, Team, Settings
+      if (navigationMode === 'MULTI_STORE_MODE') {
         return {
           showLogo: true,
           showUserEmail: true,
           showSkipToDashboard: false,
 
           // Main navigation
-          home: 'enabled', // Brand summary
+          home: 'enabled', // Brand summary / Overview
           microChecks: 'enabled',
           aiCoach: isUnlocked('ai-coach') ? 'enabled' : 'teaser',
           inspections: isUnlocked('inspections') ? 'enabled' : 'teaser', // Show teaser "Add Corporate Plan"
           actions: 'enabled', // Rollup + assign to stores
-          insights: isUnlocked('insights') ? 'enabled' : 'teaser', // Store comparisons
+          insights: isUnlocked('insights') ? 'enabled' : 'teaser', // Store comparisons / Store Performance
           profile: 'enabled',
           settings: 'enabled', // Add/remove stores, manage users
           integrations: 'enabled',
@@ -276,7 +241,7 @@ export function useProgressiveNavigation(): NavigationState {
           videos: 'enabled',
           actionItems: 'enabled',
           stores: 'enabled',
-          users: 'enabled',
+          users: 'enabled', // "Team" in Multi-Store Mode
           brands: 'hidden',
           inspectorQueue: 'hidden',
           adminQueue: 'hidden',
@@ -287,49 +252,7 @@ export function useProgressiveNavigation(): NavigationState {
         };
       }
 
-      // Store Manager (GM) - Single store, paid
-      if (isGM) {
-        return {
-          showLogo: true,
-          showUserEmail: true,
-          showSkipToDashboard: false,
-
-          // Main navigation
-          home: 'enabled',
-          microChecks: 'enabled',
-          aiCoach: isUnlocked('ai-coach') ? 'enabled' : 'teaser',
-          inspections: isUnlocked('inspections') ? 'enabled' : 'teaser', // Show teaser "Add Corporate Plan"
-          actions: 'enabled',
-          insights: isUnlocked('insights') ? 'enabled' : 'teaser',
-          profile: 'enabled',
-          settings: 'enabled',
-          integrations: 'enabled',
-
-          // System Administration
-          systemBrands: 'hidden',
-          systemUsers: 'hidden',
-          systemQueue: 'hidden',
-
-          // Legacy navigation
-          dashboard: 'enabled',
-          checks: 'enabled',
-          walkthroughs: 'enabled',
-          templates: 'enabled',
-          videos: 'enabled',
-          actionItems: 'enabled',
-          stores: 'enabled',
-          users: 'enabled',
-          brands: 'hidden',
-          inspectorQueue: 'hidden',
-          adminQueue: 'hidden',
-          adminUsers: 'hidden',
-          billing: 'hidden',
-          teamManagement: 'hidden',
-          apiAccess: 'hidden',
-        };
-      }
-
-      // Fallback - minimal access
+      // Fallback - minimal access (shouldn't reach here for non-trial users)
       return {
         showLogo: true,
         showUserEmail: true,
@@ -364,7 +287,10 @@ export function useProgressiveNavigation(): NavigationState {
       };
     }
 
-    // Trial User (Store Manager - Day 0-7)
+    // TRIAL MODE - Store Manager (TRIAL_ADMIN, GM with 1 store, trial users)
+    // Daily Actions: Dashboard, Micro-Checks, AI Walkthrough
+    // Insights: My Progress
+    // Settings: Settings
     // Goal: Start simple, feel progress fast
     const trial = user.trial_status;
     const hasCompletedDemo = !!user.demo_completed_at;
@@ -377,15 +303,15 @@ export function useProgressiveNavigation(): NavigationState {
       showUserEmail: true,
       showSkipToDashboard: !hasCompletedDemo,
 
-      // Main navigation - Progressive unlock
-      home: 'enabled', // Always visible
-      microChecks: 'enabled', // Always visible - run checks
-      aiCoach: isUnlocked('ai-coach') ? 'enabled' : 'teaser', // Show teaser "Unlock AI Video Coach"
+      // Main navigation - Progressive unlock for Mode 1
+      home: 'enabled', // Always visible - Dashboard
+      microChecks: 'enabled', // Daily Actions - run checks
+      aiCoach: isUnlocked('ai-coach') ? 'enabled' : 'teaser', // Daily Actions - AI Walkthrough
       inspections: isUnlocked('inspections') ? 'enabled' : 'teaser', // Show teaser
       actions: 'enabled', // Simple to-do list
-      insights: isUnlocked('insights') ? 'enabled' : 'hidden', // Hidden during trial
+      insights: isUnlocked('insights') ? 'enabled' : 'hidden', // My Progress (when unlocked)
       profile: 'enabled',
-      settings: 'enabled', // Profile, store info, upgrade
+      settings: 'enabled', // Settings section
       integrations: 'hidden',
 
       // System Administration - Hidden for trial
