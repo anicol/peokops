@@ -1,5 +1,5 @@
 import { useQuery } from 'react-query';
-import { api } from '@/lib/api';
+import api from '@/services/api';
 import { Building2, Users, Activity, Database } from 'lucide-react';
 
 interface SystemStats {

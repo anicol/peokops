@@ -1,5 +1,5 @@
 import { useQuery } from 'react-query';
-import { api } from '@/lib/api';
+import api from '@/services/api';
 import { Building2, AlertCircle, Activity, TrendingUp } from 'lucide-react';
 
 interface EnterpriseStats {

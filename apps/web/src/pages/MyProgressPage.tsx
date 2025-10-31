@@ -1,5 +1,5 @@
 import { useQuery } from 'react-query';
-import { api } from '@/lib/api';
+import api from '@/services/api';
 import { useAuth } from '@/hooks/useAuth';
 import { Flame, TrendingUp, CheckCircle, Target, Award, Calendar } from 'lucide-react';
 import { InspectionStats } from '@/types';

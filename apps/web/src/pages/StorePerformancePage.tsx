@@ -1,5 +1,5 @@
 import { useQuery } from 'react-query';
-import { api } from '@/lib/api';
+import api from '@/services/api';
 import { Store, TrendingUp, TrendingDown, AlertCircle, CheckCircle } from 'lucide-react';
 import { Link } from 'react-router-dom';
 

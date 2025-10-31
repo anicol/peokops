@@ -1,5 +1,5 @@
 import { useQuery } from 'react-query';
-import { api } from '@/lib/api';
+import api from '@/services/api';
 import { Shield, AlertTriangle, CheckCircle, Users, FileText, Lock, Activity } from 'lucide-react';
 
 interface SecurityMetrics {
