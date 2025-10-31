@@ -210,7 +210,39 @@ class User(AbstractUser):
             return 0
         delta = self.trial_expires_at - timezone.now()
         return max(0, int(delta.total_seconds() / 3600))
-    
+
+    @property
+    def accessible_stores_count(self):
+        """Get number of stores this user has access to (for navigation mode detection)"""
+        from brands.models import Store
+
+        if self.role == self.Role.SUPER_ADMIN:
+            # Super admins see all stores
+            return Store.objects.filter(is_active=True).count()
+        elif self.role == self.Role.ADMIN:
+            # Brand admins see all stores in their brand
+            if self.account and self.account.brand:
+                return Store.objects.filter(brand=self.account.brand, is_active=True).count()
+            return 0
+        elif self.role == self.Role.OWNER:
+            # Owners see stores in their account (franchisee)
+            if self.account:
+                return Store.objects.filter(account=self.account, is_active=True).count()
+            return 0
+        elif self.role == self.Role.GM:
+            # GMs typically assigned to one store
+            if self.store:
+                return 1
+            return 0
+        elif self.role == self.Role.TRIAL_ADMIN:
+            # Trial admins manage stores in their trial brand
+            if self.account and self.account.brand:
+                return Store.objects.filter(brand=self.account.brand, is_active=True).count()
+            return 0
+        else:
+            # Employees, Inspectors have no store count
+            return 0
+
     # Trial limitation checks
     def can_upload_video(self):
         """Check if user can upload more videos (max 10 for trial)"""
