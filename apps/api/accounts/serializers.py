@@ -182,7 +182,8 @@ class TrialSignupSerializer(serializers.Serializer):
     password = serializers.CharField(min_length=8, write_only=True)
     first_name = serializers.CharField(max_length=30, required=False, allow_blank=True)
     last_name = serializers.CharField(max_length=30, required=False, allow_blank=True)
-    
+    analysis_id = serializers.UUIDField(required=False, allow_null=True, help_text="ReviewAnalysis ID for conversion tracking")
+
     def validate_email(self, value):
         """Ensure email is unique"""
         if User.objects.filter(email=value).exists():
@@ -195,10 +196,11 @@ class TrialSignupSerializer(serializers.Serializer):
         password = validated_data['password']
         first_name = validated_data.get('first_name', '')
         last_name = validated_data.get('last_name', '')
-        
+        analysis_id = validated_data.get('analysis_id')
+
         # Generate referral code
         referral_code = ''.join(secrets.choice(string.ascii_uppercase + string.digits) for _ in range(8))
-        
+
         # Create trial user
         user = User.objects.create_user(
             username=email,
@@ -211,10 +213,32 @@ class TrialSignupSerializer(serializers.Serializer):
             trial_expires_at=timezone.now().replace(hour=23, minute=59, second=59, microsecond=999999) + timedelta(days=6),
             referral_code=referral_code
         )
-        
+
+        # If coming from review analysis, convert and migrate data
+        if analysis_id:
+            from insights.models import ReviewAnalysis
+            try:
+                analysis = ReviewAnalysis.objects.get(id=analysis_id)
+                # mark_converted will create brand, account, store, and migrate reviews
+                analysis.mark_converted(user)
+
+                # User's store and account should now be set by mark_converted
+                # Refresh user to get the updated store
+                user.refresh_from_db()
+
+                # Create demo videos and inspections for instant value
+                if user.store:
+                    demo_result = create_demo_videos_and_inspections(user, user.store)
+
+                return user
+            except ReviewAnalysis.DoesNotExist:
+                # Fall through to normal trial creation if analysis not found
+                pass
+
+        # Normal trial creation (no review analysis)
         # Auto-create trial brand
         brand = Brand.create_trial_brand(user)
-        
+
         # Auto-create demo store
         store = Store.objects.create(
             brand=brand,
@@ -226,15 +250,15 @@ class TrialSignupSerializer(serializers.Serializer):
             zip_code="12345",
             manager_email=user.email
         )
-        
+
         # Assign user to store
         user.store = store
         user.increment_trial_usage('store')  # Count the auto-created store
         user.save()
-        
+
         # Create demo videos and inspections for instant value
         demo_result = create_demo_videos_and_inspections(user, store)
-        
+
         return user
 
 

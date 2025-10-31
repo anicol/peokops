@@ -32,7 +32,7 @@ export type SkipReason = 'NOT_APPLICABLE' | 'EQUIPMENT_UNAVAILABLE' | 'AREA_CLOS
 
 export type PhotoRequiredReason = 'ALWAYS' | 'NEVER' | 'FIRST_TIME' | 'AFTER_FAIL' | 'RANDOM_10';
 
-export type TemplateSource = 'PEAKOPS' | 'LOCAL';
+export type TemplateSource = 'PEAKOPS' | 'LOCAL' | 'google_reviews';
 
 export interface TemplateUsageStats {
   times_used: number;

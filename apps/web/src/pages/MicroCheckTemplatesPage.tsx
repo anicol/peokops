@@ -14,6 +14,16 @@ import {
   ChevronDown,
   Sparkles,
   TrendingUp,
+  Star,
+  Shield,
+  ShieldCheck,
+  Utensils,
+  Wrench,
+  Users,
+  Package,
+  FileText,
+  Building2,
+  Bug,
 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { microCheckAPI } from '@/services/api';
@@ -25,6 +35,7 @@ const MicroCheckTemplatesPage = () => {
   const [activeTab, setActiveTab] = useState<'starters' | 'my-templates'>('my-templates');
   const [templates, setTemplates] = useState<MicroCheckTemplate[]>([]);
   const [loading, setLoading] = useState(true);
+  const [isSearching, setIsSearching] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [hasMore, setHasMore] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
@@ -68,7 +79,12 @@ const MicroCheckTemplatesPage = () => {
 
   const fetchTemplates = useCallback(async (page: number = 1, append: boolean = false) => {
     try {
-      setLoading(true);
+      // Use isSearching for subsequent fetches if templates already loaded
+      if (templates.length > 0 && !append) {
+        setIsSearching(true);
+      } else {
+        setLoading(true);
+      }
       setError(null);
       const params: any = { page };
 
@@ -111,8 +127,9 @@ const MicroCheckTemplatesPage = () => {
       setError('Unable to load templates');
     } finally {
       setLoading(false);
+      setIsSearching(false);
     }
-  }, [activeTab, categoryFilter, severityFilter, searchTerm, user?.brand_id]);
+  }, [activeTab, categoryFilter, severityFilter, searchTerm, user?.brand_id, templates.length]);
 
   // Fetch categories when tab or user changes
   useEffect(() => {
@@ -332,6 +349,29 @@ const MicroCheckTemplatesPage = () => {
     return colors[severity] || 'bg-gray-100 text-gray-700';
   };
 
+  const getCategoryIcon = (category: MicroCheckCategory) => {
+    const iconProps = { className: "w-3.5 h-3.5" };
+    const icons: Record<MicroCheckCategory, React.ReactElement> = {
+      PPE: <Shield {...iconProps} />,
+      SAFETY: <ShieldCheck {...iconProps} />,
+      CLEANLINESS: <Sparkles {...iconProps} />,
+      FOOD_HANDLING: <Utensils {...iconProps} />,
+      FOOD_SAFETY: <ShieldCheck {...iconProps} />,
+      EQUIPMENT: <Wrench {...iconProps} />,
+      OPERATIONAL: <Settings {...iconProps} />,
+      UNIFORM: <Users {...iconProps} />,
+      STAFF_BEHAVIOR: <Users {...iconProps} />,
+      FOOD_QUALITY: <Star {...iconProps} />,
+      MENU_BOARD: <FileText {...iconProps} />,
+      WASTE_MANAGEMENT: <Trash2 {...iconProps} />,
+      PEST_CONTROL: <Bug {...iconProps} />,
+      STORAGE: <Package {...iconProps} />,
+      DOCUMENTATION: <FileText {...iconProps} />,
+      FACILITY: <Building2 {...iconProps} />,
+    };
+    return icons[category] || <Settings {...iconProps} />;
+  };
+
   if (!canManage) {
     return (
       <div className="p-4 lg:p-8">
@@ -413,12 +453,15 @@ const MicroCheckTemplatesPage = () => {
             <div className="flex-1">
               <div className="relative">
                 <Search className="w-5 h-5 text-gray-400 absolute left-3 top-1/2 transform -translate-y-1/2" />
+                {isSearching && (
+                  <Loader2 className="w-5 h-5 text-teal-600 animate-spin absolute right-3 top-1/2 transform -translate-y-1/2" />
+                )}
                 <input
                   type="text"
                   placeholder="Search templates..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
+                  className="w-full pl-10 pr-10 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
                 />
               </div>
             </div>
@@ -518,103 +561,128 @@ const MicroCheckTemplatesPage = () => {
             )}
           </div>
         ) : (
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div className="space-y-4">
             {filteredTemplates.map((template) => (
               <div
                 key={template.id}
-                className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow"
+                className="bg-white rounded-lg shadow-sm border border-gray-200 p-5 hover:shadow-md transition-shadow"
               >
-                <div className="flex items-start justify-between mb-4">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2 mb-2">
-                      <h3 className="text-lg font-semibold text-gray-900">{template.title}</h3>
-                      {!template.is_active && (
-                        <span className="px-2 py-1 bg-gray-100 text-gray-600 text-xs rounded">Inactive</span>
-                      )}
-                      {template.source === 'PEAKOPS' && (
-                        <span className="px-2 py-1 bg-blue-100 text-blue-700 text-xs rounded flex items-center">
-                          <Sparkles className="w-3 h-3 mr-1" />
-                          Starter
-                        </span>
-                      )}
+                <div className="flex items-start gap-4">
+                  {/* Reference Image (if available) */}
+                  {template.visual_reference_image && (
+                    <div className="flex-shrink-0">
+                      <img
+                        src={template.visual_reference_image}
+                        alt={`Reference for ${template.title}`}
+                        className="w-20 h-20 object-cover rounded-lg border border-gray-200"
+                      />
                     </div>
-                    <p className="text-sm text-gray-600 mb-3">{template.description}</p>
+                  )}
 
-                    {/* Reference Image */}
-                    {template.visual_reference_image && (
-                      <div className="mb-3">
-                        <img
-                          src={template.visual_reference_image}
-                          alt={`Reference for ${template.title}`}
-                          className="w-full h-32 object-cover rounded-lg border border-gray-200"
-                        />
+                  {/* Main Content */}
+                  <div className="flex-1 min-w-0">
+                    {/* Title and Badges Row */}
+                    <div className="flex items-start justify-between gap-4 mb-2">
+                      <div className="flex-1">
+                        <div className="flex items-center flex-wrap gap-2 mb-1">
+                          <h3 className="text-lg font-semibold text-gray-900">{template.title}</h3>
+                          {!template.is_active && (
+                            <span className="px-2 py-1 bg-gray-100 text-gray-600 text-xs rounded">Inactive</span>
+                          )}
+                          {template.source === 'google_reviews' && (
+                            <span className="px-2 py-1 bg-green-100 text-green-700 text-xs rounded flex items-center">
+                              <Star className="w-3 h-3 mr-1 fill-current" />
+                              From Reviews
+                            </span>
+                          )}
+                          {template.source === 'PEAKOPS' && (
+                            <span className="px-2 py-1 bg-blue-100 text-blue-700 text-xs rounded flex items-center">
+                              <Sparkles className="w-3 h-3 mr-1" />
+                              Starter
+                            </span>
+                          )}
+                        </div>
+
+                        {/* Description */}
+                        <p className="text-sm text-gray-700 mb-2">{template.description}</p>
+
+                        {/* Success Criteria */}
+                        {template.success_criteria && (
+                          <div className="text-sm text-gray-600 mb-2">
+                            <span className="font-medium text-gray-700">Success: </span>
+                            {template.success_criteria}
+                          </div>
+                        )}
+
+                        {/* Badges and Stats Row */}
+                        <div className="flex flex-wrap items-center gap-2">
+                          <span className={`px-2 py-1 rounded text-xs font-medium flex items-center gap-1 ${getCategoryBadgeColor(template.category)}`}>
+                            {getCategoryIcon(template.category)}
+                            {template.category_display}
+                          </span>
+                          <span className={`px-2 py-1 rounded text-xs font-medium border ${getSeverityBadgeColor(template.severity)}`}>
+                            {template.severity_display}
+                          </span>
+                          {template.default_photo_required && (
+                            <span className="px-2 py-1 bg-blue-100 text-blue-700 text-xs rounded">Photo Required</span>
+                          )}
+                          {template.usage_stats && activeTab === 'my-templates' && (
+                            <>
+                              <span className="text-xs text-gray-500 flex items-center">
+                                <TrendingUp className="w-3 h-3 mr-1" />
+                                {template.usage_stats.times_used} uses
+                              </span>
+                              {template.usage_stats.pass_rate !== null && (
+                                <span className="text-xs text-gray-500">
+                                  {Math.round(template.usage_stats.pass_rate)}% pass rate
+                                </span>
+                              )}
+                            </>
+                          )}
+                        </div>
                       </div>
-                    )}
 
-                    <div className="flex flex-wrap gap-2 mb-3">
-                      <span className={`px-2 py-1 rounded text-xs font-medium ${getCategoryBadgeColor(template.category)}`}>
-                        {template.category_display}
-                      </span>
-                      <span className={`px-2 py-1 rounded text-xs font-medium border ${getSeverityBadgeColor(template.severity)}`}>
-                        {template.severity_display}
-                      </span>
-                      {template.default_photo_required && (
-                        <span className="px-2 py-1 bg-blue-100 text-blue-700 text-xs rounded">Photo Required</span>
-                      )}
-                    </div>
-
-                    {/* Usage Stats */}
-                    {template.usage_stats && activeTab === 'my-templates' && (
-                      <div className="flex items-center gap-4 text-xs text-gray-500 mb-2">
-                        <span className="flex items-center">
-                          <TrendingUp className="w-3 h-3 mr-1" />
-                          Used {template.usage_stats.times_used} times
-                        </span>
-                        {template.usage_stats.pass_rate !== null && (
-                          <span>Pass rate: {Math.round(template.usage_stats.pass_rate)}%</span>
+                      {/* Actions */}
+                      <div className="flex flex-shrink-0 gap-2">
+                        {activeTab === 'starters' ? (
+                          <button
+                            onClick={() => handleDuplicateTemplate(template)}
+                            className="px-3 py-1.5 bg-teal-50 text-teal-700 rounded hover:bg-teal-100 transition-colors text-sm font-medium flex items-center"
+                            title="Duplicate to My Templates"
+                          >
+                            <Copy className="w-4 h-4 mr-1" />
+                            Duplicate
+                          </button>
+                        ) : (
+                          <>
+                            <button
+                              onClick={() => handleEditTemplate(template)}
+                              className="px-3 py-1.5 bg-blue-50 text-blue-700 rounded hover:bg-blue-100 transition-colors text-sm font-medium flex items-center"
+                              title="Edit Template"
+                            >
+                              <Edit className="w-4 h-4" />
+                            </button>
+                            <button
+                              onClick={() => handleArchiveTemplate(template)}
+                              className="px-3 py-1.5 bg-orange-50 text-orange-700 rounded hover:bg-orange-100 transition-colors text-sm font-medium flex items-center"
+                              title="Archive Template"
+                            >
+                              <Archive className="w-4 h-4" />
+                            </button>
+                            {isAdmin && (
+                              <button
+                                onClick={() => handleDeleteTemplate(template)}
+                                className="px-3 py-1.5 bg-red-50 text-red-700 rounded hover:bg-red-100 transition-colors text-sm font-medium flex items-center"
+                                title="Delete Template"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </button>
+                            )}
+                          </>
                         )}
                       </div>
-                    )}
+                    </div>
                   </div>
-                </div>
-
-                {/* Actions */}
-                <div className="flex flex-wrap gap-2 pt-4 border-t border-gray-200">
-                  {activeTab === 'starters' ? (
-                    <button
-                      onClick={() => handleDuplicateTemplate(template)}
-                      className="px-3 py-1.5 bg-teal-50 text-teal-700 rounded hover:bg-teal-100 transition-colors text-sm font-medium flex items-center"
-                    >
-                      <Copy className="w-4 h-4 mr-1" />
-                      Duplicate to My Templates
-                    </button>
-                  ) : (
-                    <>
-                      <button
-                        onClick={() => handleEditTemplate(template)}
-                        className="px-3 py-1.5 bg-blue-50 text-blue-700 rounded hover:bg-blue-100 transition-colors text-sm font-medium flex items-center"
-                      >
-                        <Edit className="w-4 h-4 mr-1" />
-                        Edit
-                      </button>
-                      <button
-                        onClick={() => handleArchiveTemplate(template)}
-                        className="px-3 py-1.5 bg-orange-50 text-orange-700 rounded hover:bg-orange-100 transition-colors text-sm font-medium flex items-center"
-                      >
-                        <Archive className="w-4 h-4 mr-1" />
-                        Archive
-                      </button>
-                      {isAdmin && (
-                        <button
-                          onClick={() => handleDeleteTemplate(template)}
-                          className="px-3 py-1.5 bg-red-50 text-red-700 rounded hover:bg-red-100 transition-colors text-sm font-medium flex items-center"
-                        >
-                          <Trash2 className="w-4 h-4 mr-1" />
-                          Delete
-                        </button>
-                      )}
-                    </>
-                  )}
                 </div>
               </div>
             ))}
