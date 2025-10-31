@@ -32,7 +32,7 @@ const navigationSections = [
     items: [
       { name: 'Home', href: '/', icon: Home, key: 'home' },
       { name: 'Micro Checks', href: '/micro-check-history', icon: CheckSquare, key: 'microChecks' },
-      { name: 'AI Coach', href: '/videos', icon: Sparkles, key: 'aiCoach' },
+      { name: 'AI Walkthrough', href: '/videos', icon: Sparkles, key: 'aiCoach' },
       { name: 'Inspections', href: '/inspections', icon: FileSearch, key: 'inspections' },
       { name: 'Actions', href: '/actions', icon: ListTodo, key: 'actions' },
       { name: 'Insights', href: '/insights', icon: BarChart3, key: 'insights' },
@@ -68,6 +68,18 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   const location = useLocation();
   const navState = useProgressiveNavigation();
   const { getProgress, registry } = useFeatureGates();
+
+  // Helper function to get display name based on navigation mode
+  const getDisplayName = (item: any) => {
+    // Context-aware label for Users
+    if (item.key === 'users') {
+      if (navState.navigationMode === 'ENTERPRISE_MODE') {
+        return 'Users & Roles';
+      }
+      return 'Team'; // For TRIAL_MODE and MULTI_STORE_MODE
+    }
+    return item.name;
+  };
 
   const filteredSections = navigationSections
     .map(section => {
@@ -174,6 +186,8 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                               ? 'bg-gray-100 text-gray-900'
                               : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900';
 
+                        const displayName = getDisplayName(item);
+
                         if (isDisabled) {
                           return (
                             <div
@@ -182,7 +196,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                               title="Complete previous steps to unlock"
                             >
                               <item.icon className="w-4 h-4 mr-3" />
-                              {item.name}
+                              {displayName}
                             </div>
                           );
                         }
@@ -213,7 +227,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                               }}
                             >
                               <item.icon className="w-4 h-4 mr-3 flex-shrink-0" />
-                              <span className="flex-1 min-w-0 truncate">{item.name}</span>
+                              <span className="flex-1 min-w-0 truncate">{displayName}</span>
                               <div className="flex items-center gap-1.5 ml-2 flex-shrink-0">
                                 <span className="text-xs text-gray-400 whitespace-nowrap">{progressHint}</span>
                                 <Lock className="w-3 h-3 text-gray-400 flex-shrink-0" />
@@ -230,7 +244,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                             onClick={() => setSidebarOpen(false)}
                           >
                             <item.icon className="w-4 h-4 mr-3" />
-                            {item.name}
+                            {displayName}
                           </Link>
                         );
                       })}
@@ -269,6 +283,8 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                             ? 'bg-gray-100 text-gray-900'
                             : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900';
 
+                      const displayName = getDisplayName(item);
+
                       if (isDisabled) {
                         return (
                           <div
@@ -277,7 +293,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                             title="Complete previous steps to unlock"
                           >
                             <item.icon className="w-4 h-4 mr-3" />
-                            {item.name}
+                            {displayName}
                           </div>
                         );
                       }
@@ -305,7 +321,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                             onClick={() => navigate(lockedRoute)}
                           >
                             <item.icon className="w-4 h-4 mr-3 flex-shrink-0" />
-                            <span className="flex-1 min-w-0 truncate">{item.name}</span>
+                            <span className="flex-1 min-w-0 truncate">{displayName}</span>
                             <div className="flex items-center gap-1.5 ml-2 flex-shrink-0">
                               <span className="text-xs text-gray-400 whitespace-nowrap">{progressHint}</span>
                               <Lock className="w-3 h-3 text-gray-400 flex-shrink-0" />
@@ -321,7 +337,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                           className={`${baseClasses} ${stateClasses}`}
                         >
                           <item.icon className="w-4 h-4 mr-3" />
-                          {item.name}
+                          {displayName}
                         </Link>
                       );
                     })}
