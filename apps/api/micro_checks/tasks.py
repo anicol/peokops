@@ -38,13 +38,15 @@ User = get_user_model()
 logger = logging.getLogger(__name__)
 
 
-@shared_task(queue='default')
-def create_daily_micro_check_runs():
+@shared_task(queue='default', bind=True)
+def create_daily_micro_check_runs(self):
     """
-    Scheduled task to create daily micro-check runs for all active stores.
+    Scheduled task to create daily micro-check runs for all active stores with idempotency.
 
     Runs every hour and checks if each store's local time matches their configured send time.
     Creates runs and sends magic link emails to store managers when it's time.
+    
+    Idempotency is ensured by checking for existing runs before creation.
     """
     from brands.models import Store
     from datetime import datetime
@@ -531,10 +533,10 @@ def _send_whatsapp(phone_number, magic_link, run):
     return True
 
 
-@shared_task(queue='default')
-def process_micro_check_response(response_id):
+@shared_task(queue='default', bind=True)
+def process_micro_check_response(self, response_id):
     """
-    Process a micro-check response after submission.
+    Process a micro-check response after submission with idempotency protection.
 
     This handles:
     - Updating coverage statistics
@@ -545,6 +547,15 @@ def process_micro_check_response(response_id):
     Args:
         response_id: UUID of MicroCheckResponse
     """
+    from django.core.cache import cache
+    
+    cache_key = f'process_response_{response_id}'
+    if cache.get(cache_key):
+        logger.info(f"Response {response_id} already being processed, skipping")
+        return {'success': True, 'skipped': True, 'reason': 'already_processing'}
+    
+    cache.set(cache_key, True, timeout=300)
+    
     try:
         response = MicroCheckResponse.objects.select_related(
             'run_item__run',
@@ -553,6 +564,7 @@ def process_micro_check_response(response_id):
         ).get(id=response_id)
     except MicroCheckResponse.DoesNotExist:
         logger.error(f"Response {response_id} not found")
+        cache.delete(cache_key)
         return {'success': False, 'error': 'Response not found'}
 
     run = response.run_item.run
@@ -592,6 +604,7 @@ def process_micro_check_response(response_id):
 
         logger.info(f"Run {run.id} completed")
 
+    cache.delete(cache_key)
     return {'success': True, 'run_complete': all_items_complete}
 
 
