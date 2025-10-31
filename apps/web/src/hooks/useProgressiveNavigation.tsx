@@ -2,7 +2,12 @@ import { useMemo } from 'react';
 import { useAuth } from './useAuth';
 import { useFeatureGates } from './useFeatureGates';
 
+export type NavigationMode = 'TRIAL_MODE' | 'MULTI_STORE_MODE' | 'ENTERPRISE_MODE' | 'SUPER_ADMIN_MODE';
+
 export interface NavigationState {
+  // Navigation mode
+  navigationMode: NavigationMode;
+
   // Core navigation
   showLogo: boolean;
   showUserEmail: boolean;
@@ -81,6 +86,7 @@ export function useProgressiveNavigation(): NavigationState {
       // SUPER ADMIN MODE - Full system access including System Administration
       if (navigationMode === 'SUPER_ADMIN_MODE') {
         return {
+          navigationMode: 'SUPER_ADMIN_MODE',
           showLogo: true,
           showUserEmail: true,
           showSkipToDashboard: false,
@@ -128,6 +134,7 @@ export function useProgressiveNavigation(): NavigationState {
         // Inspector has limited Enterprise access
         if (isInspector) {
           return {
+            navigationMode: 'ENTERPRISE_MODE',
             showLogo: true,
             showUserEmail: true,
             showSkipToDashboard: false,
@@ -169,6 +176,7 @@ export function useProgressiveNavigation(): NavigationState {
 
         // Full Enterprise Mode (ADMIN)
         return {
+          navigationMode: 'ENTERPRISE_MODE',
           showLogo: true,
           showUserEmail: true,
           showSkipToDashboard: false,
@@ -213,6 +221,7 @@ export function useProgressiveNavigation(): NavigationState {
       // Insights & Setup: Store Performance, Templates, Team, Settings
       if (navigationMode === 'MULTI_STORE_MODE') {
         return {
+          navigationMode: 'MULTI_STORE_MODE',
           showLogo: true,
           showUserEmail: true,
           showSkipToDashboard: false,
@@ -254,6 +263,7 @@ export function useProgressiveNavigation(): NavigationState {
 
       // Fallback - minimal access (shouldn't reach here for non-trial users)
       return {
+        navigationMode: 'TRIAL_MODE', // Default to trial mode for fallback
         showLogo: true,
         showUserEmail: true,
         showSkipToDashboard: false,
@@ -299,6 +309,7 @@ export function useProgressiveNavigation(): NavigationState {
 
     const state: NavigationState = {
       // Always visible during trial
+      navigationMode: 'TRIAL_MODE',
       showLogo: true,
       showUserEmail: true,
       showSkipToDashboard: !hasCompletedDemo,

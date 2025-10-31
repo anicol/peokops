@@ -4,6 +4,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { useProgressiveNavigation } from '@/hooks/useProgressiveNavigation';
 import { useFeatureGates } from '@/hooks/useFeatureGates';
 import { ImpersonationBanner } from './ImpersonationBanner';
+import { TrialFooter, MultiStoreFooter, EnterpriseFooter, SuperAdminFooter } from './footers';
 import {
   Home,
   CheckSquare,
@@ -338,6 +339,12 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           </div>
         </main>
       </div>
+
+      {/* Mode-specific footer */}
+      {navState.navigationMode === 'TRIAL_MODE' && <TrialFooter />}
+      {navState.navigationMode === 'MULTI_STORE_MODE' && <MultiStoreFooter />}
+      {navState.navigationMode === 'ENTERPRISE_MODE' && <EnterpriseFooter />}
+      {navState.navigationMode === 'SUPER_ADMIN_MODE' && <SuperAdminFooter />}
     </div>
   );
 }
