@@ -5,6 +5,8 @@ from rest_framework.response import Response
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.exceptions import TokenError
 from rest_framework_simplejwt.token_blacklist.models import BlacklistedToken
+from rest_framework_simplejwt.backends import TokenBackend
+from rest_framework_simplejwt.settings import api_settings as jwt_settings
 from django.contrib.auth import login
 from django.utils import timezone
 from django.db.models import Q
@@ -116,9 +118,14 @@ def logout_view(request):
         )
     
     try:
-        # Validate and decode the token
-        token = RefreshToken(refresh_token)
-        jti = token['jti']
+        # Decode token to get jti without triggering blacklist verification
+        token_backend = TokenBackend(
+            algorithm=jwt_settings.ALGORITHM,
+            signing_key=jwt_settings.SIGNING_KEY,
+            verifying_key=jwt_settings.VERIFYING_KEY
+        )
+        payload = token_backend.decode(refresh_token, verify=True)
+        jti = payload.get('jti')
         
         # Check if token is already blacklisted
         if BlacklistedToken.objects.filter(token__jti=jti).exists():
@@ -127,6 +134,7 @@ def logout_view(request):
                 status=status.HTTP_401_UNAUTHORIZED
             )
         
+        token = RefreshToken(refresh_token)
         token.blacklist()
         
         return Response(
