@@ -155,8 +155,12 @@ def select_templates_for_run(store, num_items=3):
     from django.db.models import Q
     import random
 
-    # Get all active templates
-    active_templates = MicroCheckTemplate.objects.filter(is_active=True)
+    # Get all active templates for this store's brand (or global templates)
+    active_templates = MicroCheckTemplate.objects.filter(
+        is_active=True
+    ).filter(
+        Q(brand=store.brand) | Q(brand__isnull=True)
+    )
 
     # Get coverage data for this store
     coverage_map = {
