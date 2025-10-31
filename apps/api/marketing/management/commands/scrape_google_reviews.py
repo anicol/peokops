@@ -186,7 +186,7 @@ class Command(BaseCommand):
                     # Wait for business detail panel to load
                     try:
                         page.wait_for_selector('h1[class*="fontHeadlineLarge"], div[role="main"] h1',
-                                             timeout=10000, state='visible')
+                                             timeout=15000, state='visible')  # Increased from 10s to 15s
                         logger.info("Business detail panel loaded successfully (place_id navigation)")
                     except Exception as e:
                         logger.warning(f"Business detail panel may not have loaded: {str(e)[:100]}")
@@ -419,7 +419,7 @@ class Command(BaseCommand):
             # Wait for business detail content to load before extraction
             logger.info("Waiting for business detail content to load...")
             try:
-                page.wait_for_selector('h1, [aria-label*="star" i]', timeout=8000, state='visible')
+                page.wait_for_selector('h1, [aria-label*="star" i]', timeout=15000, state='visible')  # Increased from 8s to 15s
                 logger.info("Business detail content appears to be loaded")
             except Exception as wait_error:
                 logger.warning(f"Timeout waiting for business details, will try extraction anyway: {str(wait_error)[:100]}")
