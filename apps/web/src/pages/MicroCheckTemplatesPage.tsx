@@ -561,89 +561,104 @@ const MicroCheckTemplatesPage = () => {
             )}
           </div>
         ) : (
-          <div className="space-y-4">
-            {filteredTemplates.map((template) => (
-              <div
-                key={template.id}
-                className="bg-white rounded-lg shadow-sm border border-gray-200 p-5 hover:shadow-md transition-shadow"
-              >
-                <div className="flex items-start gap-4">
-                  {/* Reference Image (if available) */}
-                  {template.visual_reference_image && (
-                    <div className="flex-shrink-0">
-                      <img
-                        src={template.visual_reference_image}
-                        alt={`Reference for ${template.title}`}
-                        className="w-20 h-20 object-cover rounded-lg border border-gray-200"
-                      />
-                    </div>
-                  )}
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+            <table className="min-w-full divide-y divide-gray-200">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-20">
+                    Image
+                  </th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Template
+                  </th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-48">
+                    Category & Info
+                  </th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-32">
+                    Stats
+                  </th>
+                  <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider w-40">
+                    Actions
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {filteredTemplates.map((template) => (
+                  <tr key={template.id} className="hover:bg-gray-50 transition-colors">
+                    {/* Reference Image */}
+                    <td className="px-4 py-3">
+                      {template.visual_reference_image ? (
+                        <img
+                          src={template.visual_reference_image}
+                          alt={`Reference for ${template.title}`}
+                          className="w-12 h-12 object-cover rounded border border-gray-200"
+                        />
+                      ) : (
+                        <div className="w-12 h-12 bg-gray-100 rounded border border-gray-200" />
+                      )}
+                    </td>
 
-                  {/* Main Content */}
-                  <div className="flex-1 min-w-0">
-                    {/* Title and Badges Row */}
-                    <div className="flex items-start justify-between gap-4 mb-2">
-                      <div className="flex-1">
-                        <div className="flex items-center flex-wrap gap-2 mb-1">
-                          <h3 className="text-lg font-semibold text-gray-900">{template.title}</h3>
-                          {!template.is_active && (
-                            <span className="px-2 py-1 bg-gray-100 text-gray-600 text-xs rounded">Inactive</span>
-                          )}
-                          {template.source === 'google_reviews' && (
-                            <span className="px-2 py-1 bg-green-100 text-green-700 text-xs rounded flex items-center">
-                              <Star className="w-3 h-3 mr-1 fill-current" />
-                              From Reviews
-                            </span>
-                          )}
-                          {template.source === 'PEAKOPS' && (
-                            <span className="px-2 py-1 bg-blue-100 text-blue-700 text-xs rounded flex items-center">
-                              <Sparkles className="w-3 h-3 mr-1" />
-                              Starter
-                            </span>
-                          )}
-                        </div>
-
-                        {/* Description */}
-                        <p className="text-sm text-gray-700 mb-2">{template.description}</p>
-
-                        {/* Success Criteria */}
-                        {template.success_criteria && (
-                          <div className="text-sm text-gray-600 mb-2">
-                            <span className="font-medium text-gray-700">Success: </span>
-                            {template.success_criteria}
-                          </div>
+                    {/* Template Info (2 lines) */}
+                    <td className="px-4 py-3">
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className="font-medium text-gray-900">{template.title}</span>
+                        {!template.is_active && (
+                          <span className="px-2 py-0.5 bg-gray-100 text-gray-600 text-xs rounded">Inactive</span>
                         )}
-
-                        {/* Badges and Stats Row */}
-                        <div className="flex flex-wrap items-center gap-2">
-                          <span className={`px-2 py-1 rounded text-xs font-medium flex items-center gap-1 ${getCategoryBadgeColor(template.category)}`}>
-                            {getCategoryIcon(template.category)}
-                            {template.category_display}
+                        {template.source === 'google_reviews' && (
+                          <span className="px-2 py-0.5 bg-green-100 text-green-700 text-xs rounded flex items-center">
+                            <Star className="w-3 h-3 mr-1 fill-current" />
+                            Reviews
                           </span>
-                          <span className={`px-2 py-1 rounded text-xs font-medium border ${getSeverityBadgeColor(template.severity)}`}>
-                            {template.severity_display}
+                        )}
+                        {template.source === 'PEAKOPS' && (
+                          <span className="px-2 py-0.5 bg-blue-100 text-blue-700 text-xs rounded flex items-center">
+                            <Sparkles className="w-3 h-3 mr-1" />
+                            Starter
                           </span>
-                          {template.default_photo_required && (
-                            <span className="px-2 py-1 bg-blue-100 text-blue-700 text-xs rounded">Photo Required</span>
-                          )}
-                          {template.usage_stats && activeTab === 'my-templates' && (
-                            <>
-                              <span className="text-xs text-gray-500 flex items-center">
-                                <TrendingUp className="w-3 h-3 mr-1" />
-                                {template.usage_stats.times_used} uses
-                              </span>
-                              {template.usage_stats.pass_rate !== null && (
-                                <span className="text-xs text-gray-500">
-                                  {Math.round(template.usage_stats.pass_rate)}% pass rate
-                                </span>
-                              )}
-                            </>
-                          )}
-                        </div>
+                        )}
                       </div>
+                      <p className="text-sm text-gray-600 line-clamp-1">{template.description}</p>
+                    </td>
 
-                      {/* Actions */}
-                      <div className="flex flex-shrink-0 gap-2">
+                    {/* Category & Info */}
+                    <td className="px-4 py-3">
+                      <div className="flex flex-col gap-1.5">
+                        <span className={`px-2 py-1 rounded text-xs font-medium flex items-center gap-1 w-fit ${getCategoryBadgeColor(template.category)}`}>
+                          {getCategoryIcon(template.category)}
+                          {template.category_display}
+                        </span>
+                        <span className={`px-2 py-1 rounded text-xs font-medium border w-fit ${getSeverityBadgeColor(template.severity)}`}>
+                          {template.severity_display}
+                        </span>
+                      </div>
+                    </td>
+
+                    {/* Stats */}
+                    <td className="px-4 py-3">
+                      <div className="flex flex-col gap-1 text-xs text-gray-600">
+                        {template.default_photo_required && (
+                          <span className="text-xs text-blue-600">📷 Photo Required</span>
+                        )}
+                        {template.usage_stats && activeTab === 'my-templates' && (
+                          <>
+                            <span className="flex items-center">
+                              <TrendingUp className="w-3 h-3 mr-1" />
+                              {template.usage_stats.times_used} uses
+                            </span>
+                            {template.usage_stats.pass_rate !== null && (
+                              <span>
+                                {Math.round(template.usage_stats.pass_rate)}% pass
+                              </span>
+                            )}
+                          </>
+                        )}
+                      </div>
+                    </td>
+
+                    {/* Actions */}
+                    <td className="px-4 py-3">
+                      <div className="flex justify-end gap-2">
                         {activeTab === 'starters' ? (
                           <button
                             onClick={() => handleDuplicateTemplate(template)}
@@ -657,14 +672,14 @@ const MicroCheckTemplatesPage = () => {
                           <>
                             <button
                               onClick={() => handleEditTemplate(template)}
-                              className="px-3 py-1.5 bg-blue-50 text-blue-700 rounded hover:bg-blue-100 transition-colors text-sm font-medium flex items-center"
+                              className="p-1.5 bg-blue-50 text-blue-700 rounded hover:bg-blue-100 transition-colors"
                               title="Edit Template"
                             >
                               <Edit className="w-4 h-4" />
                             </button>
                             <button
                               onClick={() => handleArchiveTemplate(template)}
-                              className="px-3 py-1.5 bg-orange-50 text-orange-700 rounded hover:bg-orange-100 transition-colors text-sm font-medium flex items-center"
+                              className="p-1.5 bg-orange-50 text-orange-700 rounded hover:bg-orange-100 transition-colors"
                               title="Archive Template"
                             >
                               <Archive className="w-4 h-4" />
@@ -672,7 +687,7 @@ const MicroCheckTemplatesPage = () => {
                             {isAdmin && (
                               <button
                                 onClick={() => handleDeleteTemplate(template)}
-                                className="px-3 py-1.5 bg-red-50 text-red-700 rounded hover:bg-red-100 transition-colors text-sm font-medium flex items-center"
+                                className="p-1.5 bg-red-50 text-red-700 rounded hover:bg-red-100 transition-colors"
                                 title="Delete Template"
                               >
                                 <Trash2 className="w-4 h-4" />
@@ -681,11 +696,11 @@ const MicroCheckTemplatesPage = () => {
                           </>
                         )}
                       </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            ))}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         )}
 
