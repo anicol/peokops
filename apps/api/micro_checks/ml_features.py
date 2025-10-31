@@ -58,18 +58,20 @@ def empirical_prior(fails: int, total: int, a: float = PRIOR_A, b: float = PRIOR
     return (fails + a) / (total + a + b)
 
 
-def extract_features_for_template(store, template: MicroCheckTemplate) -> FeatureVector:
+def extract_features_for_template(store, template: MicroCheckTemplate, as_of=None) -> FeatureVector:
     """
     Extract all features for a given store+template combination.
 
     Args:
         store: Store model instance
         template: MicroCheckTemplate instance
+        as_of: Optional datetime to compute features as of (for training to avoid time-travel leakage)
+               If None, uses current time (for inference)
 
     Returns:
         FeatureVector with ML features and local prior data
     """
-    now = timezone.now()
+    now = as_of if as_of is not None else timezone.now()
 
     # Feature 1: days_since_last_checked
     days_since_last_checked = _get_days_since_last_checked(store, template, now)
@@ -78,7 +80,8 @@ def extract_features_for_template(store, template: MicroCheckTemplate) -> Featur
     category_fail_rate = _get_category_fail_rate(
         store,
         template.category,
-        window_days=CATEGORY_FAIL_RATE_WINDOW_DAYS
+        window_days=CATEGORY_FAIL_RATE_WINDOW_DAYS,
+        as_of=now
     )
 
     # Feature 3: failed_last_time (binary)
@@ -87,7 +90,8 @@ def extract_features_for_template(store, template: MicroCheckTemplate) -> Featur
     # Feature 4: store_completion_rate_14d
     store_completion_rate = _get_store_completion_rate(
         store,
-        window_days=STORE_COMPLETION_RATE_WINDOW_DAYS
+        window_days=STORE_COMPLETION_RATE_WINDOW_DAYS,
+        as_of=now
     )
 
     # Feature 5: severity_numeric
@@ -149,14 +153,16 @@ def _get_days_since_last_checked(store, template: MicroCheckTemplate, now) -> fl
         return 999.0  # Never checked - high priority
 
 
-def _get_category_fail_rate(store, category: str, window_days: int) -> float:
+def _get_category_fail_rate(store, category: str, window_days: int, as_of=None) -> float:
     """Get failure rate for this category at this store in the last N days."""
-    cutoff = timezone.now() - timedelta(days=window_days)
+    now = as_of if as_of is not None else timezone.now()
+    cutoff = now - timedelta(days=window_days)
 
     responses = MicroCheckResponse.objects.filter(
         store=store,
         category=category,
         completed_at__gte=cutoff,
+        completed_at__lt=now,
     )
 
     total = responses.count()
@@ -176,15 +182,17 @@ def _get_failed_last_time(store, template: MicroCheckTemplate) -> int:
         return 0
 
 
-def _get_store_completion_rate(store, window_days: int) -> float:
+def _get_store_completion_rate(store, window_days: int, as_of=None) -> float:
     """Get completion rate for all checks at this store in the last N days."""
     from .models import MicroCheckRun
 
-    cutoff = timezone.now() - timedelta(days=window_days)
+    now = as_of if as_of is not None else timezone.now()
+    cutoff = now - timedelta(days=window_days)
 
     total_runs = MicroCheckRun.objects.filter(
         store=store,
         created_at__gte=cutoff,
+        created_at__lt=now,
     ).count()
 
     if total_runs == 0:
@@ -193,6 +201,7 @@ def _get_store_completion_rate(store, window_days: int) -> float:
     completed_runs = MicroCheckRun.objects.filter(
         store=store,
         created_at__gte=cutoff,
+        created_at__lt=now,
         status='COMPLETED',
     ).count()
 

@@ -85,13 +85,34 @@ def train_failure_predictor(
 
     logger.info(f"Model metrics: F1={metrics['f1']:.3f}, Precision={metrics['precision']:.3f}, Recall={metrics['recall']:.3f}")
 
-    # Step 5: Check if model meets quality thresholds
+    # Step 5: Check if model meets quality thresholds (gate deployment)
+    quality_check_passed = True
+    quality_issues = []
+    
     if metrics['f1'] < MIN_F1_SCORE:
+        quality_check_passed = False
+        quality_issues.append(f"F1 score {metrics['f1']:.3f} below threshold {MIN_F1_SCORE}")
         logger.warning(f"Model F1 score {metrics['f1']:.3f} below threshold {MIN_F1_SCORE}")
+    
     if metrics['precision'] < MIN_PRECISION:
+        quality_check_passed = False
+        quality_issues.append(f"Precision {metrics['precision']:.3f} below threshold {MIN_PRECISION}")
         logger.warning(f"Model precision {metrics['precision']:.3f} below threshold {MIN_PRECISION}")
+    
+    if not quality_check_passed:
+        logger.error(f"Model quality check failed: {'; '.join(quality_issues)}")
+        return {
+            'success': False,
+            'error': 'Model quality below thresholds, not deploying',
+            'quality_issues': quality_issues,
+            'brand_id': brand_id,
+            'segment_id': segment_id,
+            'samples_train': len(X_train),
+            'samples_test': len(X_test),
+            **metrics
+        }
 
-    # Step 6: Save model if not dry run
+    # Step 6: Save model if not dry run (only if quality check passed)
     if not dry_run:
         model_manager = MLModelManager()
         training_metadata = {
@@ -173,9 +194,12 @@ def prepare_training_data(
 
     for response in responses:
         try:
-            # Extract features at the time of the response
-            # Note: This is retrospective - we're using historical data
-            features = extract_features_for_template(response.store, response.template)
+            # Extract features at the time of the response to avoid time-travel leakage
+            features = extract_features_for_template(
+                response.store, 
+                response.template,
+                as_of=response.completed_at
+            )
 
             # Target: 1 if FAIL/NEEDS_ATTENTION, 0 otherwise
             y = 1 if response.status in TARGET_STATUSES else 0

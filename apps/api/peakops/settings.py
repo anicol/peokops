@@ -289,6 +289,16 @@ CELERY_BEAT_SCHEDULE = {
         'schedule': crontab(day_of_month=1, hour=5, minute=0),  # 1st of month at 5 AM
         'options': {'queue': 'maintenance'}
     },
+    'refresh-store-template-stats': {
+        'task': 'micro_checks.tasks.refresh_store_template_stats',
+        'schedule': crontab(hour=2, minute=0),  # 2:00 AM UTC daily
+        'options': {'queue': 'maintenance'}
+    },
+    'train-ml-models-weekly': {
+        'task': 'micro_checks.tasks.train_micro_check_ml_models',
+        'schedule': crontab(day_of_week=0, hour=3, minute=0),  # Sundays at 3 AM
+        'options': {'queue': 'ml'}
+    },
 }
 
 AWS_ACCESS_KEY_ID = config('AWS_ACCESS_KEY_ID', default='')
