@@ -106,7 +106,10 @@ class MLModelManager:
         metadata: Optional[dict] = None
     ) -> bool:
         """
-        Save ML model to S3 and local cache.
+        Save ML model to S3 with versioning and local cache.
+        
+        Saves both a versioned copy (with timestamp) and updates the 'latest' pointer.
+        This enables rollback and audit capabilities.
 
         Args:
             model: sklearn model object
@@ -118,32 +121,58 @@ class MLModelManager:
             True if successful, False otherwise
         """
         try:
+            import json
+            import hashlib
+            
             # Pickle model
             model_bytes = pickle.dumps(model)
-
-            # Add metadata as separate JSON file if provided
-            s3_key = self._get_s3_key(brand_id, segment_id)
-            metadata_key = s3_key.replace('.pkl', '_metadata.json')
-
-            # Upload model to S3
-            logger.info(f"Saving model to S3: s3://{self.bucket}/{s3_key}")
+            
+            model_hash = hashlib.sha256(model_bytes).hexdigest()
+            
+            timestamp = datetime.now().strftime('%Y-%m-%dT%H-%M-%S')
+            
+            versioned_key = self._get_versioned_s3_key(brand_id, segment_id, timestamp)
+            latest_key = self._get_s3_key(brand_id, segment_id)
+            
+            if metadata is None:
+                metadata = {}
+            metadata['model_hash'] = model_hash
+            metadata['version_timestamp'] = timestamp
+            metadata['s3_versioned_key'] = versioned_key
+            
+            metadata_bytes = json.dumps(metadata, indent=2).encode('utf-8')
+            
+            logger.info(f"Saving versioned model to S3: s3://{self.bucket}/{versioned_key}")
             self.s3_client.put_object(
                 Bucket=self.bucket,
-                Key=s3_key,
+                Key=versioned_key,
                 Body=model_bytes,
                 ContentType='application/octet-stream',
             )
-
-            # Upload metadata if provided
-            if metadata:
-                import json
-                metadata_bytes = json.dumps(metadata, indent=2).encode('utf-8')
-                self.s3_client.put_object(
-                    Bucket=self.bucket,
-                    Key=metadata_key,
-                    Body=metadata_bytes,
-                    ContentType='application/json',
-                )
+            
+            versioned_metadata_key = versioned_key.replace('.pkl', '_metadata.json')
+            self.s3_client.put_object(
+                Bucket=self.bucket,
+                Key=versioned_metadata_key,
+                Body=metadata_bytes,
+                ContentType='application/json',
+            )
+            
+            logger.info(f"Updating latest model pointer: s3://{self.bucket}/{latest_key}")
+            self.s3_client.put_object(
+                Bucket=self.bucket,
+                Key=latest_key,
+                Body=model_bytes,
+                ContentType='application/octet-stream',
+            )
+            
+            latest_metadata_key = latest_key.replace('.pkl', '_metadata.json')
+            self.s3_client.put_object(
+                Bucket=self.bucket,
+                Key=latest_metadata_key,
+                Body=metadata_bytes,
+                ContentType='application/json',
+            )
 
             # Save to local cache
             local_path = self._get_local_cache_path(brand_id, segment_id)
@@ -154,7 +183,7 @@ class MLModelManager:
             cache_key = self._get_cache_key(brand_id, segment_id)
             cache.set(cache_key, model, LOCAL_CACHE_TTL_SECONDS)
 
-            logger.info(f"Model saved successfully for brand={brand_id}, segment={segment_id}")
+            logger.info(f"Model saved successfully: brand={brand_id}, segment={segment_id}, version={timestamp}, hash={model_hash[:8]}...")
             return True
 
         except Exception as e:
@@ -219,7 +248,13 @@ class MLModelManager:
         return os.path.join(LOCAL_CACHE_DIR, filename)
 
     def _get_s3_key(self, brand_id: int, segment_id: Optional[str]) -> str:
-        """Generate S3 object key"""
+        """Generate S3 object key for latest model"""
         if segment_id:
             return f"{self.prefix}/brand_{brand_id}/{segment_id}/failure_predictor_latest.pkl"
         return f"{self.prefix}/brand_{brand_id}/failure_predictor_latest.pkl"
+    
+    def _get_versioned_s3_key(self, brand_id: int, segment_id: Optional[str], timestamp: str) -> str:
+        """Generate versioned S3 object key with timestamp"""
+        if segment_id:
+            return f"{self.prefix}/brand_{brand_id}/{segment_id}/versions/failure_predictor_{timestamp}.pkl"
+        return f"{self.prefix}/brand_{brand_id}/versions/failure_predictor_{timestamp}.pkl"
