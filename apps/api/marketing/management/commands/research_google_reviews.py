@@ -85,7 +85,17 @@ class Command(BaseCommand):
             self.stdout.write(self.style.SUCCESS(f'\n✓ Data saved to {options["output"]}'))
 
     def fetch_reviews_google_places(self, business_name, location, api_key, max_reviews):
-        """Fetch reviews using Google Places API"""
+        """
+        Fetch reviews using Google Places API
+
+        Returns:
+            dict: {
+                'reviews': list of formatted reviews,
+                'place_id': Google Place ID for direct Maps navigation,
+                'business_info': dict with name, address, rating, total_reviews
+            }
+            or None if failed
+        """
         self.stdout.write(f'Searching for "{business_name}"...')
 
         # Step 1: Find the place
@@ -117,6 +127,7 @@ class Command(BaseCommand):
             self.stdout.write(self.style.SUCCESS(f'✓ Found: {place["name"]}'))
             self.stdout.write(f'  Address: {place.get("formatted_address", "N/A")}')
             self.stdout.write(f'  Rating: {place.get("rating", "N/A")} ({place.get("user_ratings_total", 0)} reviews)')
+            self.stdout.write(f'  Place ID: {place_id}')
 
             # Step 2: Fetch place details including reviews
             details_url = 'https://maps.googleapis.com/maps/api/place/details/json'
@@ -135,7 +146,8 @@ class Command(BaseCommand):
                 self.stdout.write(self.style.WARNING(f'Details status: {details_data.get("status")}'))
                 return None
 
-            reviews = details_data['result'].get('reviews', [])[:max_reviews]
+            result = details_data['result']
+            reviews = result.get('reviews', [])[:max_reviews]
 
             self.stdout.write(self.style.SUCCESS(f'✓ Fetched {len(reviews)} reviews'))
 
@@ -150,7 +162,17 @@ class Command(BaseCommand):
                     'timestamp': review.get('time', 0)
                 })
 
-            return formatted_reviews
+            # Return reviews + place_id + business info for hybrid scraping
+            return {
+                'reviews': formatted_reviews,
+                'place_id': place_id,
+                'business_info': {
+                    'name': result.get('name', place['name']),
+                    'address': result.get('formatted_address', place.get('formatted_address', '')),
+                    'rating': result.get('rating', place.get('rating', 0)),
+                    'total_reviews': result.get('user_ratings_total', place.get('user_ratings_total', 0))
+                }
+            }
 
         except requests.exceptions.RequestException as e:
             self.stdout.write(self.style.ERROR(f'API Error: {str(e)}'))

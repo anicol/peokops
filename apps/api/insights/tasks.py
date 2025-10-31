@@ -154,8 +154,14 @@ def process_review_analysis(self, analysis_id):
             thread = threading.Thread(target=_update)
             thread.start()
 
-        # Rate limiting: Check scrape attempts in the past hour
-        # If more than 10, skip web scraping and use API fallback to avoid bot detection
+        # HYBRID APPROACH: Use Google Places API to get place_id, then scrape with it
+        # This gives us: reliable business finding (API) + unlimited reviews (scraping)
+
+        place_id = None
+        api_reviews = None
+        business_info_from_api = None
+
+        # Step 1: Try Google Places API to get place_id (always, unless rate limited)
         one_hour_ago = timezone.now() - timedelta(hours=1)
         recent_scrapes = ReviewAnalysis.objects.filter(
             created_at__gte=one_hour_ago,
@@ -164,77 +170,101 @@ def process_review_analysis(self, analysis_id):
 
         skip_web_scraping = recent_scrapes > 10
         if skip_web_scraping:
-            logger.info(f"Rate limit reached ({recent_scrapes} scrapes in past hour). Skipping web scraping, using API fallback.")
-            scraped_data = None  # Force API fallback
+            logger.info(f"Rate limit reached ({recent_scrapes} scrapes in past hour). Will use API-only mode.")
         else:
-            logger.info(f"Rate limit OK ({recent_scrapes}/10 scrapes in past hour). Proceeding with web scraping.")
+            logger.info(f"Rate limit OK ({recent_scrapes}/10 scrapes in past hour). Using hybrid mode (API + scraping).")
 
         try:
-            # Note: We already added delays with engaging messages above
-            # to avoid rate limiting and keep users entertained
+            from django.conf import settings
+            api_key = getattr(settings, 'GOOGLE_PLACES_API_KEY', None)
 
-            if skip_web_scraping:
-                # Skip web scraping due to rate limit
-                scraped_data = None
+            if api_key:
+                logger.info("Using Google Places API to find business and get place_id...")
+                analysis.progress_message = '🔍 Finding business with Google Places API...'
+                analysis.progress_percentage = 15
+                analysis.save()
+
+                analyzer = AnalyzerCommand()
+                analyzer.stdout = MockStdout()
+
+                api_result = analyzer.fetch_reviews_google_places(
+                    business_name=analysis.business_name,
+                    location=analysis.location,
+                    api_key=api_key,
+                    max_reviews=50
+                )
+
+                if api_result:
+                    place_id = api_result.get('place_id')
+                    api_reviews = api_result.get('reviews', [])
+                    business_info_from_api = api_result.get('business_info', {})
+                    logger.info(f"✓ Found business via API. Place ID: {place_id}, {len(api_reviews)} reviews from API")
+                else:
+                    logger.warning("Google Places API did not find the business")
             else:
+                logger.info("GOOGLE_PLACES_API_KEY not configured, skipping API lookup")
+        except Exception as api_error:
+            logger.error(f"Google Places API error: {str(api_error)}", exc_info=True)
+
+        # Step 2: Try web scraping (with place_id if we got it, or skip if rate limited)
+        scraped_data = None
+
+        try:
+            if skip_web_scraping:
+                logger.info("Skipping web scraping due to rate limit. Using API reviews only.")
+                # Use API reviews as the only source
+                if api_reviews and business_info_from_api:
+                    scraped_data = {
+                        'business_name': business_info_from_api.get('name', analysis.business_name),
+                        'location': business_info_from_api.get('address', analysis.location),
+                        'business_info': business_info_from_api,
+                        'reviews': api_reviews,
+                        'source': 'google_places_api',
+                        'place_id': place_id
+                    }
+            else:
+                # Try web scraping (with place_id for direct navigation if available)
+                logger.info(f"Starting web scraping{' with place_id' if place_id else ' without place_id'}...")
+                analysis.progress_message = f'🌐 Scraping reviews from Google Maps{" (direct navigation)" if place_id else ""}...'
+                analysis.progress_percentage = 20
+                analysis.save()
+
                 scraped_data = scraper.scrape_reviews(
                     business_name=analysis.business_name,
                     location=analysis.location,
                     max_reviews=200,  # Try for 200, gracefully return what we get
                     headless=True,
                     progress_callback=update_progress,
-                    place_id=analysis.place_id if hasattr(analysis, 'place_id') and analysis.place_id else None
+                    place_id=place_id  # Use place_id from API for direct navigation
                 )
 
-            logger.info(f"Scraper returned: {type(scraped_data)}")
-            if scraped_data:
-                logger.info(f"Business found: {scraped_data.get('business_info', {}).get('name', 'Unknown')}")
-                logger.info(f"Reviews scraped: {len(scraped_data.get('reviews', []))}")
+                if scraped_data:
+                    logger.info(f"✓ Web scraping successful: {len(scraped_data.get('reviews', []))} reviews")
+                    scraped_data['source'] = 'web_scraping_with_place_id' if place_id else 'web_scraping'
+                    scraped_data['place_id'] = place_id
+                else:
+                    logger.warning("Web scraping returned no data")
 
         except Exception as e:
             logger.error(f"Scraping exception for {analysis_id}: {str(e)}", exc_info=True)
-            scraped_data = None  # Will try API fallback below
+            scraped_data = None
 
-        # If web scraping failed, try Google Places API as fallback
+        # Step 3: Fallback to API reviews if web scraping failed
         if not scraped_data or not scraped_data.get('reviews'):
-            logger.info("Web scraping failed or returned no reviews, trying Google Places API fallback")
-            analysis.progress_message = '🔄 Trying alternative method (Google Places API)...'
-            analysis.progress_percentage = 20
-            analysis.save()
+            logger.info("Web scraping failed or returned no reviews")
 
-            try:
-                from django.conf import settings
-                api_key = getattr(settings, 'GOOGLE_PLACES_API_KEY', None)
-
-                if api_key:
-                    analyzer = AnalyzerCommand()
-                    analyzer.stdout = MockStdout()
-
-                    reviews = analyzer.fetch_reviews_google_places(
-                        business_name=analysis.business_name,
-                        location=analysis.location,
-                        api_key=api_key,
-                        max_reviews=50
-                    )
-
-                    if reviews:
-                        scraped_data = {
-                            'business_name': analysis.business_name,
-                            'location': analysis.location,
-                            'business_info': {
-                                'name': analysis.business_name,
-                                'rating': reviews[0].get('rating', 0) if reviews else 0,
-                                'total_reviews': len(reviews),
-                                'address': analysis.location
-                            },
-                            'reviews': reviews,
-                            'source': 'google_places_api'
-                        }
-                        logger.info(f"Google Places API fallback successful: {len(reviews)} reviews")
-                else:
-                    logger.warning("GOOGLE_PLACES_API_KEY not configured, cannot use fallback")
-            except Exception as api_error:
-                logger.error(f"Google Places API fallback also failed: {str(api_error)}")
+            if api_reviews and business_info_from_api:
+                logger.info(f"Using API reviews as fallback ({len(api_reviews)} reviews)")
+                scraped_data = {
+                    'business_name': business_info_from_api.get('name', analysis.business_name),
+                    'location': business_info_from_api.get('address', analysis.location),
+                    'business_info': business_info_from_api,
+                    'reviews': api_reviews,
+                    'source': 'google_places_api_fallback',
+                    'place_id': place_id
+                }
+            else:
+                logger.error("No reviews available from any source")
 
         # If both methods failed, mark as failed
         if not scraped_data:
