@@ -154,14 +154,14 @@ def process_review_analysis(self, analysis_id):
             thread = threading.Thread(target=_update)
             thread.start()
 
-        # HYBRID APPROACH: Use Google Places API to get place_id, then scrape with it
-        # This gives us: reliable business finding (API) + unlimited reviews (scraping)
+        # FAST RESULTS APPROACH: Show API results first (<60s), then enhance with scraping
+        # This gives us: fast initial results + comprehensive data from scraping
 
         place_id = None
         api_reviews = None
         business_info_from_api = None
 
-        # Step 1: Try Google Places API to get place_id (always, unless rate limited)
+        # Step 1: ALWAYS try Google Places API first (fast initial results)
         one_hour_ago = timezone.now() - timedelta(hours=1)
         recent_scrapes = ReviewAnalysis.objects.filter(
             created_at__gte=one_hour_ago,
@@ -172,15 +172,15 @@ def process_review_analysis(self, analysis_id):
         if skip_web_scraping:
             logger.info(f"Rate limit reached ({recent_scrapes} scrapes in past hour). Will use API-only mode.")
         else:
-            logger.info(f"Rate limit OK ({recent_scrapes}/10 scrapes in past hour). Using hybrid mode (API + scraping).")
+            logger.info(f"Rate limit OK ({recent_scrapes}/10 scrapes in past hour). Using fast results mode (API first, then scraping).")
 
         try:
             from django.conf import settings
             api_key = getattr(settings, 'GOOGLE_PLACES_API_KEY', None)
 
             if api_key:
-                logger.info("Using Google Places API to find business and get place_id...")
-                analysis.progress_message = '🔍 Finding business with Google Places API...'
+                logger.info("Using Google Places API to find business and get initial reviews...")
+                analysis.progress_message = '🔍 Finding your business...'
                 analysis.progress_percentage = 15
                 analysis.save()
 
@@ -191,14 +191,40 @@ def process_review_analysis(self, analysis_id):
                     business_name=analysis.business_name,
                     location=analysis.location,
                     api_key=api_key,
-                    max_reviews=50
+                    max_reviews=5  # Just 5 for fast results
                 )
 
                 if api_result:
                     place_id = api_result.get('place_id')
                     api_reviews = api_result.get('reviews', [])
                     business_info_from_api = api_result.get('business_info', {})
-                    logger.info(f"✓ Found business via API. Place ID: {place_id}, {len(api_reviews)} reviews from API")
+                    logger.info(f"✓ Found business via API. Place ID: {place_id}, {len(api_reviews)} initial reviews")
+
+                    # SHOW FAST RESULTS: Save initial analysis with API reviews immediately
+                    if api_reviews and business_info_from_api:
+                        logger.info(f"Showing fast results with {len(api_reviews)} reviews...")
+                        analysis.progress_message = f'✅ Found {business_info_from_api.get("name")}! Analyzing initial reviews...'
+                        analysis.progress_percentage = 25
+                        analysis.google_rating = business_info_from_api.get('rating', 0)
+                        analysis.google_address = business_info_from_api.get('address', '')
+                        analysis.total_reviews_found = business_info_from_api.get('total_reviews', 0)
+                        analysis.reviews_analyzed = len(api_reviews)
+
+                        # Save initial scraped data with API reviews
+                        oldest_date, newest_date = extract_review_date_range(api_reviews)
+                        analysis.oldest_review_date = oldest_date
+                        analysis.newest_review_date = newest_date
+                        analysis.scraped_data = {
+                            'business_name': business_info_from_api.get('name', analysis.business_name),
+                            'location': business_info_from_api.get('address', analysis.location),
+                            'business_info': business_info_from_api,
+                            'reviews': api_reviews,
+                            'source': 'google_places_api_initial',
+                            'place_id': place_id,
+                            'is_partial': True  # Flag to indicate more reviews coming
+                        }
+                        analysis.save()
+                        logger.info("✓ Initial results saved, user can see them now")
                 else:
                     logger.warning("Google Places API did not find the business")
             else:
@@ -206,65 +232,74 @@ def process_review_analysis(self, analysis_id):
         except Exception as api_error:
             logger.error(f"Google Places API error: {str(api_error)}", exc_info=True)
 
-        # Step 2: Try web scraping (with place_id if we got it, or skip if rate limited)
-        scraped_data = None
+        # Step 2: Continue with web scraping to get more reviews (if not rate limited)
+        scraped_reviews = []
 
-        try:
-            if skip_web_scraping:
-                logger.info("Skipping web scraping due to rate limit. Using API reviews only.")
-                # Use API reviews as the only source
-                if api_reviews and business_info_from_api:
-                    scraped_data = {
-                        'business_name': business_info_from_api.get('name', analysis.business_name),
-                        'location': business_info_from_api.get('address', analysis.location),
-                        'business_info': business_info_from_api,
-                        'reviews': api_reviews,
-                        'source': 'google_places_api',
-                        'place_id': place_id
-                    }
-            else:
-                # Try web scraping (with place_id for direct navigation if available)
-                logger.info(f"Starting web scraping{' with place_id' if place_id else ' without place_id'}...")
-                analysis.progress_message = f'🌐 Scraping reviews from Google Maps{" (direct navigation)" if place_id else ""}...'
-                analysis.progress_percentage = 20
+        if not skip_web_scraping and place_id:
+            try:
+                # Try web scraping (with place_id for direct navigation)
+                logger.info(f"Starting web scraping to get more reviews (user already seeing {len(api_reviews) if api_reviews else 0} initial reviews)...")
+                analysis.progress_message = f'🌐 Loading more reviews from Google Maps...'
+                analysis.progress_percentage = 30
                 analysis.save()
 
                 scraped_data = scraper.scrape_reviews(
                     business_name=analysis.business_name,
                     location=analysis.location,
-                    max_reviews=200,  # Try for 200, gracefully return what we get
+                    max_reviews=200,  # Try for 200 more reviews
                     headless=True,
                     progress_callback=update_progress,
                     place_id=place_id  # Use place_id from API for direct navigation
                 )
 
-                if scraped_data:
-                    logger.info(f"✓ Web scraping successful: {len(scraped_data.get('reviews', []))} reviews")
-                    scraped_data['source'] = 'web_scraping_with_place_id' if place_id else 'web_scraping'
-                    scraped_data['place_id'] = place_id
+                if scraped_data and scraped_data.get('reviews'):
+                    scraped_reviews = scraped_data.get('reviews', [])
+                    logger.info(f"✓ Web scraping successful: {len(scraped_reviews)} additional reviews")
                 else:
-                    logger.warning("Web scraping returned no data")
+                    logger.warning("Web scraping returned no additional reviews")
 
-        except Exception as e:
-            logger.error(f"Scraping exception for {analysis_id}: {str(e)}", exc_info=True)
+            except Exception as e:
+                logger.error(f"Scraping exception for {analysis_id}: {str(e)}", exc_info=True)
+
+        # Step 3: Merge API and scraped reviews (avoiding duplicates)
+        final_reviews = []
+        if api_reviews:
+            final_reviews.extend(api_reviews)
+            logger.info(f"Starting with {len(api_reviews)} API reviews")
+
+        if scraped_reviews:
+            # Deduplicate by comparing author + text + rating (simple deduplication)
+            existing_review_keys = {
+                (r.get('author', ''), r.get('text', '')[:100], r.get('rating', 0))
+                for r in final_reviews
+            }
+
+            added_count = 0
+            for review in scraped_reviews:
+                review_key = (review.get('author', ''), review.get('text', '')[:100], review.get('rating', 0))
+                if review_key not in existing_review_keys:
+                    final_reviews.append(review)
+                    existing_review_keys.add(review_key)
+                    added_count += 1
+
+            logger.info(f"Added {added_count} unique reviews from scraping ({len(scraped_reviews) - added_count} duplicates filtered)")
+
+        # Determine final data source
+        if not final_reviews:
+            logger.error("No reviews available from any source")
             scraped_data = None
-
-        # Step 3: Fallback to API reviews if web scraping failed
-        if not scraped_data or not scraped_data.get('reviews'):
-            logger.info("Web scraping failed or returned no reviews")
-
-            if api_reviews and business_info_from_api:
-                logger.info(f"Using API reviews as fallback ({len(api_reviews)} reviews)")
-                scraped_data = {
-                    'business_name': business_info_from_api.get('name', analysis.business_name),
-                    'location': business_info_from_api.get('address', analysis.location),
-                    'business_info': business_info_from_api,
-                    'reviews': api_reviews,
-                    'source': 'google_places_api_fallback',
-                    'place_id': place_id
-                }
-            else:
-                logger.error("No reviews available from any source")
+        else:
+            # Build final scraped_data with merged reviews
+            scraped_data = {
+                'business_name': business_info_from_api.get('name', analysis.business_name) if business_info_from_api else analysis.business_name,
+                'location': business_info_from_api.get('address', analysis.location) if business_info_from_api else analysis.location,
+                'business_info': business_info_from_api or {},
+                'reviews': final_reviews,
+                'source': f'api_and_scraping_{len(final_reviews)}reviews' if scraped_reviews else 'google_places_api_only',
+                'place_id': place_id,
+                'is_partial': False  # Now complete
+            }
+            logger.info(f"✓ Final dataset: {len(final_reviews)} total reviews ({len(api_reviews or [])} from API, {len(scraped_reviews)} from scraping)")
 
         # If both methods failed, mark as failed
         if not scraped_data:
