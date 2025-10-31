@@ -35,7 +35,7 @@ export function TrialFooter() {
 
           {/* Right side - Upgrade CTA */}
           <button
-            onClick={() => navigate('/stores')}
+            onClick={() => navigate('/checkout')}
             className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
           >
             <Zap className="w-4 h-4" />
