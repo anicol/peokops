@@ -39,9 +39,9 @@ export default function HomePage() {
 
             {/* Subhead */}
             <p className="text-xl md:text-2xl text-blue-50 mb-10 leading-relaxed font-light max-w-3xl">
-              PeakOps helps every location stay on standard through three quick micro-checks a day. No apps. No logins. No stress.
+              PeakOps turns guest feedback, employee sentiment, and simple daily checks into a continuous improvement loop that keeps every store on standard. Automatically.
               <br /><br />
-              AI behind the scenes analyzes photos, predicts issues, and personalizes what's next so habits form effortlessly.
+              No apps. No logins. No stress.
             </p>
 
             {/* CTAs */}
@@ -50,7 +50,7 @@ export default function HomePage() {
                 href={TRIAL_SIGNUP_URL}
                 className="px-8 py-4 bg-teal-500 text-white rounded-lg hover:bg-teal-400 transition-all font-semibold text-lg shadow-xl hover:shadow-2xl hover:scale-105 transform duration-200"
               >
-                Start Free Trial
+                Try 3 Checks Free
               </a>
               <Link
                 href="/demo"
@@ -104,7 +104,7 @@ export default function HomePage() {
                   <span className="text-teal-300 text-sm lg:text-base font-semibold">→ Get insights in 60 seconds</span>
                 </h3>
                 <p className="text-blue-50 text-sm lg:text-base mb-2 leading-relaxed max-w-3xl">
-                  Instantly see what guests are saying across your locations. Get a personalized report with top 3 improvement opportunities — no signup required.
+                  Instantly see what guests are saying across your locations. Get a personalized report with top 3 improvement opportunities. No signup required.
                 </p>
               </div>
 
@@ -176,23 +176,18 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* Three AI Agents */}
-      <section className="py-24 bg-gradient-to-b from-gray-50 to-gray-100 relative overflow-hidden">
-        {/* Subtle background pattern */}
-        <div
-          className="absolute inset-0 opacity-[0.03]"
-          style={{
-            backgroundImage: 'url("data:image/svg+xml,%3Csvg width="60" height="60" viewBox="0 0 60 60" xmlns="http://www.w3.org/2000/svg"%3E%3Cg fill="none" fill-rule="evenodd"%3E%3Cg fill="%23000000" fill-opacity="1"%3E%3Cpath d="M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z"/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")',
-          }}
-        ></div>
+      {/* How PeakOps Builds Habits - Intro */}
+      <section className="py-24 bg-gradient-to-br from-blue-50 via-teal-50/30 to-white relative overflow-hidden">
+        {/* Subtle background accent */}
+        <div className="absolute inset-0 bg-gradient-to-b from-transparent to-white/80"></div>
 
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="mb-20 max-w-5xl mx-auto">
+          <div className="max-w-5xl mx-auto">
             {/* Title with icon accent - Centered */}
             <div className="flex items-center justify-center gap-6 mb-6">
               <div className="hidden md:block w-8 h-8 bg-blue-600 rounded-lg transform rotate-45 opacity-20"></div>
               <h2 className="text-3xl md:text-4xl font-bold text-gray-900 tracking-tight text-center">
-                How PeakOps Turns Daily Actions<br />Into Consistent Operations
+                How PeakOps Builds Habits That Stick
               </h2>
               <div className="hidden md:block w-8 h-8 bg-blue-600 rounded-lg transform rotate-45 opacity-20"></div>
             </div>
@@ -203,57 +198,56 @@ export default function HomePage() {
             {/* Intro paragraphs - Left-aligned with max width */}
             <div className="max-w-[640px] mx-auto space-y-4">
               <p className="text-lg md:text-xl text-gray-700 leading-relaxed text-left">
-                PeakOps builds consistency the same way great teams do: through simple, repeatable habits that add up over time.
+                Forget forms and static checklists. PeakOps helps managers develop small, repeatable routines guided by real feedback and reinforced by AI.
               </p>
               <p className="text-lg md:text-xl text-gray-700 leading-relaxed text-left">
-                Instead of one big audit day, PeakOps creates a daily rhythm of improvement through three connected agents, each reinforcing the next. Together, they form a continuous improvement loop that transforms everyday actions into lasting excellence.
+                Every day, managers get 3 quick micro-checks that:
+              </p>
+              <ul className="space-y-2 text-lg md:text-xl text-gray-700 leading-relaxed ml-8">
+                <li className="flex items-start">
+                  <CheckCircle className="w-6 h-6 text-teal-600 mr-3 mt-1 flex-shrink-0" />
+                  <span>Reinforce brand standards</span>
+                </li>
+                <li className="flex items-start">
+                  <CheckCircle className="w-6 h-6 text-teal-600 mr-3 mt-1 flex-shrink-0" />
+                  <span>Take under 2 minutes to complete</span>
+                </li>
+                <li className="flex items-start">
+                  <CheckCircle className="w-6 h-6 text-teal-600 mr-3 mt-1 flex-shrink-0" />
+                  <span>Build streaks and track improvement over time</span>
+                </li>
+              </ul>
+              <p className="text-lg md:text-xl text-gray-700 leading-relaxed text-left">
+                Over time, these add up to visible, measurable consistency.
               </p>
             </div>
           </div>
+        </div>
+      </section>
 
+      {/* Three Feature Cards */}
+      <section className="py-24 bg-gradient-to-b from-gray-50 to-white">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           {/* Flowing gradient ribbon behind cards */}
-          <div className="relative max-w-6xl mx-auto mb-16">
+          <div className="relative max-w-6xl mx-auto">
             <div className="hidden md:block absolute top-1/2 left-0 right-0 h-32 -translate-y-1/2 pointer-events-none">
               <div className="absolute inset-0 bg-gradient-to-r from-teal-500/10 via-orange-500/10 to-blue-500/10 rounded-full blur-3xl"></div>
             </div>
 
             <div className="relative grid md:grid-cols-3 gap-8">
-              {/* The Guide - Raised */}
+              {/* Daily Habits - Raised */}
               <div className="md:-mt-3 relative bg-gradient-to-br from-teal-50/40 via-white to-white p-8 rounded-2xl shadow-lg border-l-4 border-teal-600 hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 flex flex-col group overflow-hidden">
               <div className="text-center mb-6">
                 <div className="w-20 h-20 bg-gradient-to-br from-teal-100 to-teal-50 rounded-full flex items-center justify-center mx-auto mb-6 shadow-md group-hover:shadow-lg group-hover:scale-105 transition-all duration-300">
                   <Compass className="w-10 h-10 text-teal-600" />
                 </div>
                 <h3 className="text-3xl font-extrabold text-gray-900 mb-2 tracking-tighter">
-                  The Guide
+                  Daily Habits
                 </h3>
-                <p className="text-sm font-semibold text-teal-600 mb-3">
-                  AI Habit & Consistency Agent
-                </p>
-                <p className="text-gray-600 leading-relaxed mb-4 text-base">
-                  Build excellence one habit at a time.
-                </p>
-                <p className="text-gray-700 text-sm mb-4 leading-relaxed opacity-85" style={{ lineHeight: '1.7' }}>
-                  The Guide delivers "Today's 3": short, frictionless micro-checks that managers can complete in under two minutes. Each check reinforces standards, builds accountability, and keeps the team aligned without adding another system to manage.
+                <p className="text-gray-700 text-base mb-4 leading-relaxed" style={{ lineHeight: '1.7' }}>
+                  3 rotating checks sent daily via text. No app needed. Keeps stores inspection-ready, every day.
                 </p>
               </div>
-              <ul className="space-y-4 mb-6">
-                <li className="flex items-center">
-                  <CheckCircle className="w-6 h-6 text-teal-600 mr-3 flex-shrink-0" />
-                  <span className="text-gray-700 opacity-85">Three micro-checks a day (no apps, no logins)</span>
-                </li>
-                <li className="flex items-center">
-                  <CheckCircle className="w-6 h-6 text-teal-600 mr-3 flex-shrink-0" />
-                  <span className="text-gray-700 opacity-85">Reinforces habits across shifts and managers</span>
-                </li>
-                <li className="flex items-center">
-                  <CheckCircle className="w-6 h-6 text-teal-600 mr-3 flex-shrink-0" />
-                  <span className="text-gray-700 opacity-85">Keeps every store inspection-ready, every day</span>
-                </li>
-              </ul>
-              <p className="text-center text-base italic text-gray-600 mb-4 font-serif">
-                "Start small. Stay consistent."
-              </p>
               <div className="mt-auto">
                 <Link
                   href="/coaching-mode"
@@ -264,42 +258,19 @@ export default function HomePage() {
               </div>
             </div>
 
-            {/* The Coach - Centered (no offset) */}
+            {/* Instant Coaching - Centered (no offset) */}
             <div className="relative bg-gradient-to-br from-orange-50/40 via-white to-white p-8 rounded-2xl shadow-lg border-l-4 border-orange-600 hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 flex flex-col group overflow-hidden">
               <div className="text-center mb-6">
                 <div className="w-20 h-20 bg-gradient-to-br from-orange-100 to-orange-50 rounded-full flex items-center justify-center mx-auto mb-6 shadow-md group-hover:shadow-lg group-hover:scale-105 transition-all duration-300">
                   <Brain className="w-10 h-10 text-orange-600" />
                 </div>
                 <h3 className="text-3xl font-extrabold text-gray-900 mb-2 tracking-tighter">
-                  The Coach
+                  Instant Coaching
                 </h3>
-                <p className="text-sm font-semibold text-orange-600 mb-3">
-                  AI Feedback & Confidence Agent
-                </p>
-                <p className="text-gray-600 leading-relaxed mb-4 text-base">
-                  Once daily habits are in place, The Coach helps managers grow with private, encouraging feedback.
-                </p>
-                <p className="text-gray-700 text-sm mb-4 leading-relaxed opacity-85" style={{ lineHeight: '1.7' }}>
-                  Managers record short walkthroughs; AI instantly highlights wins and small fixes, helping them stay confident and ready before audits or visits ever happen.
+                <p className="text-gray-700 text-base mb-4 leading-relaxed" style={{ lineHeight: '1.7' }}>
+                  Optional short videos or photos get instant AI feedback. Encouraging, actionable, and private.
                 </p>
               </div>
-              <ul className="space-y-4 mb-6">
-                <li className="flex items-center">
-                  <CheckCircle className="w-6 h-6 text-orange-600 mr-3 flex-shrink-0" />
-                  <span className="text-gray-700 opacity-85">Instant, private AI feedback in minutes</span>
-                </li>
-                <li className="flex items-center">
-                  <CheckCircle className="w-6 h-6 text-orange-600 mr-3 flex-shrink-0" />
-                  <span className="text-gray-700 opacity-85">Videos are deleted after analysis (privacy first)</span>
-                </li>
-                <li className="flex items-center">
-                  <CheckCircle className="w-6 h-6 text-orange-600 mr-3 flex-shrink-0" />
-                  <span className="text-gray-700 opacity-85">Builds confidence through coaching, not criticism</span>
-                </li>
-              </ul>
-              <p className="text-center text-base italic text-gray-600 mb-4 font-serif">
-                "AI that helps you shine, not get watched."
-              </p>
               <div className="mt-auto">
                 <Link
                   href="/coaching-mode"
@@ -310,42 +281,19 @@ export default function HomePage() {
               </div>
             </div>
 
-            {/* The Inspector - Raised */}
+            {/* Brand Visibility - Raised */}
             <div className="md:-mt-3 relative bg-gradient-to-br from-blue-50/40 via-white to-white p-8 rounded-2xl shadow-lg border-l-4 border-blue-600 hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 flex flex-col group overflow-hidden">
               <div className="text-center mb-6">
                 <div className="w-20 h-20 bg-gradient-to-br from-blue-100 to-blue-50 rounded-full flex items-center justify-center mx-auto mb-6 shadow-md group-hover:shadow-lg group-hover:scale-105 transition-all duration-300">
                   <Search className="w-10 h-10 text-blue-600" />
                 </div>
                 <h3 className="text-3xl font-extrabold text-gray-900 mb-2 tracking-tighter">
-                  The Inspector
+                  Brand Visibility
                 </h3>
-                <p className="text-sm font-semibold text-blue-600 mb-3">
-                  AI Visibility & Insight Agent
-                </p>
-                <p className="text-gray-600 leading-relaxed mb-4 text-base">
-                  For larger brands, The Inspector extends those same habits across hundreds of stores.
-                </p>
-                <p className="text-gray-700 text-sm mb-4 leading-relaxed opacity-85" style={{ lineHeight: '1.7' }}>
-                  It analyzes video and check data to create clear, objective insights so leadership can see progress, not just problems.
+                <p className="text-gray-700 text-base mb-4 leading-relaxed" style={{ lineHeight: '1.7' }}>
+                  Roll-up dashboards give multi-unit leaders visibility without constant travel. See progress, not just problems.
                 </p>
               </div>
-              <ul className="space-y-4 mb-6">
-                <li className="flex items-center">
-                  <CheckCircle className="w-6 h-6 text-blue-600 mr-3 flex-shrink-0" />
-                  <span className="text-gray-700 opacity-85">Enterprise visibility without endless travel</span>
-                </li>
-                <li className="flex items-center">
-                  <CheckCircle className="w-6 h-6 text-blue-600 mr-3 flex-shrink-0" />
-                  <span className="text-gray-700 opacity-85">Objective, consistent measurement</span>
-                </li>
-                <li className="flex items-center">
-                  <CheckCircle className="w-6 h-6 text-blue-600 mr-3 flex-shrink-0" />
-                  <span className="text-gray-700 opacity-85">Actionable dashboards for brand-wide improvement</span>
-                </li>
-              </ul>
-              <p className="text-center text-base italic text-gray-600 mb-4 font-serif">
-                "Scale consistency, not travel."
-              </p>
               <div className="mt-auto">
                 <Link
                   href="/enterprise"
@@ -357,71 +305,66 @@ export default function HomePage() {
             </div>
           </div>
           </div>
+        </div>
+      </section>
 
+      {/* Habit Loop Table */}
+      <section className="py-24 bg-gradient-to-br from-blue-50 via-teal-50/30 to-white relative overflow-hidden">
+        {/* Subtle background accent */}
+        <div className="absolute inset-0 bg-gradient-to-b from-transparent to-white/80"></div>
+
+        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           {/* Continuous Improvement Loop */}
-          <div className="relative bg-gradient-to-b from-white via-gray-50/50 to-white p-10 rounded-2xl shadow-xl border border-gray-100 max-w-4xl mx-auto">
+          <div className="relative bg-white p-10 rounded-2xl shadow-xl border border-gray-100 max-w-4xl mx-auto">
             {/* Soft gradient divider at top */}
-            <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-transparent via-gray-300/30 to-transparent rounded-t-2xl"></div>
+            <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-transparent via-blue-600/30 to-transparent rounded-t-2xl"></div>
 
             <h3 className="text-2xl md:text-3xl font-bold text-gray-900 mb-8 text-center">
-              Together, They Create the Continuous Improvement Loop
+              The Habit Loop That Drives Performance
             </h3>
             <div className="overflow-x-auto">
               <table className="w-full">
                 <thead>
                   <tr className="border-b-2 border-gray-300">
                     <th className="text-left py-4 px-6 text-gray-900 font-bold text-base">Frequency</th>
-                    <th className="text-left py-4 px-6 text-gray-900 font-bold text-base">Agent</th>
+                    <th className="text-left py-4 px-6 text-gray-900 font-bold text-base">Input</th>
                     <th className="text-left py-4 px-6 text-gray-900 font-bold text-base">Outcome</th>
                   </tr>
                 </thead>
                 <tbody>
                   <tr className="border-b border-gray-100 bg-gray-50 hover:bg-teal-50 transition-colors">
                     <td className="py-4 px-6 text-gray-700 font-medium">Daily</td>
-                    <td className="py-4 px-6 text-teal-600 font-semibold flex items-center gap-2">
-                      <Compass className="w-5 h-5" />
-                      The Guide
-                    </td>
-                    <td className="py-4 px-6 text-gray-700 font-medium">Builds Habits</td>
+                    <td className="py-4 px-6 text-gray-700 font-semibold">Micro-Checks</td>
+                    <td className="py-4 px-6 text-gray-700 font-medium">Habit Formation</td>
                   </tr>
                   <tr className="border-b border-gray-100 hover:bg-orange-50 transition-colors">
                     <td className="py-4 px-6 text-gray-700 font-medium">Weekly</td>
-                    <td className="py-4 px-6 text-orange-600 font-semibold flex items-center gap-2">
-                      <Brain className="w-5 h-5" />
-                      The Coach
-                    </td>
-                    <td className="py-4 px-6 text-gray-700 font-medium">Builds Confidence</td>
+                    <td className="py-4 px-6 text-gray-700 font-semibold">AI Feedback</td>
+                    <td className="py-4 px-6 text-gray-700 font-medium">Coaching & Confidence</td>
                   </tr>
                   <tr className="bg-gray-50 hover:bg-blue-50 transition-colors">
-                    <td className="py-4 px-6 text-gray-700 font-medium">Monthly / Quarterly</td>
-                    <td className="py-4 px-6 text-blue-600 font-semibold flex items-center gap-2">
-                      <Search className="w-5 h-5" />
-                      The Inspector
-                    </td>
-                    <td className="py-4 px-6 text-gray-700 font-medium">Builds Compliance</td>
+                    <td className="py-4 px-6 text-gray-700 font-medium">Monthly</td>
+                    <td className="py-4 px-6 text-gray-700 font-semibold">Dashboards & Fix Flow</td>
+                    <td className="py-4 px-6 text-gray-700 font-medium">Brand Visibility</td>
                   </tr>
                 </tbody>
               </table>
             </div>
             <p className="text-center text-lg text-gray-700 mt-8 leading-relaxed">
-              From daily habits to brand-wide excellence, PeakOps helps every team get a little better, every day.<br />
-              Start small with The Guide, grow with The Coach, and scale with The Inspector. One habit at a time.
+              PeakOps turns behavior into data, and data into consistent action.
             </p>
           </div>
         </div>
       </section>
 
       {/* How It Works */}
-      <section className="py-24 bg-white">
+      <section className="py-24 bg-gradient-to-b from-gray-50 to-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           {/* Header */}
           <div className="text-center mb-6">
             <h2 className="text-3xl md:text-5xl font-bold text-gray-900 mb-6 leading-tight">
-              From Capture to Confidence in Three Simple Steps
+              From Signal to Shift in Three Steps
             </h2>
-            <p className="text-xl text-gray-600 max-w-3xl mx-auto leading-relaxed">
-              PeakOps makes daily improvement effortless. In just a few moments a day, managers capture what's happening, get instant coaching, and build lasting habits of excellence.
-            </p>
           </div>
 
           {/* Steps Container */}
@@ -454,7 +397,7 @@ export default function HomePage() {
             </div>
 
             <div className="grid md:grid-cols-3 gap-12 lg:gap-8">
-              {/* Step 1 - Capture */}
+              {/* Step 1 - Listen */}
               <div className="relative flex">
                 <div className="bg-white rounded-2xl p-8 shadow-lg border border-gray-100 hover:shadow-xl transition-shadow duration-300 flex flex-col w-full">
                   {/* Icon */}
@@ -467,23 +410,11 @@ export default function HomePage() {
                   </div>
 
                   <h3 className="text-2xl font-bold text-gray-900 mb-3 text-center">
-                    1️⃣ Capture
+                    1️⃣ Listen
                   </h3>
 
-                  <p className="text-gray-700 text-center mb-4 leading-relaxed font-semibold">
-                    See your operation through fresh eyes.
-                  </p>
-
                   <p className="text-gray-600 text-center mb-4 leading-relaxed">
-                    Record a short walkthrough or complete your three micro-checks right from your phone.
-                  </p>
-
-                  <p className="text-gray-500 text-center mb-4 text-sm leading-relaxed">
-                    No logins. No setup. Just a simple moment of awareness that starts the day on the right foot.
-                  </p>
-
-                  <p className="text-sm text-gray-600 text-center italic font-medium">
-                    "Three checks. Two minutes. Every day on standard."
+                    Pull in guest reviews, team feedback, and check results. AI finds the patterns.
                   </p>
                 </div>
 
@@ -495,7 +426,7 @@ export default function HomePage() {
                 </div>
               </div>
 
-              {/* Step 2 - AI Analyzes */}
+              {/* Step 2 - Act */}
               <div className="relative flex">
                 <div className="bg-white rounded-2xl p-8 shadow-lg border border-gray-100 hover:shadow-xl transition-shadow duration-300 flex flex-col w-full">
                   {/* Icon with rotation animation */}
@@ -509,15 +440,11 @@ export default function HomePage() {
                   </div>
 
                   <h3 className="text-2xl font-bold text-gray-900 mb-3 text-center">
-                    2️⃣ Reflect & Respond (AI Feedback)
+                    2️⃣ Act
                   </h3>
 
                   <p className="text-gray-600 text-center mb-4 leading-relaxed">
-                    AI reviews what you capture in seconds, highlighting what's working and where to improve next. It's not another report to read. It's a quick reflection that helps you adjust before problems grow.
-                  </p>
-
-                  <p className="text-sm text-gray-600 text-center italic font-medium">
-                    Instant insights. Encouraging tone. Real progress.
+                    Managers get 3 focused checks a day, based on real operational signals.
                   </p>
                 </div>
 
@@ -546,16 +473,8 @@ export default function HomePage() {
                     3️⃣ Improve
                   </h3>
 
-                  <p className="text-gray-700 text-center mb-4 leading-relaxed font-semibold">
-                    Turn insights into action.
-                  </p>
-
                   <p className="text-gray-600 text-center mb-4 leading-relaxed">
-                    Your Fix Flow shows what to address, celebrates what's working, and tracks your streaks over time. Every check builds momentum, transforming daily actions into habits that stick.
-                  </p>
-
-                  <p className="text-sm text-gray-600 text-center italic font-medium">
-                    Each day adds up to consistency you can feel.
+                    Fix Flow tracks progress and builds momentum, one win at a time.
                   </p>
                 </div>
               </div>
@@ -565,15 +484,15 @@ export default function HomePage() {
       </section>
 
       {/* The Impact */}
-      <section className="py-20 bg-gray-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <section className="py-20 bg-gradient-to-br from-blue-50 via-teal-50/30 to-white relative overflow-hidden">
+        {/* Subtle background accent */}
+        <div className="absolute inset-0 bg-gradient-to-b from-transparent to-white/80"></div>
+
+        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-12">
             <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-6">
               The Impact
             </h2>
-            <p className="text-xl text-gray-600 max-w-3xl mx-auto leading-relaxed">
-              PeakOps replaces stress and scramble with steady progress. Managers feel calm and in control. Brands see consistency take root every day, across every store.
-            </p>
           </div>
 
           <div className="grid lg:grid-cols-2 gap-16 items-start">
@@ -587,19 +506,15 @@ export default function HomePage() {
                 <ul className="space-y-4">
                   <li className="flex items-start">
                     <CheckCircle className="w-6 h-6 text-teal-600 mr-3 mt-0.5 flex-shrink-0" />
-                    <span className="text-gray-700 text-lg">No more audit anxiety or surprise visits</span>
+                    <span className="text-gray-700 text-lg">Less anxiety, more control</span>
                   </li>
                   <li className="flex items-start">
                     <CheckCircle className="w-6 h-6 text-teal-600 mr-3 mt-0.5 flex-shrink-0" />
-                    <span className="text-gray-700 text-lg">Faster team alignment through small, daily wins</span>
+                    <span className="text-gray-700 text-lg">Encouraging feedback, not micromanagement</span>
                   </li>
                   <li className="flex items-start">
                     <CheckCircle className="w-6 h-6 text-teal-600 mr-3 mt-0.5 flex-shrink-0" />
-                    <span className="text-gray-700 text-lg">Clear direction and instant feedback that builds confidence</span>
-                  </li>
-                  <li className="flex items-start">
-                    <CheckCircle className="w-6 h-6 text-teal-600 mr-3 mt-0.5 flex-shrink-0" />
-                    <span className="text-gray-700 text-lg">A sense of calm knowing the store is "always ready"</span>
+                    <span className="text-gray-700 text-lg">Calm confidence every day</span>
                   </li>
                 </ul>
               </div>
@@ -612,28 +527,17 @@ export default function HomePage() {
                 <ul className="space-y-4">
                   <li className="flex items-start">
                     <CheckCircle className="w-6 h-6 text-blue-600 mr-3 mt-0.5 flex-shrink-0" />
-                    <span className="text-gray-700 text-lg">Consistent standards that scale effortlessly</span>
+                    <span className="text-gray-700 text-lg">Consistent execution without constant oversight</span>
                   </li>
                   <li className="flex items-start">
                     <CheckCircle className="w-6 h-6 text-blue-600 mr-3 mt-0.5 flex-shrink-0" />
-                    <span className="text-gray-700 text-lg">Continuous visibility into operational health</span>
+                    <span className="text-gray-700 text-lg">50–70% reduction in inspection travel</span>
                   </li>
                   <li className="flex items-start">
                     <CheckCircle className="w-6 h-6 text-blue-600 mr-3 mt-0.5 flex-shrink-0" />
-                    <span className="text-gray-700 text-lg">Fewer last-minute fixes and rework before inspections</span>
-                  </li>
-                  <li className="flex items-start">
-                    <CheckCircle className="w-6 h-6 text-blue-600 mr-3 mt-0.5 flex-shrink-0" />
-                    <span className="text-gray-700 text-lg">50–70% reduction in travel and inspection costs</span>
+                    <span className="text-gray-700 text-lg">Real-time visibility into operational health</span>
                   </li>
                 </ul>
-
-                {/* Closing Statement */}
-                <div className="mt-8 bg-gradient-to-br from-blue-50 to-teal-50 p-6 rounded-xl border border-blue-200">
-                  <p className="text-gray-700 text-lg leading-relaxed">
-                    From reactive audits to proactive habits: PeakOps keeps your brand on standard without adding complexity.
-                  </p>
-                </div>
               </div>
             </div>
 
@@ -649,24 +553,16 @@ export default function HomePage() {
       </section>
 
       {/* Start Building Better Habits */}
-      <section className="py-20 bg-white">
+      <section className="py-20 bg-gradient-to-b from-gray-50 to-white">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-12">
             <h2 className="text-3xl md:text-5xl font-bold text-gray-900 mb-8 leading-tight">
-              Start Building Better Habits, One Day at a Time
+              Build Better Habits, One Day at a Time
             </h2>
 
             <div className="space-y-6 text-xl text-gray-700 leading-relaxed mb-10">
-              <p>
-                Operational excellence shouldn't depend on luck, inspections, or constant supervision. It should happen naturally through small, repeatable actions that make every shift stronger than the last.
-              </p>
-
-              <p className="font-semibold text-gray-900">
-                PeakOps helps your teams do exactly that.
-              </p>
-
               <p className="text-2xl font-medium text-gray-900">
-                Three checks a day. Two minutes of focus. One habit that keeps your business running right.
+                Three checks. Two minutes. One simple loop that drives consistent execution across every shift, every store, every day.
               </p>
             </div>
           </div>
@@ -677,7 +573,7 @@ export default function HomePage() {
       <section className="py-20 bg-gradient-to-r from-blue-600 to-teal-600 text-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <h2 className="text-3xl md:text-5xl font-bold mb-12">
-            Ready to See the Difference?
+            Build Better Habits, One Day at a Time
           </h2>
 
           <div className="flex flex-col sm:flex-row gap-6 justify-center items-center mb-8">
@@ -700,7 +596,7 @@ export default function HomePage() {
 
           <div className="text-lg text-blue-100 max-w-3xl mx-auto">
             <p>
-              No login. No setup. Just start building habits that last.
+              No setup, no logins. Just start.
             </p>
           </div>
         </div>
