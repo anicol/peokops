@@ -325,7 +325,9 @@ class Command(BaseCommand):
                     self.stdout.write('\nNavigating to reviews...')
                     logger.info("Looking for reviews button...")
                     try:
-                        reviews_button = page.query_selector('button[aria-label*="reviews" i], button:has-text("Reviews")', timeout=5000)
+                        # Wait for reviews button to appear, then query it
+                        page.wait_for_selector('button[aria-label*="reviews" i], button:has-text("Reviews")', timeout=5000, state='visible')
+                        reviews_button = page.query_selector('button[aria-label*="reviews" i], button:has-text("Reviews")')
                     except:
                         reviews_button = None
 
@@ -438,7 +440,7 @@ class Command(BaseCommand):
             for selector in name_selectors:
                 try:
                     # Use wait_for_selector then query_selector (query_selector doesn't accept timeout)
-                    page.wait_for_selector(selector, timeout=2000, state='visible')
+                    page.wait_for_selector(selector, timeout=5000, state='visible')  # Increased from 2s to 5s
                     name_elem = page.query_selector(selector)
                     if name_elem:
                         text = name_elem.inner_text().strip()
@@ -467,7 +469,7 @@ class Command(BaseCommand):
             for selector in rating_selectors:
                 try:
                     # Wait for element, then query it
-                    page.wait_for_selector(selector, timeout=3000, state='visible')
+                    page.wait_for_selector(selector, timeout=5000, state='visible')  # Increased from 3s to 5s
                     rating_elem = page.query_selector(selector)
                     if rating_elem:
                         aria_label = rating_elem.get_attribute('aria-label')
@@ -504,7 +506,7 @@ class Command(BaseCommand):
 
                 for pattern in review_patterns:
                     try:
-                        page.wait_for_selector(pattern, timeout=2000, state='visible')
+                        page.wait_for_selector(pattern, timeout=4000, state='visible')  # Increased from 2s to 4s
                         review_elem = page.query_selector(pattern)
                         if review_elem:
                             text = review_elem.inner_text()
@@ -527,7 +529,7 @@ class Command(BaseCommand):
 
             for selector in address_selectors:
                 try:
-                    page.wait_for_selector(selector, timeout=2000, state='visible')
+                    page.wait_for_selector(selector, timeout=4000, state='visible')  # Increased from 2s to 4s
                     address_elem = page.query_selector(selector)
                     if address_elem:
                         address = address_elem.inner_text().strip()
@@ -652,7 +654,7 @@ class Command(BaseCommand):
                     # If scrolling fails, try window scroll as fallback
                     page.evaluate('window.scrollBy(0, 1000)')
 
-                human_delay(1.5, 2.5)  # Random wait time to let reviews load and appear human
+                human_delay(2, 3)  # Random wait time to let reviews load and appear human (increased for reliability)
                 scroll_attempts += 1
 
             logger.info(f"Scroll loop completed. Total reviews: {len(reviews)}, Scroll attempts: {scroll_attempts}")
