@@ -35,10 +35,11 @@ class StoreListSerializer(serializers.ModelSerializer):
     google_review_count = serializers.SerializerMethodField()
     google_location_name = serializers.SerializerMethodField()
     google_synced_at = serializers.SerializerMethodField()
+    google_place_id = serializers.SerializerMethodField()
 
     class Meta:
         model = Store
-        fields = ('id', 'name', 'code', 'brand', 'brand_name', 'city', 'state', 'is_active', 'created_at', 'phone', 'manager_email', 'address', 'zip_code', 'timezone', 'updated_at', 'google_rating', 'google_review_count', 'google_location_name', 'google_synced_at')
+        fields = ('id', 'name', 'code', 'brand', 'brand_name', 'city', 'state', 'is_active', 'created_at', 'phone', 'manager_email', 'address', 'zip_code', 'timezone', 'updated_at', 'google_rating', 'google_review_count', 'google_location_name', 'google_synced_at', 'google_place_id')
 
     def get_google_rating(self, obj):
         """Get average rating from linked Google location"""
@@ -63,4 +64,10 @@ class StoreListSerializer(serializers.ModelSerializer):
         """Get last sync timestamp from linked Google location"""
         if hasattr(obj, 'google_location') and obj.google_location:
             return obj.google_location.synced_at
+        return None
+
+    def get_google_place_id(self, obj):
+        """Get Google place_id from linked Google location"""
+        if hasattr(obj, 'google_location') and obj.google_location:
+            return obj.google_location.place_id
         return None
