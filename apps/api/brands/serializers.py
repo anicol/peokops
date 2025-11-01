@@ -15,10 +15,16 @@ class BrandSerializer(serializers.ModelSerializer):
 
 class StoreSerializer(serializers.ModelSerializer):
     brand_name = serializers.CharField(source='brand.name', read_only=True)
+    # Accept google_location_data for creation, but don't validate it against the model
+    google_location_data = serializers.JSONField(required=False, write_only=True)
 
     class Meta:
         model = Store
         fields = '__all__'
+        # Explicitly include google_location_data so it's accepted
+        extra_kwargs = {
+            'google_location_data': {'required': False}
+        }
 
 
 class StoreListSerializer(serializers.ModelSerializer):

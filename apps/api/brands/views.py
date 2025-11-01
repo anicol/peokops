@@ -56,12 +56,13 @@ class StoreListCreateView(generics.ListCreateAPIView):
         """
         Create store and optionally link Google location if google_location_data is provided
         """
+        # Extract google_location_data from validated_data before saving
+        google_location_data = serializer.validated_data.pop('google_location_data', None)
+
         # Create the store
         store = serializer.save()
 
         # Check if Google location data was provided
-        google_location_data = self.request.data.get('google_location_data')
-
         if google_location_data:
             from integrations.models import GoogleLocation
             from integrations.tasks import scrape_google_reviews
