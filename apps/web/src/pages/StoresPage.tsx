@@ -17,8 +17,12 @@ import {
   Phone,
   Star,
   Link as LinkIcon,
+  X,
+  TrendingUp,
+  TrendingDown,
+  MessageSquare,
 } from 'lucide-react';
-import { storesAPI, brandsAPI } from '@/services/api';
+import { storesAPI, brandsAPI, insightsAPI } from '@/services/api';
 import type { Store, Brand } from '@/types';
 import { useAuth } from '@/hooks/useAuth';
 import axios from 'axios';
@@ -31,6 +35,9 @@ export default function StoresPage() {
   const [editingStore, setEditingStore] = useState<Store | null>(null);
   const [brandFilter, setBrandFilter] = useState<string>('all');
   const [stateFilter, setStateFilter] = useState<string>('all');
+  const [reviewAnalysisStore, setReviewAnalysisStore] = useState<Store | null>(null);
+  const [reviewAnalysisData, setReviewAnalysisData] = useState<any>(null);
+  const [isLoadingAnalysis, setIsLoadingAnalysis] = useState(false);
   const queryClient = useQueryClient();
 
   const { data: stores, isLoading, error } = useQuery<Store[]>(
@@ -59,6 +66,32 @@ export default function StoresPage() {
       },
     }
   );
+
+  const handleViewReviewAnalysis = async (store: Store) => {
+    // Check if store has Google location data and place_id
+    if (!store.google_place_id) {
+      alert('No review analysis available for this store yet.');
+      return;
+    }
+
+    try {
+      setReviewAnalysisStore(store);
+      setIsLoadingAnalysis(true);
+
+      const analysisData = await insightsAPI.getAnalysisByPlaceId(store.google_place_id);
+      setReviewAnalysisData(analysisData);
+    } catch (error: any) {
+      console.error('Failed to fetch review analysis:', error);
+      if (error.response?.status === 404) {
+        alert('Review analysis is still processing. Please check back in a few minutes.');
+      } else {
+        alert('Could not load review analysis. Please try again later.');
+      }
+      setReviewAnalysisStore(null);
+    } finally {
+      setIsLoadingAnalysis(false);
+    }
+  };
 
   const handleDelete = async (store: Store) => {
     if (window.confirm(`Are you sure you want to delete ${store.name}?`)) {
@@ -284,19 +317,22 @@ export default function StoresPage() {
 
                     {/* Google Reviews Status */}
                     {store.google_location_name && (
-                      <div className="flex items-center text-sm">
+                      <div className="text-sm">
                         {store.google_rating ? (
-                          <>
+                          <button
+                            onClick={() => handleViewReviewAnalysis(store)}
+                            className="flex items-center text-left hover:bg-gray-50 rounded p-1 -m-1 transition-colors w-full"
+                          >
                             <Star className="h-4 w-4 mr-2 fill-yellow-400 text-yellow-400 flex-shrink-0" />
                             <span className="font-medium text-gray-900">{store.google_rating}</span>
                             <span className="text-gray-500 ml-1">/ 5.0</span>
-                            <span className="text-gray-400 ml-2">({store.google_review_count || 0} reviews)</span>
-                          </>
+                            <span className="text-blue-600 ml-2 hover:underline">({store.google_review_count || 0} reviews)</span>
+                          </button>
                         ) : (
-                          <>
+                          <div className="flex items-center">
                             <Loader2 className="h-4 w-4 mr-2 text-blue-600 animate-spin flex-shrink-0" />
                             <span className="text-blue-600 font-medium">Syncing Google reviews...</span>
-                          </>
+                          </div>
                         )}
                       </div>
                     )}
@@ -420,16 +456,19 @@ export default function StoresPage() {
                     <td className="px-6 py-4 whitespace-nowrap">
                       {store.google_location_name ? (
                         store.google_rating ? (
-                          <div className="text-sm">
+                          <button
+                            onClick={() => handleViewReviewAnalysis(store)}
+                            className="text-sm text-left hover:bg-gray-50 rounded p-1 -m-1 transition-colors"
+                          >
                             <div className="flex items-center text-gray-900 mb-1">
                               <Star className="h-4 w-4 mr-1 fill-yellow-400 text-yellow-400" />
                               <span className="font-medium">{store.google_rating}</span>
                               <span className="text-gray-500 ml-1">/ 5.0</span>
                             </div>
-                            <div className="text-xs text-gray-500">
-                              {store.google_review_count || 0} reviews
+                            <div className="text-xs text-blue-600 hover:underline">
+                              {store.google_review_count || 0} reviews • View analysis
                             </div>
-                          </div>
+                          </button>
                         ) : (
                           <div className="text-sm">
                             <div className="flex items-center text-blue-600 mb-1">
@@ -485,6 +524,116 @@ export default function StoresPage() {
             setEditingStore(null);
           }}
         />
+      )}
+
+      {/* Review Analysis Modal */}
+      {reviewAnalysisStore && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between">
+              <div>
+                <h2 className="text-xl font-bold text-gray-900">{reviewAnalysisStore.google_location_name}</h2>
+                <p className="text-sm text-gray-500 mt-1">{reviewAnalysisStore.name}</p>
+              </div>
+              <button
+                onClick={() => {
+                  setReviewAnalysisStore(null);
+                  setReviewAnalysisData(null);
+                }}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                <X className="h-6 w-6" />
+              </button>
+            </div>
+
+            <div className="p-6">
+              {isLoadingAnalysis ? (
+                <div className="flex items-center justify-center py-12">
+                  <Loader2 className="h-8 w-8 animate-spin text-indigo-600" />
+                  <span className="ml-3 text-gray-600">Loading analysis...</span>
+                </div>
+              ) : reviewAnalysisData ? (
+                <div className="space-y-6">
+                  {/* Rating Summary */}
+                  <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg p-6">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-sm text-gray-600 mb-1">Google Rating</p>
+                        <div className="flex items-center">
+                          <Star className="h-8 w-8 fill-yellow-400 text-yellow-400 mr-2" />
+                          <span className="text-4xl font-bold text-gray-900">{reviewAnalysisData.google_rating}</span>
+                          <span className="text-2xl text-gray-500 ml-2">/ 5.0</span>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-sm text-gray-600 mb-1">Reviews Analyzed</p>
+                        <p className="text-3xl font-bold text-gray-900">{reviewAnalysisData.reviews_analyzed || 0}</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Sentiment Summary */}
+                  {reviewAnalysisData.sentiment_summary && (
+                    <div>
+                      <h3 className="text-lg font-semibold text-gray-900 mb-3">Overall Sentiment</h3>
+                      <div className="bg-gray-50 rounded-lg p-4">
+                        <p className="text-gray-700">{reviewAnalysisData.sentiment_summary}</p>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Key Issues */}
+                  {reviewAnalysisData.key_issues && reviewAnalysisData.key_issues.length > 0 && (
+                    <div>
+                      <h3 className="text-lg font-semibold text-gray-900 mb-3">Key Issues from Reviews</h3>
+                      <div className="space-y-3">
+                        {reviewAnalysisData.key_issues.map((issue: any, idx: number) => (
+                          <div key={idx} className="bg-red-50 border border-red-200 rounded-lg p-4">
+                            <div className="flex items-start justify-between mb-2">
+                              <h4 className="font-medium text-red-900">{issue.theme || issue.category}</h4>
+                              <span className="text-sm text-red-600 font-medium">{issue.mentions} mentions</span>
+                            </div>
+                            {issue.example_quote && (
+                              <p className="text-sm text-red-700 italic">"{issue.example_quote}"</p>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* AI Insights */}
+                  {reviewAnalysisData.insights && (
+                    <div>
+                      <h3 className="text-lg font-semibold text-gray-900 mb-3">AI Insights</h3>
+                      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                        <p className="text-blue-900">{reviewAnalysisData.insights}</p>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Micro-Check Suggestions */}
+                  {reviewAnalysisData.micro_check_suggestions && reviewAnalysisData.micro_check_suggestions.length > 0 && (
+                    <div>
+                      <h3 className="text-lg font-semibold text-gray-900 mb-3">Suggested Micro-Checks</h3>
+                      <div className="space-y-2">
+                        {reviewAnalysisData.micro_check_suggestions.map((suggestion: any, idx: number) => (
+                          <div key={idx} className="bg-green-50 border border-green-200 rounded-lg p-3">
+                            <p className="text-sm font-medium text-green-900">{suggestion.check_text || suggestion}</p>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div className="text-center py-12 text-gray-500">
+                  No analysis data available
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );
