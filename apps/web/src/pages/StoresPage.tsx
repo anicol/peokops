@@ -277,6 +277,25 @@ export default function StoresPage() {
                         <a href={`mailto:${store.manager_email}`} className="hover:text-indigo-600 truncate">{store.manager_email}</a>
                       </div>
                     )}
+
+                    {/* Google Reviews Status */}
+                    {store.google_location_name && (
+                      <div className="flex items-center text-sm">
+                        {store.google_rating ? (
+                          <>
+                            <Star className="h-4 w-4 mr-2 fill-yellow-400 text-yellow-400 flex-shrink-0" />
+                            <span className="font-medium text-gray-900">{store.google_rating}</span>
+                            <span className="text-gray-500 ml-1">/ 5.0</span>
+                            <span className="text-gray-400 ml-2">({store.google_review_count || 0} reviews)</span>
+                          </>
+                        ) : (
+                          <>
+                            <Loader2 className="h-4 w-4 mr-2 text-blue-600 animate-spin flex-shrink-0" />
+                            <span className="text-blue-600 font-medium">Syncing Google reviews...</span>
+                          </>
+                        )}
+                      </div>
+                    )}
                   </div>
 
                   <div className="flex items-center justify-between pt-3 border-t border-gray-100">
@@ -395,17 +414,29 @@ export default function StoresPage() {
                       </span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      {store.google_rating ? (
-                        <div className="text-sm">
-                          <div className="flex items-center text-gray-900 mb-1">
-                            <Star className="h-4 w-4 mr-1 fill-yellow-400 text-yellow-400" />
-                            <span className="font-medium">{store.google_rating}</span>
-                            <span className="text-gray-500 ml-1">/ 5.0</span>
+                      {store.google_location_name ? (
+                        store.google_rating ? (
+                          <div className="text-sm">
+                            <div className="flex items-center text-gray-900 mb-1">
+                              <Star className="h-4 w-4 mr-1 fill-yellow-400 text-yellow-400" />
+                              <span className="font-medium">{store.google_rating}</span>
+                              <span className="text-gray-500 ml-1">/ 5.0</span>
+                            </div>
+                            <div className="text-xs text-gray-500">
+                              {store.google_review_count || 0} reviews
+                            </div>
                           </div>
-                          <div className="text-xs text-gray-500">
-                            {store.google_review_count || 0} reviews
+                        ) : (
+                          <div className="text-sm">
+                            <div className="flex items-center text-blue-600 mb-1">
+                              <Loader2 className="h-3 w-3 mr-1 animate-spin" />
+                              <span className="font-medium">Syncing...</span>
+                            </div>
+                            <div className="text-xs text-gray-500">
+                              Linked to Google
+                            </div>
                           </div>
-                        </div>
+                        )
                       ) : (
                         <span className="text-sm text-gray-400">Not linked</span>
                       )}
