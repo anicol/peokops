@@ -468,7 +468,7 @@ function StoreFormModal({ store, brands, currentUser, onClose }: StoreFormModalP
   // For non-admin users, default to their brand
   const defaultBrand = currentUser?.role === 'ADMIN'
     ? (store?.brand || '')
-    : (store?.brand || currentUser?.brand || '');
+    : (store?.brand || currentUser?.brand_id || '');
 
   // Creation mode: 'choose' (initial), 'google-search', 'manual', or null for editing
   const [creationMode, setCreationMode] = useState<'choose' | 'google-search' | 'manual' | null>(
@@ -527,6 +527,7 @@ function StoreFormModal({ store, brands, currentUser, onClose }: StoreFormModalP
       submissionData.google_location_data = googleLocationData;
     }
 
+    console.log('Submitting store data:', submissionData);
     mutation.mutate(submissionData);
   };
 

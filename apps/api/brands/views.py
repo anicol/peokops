@@ -52,12 +52,29 @@ class StoreListCreateView(generics.ListCreateAPIView):
             return StoreListSerializer
         return StoreSerializer
 
+    def create(self, request, *args, **kwargs):
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.info(f"Incoming request data: {request.data}")
+
+        serializer = self.get_serializer(data=request.data)
+        if not serializer.is_valid():
+            logger.error(f"Validation errors: {serializer.errors}")
+
+        return super().create(request, *args, **kwargs)
+
     def perform_create(self, serializer):
         """
         Create store and optionally link Google location if google_location_data is provided
         """
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.info(f"Request data: {self.request.data}")
+        logger.info(f"Validated data: {serializer.validated_data}")
+
         # Extract google_location_data from validated_data before saving
         google_location_data = serializer.validated_data.pop('google_location_data', None)
+        logger.info(f"Google location data: {google_location_data}")
 
         # Create the store
         store = serializer.save()
