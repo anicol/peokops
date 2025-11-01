@@ -11,7 +11,15 @@ logger = logging.getLogger(__name__)
 
 
 def handle_webhook_event(event_type: str, event_data: dict, event_id: str):
-    """Route webhook events to appropriate handlers"""
+    """
+    Route webhook events to appropriate handlers with idempotency protection.
+    
+    Checks if event has already been processed before handling to prevent
+    duplicate processing on webhook retries.
+    """
+    if PaymentEvent.objects.filter(stripe_event_id=event_id).exists():
+        logger.info(f"Webhook event {event_id} already processed, skipping")
+        return
 
     handlers = {
         'checkout.session.completed': handle_checkout_completed,
