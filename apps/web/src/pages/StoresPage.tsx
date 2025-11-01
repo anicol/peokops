@@ -78,7 +78,9 @@ export default function StoresPage() {
       setReviewAnalysisStore(store);
       setIsLoadingAnalysis(true);
 
+      console.log('Fetching analysis for place_id:', store.google_place_id);
       const analysisData = await insightsAPI.getAnalysisByPlaceId(store.google_place_id);
+      console.log('Received analysis data:', analysisData);
       setReviewAnalysisData(analysisData);
     } catch (error: any) {
       console.error('Failed to fetch review analysis:', error);
@@ -554,6 +556,12 @@ export default function StoresPage() {
                 </div>
               ) : reviewAnalysisData ? (
                 <div className="space-y-6">
+                  {/* Debug: Show data structure */}
+                  <details className="bg-gray-100 rounded p-2 text-xs">
+                    <summary className="cursor-pointer font-mono">Debug: View raw data</summary>
+                    <pre className="mt-2 overflow-auto">{JSON.stringify(reviewAnalysisData, null, 2)}</pre>
+                  </details>
+
                   {/* Rating Summary */}
                   <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg p-6">
                     <div className="flex items-center justify-between">
