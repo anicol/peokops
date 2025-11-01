@@ -465,10 +465,15 @@ interface StoreFormModalProps {
 function StoreFormModal({ store, brands, currentUser, onClose }: StoreFormModalProps) {
   const queryClient = useQueryClient();
 
-  // For non-admin users, default to their brand
+  // For non-admin users, get brand from their current user's brand_id
+  // This should exist for all users since they're assigned to a store with a brand
   const defaultBrand = currentUser?.role === 'ADMIN'
     ? (store?.brand || '')
-    : (store?.brand || currentUser?.brand_id || '');
+    : (store?.brand || currentUser?.brand_id);
+
+  console.log('StoreFormModal - currentUser:', currentUser);
+  console.log('StoreFormModal - defaultBrand:', defaultBrand);
+  console.log('StoreFormModal - store:', store);
 
   // Creation mode: 'choose' (initial), 'google-search', 'manual', or null for editing
   const [creationMode, setCreationMode] = useState<'choose' | 'google-search' | 'manual' | null>(
@@ -478,7 +483,7 @@ function StoreFormModal({ store, brands, currentUser, onClose }: StoreFormModalP
   const [formData, setFormData] = useState({
     name: store?.name || '',
     code: store?.code || '',
-    brand: defaultBrand,
+    brand: defaultBrand,  // Will be number (brand_id) or undefined
     address: store?.address || '',
     city: store?.city || '',
     state: store?.state || '',

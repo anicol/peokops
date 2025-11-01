@@ -83,21 +83,33 @@ class StoreListCreateView(generics.ListCreateAPIView):
         if google_location_data:
             from integrations.models import GoogleLocation
             from integrations.tasks import scrape_google_reviews
+            import uuid
 
-            # Create GoogleLocation record
-            google_location = GoogleLocation.objects.create(
-                store=store,
-                google_location_id=google_location_data.get('google_location_id', ''),
-                google_location_name=google_location_data.get('business_name', ''),
-                place_url=google_location_data.get('place_url', ''),
-                place_id=google_location_data.get('place_id', ''),
-                address=google_location_data.get('address', ''),
-                average_rating=google_location_data.get('average_rating'),
-                total_review_count=google_location_data.get('total_reviews', 0)
+            # Get account from store or request user
+            account = store.account if store.account else (
+                self.request.user.account if hasattr(self.request.user, 'account') else None
             )
 
-            # Trigger background task to scrape reviews
-            scrape_google_reviews.delay(google_location.id)
+            if not account:
+                logger.warning(f"Cannot create GoogleLocation for store {store.id}: no account found")
+            else:
+                # Create GoogleLocation record
+                google_location = GoogleLocation.objects.create(
+                    account=account,
+                    store=store,
+                    google_location_id=google_location_data.get('google_location_id', '') or f'place_{uuid.uuid4()}',
+                    google_location_name=google_location_data.get('business_name', ''),
+                    place_url=google_location_data.get('place_url', ''),
+                    place_id=google_location_data.get('place_id', ''),
+                    address=google_location_data.get('address', ''),
+                    average_rating=google_location_data.get('average_rating'),
+                    total_review_count=google_location_data.get('total_reviews', 0)
+                )
+
+                logger.info(f"Created GoogleLocation {google_location.id} for store {store.name}")
+
+                # Trigger background task to scrape reviews
+                scrape_google_reviews.delay(str(google_location.id))
 
 
 class StoreDetailView(generics.RetrieveUpdateDestroyAPIView):

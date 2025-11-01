@@ -484,3 +484,60 @@ def generate_micro_checks_from_reviews(days_back: int = 7):
         'accounts_processed': accounts_processed,
         'total_checks_generated': total_checks
     }
+
+
+@shared_task(name='integrations.scrape_google_reviews')
+def scrape_google_reviews(google_location_id):
+    """
+    Scrape Google reviews for a newly created GoogleLocation.
+
+    This task is triggered when a store is created with a linked Google location.
+    It creates a ReviewAnalysis record and triggers the review scraping process.
+
+    Args:
+        google_location_id: UUID of the GoogleLocation to scrape reviews for
+    """
+    from .models import GoogleLocation
+    from insights.models import ReviewAnalysis
+    from insights.tasks import process_review_analysis
+    import uuid
+
+    logger.info(f"Starting review scrape for GoogleLocation {google_location_id}")
+
+    try:
+        location = GoogleLocation.objects.select_related('store', 'account').get(id=google_location_id)
+    except GoogleLocation.DoesNotExist:
+        logger.error(f"GoogleLocation {google_location_id} not found")
+        return {'error': 'GoogleLocation not found'}
+
+    # Create ReviewAnalysis to track the scraping
+    try:
+        analysis = ReviewAnalysis.objects.create(
+            business_name=location.google_location_name,
+            location=location.store.city if location.store else '',
+            place_id=location.place_id,
+            google_address=location.address,
+            google_rating=location.average_rating,
+            total_reviews_found=location.total_review_count,
+            status=ReviewAnalysis.Status.PENDING,
+            account=location.store.brand if location.store else location.account,
+            converted_to_trial=True
+        )
+
+        logger.info(f"Created ReviewAnalysis {analysis.id} for location {location.google_location_name}")
+
+        # Trigger the actual scraping task
+        task = process_review_analysis.delay(str(analysis.id))
+
+        logger.info(f"Triggered review scraping task {task.id} for location {location.google_location_name}")
+
+        return {
+            'success': True,
+            'location_id': str(location.id),
+            'analysis_id': str(analysis.id),
+            'scraping_task_id': task.id
+        }
+
+    except Exception as e:
+        logger.error(f"Failed to create ReviewAnalysis for location {google_location_id}: {str(e)}")
+        return {'error': str(e)}
