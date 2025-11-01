@@ -102,8 +102,8 @@ class StoreListCreateView(generics.ListCreateAPIView):
                     place_url=google_location_data.get('place_url', ''),
                     place_id=google_location_data.get('place_id', ''),
                     address=google_location_data.get('address', ''),
-                    average_rating=google_location_data.get('average_rating'),
-                    total_review_count=google_location_data.get('total_reviews', 0)
+                    average_rating=google_location_data.get('average_rating') or None,
+                    total_review_count=google_location_data.get('total_reviews') or 0
                 )
 
                 logger.info(f"Created GoogleLocation {google_location.id} for store {store.name}")

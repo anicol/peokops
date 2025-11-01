@@ -505,6 +505,10 @@ function StoreFormModal({ store, brands, currentUser, onClose }: StoreFormModalP
   const [isLinking, setIsLinking] = useState(false);
   const [linkError, setLinkError] = useState('');
 
+  // Form submission error state
+  const [formError, setFormError] = useState('');
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+
   const mutation = useMutation(
     (data: any) => {
       if (store) {
@@ -518,11 +522,56 @@ function StoreFormModal({ store, brands, currentUser, onClose }: StoreFormModalP
         queryClient.invalidateQueries('stores');
         onClose();
       },
+      onError: (error: any) => {
+        // Clear previous errors
+        setFormError('');
+        setFieldErrors({});
+
+        // Handle validation errors from backend
+        if (error.response?.data) {
+          const errorData = error.response.data;
+
+          // Check if it's a field-level validation error
+          if (typeof errorData === 'object' && !errorData.detail && !errorData.error) {
+            const errors: Record<string, string> = {};
+
+            // Convert backend validation errors to user-friendly messages
+            Object.keys(errorData).forEach(field => {
+              const errorMessages = errorData[field];
+              if (Array.isArray(errorMessages) && errorMessages.length > 0) {
+                const message = errorMessages[0];
+
+                // Custom error messages for common validation issues
+                if (field === 'code' && message.includes('already exists')) {
+                  errors[field] = 'This store code is already in use. Please use a unique code.';
+                } else if (field === 'name' && message.includes('already exists')) {
+                  errors[field] = 'A store with this name already exists. Please use a different name.';
+                } else {
+                  // Use the backend message as-is
+                  errors[field] = typeof message === 'string' ? message : message.toString();
+                }
+              }
+            });
+
+            setFieldErrors(errors);
+            setFormError('Please fix the validation errors below.');
+          } else {
+            // Generic error message
+            setFormError(errorData.detail || errorData.error || 'Failed to save store. Please try again.');
+          }
+        } else {
+          setFormError('Failed to save store. Please check your connection and try again.');
+        }
+      },
     }
   );
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+
+    // Clear previous errors
+    setFormError('');
+    setFieldErrors({});
 
     // Prepare submission data
     const submissionData: any = { ...formData };
@@ -817,6 +866,17 @@ function StoreFormModal({ store, brands, currentUser, onClose }: StoreFormModalP
               </div>
             </div>
           )}
+
+          {/* General form error message */}
+          {formError && (
+            <div className="bg-red-50 border border-red-200 rounded-lg p-3">
+              <div className="flex items-center">
+                <AlertCircle className="h-4 w-4 text-red-600 mr-2" />
+                <p className="text-sm text-red-900">{formError}</p>
+              </div>
+            </div>
+          )}
+
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -827,9 +887,14 @@ function StoreFormModal({ store, brands, currentUser, onClose }: StoreFormModalP
                 required
                 value={formData.name}
                 onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 ${
+                  fieldErrors.name ? 'border-red-300 bg-red-50' : 'border-gray-300'
+                }`}
                 placeholder="e.g. Downtown Location"
               />
+              {fieldErrors.name && (
+                <p className="mt-1 text-sm text-red-600">{fieldErrors.name}</p>
+              )}
             </div>
 
             <div>
@@ -841,9 +906,14 @@ function StoreFormModal({ store, brands, currentUser, onClose }: StoreFormModalP
                 required
                 value={formData.code}
                 onChange={(e) => setFormData({ ...formData, code: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 ${
+                  fieldErrors.code ? 'border-red-300 bg-red-50' : 'border-gray-300'
+                }`}
                 placeholder="e.g. NYC-001"
               />
+              {fieldErrors.code && (
+                <p className="mt-1 text-sm text-red-600">{fieldErrors.code}</p>
+              )}
             </div>
           </div>
 
@@ -856,13 +926,18 @@ function StoreFormModal({ store, brands, currentUser, onClose }: StoreFormModalP
                 required
                 value={formData.brand}
                 onChange={(e) => setFormData({ ...formData, brand: Number(e.target.value) })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 ${
+                  fieldErrors.brand ? 'border-red-300 bg-red-50' : 'border-gray-300'
+                }`}
               >
                 <option value="">Select Brand</option>
                 {brands.map(brand => (
                   <option key={brand.id} value={brand.id}>{brand.name}</option>
                 ))}
               </select>
+              {fieldErrors.brand && (
+                <p className="mt-1 text-sm text-red-600">{fieldErrors.brand}</p>
+              )}
             </div>
           )}
 
