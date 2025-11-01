@@ -36,13 +36,14 @@ services:
   celery:
     build:
       context: ./apps/api
-      dockerfile: Dockerfile
-    command: celery -A peakops worker -l info --concurrency=2 --max-tasks-per-child=10 --max-memory-per-child=500000
+      dockerfile: Dockerfile.celery
+    command: celery -A peakops worker -l info --concurrency=2 --max-tasks-per-child=10 --max-memory-per-child=1800000
     volumes:
       - ./apps/api:/app
     environment:
       - DATABASE_URL=postgres://postgres:postgres@db:5432/peakops
       - REDIS_URL=redis://redis:6379/0
+      - PLAYWRIGHT_BROWSERS_PATH=/ms-playwright
     depends_on:
       - db
       - redis

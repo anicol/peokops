@@ -1,9 +1,10 @@
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { useProgressiveNavigation } from '@/hooks/useProgressiveNavigation';
 import { useFeatureGates } from '@/hooks/useFeatureGates';
 import { ImpersonationBanner } from './ImpersonationBanner';
+import { TrialFooter, MultiStoreFooter, EnterpriseFooter, SuperAdminFooter } from './footers';
 import {
   Home,
   CheckSquare,
@@ -23,6 +24,7 @@ import {
   FileText,
   Plug,
   Calendar,
+  ChevronDown,
 } from 'lucide-react';
 
 const navigationSections = [
@@ -31,7 +33,7 @@ const navigationSections = [
     items: [
       { name: 'Home', href: '/', icon: Home, key: 'home' },
       { name: 'Micro Checks', href: '/micro-check-history', icon: CheckSquare, key: 'microChecks' },
-      { name: 'AI Coach', href: '/videos', icon: Sparkles, key: 'aiCoach' },
+      { name: 'AI Walkthrough', href: '/videos', icon: Sparkles, key: 'aiCoach' },
       { name: 'Inspections', href: '/inspections', icon: FileSearch, key: 'inspections' },
       { name: 'Actions', href: '/actions', icon: ListTodo, key: 'actions' },
       { name: 'Insights', href: '/insights', icon: BarChart3, key: 'insights' },
@@ -40,7 +42,6 @@ const navigationSections = [
   {
     title: 'Settings', // Settings section
     items: [
-      { name: 'Profile', href: '/profile', icon: User, key: 'profile', roles: ['ADMIN', 'OWNER', 'TRIAL_ADMIN'] },
       { name: 'Templates', href: '/micro-check-templates', icon: FileText, key: 'templates', roles: ['ADMIN', 'OWNER', 'TRIAL_ADMIN'] },
       { name: 'Schedule', href: '/schedule', icon: Calendar, key: 'schedule', roles: ['ADMIN', 'OWNER', 'TRIAL_ADMIN', 'GM'] },
       { name: 'Stores', href: '/stores', icon: Store, key: 'stores', roles: ['ADMIN', 'OWNER', 'TRIAL_ADMIN'] },
@@ -62,11 +63,36 @@ const navigationSections = [
 
 export default function Layout({ children }: { children: React.ReactNode }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [profileDropdownOpen, setProfileDropdownOpen] = useState(false);
+  const profileDropdownRef = useRef<HTMLDivElement>(null);
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const navState = useProgressiveNavigation();
   const { getProgress, registry } = useFeatureGates();
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (profileDropdownRef.current && !profileDropdownRef.current.contains(event.target as Node)) {
+        setProfileDropdownOpen(false);
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  // Helper function to get display name based on navigation mode
+  const getDisplayName = (item: any) => {
+    // Context-aware label for Users
+    if (item.key === 'users') {
+      if (navState.navigationMode === 'ENTERPRISE_MODE') {
+        return 'Users & Roles';
+      }
+      return 'Team'; // For TRIAL_MODE and MULTI_STORE_MODE
+    }
+    return item.name;
+  };
 
   const filteredSections = navigationSections
     .map(section => {
@@ -114,28 +140,46 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           
           <div className="flex items-center space-x-4">
             {navState.showUserEmail && (
-              <div className="flex items-center">
-                <div className="flex items-center justify-center w-8 h-8 bg-gray-200 rounded-full">
-                  <User className="w-4 h-4 text-gray-600" />
-                </div>
-                <div className="ml-3 hidden sm:block">
-                  <p className="text-sm font-medium text-gray-900">
-                    {user?.email}
-                  </p>
-                  {!user?.is_trial_user && (
-                    <p className="text-xs text-gray-500">{user?.role}</p>
-                  )}
-                </div>
+              <div ref={profileDropdownRef} className="relative">
+                <button
+                  onClick={() => setProfileDropdownOpen(!profileDropdownOpen)}
+                  className="flex items-center space-x-2 hover:bg-gray-50 rounded-md p-2 transition-colors"
+                >
+                  <div className="flex items-center justify-center w-8 h-8 bg-gray-200 rounded-full">
+                    <User className="w-4 h-4 text-gray-600" />
+                  </div>
+                  <div className="ml-1 hidden sm:block">
+                    <p className="text-sm font-medium text-gray-900">
+                      {user?.email}
+                    </p>
+                    {!user?.is_trial_user && (
+                      <p className="text-xs text-gray-500">{user?.role}</p>
+                    )}
+                  </div>
+                  <ChevronDown className={`w-4 h-4 text-gray-600 transition-transform ${profileDropdownOpen ? 'rotate-180' : ''}`} />
+                </button>
+
+                {profileDropdownOpen && (
+                  <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg border border-gray-200 py-1 z-50">
+                    <Link
+                      to="/account"
+                      className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                      onClick={() => setProfileDropdownOpen(false)}
+                    >
+                      <User className="w-4 h-4 mr-3" />
+                      Profile
+                    </Link>
+                    <button
+                      onClick={logout}
+                      className="w-full flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                    >
+                      <LogOut className="w-4 h-4 mr-3" />
+                      Sign out
+                    </button>
+                  </div>
+                )}
               </div>
             )}
-            
-            <button
-              onClick={logout}
-              className="p-2 text-gray-600 hover:text-gray-900"
-              title="Sign out"
-            >
-              <LogOut className="w-4 h-4" />
-            </button>
           </div>
         </div>
       </header>
@@ -173,6 +217,8 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                               ? 'bg-gray-100 text-gray-900'
                               : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900';
 
+                        const displayName = getDisplayName(item);
+
                         if (isDisabled) {
                           return (
                             <div
@@ -181,7 +227,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                               title="Complete previous steps to unlock"
                             >
                               <item.icon className="w-4 h-4 mr-3" />
-                              {item.name}
+                              {displayName}
                             </div>
                           );
                         }
@@ -212,7 +258,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                               }}
                             >
                               <item.icon className="w-4 h-4 mr-3 flex-shrink-0" />
-                              <span className="flex-1 min-w-0 truncate">{item.name}</span>
+                              <span className="flex-1 min-w-0 truncate">{displayName}</span>
                               <div className="flex items-center gap-1.5 ml-2 flex-shrink-0">
                                 <span className="text-xs text-gray-400 whitespace-nowrap">{progressHint}</span>
                                 <Lock className="w-3 h-3 text-gray-400 flex-shrink-0" />
@@ -229,7 +275,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                             onClick={() => setSidebarOpen(false)}
                           >
                             <item.icon className="w-4 h-4 mr-3" />
-                            {item.name}
+                            {displayName}
                           </Link>
                         );
                       })}
@@ -268,6 +314,8 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                             ? 'bg-gray-100 text-gray-900'
                             : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900';
 
+                      const displayName = getDisplayName(item);
+
                       if (isDisabled) {
                         return (
                           <div
@@ -276,7 +324,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                             title="Complete previous steps to unlock"
                           >
                             <item.icon className="w-4 h-4 mr-3" />
-                            {item.name}
+                            {displayName}
                           </div>
                         );
                       }
@@ -304,7 +352,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                             onClick={() => navigate(lockedRoute)}
                           >
                             <item.icon className="w-4 h-4 mr-3 flex-shrink-0" />
-                            <span className="flex-1 min-w-0 truncate">{item.name}</span>
+                            <span className="flex-1 min-w-0 truncate">{displayName}</span>
                             <div className="flex items-center gap-1.5 ml-2 flex-shrink-0">
                               <span className="text-xs text-gray-400 whitespace-nowrap">{progressHint}</span>
                               <Lock className="w-3 h-3 text-gray-400 flex-shrink-0" />
@@ -320,7 +368,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                           className={`${baseClasses} ${stateClasses}`}
                         >
                           <item.icon className="w-4 h-4 mr-3" />
-                          {item.name}
+                          {displayName}
                         </Link>
                       );
                     })}
@@ -338,6 +386,12 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           </div>
         </main>
       </div>
+
+      {/* Mode-specific footer */}
+      {navState.navigationMode === 'TRIAL_MODE' && <TrialFooter />}
+      {navState.navigationMode === 'MULTI_STORE_MODE' && <MultiStoreFooter />}
+      {navState.navigationMode === 'ENTERPRISE_MODE' && <EnterpriseFooter />}
+      {navState.navigationMode === 'SUPER_ADMIN_MODE' && <SuperAdminFooter />}
     </div>
   );
 }
