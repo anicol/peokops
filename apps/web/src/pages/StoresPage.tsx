@@ -602,6 +602,30 @@ function StoreFormModal({ store, brands, currentUser, onClose }: StoreFormModalP
     setCreationMode('manual');
   };
 
+  // Google search handler for edit mode (backend-based search for existing stores)
+  const handleGoogleSearch = async () => {
+    if (!googleSearchQuery.trim() || !store) return;
+
+    setIsSearching(true);
+    setLinkError('');
+
+    try {
+      const response = await axios.post('/api/integrations/google-reviews/search-business', {
+        business_name: googleSearchQuery,
+        location: `${store.city}, ${store.state}`.trim()
+      });
+
+      // API returns single result or multiple results
+      const results = Array.isArray(response.data) ? response.data : [response.data];
+      setGoogleSearchResults(results);
+    } catch (error: any) {
+      setLinkError(error.response?.data?.error || 'Failed to search for business');
+      setGoogleSearchResults([]);
+    } finally {
+      setIsSearching(false);
+    }
+  };
+
   // Link Google location to store (for edit mode)
   const handleLinkGoogleLocation = async (result: any) => {
     if (!store) return;
