@@ -35,7 +35,11 @@ export default function StoresPage() {
 
   const { data: stores, isLoading, error } = useQuery<Store[]>(
     'stores',
-    storesAPI.getStores
+    storesAPI.getStores,
+    {
+      // Auto-refresh every 30 seconds to show updated Google review data
+      refetchInterval: 30000,
+    }
   );
 
   // Only fetch brands for admin users
