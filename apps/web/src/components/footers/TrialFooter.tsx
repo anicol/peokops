@@ -20,6 +20,7 @@ export function TrialFooter() {
 
   const streak = dashboardStats?.user_streak?.current_streak ?? 0;
   const daysRemaining = user?.trial_status?.days_remaining || 0;
+  const isTrialUser = user?.is_trial_user;
 
   return (
     <footer className="bg-white border-t border-gray-200 flex-shrink-0">
@@ -33,17 +34,19 @@ export function TrialFooter() {
             </span>
           </div>
 
-          {/* Right side - Upgrade CTA */}
-          <button
-            onClick={() => navigate('/checkout')}
-            className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
-          >
-            <Zap className="w-4 h-4" />
-            <span className="text-sm font-medium">
-              {daysRemaining > 0 ? `${daysRemaining} days left - Upgrade` : 'Upgrade Now'}
-            </span>
-            <ArrowRight className="w-4 h-4" />
-          </button>
+          {/* Right side - Upgrade CTA (only for trial users) */}
+          {isTrialUser && (
+            <button
+              onClick={() => navigate('/checkout')}
+              className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
+            >
+              <Zap className="w-4 h-4" />
+              <span className="text-sm font-medium">
+                {daysRemaining > 0 ? `${daysRemaining} days left - Upgrade` : 'Upgrade Now'}
+              </span>
+              <ArrowRight className="w-4 h-4" />
+            </button>
+          )}
         </div>
       </div>
     </footer>
