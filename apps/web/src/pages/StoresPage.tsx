@@ -22,6 +22,7 @@ import { storesAPI, brandsAPI } from '@/services/api';
 import type { Store, Brand } from '@/types';
 import { useAuth } from '@/hooks/useAuth';
 import axios from 'axios';
+import GooglePlacesAutocomplete from '@/components/GooglePlacesAutocomplete';
 
 export default function StoresPage() {
   const { user: currentUser } = useAuth();
@@ -469,6 +470,11 @@ function StoreFormModal({ store, brands, currentUser, onClose }: StoreFormModalP
     ? (store?.brand || '')
     : (store?.brand || currentUser?.brand || '');
 
+  // Creation mode: 'choose' (initial), 'google-search', 'manual', or null for editing
+  const [creationMode, setCreationMode] = useState<'choose' | 'google-search' | 'manual' | null>(
+    store ? null : 'choose'
+  );
+
   const [formData, setFormData] = useState({
     name: store?.name || '',
     code: store?.code || '',
@@ -483,18 +489,23 @@ function StoreFormModal({ store, brands, currentUser, onClose }: StoreFormModalP
     is_active: store?.is_active ?? true,
   });
 
-  // Google location linking state
+  // Google location data (for creation)
+  const [googleLocationData, setGoogleLocationData] = useState<any>(null);
+  const [selectedPlace, setSelectedPlace] = useState<any>(null);
+
+  // Google location linking/search state (for edit mode)
   const [googleSearchQuery, setGoogleSearchQuery] = useState('');
-  const [googleSearchResults, setGoogleSearchResults] = useState<any>(null);
+  const [googleSearchResults, setGoogleSearchResults] = useState<any[]>([]);
   const [isSearching, setIsSearching] = useState(false);
   const [isLinking, setIsLinking] = useState(false);
   const [linkError, setLinkError] = useState('');
 
   const mutation = useMutation(
-    (data: typeof formData) => {
+    (data: any) => {
       if (store) {
         return storesAPI.updateStore(store.id, data);
       }
+      // For creation, include google_location_data if available
       return storesAPI.createStore(data);
     },
     {
@@ -507,34 +518,93 @@ function StoreFormModal({ store, brands, currentUser, onClose }: StoreFormModalP
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    mutation.mutate(formData);
-  };
 
-  // Google location search handler
-  const handleGoogleSearch = async () => {
-    if (!googleSearchQuery.trim()) return;
+    // Prepare submission data
+    const submissionData: any = { ...formData };
 
-    setIsSearching(true);
-    setLinkError('');
-
-    try {
-      const response = await axios.post('/api/integrations/google-reviews/search-business', {
-        business_name: googleSearchQuery,
-        location: `${formData.city}, ${formData.state}`.trim()
-      });
-
-      setGoogleSearchResults(response.data);
-    } catch (error: any) {
-      setLinkError(error.response?.data?.error || 'Failed to search for business');
-      setGoogleSearchResults(null);
-    } finally {
-      setIsSearching(false);
+    // Include Google location data if creating from Google
+    if (!store && googleLocationData) {
+      submissionData.google_location_data = googleLocationData;
     }
+
+    mutation.mutate(submissionData);
   };
 
-  // Link Google location to store
-  const handleLinkGoogleLocation = async () => {
-    if (!store || !googleSearchResults) return;
+  // Handle place selected from Google Places Autocomplete (for creation mode)
+  const handlePlaceSelected = (place: any) => {
+    console.log('Place selected:', place);
+    setSelectedPlace(place);
+
+    // Parse address components
+    let streetAddress = '';
+    let city = '';
+    let state = '';
+    let zipCode = '';
+    let phone = '';
+
+    if (place.address_components && Array.isArray(place.address_components)) {
+      place.address_components.forEach((component: any) => {
+        const types = component.types || [];
+
+        // Street number + route = street address
+        if (types.includes('street_number')) {
+          streetAddress = component.long_name;
+        }
+        if (types.includes('route')) {
+          streetAddress = streetAddress ? `${streetAddress} ${component.long_name}` : component.long_name;
+        }
+
+        // City (locality or sublocality)
+        if (types.includes('locality')) {
+          city = component.long_name;
+        } else if (!city && types.includes('sublocality')) {
+          city = component.long_name;
+        }
+
+        // State (administrative_area_level_1)
+        if (types.includes('administrative_area_level_1')) {
+          state = component.short_name;
+        }
+
+        // ZIP code (postal_code)
+        if (types.includes('postal_code')) {
+          zipCode = component.long_name;
+        }
+      });
+    }
+
+    // Pre-fill form with Google data
+    setFormData({
+      ...formData,
+      name: place.name || '',
+      address: streetAddress || place.formatted_address || '',
+      city,
+      state,
+      zip_code: zipCode,
+      phone: phone || formData.phone,
+    });
+
+    // Store Google location data for backend
+    // Construct place_url from place_id
+    const placeUrl = place.place_id ? `https://www.google.com/maps/place/?q=place_id:${place.place_id}` : '';
+
+    setGoogleLocationData({
+      business_name: place.name,
+      place_url: placeUrl,
+      place_id: place.place_id,
+      google_location_id: place.place_id, // Use place_id as location_id
+      address: place.formatted_address,
+      average_rating: null, // Will be fetched by backend
+      total_reviews: null, // Will be fetched by backend
+    });
+
+    // Move to manual mode to show form
+    setCreationMode('manual');
+  };
+
+  // Link Google location to store (for edit mode)
+  const handleLinkGoogleLocation = async (result: any) => {
+    if (!store) return;
 
     setIsLinking(true);
     setLinkError('');
@@ -542,14 +612,14 @@ function StoreFormModal({ store, brands, currentUser, onClose }: StoreFormModalP
     try {
       await axios.post('/api/integrations/google-reviews/link-location', {
         store_id: store.id,
-        business_name: googleSearchResults.business_name,
-        place_url: googleSearchResults.place_url,
-        place_id: googleSearchResults.place_id
+        business_name: result.business_name,
+        place_url: result.place_url,
+        place_id: result.place_id
       });
 
       // Refresh stores list to show new Google location data
       queryClient.invalidateQueries('stores');
-      setGoogleSearchResults(null);
+      setGoogleSearchResults([]);
       setGoogleSearchQuery('');
 
       alert('Google location linked successfully! Review scraping started in background.');
@@ -575,7 +645,148 @@ function StoreFormModal({ store, brands, currentUser, onClose }: StoreFormModalP
           {store ? 'Edit Store' : 'Create Store'}
         </h2>
 
+        {/* Step 1: Choose creation method (only for new stores) */}
+        {creationMode === 'choose' && (
+          <div className="space-y-4">
+            <p className="text-sm text-gray-600 mb-6">
+              How would you like to create your store?
+            </p>
+
+            <button
+              type="button"
+              onClick={() => setCreationMode('google-search')}
+              className="w-full p-4 border-2 border-gray-200 rounded-lg hover:border-indigo-500 hover:bg-indigo-50 transition-colors text-left"
+            >
+              <div className="flex items-center">
+                <div className="flex-shrink-0 w-12 h-12 bg-indigo-100 rounded-lg flex items-center justify-center">
+                  <Search className="w-6 h-6 text-indigo-600" />
+                </div>
+                <div className="ml-4">
+                  <h3 className="text-base font-semibold text-gray-900">Search Google Business</h3>
+                  <p className="text-sm text-gray-600 mt-1">
+                    Find your business on Google and automatically link reviews
+                  </p>
+                </div>
+              </div>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setCreationMode('manual')}
+              className="w-full p-4 border-2 border-gray-200 rounded-lg hover:border-indigo-500 hover:bg-indigo-50 transition-colors text-left"
+            >
+              <div className="flex items-center">
+                <div className="flex-shrink-0 w-12 h-12 bg-gray-100 rounded-lg flex items-center justify-center">
+                  <StoreIcon className="w-6 h-6 text-gray-600" />
+                </div>
+                <div className="ml-4">
+                  <h3 className="text-base font-semibold text-gray-900">Create Manually</h3>
+                  <p className="text-sm text-gray-600 mt-1">
+                    Enter store details manually (you can link Google later)
+                  </p>
+                </div>
+              </div>
+            </button>
+
+            <div className="flex justify-end pt-4">
+              <button
+                type="button"
+                onClick={onClose}
+                className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Step 2: Google search (for creation mode) */}
+        {creationMode === 'google-search' && (
+          <div className="space-y-4">
+            <button
+              type="button"
+              onClick={() => setCreationMode('choose')}
+              className="text-sm text-gray-600 hover:text-gray-900 mb-4"
+            >
+              ← Back to options
+            </button>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Search for your business on Google Maps
+              </label>
+              <GooglePlacesAutocomplete
+                value={googleSearchQuery}
+                onChange={setGoogleSearchQuery}
+                onPlaceSelected={handlePlaceSelected}
+                placeholder="Start typing your business name..."
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+              />
+              <p className="mt-2 text-sm text-gray-500">
+                Search for your business using Google Places. Details will be automatically filled in.
+              </p>
+            </div>
+
+            {/* Show selected place */}
+            {selectedPlace && (
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                <div className="flex items-start">
+                  <div className="flex-shrink-0">
+                    <svg className="w-5 h-5 text-blue-600 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                    </svg>
+                  </div>
+                  <div className="ml-3 flex-1">
+                    <h4 className="text-sm font-semibold text-gray-900 mb-1">Selected Business</h4>
+                    <p className="text-sm font-medium text-gray-800">{selectedPlace.name}</p>
+                    {selectedPlace.formatted_address && (
+                      <p className="text-sm text-gray-600 mt-1">{selectedPlace.formatted_address}</p>
+                    )}
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setCreationMode('manual')}
+                  className="w-full mt-4 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors"
+                >
+                  Continue to Store Details →
+                </button>
+              </div>
+            )}
+
+            <div className="flex justify-between pt-4 border-t">
+              <button
+                type="button"
+                onClick={() => setCreationMode('manual')}
+                className="text-sm text-gray-600 hover:text-gray-900"
+              >
+                Skip and create manually →
+              </button>
+              <button
+                type="button"
+                onClick={onClose}
+                className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Step 3 & Edit Mode: Form */}
+        {(creationMode === 'manual' || creationMode === null) && (
         <form onSubmit={handleSubmit} className="space-y-4">
+          {googleLocationData && (
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-4">
+              <div className="flex items-center">
+                <LinkIcon className="h-4 w-4 text-blue-600 mr-2" />
+                <p className="text-sm text-blue-900">
+                  This store will be linked to <strong>{googleLocationData.business_name}</strong> on Google
+                </p>
+              </div>
+            </div>
+          )}
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -799,49 +1010,56 @@ function StoreFormModal({ store, brands, currentUser, onClose }: StoreFormModalP
                   </div>
 
                   {/* Search results */}
-                  {googleSearchResults && (
-                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
-                      <div className="flex items-start justify-between mb-2">
-                        <div className="flex-1">
-                          <p className="text-sm font-medium text-blue-900">
-                            {googleSearchResults.business_name}
-                          </p>
-                          <p className="text-xs text-blue-700 mt-1">
-                            {googleSearchResults.address}
-                          </p>
-                          <div className="flex items-center gap-3 mt-2">
-                            {googleSearchResults.average_rating && (
-                              <div className="flex items-center text-sm text-blue-700">
-                                <Star className="h-3 w-3 mr-1 fill-yellow-400 text-yellow-400" />
-                                {googleSearchResults.average_rating} / 5.0
+                  {googleSearchResults.length > 0 && (
+                    <div className="space-y-3">
+                      <p className="text-sm font-medium text-gray-700">
+                        Found {googleSearchResults.length} result{googleSearchResults.length !== 1 ? 's' : ''}:
+                      </p>
+                      {googleSearchResults.map((result, index) => (
+                        <div key={index} className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                          <div className="flex items-start justify-between mb-2">
+                            <div className="flex-1">
+                              <p className="text-sm font-medium text-blue-900">
+                                {result.business_name}
+                              </p>
+                              <p className="text-xs text-blue-700 mt-1">
+                                {result.address}
+                              </p>
+                              <div className="flex items-center gap-3 mt-2">
+                                {result.average_rating && (
+                                  <div className="flex items-center text-sm text-blue-700">
+                                    <Star className="h-3 w-3 mr-1 fill-yellow-400 text-yellow-400" />
+                                    {result.average_rating} / 5.0
+                                  </div>
+                                )}
+                                {result.total_reviews !== null && (
+                                  <span className="text-sm text-blue-700">
+                                    {result.total_reviews} reviews
+                                  </span>
+                                )}
                               </div>
-                            )}
-                            {googleSearchResults.total_reviews !== null && (
-                              <span className="text-sm text-blue-700">
-                                {googleSearchResults.total_reviews} reviews
-                              </span>
-                            )}
+                            </div>
                           </div>
+                          <button
+                            type="button"
+                            onClick={() => handleLinkGoogleLocation(result)}
+                            disabled={isLinking}
+                            className="w-full mt-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 flex items-center justify-center"
+                          >
+                            {isLinking ? (
+                              <>
+                                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                                Linking...
+                              </>
+                            ) : (
+                              <>
+                                <LinkIcon className="h-4 w-4 mr-2" />
+                                Link This Location
+                              </>
+                            )}
+                          </button>
                         </div>
-                      </div>
-                      <button
-                        type="button"
-                        onClick={handleLinkGoogleLocation}
-                        disabled={isLinking}
-                        className="w-full mt-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 flex items-center justify-center"
-                      >
-                        {isLinking ? (
-                          <>
-                            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                            Linking...
-                          </>
-                        ) : (
-                          <>
-                            <LinkIcon className="h-4 w-4 mr-2" />
-                            Link This Location
-                          </>
-                        )}
-                      </button>
+                      ))}
                     </div>
                   )}
 
@@ -895,6 +1113,7 @@ function StoreFormModal({ store, brands, currentUser, onClose }: StoreFormModalP
             </button>
           </div>
         </form>
+        )}
       </div>
     </div>
   );

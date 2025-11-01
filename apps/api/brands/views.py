@@ -52,6 +52,35 @@ class StoreListCreateView(generics.ListCreateAPIView):
             return StoreListSerializer
         return StoreSerializer
 
+    def perform_create(self, serializer):
+        """
+        Create store and optionally link Google location if google_location_data is provided
+        """
+        # Create the store
+        store = serializer.save()
+
+        # Check if Google location data was provided
+        google_location_data = self.request.data.get('google_location_data')
+
+        if google_location_data:
+            from integrations.models import GoogleLocation
+            from integrations.tasks import scrape_google_reviews
+
+            # Create GoogleLocation record
+            google_location = GoogleLocation.objects.create(
+                store=store,
+                google_location_id=google_location_data.get('google_location_id', ''),
+                google_location_name=google_location_data.get('business_name', ''),
+                place_url=google_location_data.get('place_url', ''),
+                place_id=google_location_data.get('place_id', ''),
+                address=google_location_data.get('address', ''),
+                average_rating=google_location_data.get('average_rating'),
+                total_review_count=google_location_data.get('total_reviews', 0)
+            )
+
+            # Trigger background task to scrape reviews
+            scrape_google_reviews.delay(google_location.id)
+
 
 class StoreDetailView(generics.RetrieveUpdateDestroyAPIView):
     serializer_class = StoreSerializer
