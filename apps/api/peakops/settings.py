@@ -40,6 +40,7 @@ DJANGO_APPS = [
 THIRD_PARTY_APPS = [
     'rest_framework',
     'rest_framework_simplejwt',
+    'rest_framework_simplejwt.token_blacklist',
     'corsheaders',
     'storages',
     'django_celery_beat',
@@ -362,8 +363,13 @@ MAX_PEOPLE_IN_KITCHEN = config('MAX_PEOPLE_IN_KITCHEN', default=10, cast=int)
 MAX_PEOPLE_IN_LINE = config('MAX_PEOPLE_IN_LINE', default=15, cast=int)
 
 # Demo and Privacy Settings
-DEMO_MODE = config('DEMO_MODE', default=True, cast=bool)
+DEMO_MODE = config('DEMO_MODE', default=False, cast=bool)
 FACE_BLUR = config('FACE_BLUR', default=False, cast=bool)
+
+SESSION_COOKIE_AGE = config('SESSION_COOKIE_AGE', default=1209600, cast=int)  # 14 days default
+
+# CORS settings (secure defaults for production)
+CORS_ALLOW_ALL_ORIGINS = False
 
 # Demo mode configuration
 if DEMO_MODE:

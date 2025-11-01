@@ -3,6 +3,10 @@ from rest_framework.decorators import api_view, permission_classes, action
 from rest_framework.permissions import AllowAny, IsAuthenticated, IsAdminUser
 from rest_framework.response import Response
 from rest_framework_simplejwt.tokens import RefreshToken
+from rest_framework_simplejwt.exceptions import TokenError
+from rest_framework_simplejwt.token_blacklist.models import BlacklistedToken
+from rest_framework_simplejwt.backends import TokenBackend
+from rest_framework_simplejwt.settings import api_settings as jwt_settings
 from django.contrib.auth import login
 from django.utils import timezone
 from django.db.models import Q
@@ -80,6 +84,73 @@ def login_view(request):
             'user': UserSerializer(user).data
         })
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+@extend_schema(
+    request={'application/json': {'type': 'object', 'properties': {'refresh': {'type': 'string'}}}},
+    responses={200: dict, 400: None, 401: None},
+    description="Logout by blacklisting the refresh token"
+)
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def logout_view(request):
+    """
+    Logout endpoint that blacklists the refresh token.
+    
+    With BLACKLIST_AFTER_ROTATION=True in settings, this ensures that
+    the refresh token cannot be used again to obtain new access tokens.
+    
+    Requires:
+    - Authentication (valid access token)
+    - 'refresh' token in request body
+    
+    Returns:
+    - 200: Successfully logged out
+    - 400: Missing or invalid refresh token
+    - 401: Token already blacklisted
+    """
+    refresh_token = request.data.get('refresh')
+    
+    if not refresh_token:
+        return Response(
+            {'error': 'Refresh token is required'},
+            status=status.HTTP_400_BAD_REQUEST
+        )
+    
+    try:
+        # Decode token to get jti without triggering blacklist verification
+        token_backend = TokenBackend(
+            algorithm=jwt_settings.ALGORITHM,
+            signing_key=jwt_settings.SIGNING_KEY,
+            verifying_key=jwt_settings.VERIFYING_KEY
+        )
+        payload = token_backend.decode(refresh_token, verify=True)
+        jti = payload.get('jti')
+        
+        # Check if token is already blacklisted
+        if BlacklistedToken.objects.filter(token__jti=jti).exists():
+            return Response(
+                {'error': 'Token already blacklisted'},
+                status=status.HTTP_401_UNAUTHORIZED
+            )
+        
+        token = RefreshToken(refresh_token)
+        token.blacklist()
+        
+        return Response(
+            {'message': 'Successfully logged out'},
+            status=status.HTTP_200_OK
+        )
+    except TokenError as e:
+        return Response(
+            {'error': str(e)},
+            status=status.HTTP_400_BAD_REQUEST
+        )
+    except Exception as e:
+        return Response(
+            {'error': 'Invalid token'},
+            status=status.HTTP_400_BAD_REQUEST
+        )
 
 
 @extend_schema(
