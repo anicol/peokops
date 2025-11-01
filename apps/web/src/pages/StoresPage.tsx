@@ -750,7 +750,7 @@ function StoreFormModal({ store, brands, currentUser, onClose }: StoreFormModalP
   // This should exist for all users since they're assigned to a store with a brand
   const defaultBrand = currentUser?.role === 'ADMIN'
     ? (store?.brand || '')
-    : (store?.brand || currentUser?.brand_id);
+    : (store?.brand || currentUser?.brand_id || '');
 
   console.log('StoreFormModal - currentUser:', currentUser);
   console.log('StoreFormModal - defaultBrand:', defaultBrand);
