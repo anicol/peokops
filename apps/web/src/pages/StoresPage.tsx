@@ -467,7 +467,7 @@ function StoreFormModal({ store, brands, currentUser, onClose }: StoreFormModalP
   // For non-admin users, default to their brand
   const defaultBrand = currentUser?.role === 'ADMIN'
     ? (store?.brand || '')
-    : (store?.brand || currentUser?.brand || '');
+    : (store?.brand || currentUser?.brand_id || '');
 
   const [formData, setFormData] = useState({
     name: store?.name || '',
