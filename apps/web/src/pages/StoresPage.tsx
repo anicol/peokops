@@ -585,7 +585,26 @@ export default function StoresPage() {
                     <div>
                       <h3 className="text-lg font-semibold text-gray-900 mb-3">Overall Sentiment</h3>
                       <div className="bg-gray-50 rounded-lg p-4">
-                        <p className="text-gray-700">{reviewAnalysisData.sentiment_summary}</p>
+                        {typeof reviewAnalysisData.sentiment_summary === 'string' ? (
+                          <p className="text-gray-700">{reviewAnalysisData.sentiment_summary}</p>
+                        ) : reviewAnalysisData.sentiment_summary.positive_percentage !== undefined ? (
+                          <div className="grid grid-cols-3 gap-4">
+                            <div className="text-center">
+                              <p className="text-2xl font-bold text-green-600">{reviewAnalysisData.sentiment_summary.positive_percentage}%</p>
+                              <p className="text-sm text-gray-600">Positive</p>
+                            </div>
+                            <div className="text-center">
+                              <p className="text-2xl font-bold text-gray-600">{reviewAnalysisData.sentiment_summary.neutral_percentage}%</p>
+                              <p className="text-sm text-gray-600">Neutral</p>
+                            </div>
+                            <div className="text-center">
+                              <p className="text-2xl font-bold text-red-600">{reviewAnalysisData.sentiment_summary.negative_percentage}%</p>
+                              <p className="text-sm text-gray-600">Negative</p>
+                            </div>
+                          </div>
+                        ) : (
+                          <p className="text-gray-700">{JSON.stringify(reviewAnalysisData.sentiment_summary)}</p>
+                        )}
                       </div>
                     </div>
                   )}
@@ -615,7 +634,44 @@ export default function StoresPage() {
                     <div>
                       <h3 className="text-lg font-semibold text-gray-900 mb-3">AI Insights</h3>
                       <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                        <p className="text-blue-900">{reviewAnalysisData.insights}</p>
+                        {typeof reviewAnalysisData.insights === 'string' ? (
+                          <p className="text-blue-900">{reviewAnalysisData.insights}</p>
+                        ) : reviewAnalysisData.insights.key_issues ? (
+                          <div className="space-y-3">
+                            {reviewAnalysisData.insights.common_complaints && reviewAnalysisData.insights.common_complaints.length > 0 && (
+                              <div>
+                                <h4 className="text-sm font-semibold text-blue-900 mb-2">Common Complaints</h4>
+                                <ul className="list-disc list-inside text-sm text-blue-800 space-y-1">
+                                  {reviewAnalysisData.insights.common_complaints.map((complaint: string, idx: number) => (
+                                    <li key={idx}>{complaint}</li>
+                                  ))}
+                                </ul>
+                              </div>
+                            )}
+                            {reviewAnalysisData.insights.common_praise && reviewAnalysisData.insights.common_praise.length > 0 && (
+                              <div>
+                                <h4 className="text-sm font-semibold text-blue-900 mb-2">Common Praise</h4>
+                                <ul className="list-disc list-inside text-sm text-blue-800 space-y-1">
+                                  {reviewAnalysisData.insights.common_praise.map((praise: string, idx: number) => (
+                                    <li key={idx}>{praise}</li>
+                                  ))}
+                                </ul>
+                              </div>
+                            )}
+                            {reviewAnalysisData.insights.operational_themes && reviewAnalysisData.insights.operational_themes.length > 0 && (
+                              <div>
+                                <h4 className="text-sm font-semibold text-blue-900 mb-2">Operational Themes</h4>
+                                <ul className="list-disc list-inside text-sm text-blue-800 space-y-1">
+                                  {reviewAnalysisData.insights.operational_themes.map((theme: string, idx: number) => (
+                                    <li key={idx}>{theme}</li>
+                                  ))}
+                                </ul>
+                              </div>
+                            )}
+                          </div>
+                        ) : (
+                          <p className="text-blue-900 text-sm">{JSON.stringify(reviewAnalysisData.insights)}</p>
+                        )}
                       </div>
                     </div>
                   )}
@@ -624,10 +680,43 @@ export default function StoresPage() {
                   {reviewAnalysisData.micro_check_suggestions && reviewAnalysisData.micro_check_suggestions.length > 0 && (
                     <div>
                       <h3 className="text-lg font-semibold text-gray-900 mb-3">Suggested Micro-Checks</h3>
-                      <div className="space-y-2">
+                      <div className="space-y-3">
                         {reviewAnalysisData.micro_check_suggestions.map((suggestion: any, idx: number) => (
-                          <div key={idx} className="bg-green-50 border border-green-200 rounded-lg p-3">
-                            <p className="text-sm font-medium text-green-900">{suggestion.check_text || suggestion}</p>
+                          <div key={idx} className="bg-green-50 border border-green-200 rounded-lg p-4">
+                            {typeof suggestion === 'string' ? (
+                              <p className="text-sm font-medium text-green-900">{suggestion}</p>
+                            ) : (
+                              <div className="space-y-2">
+                                <div className="flex items-start justify-between">
+                                  <h4 className="text-sm font-semibold text-green-900">{suggestion.title || suggestion.question}</h4>
+                                  {suggestion.severity && (
+                                    <span className={`text-xs px-2 py-1 rounded-full font-medium ${
+                                      suggestion.severity === 'HIGH' || suggestion.severity === 'CRITICAL'
+                                        ? 'bg-red-100 text-red-800'
+                                        : suggestion.severity === 'MEDIUM'
+                                        ? 'bg-yellow-100 text-yellow-800'
+                                        : 'bg-green-100 text-green-800'
+                                    }`}>
+                                      {suggestion.severity}
+                                    </span>
+                                  )}
+                                </div>
+                                {suggestion.category && (
+                                  <p className="text-xs text-green-700 font-medium">Category: {suggestion.category}</p>
+                                )}
+                                {suggestion.question && suggestion.question !== suggestion.title && (
+                                  <p className="text-sm text-green-800">{suggestion.question}</p>
+                                )}
+                                {suggestion.success_criteria && (
+                                  <div className="text-xs text-green-700">
+                                    <span className="font-medium">Success Criteria:</span> {suggestion.success_criteria}
+                                  </div>
+                                )}
+                                {suggestion.mentions_in_reviews && (
+                                  <p className="text-xs text-green-600">Mentioned in {suggestion.mentions_in_reviews} review{suggestion.mentions_in_reviews !== 1 ? 's' : ''}</p>
+                                )}
+                              </div>
+                            )}
                           </div>
                         ))}
                       </div>
