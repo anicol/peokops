@@ -378,9 +378,23 @@ def process_review_analysis(self, analysis_id):
         analysis.progress_percentage = 100
         analysis.completed_at = timezone.now()
         analysis.save()
-        
+
         logger.info(f"Analysis completed for {analysis_id}")
-        
+
+        # Update GoogleLocation with the scraped rating data if this analysis is linked to a store
+        if analysis.place_id:
+            from integrations.models import GoogleLocation
+            try:
+                google_location = GoogleLocation.objects.filter(place_id=analysis.place_id).first()
+                if google_location:
+                    google_location.average_rating = analysis.google_rating
+                    google_location.total_review_count = analysis.total_reviews_found or analysis.reviews_analyzed or 0
+                    google_location.synced_at = timezone.now()
+                    google_location.save()
+                    logger.info(f"Updated GoogleLocation {google_location.id} with rating {analysis.google_rating}")
+            except Exception as e:
+                logger.error(f"Failed to update GoogleLocation: {str(e)}")
+
         # Send email if email was captured
         if analysis.contact_email:
             send_analysis_email.delay(analysis_id)

@@ -98,6 +98,7 @@ export interface Store {
   google_review_count?: number | null;
   google_location_name?: string | null;
   google_synced_at?: string | null;
+  google_place_id?: string | null;
 }
 
 export interface Video {

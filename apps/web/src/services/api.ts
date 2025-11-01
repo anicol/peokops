@@ -899,6 +899,18 @@ export const insightsAPI = {
     });
     return response.data;
   },
+
+  // Get 360° Insights summary for a store (authenticated endpoint)
+  getSummary: async (storeId: number): Promise<any> => {
+    const response = await api.get(`/insights/store/${storeId}/summary/`);
+    return response.data;
+  },
+
+  // Get review analysis by Google place_id (authenticated endpoint)
+  getAnalysisByPlaceId: async (placeId: string): Promise<any> => {
+    const response = await api.get(`/insights/by-place/${placeId}/`);
+    return response.data;
+  },
 };
 
 export default api;
