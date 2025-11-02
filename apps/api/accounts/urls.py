@@ -29,5 +29,6 @@ urlpatterns = [
     path('impersonate/<int:user_id>/', views.start_impersonation_view, name='start-impersonation'),
     path('stop-impersonation/', views.stop_impersonation_view, name='stop-impersonation'),
     path('nudges/active/', views.get_active_nudges, name='active-nudges'),
+    path('admin/system-stats/', views.system_stats_view, name='system-stats'),
     path('', include(router.urls)),
 ]
