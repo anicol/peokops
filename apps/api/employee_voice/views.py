@@ -96,10 +96,10 @@ class EmployeeVoicePulseViewSet(viewsets.ModelViewSet):
         pulse = self.get_object()
         user = request.user
 
-        # Check role: Only OWNER and SUPER_ADMIN can view insights
-        if user.role not in [User.Role.OWNER, User.Role.SUPER_ADMIN]:
+        # Check role: OWNER, SUPER_ADMIN, ADMIN, TRIAL_ADMIN, and GM can view insights
+        if user.role not in [User.Role.OWNER, User.Role.SUPER_ADMIN, User.Role.ADMIN, User.Role.TRIAL_ADMIN, User.Role.GM]:
             return Response(
-                {'error': 'Insufficient permissions. Only account owners can view insights.'},
+                {'error': 'Insufficient permissions.'},
                 status=status.HTTP_403_FORBIDDEN
             )
 
@@ -319,6 +319,44 @@ def submit_survey_response(request):
     # Return created response
     response_serializer = EmployeeVoiceResponseSerializer(response, context={'request': request})
     return Response(response_serializer.data, status=status.HTTP_201_CREATED)
+
+
+class EmployeeVoiceInvitationViewSet(viewsets.ReadOnlyModelViewSet):
+    """
+    Read-only viewset for viewing invitation history.
+
+    Access Control:
+    - OWNER/SUPER_ADMIN: Can view all invitations for their account
+    - ADMIN: Can view invitations for their store
+    - Others: No access
+    """
+    queryset = EmployeeVoiceInvitation.objects.all()
+    serializer_class = EmployeeVoiceInvitationSerializer
+    permission_classes = [IsAuthenticated]
+    filterset_fields = ['pulse', 'status']
+    ordering_fields = ['sent_at', 'completed_at']
+    ordering = ['-sent_at']
+
+    def get_queryset(self):
+        """Filter invitations based on user role"""
+        user = self.request.user
+
+        # SUPER_ADMIN sees all invitations
+        if user.role == User.Role.SUPER_ADMIN:
+            return self.queryset.all()
+
+        # OWNER sees invitations for their account
+        if user.role == User.Role.OWNER:
+            if user.account:
+                return self.queryset.filter(pulse__account=user.account)
+
+        # ADMIN sees invitations for their store
+        if user.role in [User.Role.ADMIN, User.Role.TRIAL_ADMIN]:
+            if user.store:
+                return self.queryset.filter(pulse__store=user.store)
+
+        # Other roles have no access
+        return self.queryset.none()
 
 
 class EmployeeVoiceResponseViewSet(viewsets.ReadOnlyModelViewSet):
