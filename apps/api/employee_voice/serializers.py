@@ -104,7 +104,6 @@ class EmployeeVoiceResponseSerializer(serializers.ModelSerializer):
     pulse_title = serializers.CharField(source='pulse.title', read_only=True)
     mood_display = serializers.CharField(source='get_mood_display', read_only=True)
     confidence_display = serializers.CharField(source='get_confidence_display', read_only=True)
-    bottleneck_display = serializers.CharField(source='get_bottleneck_display', read_only=True)
     comment = serializers.SerializerMethodField()  # Role-gated
 
     def get_comment(self, obj):
