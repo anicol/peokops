@@ -66,8 +66,8 @@ class EmployeeVoicePulseViewSet(viewsets.ModelViewSet):
             if user.account:
                 return self.queryset.filter(account=user.account)
 
-        # ADMIN sees pulses for their store only
-        if user.role == User.Role.ADMIN:
+        # ADMIN, TRIAL_ADMIN, and GM see pulses for their store only
+        if user.role in [User.Role.ADMIN, User.Role.TRIAL_ADMIN, User.Role.GM]:
             if user.store:
                 return self.queryset.filter(store=user.store)
 
