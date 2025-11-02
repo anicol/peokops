@@ -43,29 +43,14 @@ export default function PulseAnalyticsSection({ storeId, pulses }: PulseAnalytic
     );
   }
 
-  // Calculate stats
-  const totalResponses = responses?.length || 0;
-  const avgMood = responses?.length
-    ? responses.reduce((sum: number, r: any) => sum + r.mood, 0) / responses.length
-    : 0;
-
-  const confidenceDistribution = responses?.reduce((acc: any, r: any) => {
-    acc[r.confidence] = (acc[r.confidence] || 0) + 1;
-    return acc;
-  }, {});
-
-  const bottleneckCounts = responses?.reduce((acc: any, r: any) => {
-    if (r.bottleneck && r.bottleneck !== 'NONE') {
-      acc[r.bottleneck] = (acc[r.bottleneck] || 0) + 1;
-    }
-    return acc;
-  }, {});
-
-  const topBottlenecks = bottleneckCounts
-    ? Object.entries(bottleneckCounts)
-        .sort((a: any, b: any) => b[1] - a[1])
-        .slice(0, 5)
-    : [];
+  // Use insights data from backend (already aggregated)
+  const totalResponses = insights?.total_responses || 0;
+  const avgMood = insights?.avg_mood || 0;
+  const confidenceHighPct = insights?.confidence_high_pct || 0;
+  const confidenceMediumPct = insights?.confidence_medium_pct || 0;
+  const confidenceLowPct = insights?.confidence_low_pct || 0;
+  const topBottlenecks = insights?.top_bottlenecks || [];
+  const commentsCount = insights?.comments?.length || 0;
 
   return (
     <div>
@@ -123,12 +108,10 @@ export default function PulseAnalyticsSection({ storeId, pulses }: PulseAnalytic
                 <BarChart3 className="w-4 h-4 text-gray-400" />
               </div>
               <p className="text-2xl font-bold text-gray-900 mt-1">
-                {confidenceDistribution?.HIGH || 0}
+                {Math.round(confidenceHighPct)}%
               </p>
               <p className="text-xs text-gray-500 mt-1">
-                {totalResponses > 0
-                  ? `${Math.round((confidenceDistribution?.HIGH / totalResponses) * 100)}% of responses`
-                  : 'No data'}
+                {totalResponses > 0 ? `${totalResponses} total responses` : 'No data'}
               </p>
             </div>
 
@@ -138,15 +121,11 @@ export default function PulseAnalyticsSection({ storeId, pulses }: PulseAnalytic
                 <MessageSquare className="w-4 h-4 text-gray-400" />
               </div>
               <p className="text-2xl font-bold text-gray-900 mt-1">
-                {responses?.filter((r: any) => r.comment && r.comment.trim()).length || 0}
+                {commentsCount}
               </p>
               <p className="text-xs text-gray-500 mt-1">
                 {totalResponses > 0
-                  ? `${Math.round(
-                      ((responses?.filter((r: any) => r.comment && r.comment.trim()).length || 0) /
-                        totalResponses) *
-                        100
-                    )}% with feedback`
+                  ? `${Math.round((commentsCount / totalResponses) * 100)}% with feedback`
                   : 'No data'}
               </p>
             </div>
@@ -159,29 +138,26 @@ export default function PulseAnalyticsSection({ storeId, pulses }: PulseAnalytic
               <p className="text-sm text-gray-500 text-center py-8">No responses yet</p>
             ) : (
               <div className="space-y-3">
-                {['HIGH', 'MEDIUM', 'LOW'].map((level) => {
-                  const count = confidenceDistribution?.[level] || 0;
-                  const percentage = (count / totalResponses) * 100;
+                {[
+                  { level: 'HIGH', label: '✅ Yes, I\'m all set', pct: confidenceHighPct, color: 'bg-green-600' },
+                  { level: 'MEDIUM', label: '⚠️ Mostly, a few things missing', pct: confidenceMediumPct, color: 'bg-yellow-600' },
+                  { level: 'LOW', label: '❌ No, we\'re short or disorganized', pct: confidenceLowPct, color: 'bg-red-600' },
+                ].map((item) => {
+                  const count = Math.round((item.pct / 100) * totalResponses);
                   return (
-                    <div key={level}>
+                    <div key={item.level}>
                       <div className="flex items-center justify-between mb-1">
                         <span className="text-sm font-medium text-gray-700">
-                          {level === 'HIGH' ? '💪 High' : level === 'MEDIUM' ? '👍 Medium' : '📚 Low'}
+                          {item.label}
                         </span>
                         <span className="text-sm text-gray-500">
-                          {count} ({Math.round(percentage)}%)
+                          {count} ({Math.round(item.pct)}%)
                         </span>
                       </div>
                       <div className="w-full bg-gray-200 rounded-full h-2">
                         <div
-                          className={`h-full rounded-full ${
-                            level === 'HIGH'
-                              ? 'bg-green-600'
-                              : level === 'MEDIUM'
-                              ? 'bg-yellow-600'
-                              : 'bg-red-600'
-                          }`}
-                          style={{ width: `${percentage}%` }}
+                          className={`h-full rounded-full ${item.color}`}
+                          style={{ width: `${item.pct}%` }}
                         />
                       </div>
                     </div>
@@ -200,23 +176,33 @@ export default function PulseAnalyticsSection({ storeId, pulses }: PulseAnalytic
               </p>
             ) : (
               <div className="space-y-2">
-                {topBottlenecks.map(([bottleneck, count]: any, idx) => {
-                  const percentage = (count / totalResponses) * 100;
+                {topBottlenecks.map((bottleneck: any, idx: number) => {
+                  // Map bottleneck type to emoji
+                  const icons: Record<string, string> = {
+                    'CLEANLINESS': '🧹',
+                    'STAFFING': '🧍',
+                    'EQUIPMENT': '⚙️',
+                    'TASKS': '📋',
+                    'COMMUNICATION': '💬',
+                    'GUEST_VOLUME': '🍴',
+                  };
+
                   return (
                     <div
-                      key={bottleneck}
+                      key={bottleneck.type}
                       className="flex items-center justify-between p-3 bg-gray-50 rounded-md"
                     >
                       <div className="flex items-center space-x-3">
                         <span className="text-lg font-bold text-gray-400">#{idx + 1}</span>
+                        <span className="text-xl">{icons[bottleneck.type] || '📌'}</span>
                         <span className="text-sm font-medium text-gray-900">
-                          {bottleneck.replace('_', ' ')}
+                          {bottleneck.type.replace(/_/g, ' ').toLowerCase().replace(/\b\w/g, (l: string) => l.toUpperCase())}
                         </span>
                       </div>
                       <div className="flex items-center space-x-3">
-                        <span className="text-sm text-gray-500">{Math.round(percentage)}%</span>
+                        <span className="text-sm text-gray-500">{Math.round(bottleneck.percentage)}%</span>
                         <span className="text-sm font-semibold text-gray-700 bg-gray-200 px-2 py-1 rounded">
-                          {count} mentions
+                          {bottleneck.count} mentions
                         </span>
                       </div>
                     </div>
