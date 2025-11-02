@@ -15,7 +15,7 @@ export function SuperAdminFooter() {
   const { data: stats } = useQuery<SystemStats>(
     'superadmin-footer-stats',
     async () => {
-      const response = await api.get('/api/admin/system-stats/');
+      const response = await api.get('/auth/admin/system-stats/');
       return response.data;
     },
     {
