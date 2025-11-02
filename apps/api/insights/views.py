@@ -593,9 +593,9 @@ def _compute_correlations(store):
     # Get detected cross-voice correlations from Employee Voice analysis
     detected_correlations = CrossVoiceCorrelation.objects.filter(
         pulse__store=store,
-        detected_at__gte=thirty_days_ago,
-        is_active=True
-    ).order_by('-correlation_strength')[:5]  # Top 5 correlations
+        created_at__gte=thirty_days_ago,
+        is_resolved=False
+    ).order_by('-strength')[:5]  # Top 5 correlations
 
     for correlation in detected_correlations:
         # Format the correlation for display
