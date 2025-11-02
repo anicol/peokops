@@ -30,23 +30,23 @@ export default function PulseSurveyPage() {
       return;
     }
 
+    const validateToken = async () => {
+      try {
+        const response = await employeeVoiceAPI.validateMagicLink(token!);
+        setPulse(response.pulse);
+        setStep('survey');
+      } catch (err: any) {
+        if (err.response?.data?.error) {
+          setError(err.response.data.error);
+        } else {
+          setError('This survey link is invalid or has expired.');
+        }
+        setStep('error');
+      }
+    };
+
     validateToken();
   }, [token]);
-
-  const validateToken = async () => {
-    try {
-      const response = await employeeVoiceAPI.validateMagicLink(token!);
-      setPulse(response.pulse);
-      setStep('survey');
-    } catch (err: any) {
-      if (err.response?.data?.error) {
-        setError(err.response.data.error);
-      } else {
-        setError('This survey link is invalid or has expired.');
-      }
-      setStep('error');
-    }
-  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
