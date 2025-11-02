@@ -201,19 +201,19 @@ export default function PulseSurveyPage() {
         {currentStep !== 'welcome' && currentStep !== 'success' && getProgressDots()}
 
         {/* Carousel Content */}
-        <div className="bg-white rounded-2xl shadow-xl p-8 transition-all duration-300 ease-in-out">
+        <div className="bg-white rounded-xl sm:rounded-2xl shadow-xl p-4 sm:p-8 transition-all duration-300 ease-in-out">
 
           {/* Welcome Screen */}
           {currentStep === 'welcome' && (
             <div className="text-center animate-fade-in">
-              <h1 className="text-3xl font-bold text-gray-900 mb-3">Quick 3-question check-in 👋</h1>
-              <p className="text-gray-600 mb-6">Takes 30 seconds • Anonymous</p>
+              <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-3">Quick 3-question check-in 👋</h1>
+              <p className="text-sm sm:text-base text-gray-600 mb-6">Takes 30 seconds • Anonymous</p>
               <button
                 onClick={() => setCurrentStep('mood')}
-                className="w-full bg-blue-600 text-white py-4 px-6 rounded-lg font-semibold text-lg hover:bg-blue-700 transition-all shadow-lg hover:shadow-xl flex items-center justify-center gap-2"
+                className="w-full bg-blue-600 text-white py-3 sm:py-4 px-4 sm:px-6 rounded-lg font-semibold text-base sm:text-lg hover:bg-blue-700 transition-all shadow-lg hover:shadow-xl flex items-center justify-center gap-2"
               >
                 Start
-                <ChevronRight className="w-5 h-5" />
+                <ChevronRight className="w-4 h-4 sm:w-5 sm:h-5" />
               </button>
             </div>
           )}
@@ -221,24 +221,24 @@ export default function PulseSurveyPage() {
           {/* Step 1: Mood */}
           {currentStep === 'mood' && (
             <div className="animate-slide-in">
-              <h2 className="text-2xl font-bold text-gray-900 mb-6 text-center">
+              <h2 className="text-xl sm:text-2xl font-bold text-gray-900 mb-4 sm:mb-6 text-center">
                 How's your shift feeling today?
               </h2>
-              <div className="flex justify-between gap-3">
+              <div className="flex justify-between gap-1 sm:gap-3">
                 {moodOptions.map((option) => (
                   <button
                     key={option.value}
                     onClick={() => handleMoodSelect(option.value)}
                     className={`
-                      flex-1 flex flex-col items-center justify-center p-4 rounded-xl border-2 transition-all transform hover:scale-110
+                      flex-1 flex flex-col items-center justify-center p-2 sm:p-4 rounded-lg sm:rounded-xl border-2 transition-all transform hover:scale-110
                       ${mood === option.value
                         ? 'border-blue-600 bg-blue-50 scale-110'
                         : 'border-gray-200 hover:border-blue-300'
                       }
                     `}
                   >
-                    <span className="text-5xl mb-2">{option.emoji}</span>
-                    <span className="text-xs text-gray-600 font-medium">{option.label}</span>
+                    <span className="text-3xl sm:text-5xl mb-1 sm:mb-2">{option.emoji}</span>
+                    <span className="text-[10px] sm:text-xs text-gray-600 font-medium">{option.label}</span>
                   </button>
                 ))}
               </div>
@@ -248,24 +248,24 @@ export default function PulseSurveyPage() {
           {/* Step 2: Confidence */}
           {currentStep === 'confidence' && (
             <div className="animate-slide-in">
-              <h2 className="text-2xl font-bold text-gray-900 mb-6 text-center">
+              <h2 className="text-lg sm:text-2xl font-bold text-gray-900 mb-4 sm:mb-6 text-center">
                 Do you have what you need to do your job well today?
               </h2>
-              <div className="space-y-3">
+              <div className="space-y-2 sm:space-y-3">
                 {confidenceOptions.map((option) => (
                   <button
                     key={option.value}
                     onClick={() => handleConfidenceSelect(option.value)}
                     className={`
-                      w-full flex items-center p-5 rounded-xl border-2 transition-all transform hover:scale-105
+                      w-full flex items-center p-4 sm:p-5 rounded-lg sm:rounded-xl border-2 transition-all transform hover:scale-105
                       ${confidence === option.value
                         ? 'border-blue-600 bg-blue-50 scale-105'
                         : 'border-gray-200 hover:border-blue-300'
                       }
                     `}
                   >
-                    <span className="text-3xl mr-4">{option.icon}</span>
-                    <span className="text-gray-900 font-medium text-left">{option.label}</span>
+                    <span className="text-2xl sm:text-3xl mr-3 sm:mr-4 flex-shrink-0">{option.icon}</span>
+                    <span className="text-sm sm:text-base text-gray-900 font-medium text-left">{option.label}</span>
                   </button>
                 ))}
               </div>
@@ -275,17 +275,17 @@ export default function PulseSurveyPage() {
           {/* Step 3: Bottlenecks (multi-select, max 2) */}
           {currentStep === 'bottlenecks' && (
             <div className="animate-slide-in">
-              <h2 className="text-2xl font-bold text-gray-900 mb-2 text-center">
+              <h2 className="text-xl sm:text-2xl font-bold text-gray-900 mb-2 text-center">
                 What's slowing the team down the most right now?
               </h2>
-              <p className="text-sm text-gray-500 mb-6 text-center">Pick up to 2</p>
-              <div className="grid grid-cols-2 gap-3 mb-6">
+              <p className="text-xs sm:text-sm text-gray-500 mb-4 sm:mb-6 text-center">Pick up to 2</p>
+              <div className="grid grid-cols-2 gap-2 sm:gap-3 mb-4 sm:mb-6">
                 {bottleneckOptions.map((option) => (
                   <button
                     key={option.value}
                     onClick={() => handleBottleneckToggle(option.value)}
                     className={`
-                      flex items-center p-4 rounded-xl border-2 transition-all
+                      flex items-center p-3 sm:p-4 rounded-lg sm:rounded-xl border-2 transition-all
                       ${bottlenecks.includes(option.value)
                         ? 'border-blue-600 bg-blue-50'
                         : 'border-gray-200 hover:border-blue-300'
@@ -293,17 +293,17 @@ export default function PulseSurveyPage() {
                       ${bottlenecks.length >= 2 && !bottlenecks.includes(option.value) ? 'opacity-50' : ''}
                     `}
                   >
-                    <span className="text-2xl mr-2">{option.icon}</span>
-                    <span className="text-sm text-gray-900 text-left">{option.label}</span>
+                    <span className="text-xl sm:text-2xl mr-2 flex-shrink-0">{option.icon}</span>
+                    <span className="text-xs sm:text-sm text-gray-900 text-left leading-tight">{option.label}</span>
                   </button>
                 ))}
               </div>
               <button
                 onClick={advanceStep}
-                className="w-full bg-blue-600 text-white py-4 px-6 rounded-xl font-semibold hover:bg-blue-700 transition-all flex items-center justify-center gap-2"
+                className="w-full bg-blue-600 text-white py-3 sm:py-4 px-4 sm:px-6 rounded-lg sm:rounded-xl font-semibold hover:bg-blue-700 transition-all flex items-center justify-center gap-2"
               >
                 Next
-                <ChevronRight className="w-5 h-5" />
+                <ChevronRight className="w-4 h-4 sm:w-5 sm:h-5" />
               </button>
             </div>
           )}
@@ -311,26 +311,26 @@ export default function PulseSurveyPage() {
           {/* Step 4: Optional Comment */}
           {currentStep === 'comment' && (
             <div className="animate-slide-in">
-              <h2 className="text-2xl font-bold text-gray-900 mb-2 text-center">
+              <h2 className="text-xl sm:text-2xl font-bold text-gray-900 mb-2 text-center">
                 Anything we should fix or celebrate today?
               </h2>
-              <p className="text-sm text-gray-500 mb-6 text-center">Optional</p>
+              <p className="text-xs sm:text-sm text-gray-500 mb-4 sm:mb-6 text-center">Optional</p>
               <textarea
                 value={comment}
                 onChange={(e) => setComment(e.target.value.slice(0, 80))}
                 placeholder="Your quick thoughts... (80 chars max)"
-                className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none mb-2"
+                className="w-full px-3 sm:px-4 py-2 sm:py-3 border-2 border-gray-200 rounded-lg sm:rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none mb-2 text-sm sm:text-base"
                 rows={3}
                 maxLength={80}
               />
-              <div className="text-right text-sm text-gray-400 mb-6">
+              <div className="text-right text-xs sm:text-sm text-gray-400 mb-4 sm:mb-6">
                 {comment.length}/80
               </div>
               <button
                 onClick={handleSubmit}
                 disabled={submitting}
                 className={`
-                  w-full py-4 px-6 rounded-xl font-semibold text-lg transition-all shadow-lg hover:shadow-xl
+                  w-full py-3 sm:py-4 px-4 sm:px-6 rounded-lg sm:rounded-xl font-semibold text-base sm:text-lg transition-all shadow-lg hover:shadow-xl
                   ${submitting
                     ? 'bg-gray-400 cursor-not-allowed'
                     : 'bg-blue-600 text-white hover:bg-blue-700'
@@ -339,7 +339,7 @@ export default function PulseSurveyPage() {
               >
                 {submitting ? (
                   <span className="flex items-center justify-center">
-                    <Loader2 className="w-5 h-5 animate-spin mr-2" />
+                    <Loader2 className="w-4 h-4 sm:w-5 sm:h-5 animate-spin mr-2" />
                     Submitting...
                   </span>
                 ) : (
@@ -352,15 +352,15 @@ export default function PulseSurveyPage() {
           {/* Success Screen with Appreciation */}
           {currentStep === 'success' && (
             <div className="text-center animate-fade-in">
-              <CheckCircle className="w-20 h-20 text-green-600 mx-auto mb-4" />
-              <h1 className="text-3xl font-bold text-gray-900 mb-4">
+              <CheckCircle className="w-16 h-16 sm:w-20 sm:h-20 text-green-600 mx-auto mb-4" />
+              <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-4">
                 Thanks for your quick check-in 💪
               </h1>
-              <p className="text-gray-600 mb-6 text-lg">
+              <p className="text-base sm:text-lg text-gray-600 mb-6">
                 Every voice helps your store improve.
               </p>
-              <div className="bg-gray-50 rounded-xl p-6 border-2 border-gray-200">
-                <p className="text-sm text-gray-600">
+              <div className="bg-gray-50 rounded-lg sm:rounded-xl p-4 sm:p-6 border-2 border-gray-200">
+                <p className="text-xs sm:text-sm text-gray-600">
                   🔒 {pulse?.consent_text}
                 </p>
               </div>
