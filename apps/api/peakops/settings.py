@@ -61,6 +61,7 @@ LOCAL_APPS = [
     'micro_checks.apps.MicroChecksConfig',
     'integrations.apps.IntegrationsConfig',
     'insights.apps.InsightsConfig',
+    'employee_voice.apps.EmployeeVoiceConfig',
 ]
 
 INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + LOCAL_APPS
