@@ -25,6 +25,7 @@ import {
   Plug,
   Calendar,
   ChevronDown,
+  Command,
 } from 'lucide-react';
 
 const navigationSections = [
@@ -37,6 +38,7 @@ const navigationSections = [
       { name: 'Inspections', href: '/inspections', icon: FileSearch, key: 'inspections' },
       { name: 'Actions', href: '/actions', icon: ListTodo, key: 'actions' },
       { name: 'Insights', href: '/insights', icon: BarChart3, key: 'insights' },
+      { name: 'Command Center', href: '/command-center', icon: Command, key: 'commandCenter' },
     ]
   },
   {
