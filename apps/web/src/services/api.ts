@@ -1035,7 +1035,8 @@ export const employeeVoiceAPI = {
     const response = await api.get('/employee-voice/pulses/', {
       params: { store: storeId }
     });
-    return response.data;
+    // Handle paginated response
+    return response.data.results || response.data;
   },
 
   // Get single pulse
@@ -1071,7 +1072,8 @@ export const employeeVoiceAPI = {
   getInvitations: async (pulseId?: string): Promise<EmployeeVoiceInvitation[]> => {
     const params = pulseId ? { pulse: pulseId } : {};
     const response = await api.get('/employee-voice/invitations/', { params });
-    return response.data;
+    // Handle paginated response
+    return response.data.results || response.data;
   },
 
   // Manually send invitations for a pulse
@@ -1085,14 +1087,16 @@ export const employeeVoiceAPI = {
     const response = await api.get('/employee-voice/responses/', {
       params: { pulse: pulseId }
     });
-    return response.data;
+    // Handle paginated response
+    return response.data.results || response.data;
   },
 
   // Get auto-fix configs for a pulse
   getAutoFixConfigs: async (pulseId?: string): Promise<AutoFixFlowConfig[]> => {
     const params = pulseId ? { pulse: pulseId } : {};
     const response = await api.get('/employee-voice/auto-fix-configs/', { params });
-    return response.data;
+    // Handle paginated response
+    return response.data.results || response.data;
   },
 
   // Create auto-fix config
@@ -1116,7 +1120,8 @@ export const employeeVoiceAPI = {
   getCorrelations: async (pulseId?: string): Promise<any[]> => {
     const params = pulseId ? { pulse: pulseId } : {};
     const response = await api.get('/employee-voice/correlations/', { params });
-    return response.data;
+    // Handle paginated response
+    return response.data.results || response.data;
   },
 };
 

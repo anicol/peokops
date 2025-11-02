@@ -33,13 +33,16 @@ export default function PulseSurveysPage() {
   const [isCreating, setIsCreating] = useState(false);
 
   // Fetch pulses for user's store
-  const { data: pulses, isLoading } = useQuery(
+  const { data: pulsesData, isLoading } = useQuery(
     ['employee-voice-pulses', user?.store],
     () => employeeVoiceAPI.getPulses(user!.store!),
     {
       enabled: !!user?.store,
     }
   );
+
+  // Ensure pulses is always an array
+  const pulses = Array.isArray(pulsesData) ? pulsesData : [];
 
   // Delete pulse mutation
   const deleteMutation = useMutation(
