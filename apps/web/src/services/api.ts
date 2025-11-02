@@ -998,10 +998,10 @@ export interface ValidateMagicLinkResponse {
 
 export interface SubmitSurveyRequest {
   token: string;
-  mood: number; // 1-5
-  confidence: 'LOW' | 'MEDIUM' | 'HIGH';
-  bottleneck?: 'EQUIPMENT' | 'STAFFING' | 'TRAINING' | 'SUPPLIES' | 'COMMUNICATION' | 'PROCESSES' | 'NONE';
-  comment?: string;
+  mood: number; // 1-5 (😫😐🙂😄🔥)
+  confidence: number; // 1-3 (No/Mostly/Yes)
+  bottlenecks?: string[]; // Multi-select array: CLEANLINESS, STAFFING, EQUIPMENT, TASKS, COMMUNICATION, GUEST_VOLUME
+  comment?: string; // Max 80 chars
   device_fingerprint: string;
 }
 

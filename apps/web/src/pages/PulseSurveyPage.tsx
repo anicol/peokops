@@ -1,32 +1,35 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams } from 'react-router-dom';
 import { employeeVoiceAPI, type EmployeeVoicePulse, type SubmitSurveyRequest } from '@/services/api';
 import { getDeviceFingerprintString } from '@/utils/deviceFingerprint';
-import { CheckCircle, AlertCircle, Loader2 } from 'lucide-react';
+import { CheckCircle, AlertCircle, Loader2, ChevronRight } from 'lucide-react';
 
-type SurveyStep = 'loading' | 'survey' | 'success' | 'error';
+type LoadingState = 'loading' | 'ready' | 'error';
+type CarouselStep = 'welcome' | 'mood' | 'confidence' | 'bottlenecks' | 'comment' | 'success';
 
 export default function PulseSurveyPage() {
   const { token } = useParams<{ token: string }>();
-  const navigate = useNavigate();
 
-  // State
-  const [step, setStep] = useState<SurveyStep>('loading');
+  // Loading state
+  const [loadingState, setLoadingState] = useState<LoadingState>('loading');
   const [pulse, setPulse] = useState<EmployeeVoicePulse | null>(null);
   const [error, setError] = useState<string>('');
+
+  // Carousel state
+  const [currentStep, setCurrentStep] = useState<CarouselStep>('welcome');
   const [submitting, setSubmitting] = useState(false);
 
   // Form state
   const [mood, setMood] = useState<number | null>(null);
-  const [confidence, setConfidence] = useState<'LOW' | 'MEDIUM' | 'HIGH' | null>(null);
-  const [bottleneck, setBottleneck] = useState<string>('NONE');
+  const [confidence, setConfidence] = useState<number | null>(null);
+  const [bottlenecks, setBottlenecks] = useState<string[]>([]);
   const [comment, setComment] = useState('');
 
   // Validate magic link on mount
   useEffect(() => {
     if (!token) {
       setError('Invalid survey link');
-      setStep('error');
+      setLoadingState('error');
       return;
     }
 
@@ -34,23 +37,83 @@ export default function PulseSurveyPage() {
       try {
         const response = await employeeVoiceAPI.validateMagicLink(token!);
         setPulse(response.pulse);
-        setStep('survey');
+        setLoadingState('ready');
       } catch (err: any) {
         if (err.response?.data?.error) {
           setError(err.response.data.error);
         } else {
           setError('This survey link is invalid or has expired.');
         }
-        setStep('error');
+        setLoadingState('error');
       }
     };
 
     validateToken();
   }, [token]);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  // Mood options - Updated emojis
+  const moodOptions = [
+    { value: 1, emoji: '😫', label: 'Exhausted' },
+    { value: 2, emoji: '😐', label: 'Meh' },
+    { value: 3, emoji: '🙂', label: 'Good' },
+    { value: 4, emoji: '😄', label: 'Great' },
+    { value: 5, emoji: '🔥', label: 'On Fire' },
+  ];
 
+  // Confidence options - Updated to 3-level scale
+  const confidenceOptions = [
+    { value: 1, label: "No, we're short or disorganized", icon: '❌' },
+    { value: 2, label: 'Mostly, a few things missing', icon: '⚠️' },
+    { value: 3, label: "Yes, I'm all set", icon: '✅' },
+  ];
+
+  // Bottleneck options - Updated with new categories
+  const bottleneckOptions = [
+    { value: 'CLEANLINESS', label: 'Cleanliness / Prep setup', icon: '🧹' },
+    { value: 'STAFFING', label: 'Staffing or scheduling', icon: '🧍' },
+    { value: 'EQUIPMENT', label: 'Equipment issues', icon: '⚙️' },
+    { value: 'TASKS', label: 'Confusion about tasks', icon: '📋' },
+    { value: 'COMMUNICATION', label: 'Communication / leadership', icon: '💬' },
+    { value: 'GUEST_VOLUME', label: 'Guest volume / rush', icon: '🍴' },
+  ];
+
+  // Auto-advance helper
+  const advanceStep = () => {
+    const steps: CarouselStep[] = ['welcome', 'mood', 'confidence', 'bottlenecks', 'comment', 'success'];
+    const currentIndex = steps.indexOf(currentStep);
+    if (currentIndex < steps.length - 1) {
+      setCurrentStep(steps[currentIndex + 1]);
+    }
+  };
+
+  // Handle mood selection (auto-advance)
+  const handleMoodSelect = (value: number) => {
+    setMood(value);
+    setTimeout(() => advanceStep(), 300); // Small delay for visual feedback
+  };
+
+  // Handle confidence selection (auto-advance)
+  const handleConfidenceSelect = (value: number) => {
+    setConfidence(value);
+    setTimeout(() => advanceStep(), 300);
+  };
+
+  // Handle bottleneck toggle (multi-select, max 2)
+  const handleBottleneckToggle = (value: string) => {
+    if (bottlenecks.includes(value)) {
+      setBottlenecks(bottlenecks.filter(b => b !== value));
+    } else {
+      if (bottlenecks.length < 2) {
+        setBottlenecks([...bottlenecks, value]);
+      } else {
+        // Replace first selected if at max
+        setBottlenecks([bottlenecks[1], value]);
+      }
+    }
+  };
+
+  // Submit survey
+  const handleSubmit = async () => {
     if (mood === null || confidence === null) {
       return;
     }
@@ -58,77 +121,54 @@ export default function PulseSurveyPage() {
     setSubmitting(true);
 
     try {
-      // Generate device fingerprint
       const deviceFingerprint = getDeviceFingerprintString();
 
-      // Prepare request
       const request: SubmitSurveyRequest = {
         token: token!,
         mood,
         confidence,
+        bottlenecks: bottlenecks.length > 0 ? bottlenecks : undefined,
+        comment: comment.trim() || undefined,
         device_fingerprint: deviceFingerprint,
       };
 
-      // Add optional fields
-      if (bottleneck && bottleneck !== 'NONE') {
-        request.bottleneck = bottleneck as any;
-      }
-
-      if (comment.trim()) {
-        request.comment = comment.trim();
-      }
-
-      // Submit survey
       await employeeVoiceAPI.submitSurvey(request);
-
-      setStep('success');
+      setCurrentStep('success');
     } catch (err: any) {
       if (err.response?.data?.error) {
         setError(err.response.data.error);
-      } else if (err.response?.data?.non_field_errors) {
-        setError(err.response.data.non_field_errors[0]);
       } else {
         setError('Failed to submit survey. Please try again.');
       }
-      setStep('error');
+      setLoadingState('error');
     } finally {
       setSubmitting(false);
     }
   };
 
-  const canSubmit = mood !== null && confidence !== null && !submitting;
+  // Progress dots
+  const getProgressDots = () => {
+    const steps: CarouselStep[] = ['welcome', 'mood', 'confidence', 'bottlenecks', 'comment'];
+    const currentIndex = steps.indexOf(currentStep);
 
-  // Emoji options for mood
-  const moodOptions = [
-    { value: 1, emoji: '😞', label: 'Very Bad' },
-    { value: 2, emoji: '😕', label: 'Bad' },
-    { value: 3, emoji: '😐', label: 'Neutral' },
-    { value: 4, emoji: '🙂', label: 'Good' },
-    { value: 5, emoji: '😊', label: 'Very Good' },
-  ];
-
-  // Confidence options
-  const confidenceOptions = [
-    { value: 'LOW' as const, label: 'Could use more training', icon: '📚' },
-    { value: 'MEDIUM' as const, label: 'Mostly confident', icon: '👍' },
-    { value: 'HIGH' as const, label: 'Very confident', icon: '💪' },
-  ];
-
-  // Bottleneck options
-  const bottleneckOptions = [
-    { value: 'EQUIPMENT', label: 'Equipment/Tools', icon: '🔧' },
-    { value: 'STAFFING', label: 'Staffing/Scheduling', icon: '👥' },
-    { value: 'TRAINING', label: 'Training/Knowledge', icon: '📖' },
-    { value: 'SUPPLIES', label: 'Supplies/Inventory', icon: '📦' },
-    { value: 'COMMUNICATION', label: 'Communication', icon: '💬' },
-    { value: 'PROCESSES', label: 'Processes/Procedures', icon: '📋' },
-    { value: 'NONE', label: 'No bottlenecks', icon: '✅' },
-  ];
+    return (
+      <div className="flex justify-center gap-2 mb-6">
+        {steps.map((_, index) => (
+          <div
+            key={index}
+            className={`h-2 w-2 rounded-full transition-all ${
+              index <= currentIndex ? 'bg-blue-600' : 'bg-gray-300'
+            }`}
+          />
+        ))}
+      </div>
+    );
+  };
 
   // Render loading state
-  if (step === 'loading') {
+  if (loadingState === 'loading') {
     return (
-      <div className="min-h-screen bg-gradient-to-b from-blue-50 to-white flex items-center justify-center px-4">
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-blue-50 flex items-center justify-center px-4">
         <div className="text-center">
           <Loader2 className="w-12 h-12 text-blue-600 animate-spin mx-auto mb-4" />
           <p className="text-gray-600">Loading survey...</p>
@@ -138,9 +178,9 @@ export default function PulseSurveyPage() {
   }
 
   // Render error state
-  if (step === 'error') {
+  if (loadingState === 'error') {
     return (
-      <div className="min-h-screen bg-gradient-to-b from-red-50 to-white flex items-center justify-center px-4">
+      <div className="min-h-screen bg-gradient-to-br from-red-50 via-white to-red-50 flex items-center justify-center px-4">
         <div className="max-w-md w-full text-center">
           <AlertCircle className="w-16 h-16 text-red-600 mx-auto mb-4" />
           <h1 className="text-2xl font-bold text-gray-900 mb-2">Unable to Load Survey</h1>
@@ -153,165 +193,181 @@ export default function PulseSurveyPage() {
     );
   }
 
-  // Render success state
-  if (step === 'success') {
-    return (
-      <div className="min-h-screen bg-gradient-to-b from-green-50 to-white flex items-center justify-center px-4">
-        <div className="max-w-md w-full text-center">
-          <CheckCircle className="w-16 h-16 text-green-600 mx-auto mb-4" />
-          <h1 className="text-2xl font-bold text-gray-900 mb-2">Thank You!</h1>
-          <p className="text-gray-600 mb-6">
-            Your feedback has been submitted anonymously. Your input helps improve operations for everyone.
-          </p>
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
-            <p className="text-sm text-gray-500">{pulse?.consent_text}</p>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  // Render survey form
+  // Render carousel steps
   return (
-    <div className="min-h-screen bg-gradient-to-b from-blue-50 to-white">
-      <div className="max-w-2xl mx-auto px-4 py-8">
-        {/* Header */}
-        <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">{pulse?.title}</h1>
-          <p className="text-gray-600">{pulse?.description}</p>
-          <p className="text-sm text-gray-500 mt-2">Takes less than 30 seconds • Anonymous</p>
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-blue-50 flex items-center justify-center px-4 py-8">
+      <div className="max-w-lg w-full">
+        {/* Progress Dots (hide on welcome and success) */}
+        {currentStep !== 'welcome' && currentStep !== 'success' && getProgressDots()}
+
+        {/* Carousel Content */}
+        <div className="bg-white rounded-2xl shadow-xl p-8 transition-all duration-300 ease-in-out">
+
+          {/* Welcome Screen */}
+          {currentStep === 'welcome' && (
+            <div className="text-center animate-fade-in">
+              <h1 className="text-3xl font-bold text-gray-900 mb-3">Quick 3-question check-in 👋</h1>
+              <p className="text-gray-600 mb-6">Takes 30 seconds • Anonymous</p>
+              <button
+                onClick={() => setCurrentStep('mood')}
+                className="w-full bg-blue-600 text-white py-4 px-6 rounded-lg font-semibold text-lg hover:bg-blue-700 transition-all shadow-lg hover:shadow-xl flex items-center justify-center gap-2"
+              >
+                Start
+                <ChevronRight className="w-5 h-5" />
+              </button>
+            </div>
+          )}
+
+          {/* Step 1: Mood */}
+          {currentStep === 'mood' && (
+            <div className="animate-slide-in">
+              <h2 className="text-2xl font-bold text-gray-900 mb-6 text-center">
+                How's your shift feeling today?
+              </h2>
+              <div className="flex justify-between gap-3">
+                {moodOptions.map((option) => (
+                  <button
+                    key={option.value}
+                    onClick={() => handleMoodSelect(option.value)}
+                    className={`
+                      flex-1 flex flex-col items-center justify-center p-4 rounded-xl border-2 transition-all transform hover:scale-110
+                      ${mood === option.value
+                        ? 'border-blue-600 bg-blue-50 scale-110'
+                        : 'border-gray-200 hover:border-blue-300'
+                      }
+                    `}
+                  >
+                    <span className="text-5xl mb-2">{option.emoji}</span>
+                    <span className="text-xs text-gray-600 font-medium">{option.label}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Step 2: Confidence */}
+          {currentStep === 'confidence' && (
+            <div className="animate-slide-in">
+              <h2 className="text-2xl font-bold text-gray-900 mb-6 text-center">
+                Do you have what you need to do your job well today?
+              </h2>
+              <div className="space-y-3">
+                {confidenceOptions.map((option) => (
+                  <button
+                    key={option.value}
+                    onClick={() => handleConfidenceSelect(option.value)}
+                    className={`
+                      w-full flex items-center p-5 rounded-xl border-2 transition-all transform hover:scale-105
+                      ${confidence === option.value
+                        ? 'border-blue-600 bg-blue-50 scale-105'
+                        : 'border-gray-200 hover:border-blue-300'
+                      }
+                    `}
+                  >
+                    <span className="text-3xl mr-4">{option.icon}</span>
+                    <span className="text-gray-900 font-medium text-left">{option.label}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Step 3: Bottlenecks (multi-select, max 2) */}
+          {currentStep === 'bottlenecks' && (
+            <div className="animate-slide-in">
+              <h2 className="text-2xl font-bold text-gray-900 mb-2 text-center">
+                What's slowing the team down the most right now?
+              </h2>
+              <p className="text-sm text-gray-500 mb-6 text-center">Pick up to 2</p>
+              <div className="grid grid-cols-2 gap-3 mb-6">
+                {bottleneckOptions.map((option) => (
+                  <button
+                    key={option.value}
+                    onClick={() => handleBottleneckToggle(option.value)}
+                    className={`
+                      flex items-center p-4 rounded-xl border-2 transition-all
+                      ${bottlenecks.includes(option.value)
+                        ? 'border-blue-600 bg-blue-50'
+                        : 'border-gray-200 hover:border-blue-300'
+                      }
+                      ${bottlenecks.length >= 2 && !bottlenecks.includes(option.value) ? 'opacity-50' : ''}
+                    `}
+                  >
+                    <span className="text-2xl mr-2">{option.icon}</span>
+                    <span className="text-sm text-gray-900 text-left">{option.label}</span>
+                  </button>
+                ))}
+              </div>
+              <button
+                onClick={advanceStep}
+                className="w-full bg-blue-600 text-white py-4 px-6 rounded-xl font-semibold hover:bg-blue-700 transition-all flex items-center justify-center gap-2"
+              >
+                Next
+                <ChevronRight className="w-5 h-5" />
+              </button>
+            </div>
+          )}
+
+          {/* Step 4: Optional Comment */}
+          {currentStep === 'comment' && (
+            <div className="animate-slide-in">
+              <h2 className="text-2xl font-bold text-gray-900 mb-2 text-center">
+                Anything we should fix or celebrate today?
+              </h2>
+              <p className="text-sm text-gray-500 mb-6 text-center">Optional</p>
+              <textarea
+                value={comment}
+                onChange={(e) => setComment(e.target.value.slice(0, 80))}
+                placeholder="Your quick thoughts... (80 chars max)"
+                className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none mb-2"
+                rows={3}
+                maxLength={80}
+              />
+              <div className="text-right text-sm text-gray-400 mb-6">
+                {comment.length}/80
+              </div>
+              <button
+                onClick={handleSubmit}
+                disabled={submitting}
+                className={`
+                  w-full py-4 px-6 rounded-xl font-semibold text-lg transition-all shadow-lg hover:shadow-xl
+                  ${submitting
+                    ? 'bg-gray-400 cursor-not-allowed'
+                    : 'bg-blue-600 text-white hover:bg-blue-700'
+                  }
+                `}
+              >
+                {submitting ? (
+                  <span className="flex items-center justify-center">
+                    <Loader2 className="w-5 h-5 animate-spin mr-2" />
+                    Submitting...
+                  </span>
+                ) : (
+                  'Submit'
+                )}
+              </button>
+            </div>
+          )}
+
+          {/* Success Screen with Appreciation */}
+          {currentStep === 'success' && (
+            <div className="text-center animate-fade-in">
+              <CheckCircle className="w-20 h-20 text-green-600 mx-auto mb-4" />
+              <h1 className="text-3xl font-bold text-gray-900 mb-4">
+                Thanks for your quick check-in 💪
+              </h1>
+              <p className="text-gray-600 mb-6 text-lg">
+                Every voice helps your store improve.
+              </p>
+              <div className="bg-gray-50 rounded-xl p-6 border-2 border-gray-200">
+                <p className="text-sm text-gray-600">
+                  🔒 {pulse?.consent_text}
+                </p>
+              </div>
+            </div>
+          )}
+
         </div>
-
-        {/* Survey Form */}
-        <form onSubmit={handleSubmit} className="space-y-8">
-          {/* Question 1: Mood */}
-          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-            <label className="block text-lg font-semibold text-gray-900 mb-4">
-              How are you feeling today?
-            </label>
-            <div className="flex justify-between gap-2">
-              {moodOptions.map((option) => (
-                <button
-                  key={option.value}
-                  type="button"
-                  onClick={() => setMood(option.value)}
-                  className={`
-                    flex-1 flex flex-col items-center justify-center p-4 rounded-lg border-2 transition-all
-                    ${mood === option.value
-                      ? 'border-blue-600 bg-blue-50 scale-110'
-                      : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
-                    }
-                  `}
-                >
-                  <span className="text-4xl mb-2">{option.emoji}</span>
-                  <span className="text-xs text-gray-600 hidden sm:block">{option.label}</span>
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* Question 2: Confidence */}
-          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-            <label className="block text-lg font-semibold text-gray-900 mb-4">
-              How confident are you in your role today?
-            </label>
-            <div className="space-y-3">
-              {confidenceOptions.map((option) => (
-                <button
-                  key={option.value}
-                  type="button"
-                  onClick={() => setConfidence(option.value)}
-                  className={`
-                    w-full flex items-center p-4 rounded-lg border-2 transition-all text-left
-                    ${confidence === option.value
-                      ? 'border-blue-600 bg-blue-50'
-                      : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
-                    }
-                  `}
-                >
-                  <span className="text-2xl mr-3">{option.icon}</span>
-                  <span className="text-gray-900 font-medium">{option.label}</span>
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* Question 3: Bottleneck (Optional) */}
-          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-            <label className="block text-lg font-semibold text-gray-900 mb-2">
-              Any bottlenecks slowing you down?
-            </label>
-            <p className="text-sm text-gray-500 mb-4">Optional</p>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              {bottleneckOptions.map((option) => (
-                <button
-                  key={option.value}
-                  type="button"
-                  onClick={() => setBottleneck(option.value)}
-                  className={`
-                    flex items-center p-4 rounded-lg border-2 transition-all text-left
-                    ${bottleneck === option.value
-                      ? 'border-blue-600 bg-blue-50'
-                      : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
-                    }
-                  `}
-                >
-                  <span className="text-xl mr-2">{option.icon}</span>
-                  <span className="text-sm text-gray-900">{option.label}</span>
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* Question 4: Comment (Optional) */}
-          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-            <label htmlFor="comment" className="block text-lg font-semibold text-gray-900 mb-2">
-              Anything else you'd like to share?
-            </label>
-            <p className="text-sm text-gray-500 mb-4">Optional • Max 280 characters</p>
-            <textarea
-              id="comment"
-              value={comment}
-              onChange={(e) => setComment(e.target.value.slice(0, 280))}
-              placeholder="Your feedback helps us improve..."
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
-              rows={4}
-              maxLength={280}
-            />
-            <div className="mt-2 text-right text-sm text-gray-500">
-              {comment.length}/280
-            </div>
-          </div>
-
-          {/* Privacy Notice */}
-          <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
-            <p className="text-sm text-gray-600 text-center">
-              🔒 {pulse?.consent_text}
-            </p>
-          </div>
-
-          {/* Submit Button */}
-          <button
-            type="submit"
-            disabled={!canSubmit}
-            className={`
-              w-full py-4 px-6 rounded-lg font-semibold text-lg transition-all
-              ${canSubmit
-                ? 'bg-blue-600 text-white hover:bg-blue-700 shadow-lg hover:shadow-xl'
-                : 'bg-gray-300 text-gray-500 cursor-not-allowed'
-              }
-            `}
-          >
-            {submitting ? (
-              <span className="flex items-center justify-center">
-                <Loader2 className="w-5 h-5 animate-spin mr-2" />
-                Submitting...
-              </span>
-            ) : (
-              'Submit Survey'
-            )}
-          </button>
-        </form>
       </div>
     </div>
   );
