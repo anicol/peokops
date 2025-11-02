@@ -333,25 +333,145 @@ def _get_employee_voice(store, insights_state):
             "message": "Complete 5 one-minute pulses to unlock Employee Voice"
         }
 
-    # TODO: Implement real pulse survey data aggregation
-    # For now, return mock data
-    return {
+    # Real pulse survey data aggregation
+    from employee_voice.models import EmployeeVoiceResponse, EmployeeVoicePulse
+    from django.db.models import Avg, Count, Q
+    from datetime import timedelta
+    from django.utils import timezone
+
+    # Get responses in last 30 days
+    thirty_days_ago = timezone.now() - timedelta(days=30)
+    fourteen_days_ago = timezone.now() - timedelta(days=14)
+
+    # Get active pulses for this store
+    active_pulses = EmployeeVoicePulse.objects.filter(
+        store=store,
+        is_active=True
+    )
+
+    if not active_pulses.exists():
+        return {
+            "locked": False,
+            "available": False,
+            "message": "No active pulse surveys configured for this store"
+        }
+
+    # Get all responses (n ≥ 5 already validated by unlock status)
+    recent_responses = EmployeeVoiceResponse.objects.filter(
+        pulse__store=store,
+        completed_at__gte=thirty_days_ago
+    )
+
+    if not recent_responses.exists():
+        return {
+            "locked": False,
+            "available": True,
+            "message": "Waiting for employee responses to display insights"
+        }
+
+    # Calculate average mood (1-5 scale, convert to 0-10 for engagement score)
+    avg_mood = recent_responses.aggregate(Avg('mood'))['mood__avg'] or 0
+    engagement_score = round(avg_mood * 2, 1)  # Convert 1-5 to 2-10 scale
+
+    # Calculate mood trend (compare last 14 days to previous 14 days)
+    recent_mood = recent_responses.filter(
+        completed_at__gte=fourteen_days_ago
+    ).aggregate(Avg('mood'))['mood__avg'] or 0
+
+    previous_mood = recent_responses.filter(
+        completed_at__lt=fourteen_days_ago,
+        completed_at__gte=thirty_days_ago
+    ).aggregate(Avg('mood'))['mood__avg'] or 0
+
+    mood_delta = round((recent_mood - previous_mood) * 2, 1) if previous_mood > 0 else 0
+
+    # Calculate confidence distribution
+    confidence_stats = recent_responses.values('confidence').annotate(
+        count=Count('id')
+    ).order_by('-count')
+
+    total_confidence = sum(stat['count'] for stat in confidence_stats)
+    high_confidence_count = sum(stat['count'] for stat in confidence_stats if stat['confidence'] == 'HIGH')
+    high_confidence_pct = round((high_confidence_count / total_confidence * 100)) if total_confidence > 0 else 0
+
+    # Calculate bottleneck frequency (exclude NONE)
+    bottleneck_stats = recent_responses.exclude(
+        Q(bottleneck__isnull=True) | Q(bottleneck='') | Q(bottleneck='NONE')
+    ).values('bottleneck').annotate(
+        count=Count('id')
+    ).order_by('-count')[:3]  # Top 3 bottlenecks
+
+    # Map bottleneck codes to friendly names
+    bottleneck_map = {
+        'EQUIPMENT': 'Equipment/Tools',
+        'STAFFING': 'Staffing',
+        'TRAINING': 'Training',
+        'SUPPLIES': 'Supplies',
+        'COMMUNICATION': 'Communication',
+        'PROCESSES': 'Processes'
+    }
+
+    top_bottlenecks = [
+        bottleneck_map.get(stat['bottleneck'], stat['bottleneck'])
+        for stat in bottleneck_stats
+    ]
+
+    # Build response data
+    response_data = {
         "locked": False,
         "available": True,
-        "engagement_score": 7.8,
-        "engagement_delta": 0.5,
+        "engagement_score": engagement_score,
+        "engagement_delta": mood_delta,
+        "response_count": recent_responses.count(),
+        "mood_stats": {
+            "average": round(avg_mood, 1),
+            "trend": "up" if mood_delta > 0 else "down" if mood_delta < 0 else "stable"
+        },
+        "confidence_stats": {
+            "high_percentage": high_confidence_pct,
+            "distribution": [
+                {
+                    "level": stat['confidence'],
+                    "count": stat['count'],
+                    "percentage": round((stat['count'] / total_confidence * 100))
+                }
+                for stat in confidence_stats
+            ]
+        },
+        "bottlenecks": {
+            "top_3": top_bottlenecks,
+            "all": [
+                {
+                    "type": bottleneck_map.get(stat['bottleneck'], stat['bottleneck']),
+                    "count": stat['count']
+                }
+                for stat in bottleneck_stats
+            ]
+        },
         "key_questions": [
             {
-                "question": "Do you have what you need to run your shift?",
-                "yes_percentage": 82
+                "question": "How confident are you in your role today?",
+                "yes_percentage": high_confidence_pct
             },
-            {
-                "question": "What's slowing you down today?",
-                "top_obstacles": ["Equipment", "Staffing", "Clarity"]
-            }
-        ],
-        "ai_insight": "When employee confidence rises above 80%, guest sentiment improves within 2 weeks. Focus on maintaining team clarity this cycle."
+        ]
     }
+
+    # Add top obstacles if available
+    if top_bottlenecks:
+        response_data["key_questions"].append({
+            "question": "What's slowing you down?",
+            "top_obstacles": top_bottlenecks
+        })
+
+    # Generate AI insight based on trends
+    if mood_delta > 0.5:
+        response_data["ai_insight"] = f"Team mood is trending up (+{mood_delta:.1f}). High confidence at {high_confidence_pct}% correlates with improved operational performance."
+    elif mood_delta < -0.5:
+        response_data["ai_insight"] = f"Team mood is declining ({mood_delta:.1f}). Consider addressing top bottlenecks: {', '.join(top_bottlenecks[:2]) if top_bottlenecks else 'None reported'}."
+    else:
+        response_data["ai_insight"] = f"Team engagement is stable at {engagement_score:.1f}/10. {high_confidence_pct}% of team feels confident in their roles."
+
+    return response_data
 
 
 def _get_operational_voice(store):
@@ -454,29 +574,72 @@ def _calculate_streak(store):
 
 def _compute_correlations(store):
     """
-    Compute cross-voice correlations (v1 rules engine).
+    Compute cross-voice correlations using real Employee Voice and operational data.
     Returns: [{metric, correlated_with, insight, evidence}]
     """
+    from employee_voice.models import CrossVoiceCorrelation, EmployeeVoiceResponse
+    from datetime import timedelta
+    from django.utils import timezone
+
     correlations = []
+    thirty_days_ago = timezone.now() - timedelta(days=30)
 
-    # TODO: Implement real correlation logic
-    # For now, return mock correlations based on simple rules
+    # Get detected cross-voice correlations from Employee Voice analysis
+    detected_correlations = CrossVoiceCorrelation.objects.filter(
+        pulse__store=store,
+        detected_at__gte=thirty_days_ago,
+        is_active=True
+    ).order_by('-correlation_strength')[:5]  # Top 5 correlations
 
-    # Rule 1: Employee confidence → Reviews
-    correlations.append({
-        "metric": "High employee confidence",
-        "correlated_with": "Improved review scores",
-        "insight": "When staff report clarity above 80%, guest sentiment improves within 2 weeks",
-        "evidence": "+0.3 stars, 82% confidence"
-    })
+    for correlation in detected_correlations:
+        # Format the correlation for display
+        correlations.append({
+            "metric": f"{correlation.bottleneck_type.replace('_', ' ').title()} bottleneck",
+            "correlated_with": f"{correlation.check_category} check failures",
+            "insight": correlation.recommendation_text,
+            "evidence": f"{correlation.check_fail_rate}% fail rate, {correlation.bottleneck_mention_count} mentions",
+            "strength": correlation.correlation_strength
+        })
 
-    # Rule 2: Streak → Cleanliness mentions
-    correlations.append({
-        "metric": "5+ day check streak",
-        "correlated_with": "Positive cleanliness mentions",
-        "insight": "Daily habits show up in guest feedback",
-        "evidence": "12 positive mentions"
-    })
+    # Add mood-based correlation if we have employee voice data
+    recent_responses = EmployeeVoiceResponse.objects.filter(
+        pulse__store=store,
+        completed_at__gte=thirty_days_ago
+    )
+
+    if recent_responses.exists():
+        from django.db.models import Avg
+        avg_mood = recent_responses.aggregate(Avg('mood'))['mood__avg'] or 0
+
+        # If mood is trending positively, add correlation insight
+        fourteen_days_ago = timezone.now() - timedelta(days=14)
+        recent_mood = recent_responses.filter(
+            completed_at__gte=fourteen_days_ago
+        ).aggregate(Avg('mood'))['mood__avg'] or 0
+
+        previous_mood = recent_responses.filter(
+            completed_at__lt=fourteen_days_ago
+        ).aggregate(Avg('mood'))['mood__avg'] or 0
+
+        if recent_mood > previous_mood and previous_mood > 0:
+            mood_improvement = round((recent_mood - previous_mood), 1)
+            correlations.append({
+                "metric": "Improving team mood",
+                "correlated_with": "Operational consistency",
+                "insight": f"Team mood improved by {mood_improvement} points. This typically correlates with better operational execution.",
+                "evidence": f"Mood: {recent_mood:.1f}/5 (↑ from {previous_mood:.1f}/5)",
+                "strength": 0.7
+            })
+
+    # If no correlations found, add helpful message
+    if not correlations:
+        correlations.append({
+            "metric": "Building insights",
+            "correlated_with": "Collecting data",
+            "insight": "Keep collecting Employee Voice and operational data. Correlations will appear as patterns emerge.",
+            "evidence": "Need more data points",
+            "strength": 0.0
+        })
 
     return correlations
 
