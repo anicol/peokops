@@ -385,30 +385,36 @@ def _get_employee_voice(store, insights_state):
 
     mood_delta = round((recent_mood - previous_mood) * 2, 1) if previous_mood > 0 else 0
 
-    # Calculate confidence distribution
+    # Calculate confidence distribution (now uses integers: 3=Yes, 2=Mostly, 1=No)
     confidence_stats = recent_responses.values('confidence').annotate(
         count=Count('id')
     ).order_by('-count')
 
     total_confidence = sum(stat['count'] for stat in confidence_stats)
-    high_confidence_count = sum(stat['count'] for stat in confidence_stats if stat['confidence'] == 'HIGH')
+    high_confidence_count = sum(stat['count'] for stat in confidence_stats if stat['confidence'] == 3)
     high_confidence_pct = round((high_confidence_count / total_confidence * 100)) if total_confidence > 0 else 0
 
-    # Calculate bottleneck frequency (exclude NONE)
-    bottleneck_stats = recent_responses.exclude(
-        Q(bottleneck__isnull=True) | Q(bottleneck='') | Q(bottleneck='NONE')
-    ).values('bottleneck').annotate(
-        count=Count('id')
-    ).order_by('-count')[:3]  # Top 3 bottlenecks
+    # Calculate bottleneck frequency from JSONField array
+    from collections import Counter
+    all_bottlenecks = []
+    for response in recent_responses:
+        if response.bottlenecks and isinstance(response.bottlenecks, list):
+            all_bottlenecks.extend(response.bottlenecks)
+
+    bottleneck_counter = Counter(all_bottlenecks)
+    bottleneck_stats = [
+        {'bottleneck': bottleneck_type, 'count': count}
+        for bottleneck_type, count in bottleneck_counter.most_common(3)
+    ]
 
     # Map bottleneck codes to friendly names
     bottleneck_map = {
-        'EQUIPMENT': 'Equipment/Tools',
+        'CLEANLINESS': 'Cleanliness / Prep',
         'STAFFING': 'Staffing',
-        'TRAINING': 'Training',
-        'SUPPLIES': 'Supplies',
+        'EQUIPMENT': 'Equipment',
+        'TASKS': 'Tasks / Clarity',
         'COMMUNICATION': 'Communication',
-        'PROCESSES': 'Processes'
+        'GUEST_VOLUME': 'Guest Volume'
     }
 
     top_bottlenecks = [
