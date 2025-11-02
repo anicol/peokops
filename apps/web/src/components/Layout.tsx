@@ -25,6 +25,7 @@ import {
   Plug,
   Calendar,
   ChevronDown,
+  Command,
 } from 'lucide-react';
 
 const navigationSections = [
@@ -37,6 +38,7 @@ const navigationSections = [
       { name: 'Inspections', href: '/inspections', icon: FileSearch, key: 'inspections' },
       { name: 'Actions', href: '/actions', icon: ListTodo, key: 'actions' },
       { name: 'Insights', href: '/insights', icon: BarChart3, key: 'insights' },
+      { name: 'Command Center', href: '/command-center', icon: Command, key: 'commandCenter' },
     ]
   },
   {
@@ -44,18 +46,18 @@ const navigationSections = [
     items: [
       { name: 'Templates', href: '/micro-check-templates', icon: FileText, key: 'templates', roles: ['ADMIN', 'OWNER', 'TRIAL_ADMIN'] },
       { name: 'Schedule', href: '/schedule', icon: Calendar, key: 'schedule', roles: ['ADMIN', 'OWNER', 'TRIAL_ADMIN', 'GM'] },
-      { name: 'Stores', href: '/stores', icon: Store, key: 'stores', roles: ['ADMIN', 'OWNER', 'TRIAL_ADMIN'] },
+      { name: 'Stores', href: '/stores', icon: Store, key: 'stores', roles: ['ADMIN', 'OWNER', 'TRIAL_ADMIN'] }, // Trial users can add stores
       { name: 'Users', href: '/users', icon: Users, key: 'users', roles: ['ADMIN', 'OWNER', 'TRIAL_ADMIN'] },
-      { name: 'Integrations', href: '/integrations', icon: Plug, key: 'integrations', roles: ['ADMIN', 'OWNER', 'TRIAL_ADMIN'] },
+      { name: 'Integrations', href: '/integrations', icon: Plug, key: 'integrations', roles: ['ADMIN', 'OWNER'] }, // Hidden for trial
       { name: 'Account', href: '/account', icon: Building2, key: 'account', roles: ['ADMIN', 'OWNER', 'TRIAL_ADMIN'] },
     ]
   },
   {
     title: 'System Administration',
     items: [
-      { name: 'Brands', href: '/brands', icon: Building2, key: 'systemBrands' },
-      { name: 'Users', href: '/admin/users', icon: Users, key: 'systemUsers' },
-      { name: 'System Queue', href: '/admin/queue', icon: Activity, key: 'systemQueue' },
+      { name: 'Brands', href: '/brands', icon: Building2, key: 'systemBrands', roles: ['SUPER_ADMIN'] },
+      { name: 'Users', href: '/admin/users', icon: Users, key: 'systemUsers', roles: ['SUPER_ADMIN'] },
+      { name: 'System Queue', href: '/admin/queue', icon: Activity, key: 'systemQueue', roles: ['SUPER_ADMIN'] },
       { name: 'Engagement', href: '/admin/engagement', icon: BarChart3, key: 'systemEngagement', roles: ['SUPER_ADMIN'] },
     ]
   }

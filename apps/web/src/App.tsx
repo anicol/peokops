@@ -43,6 +43,7 @@ import MicroCheckRunDetailPage from '@/pages/MicroCheckRunDetailPage';
 import MicroCheckTemplatesPage from '@/pages/MicroCheckTemplatesPage';
 import ReviewAnalysisPage from '@/pages/ReviewAnalysisPage';
 import InsightsPage from '@/pages/InsightsPage';
+import CommandCenter from '@/pages/CommandCenter';
 import ProfilePage from '@/pages/ProfilePage';
 import MyProgressPage from '@/pages/MyProgressPage';
 import StorePerformancePage from '@/pages/StorePerformancePage';
@@ -195,7 +196,7 @@ function AppRoutes() {
         <Route
           path="/brands"
           element={
-            isAuthenticated ? (
+            isAuthenticated && user?.role === 'SUPER_ADMIN' ? (
               <Layout>
                 <BrandsPage />
               </Layout>
@@ -327,7 +328,7 @@ function AppRoutes() {
         <Route
           path="/admin/queue"
           element={
-            isAuthenticated ? (
+            isAuthenticated && user?.role === 'SUPER_ADMIN' ? (
               <Layout>
                 <AdminQueuePage />
               </Layout>
@@ -339,7 +340,7 @@ function AppRoutes() {
         <Route
           path="/admin/users"
           element={
-            isAuthenticated ? (
+            isAuthenticated && user?.role === 'SUPER_ADMIN' ? (
               <Layout>
                 <AdminUsersPage />
               </Layout>
@@ -390,6 +391,18 @@ function AppRoutes() {
             isAuthenticated ? (
               <Layout>
                 <InsightsPage />
+              </Layout>
+            ) : (
+              <Navigate to="/login" replace />
+            )
+          }
+        />
+        <Route
+          path="/command-center"
+          element={
+            isAuthenticated ? (
+              <Layout>
+                <CommandCenter />
               </Layout>
             ) : (
               <Navigate to="/login" replace />

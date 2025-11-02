@@ -83,8 +83,9 @@ export default function Dashboard() {
     {
       enabled: !!user?.store,
       refetchOnMount: true,
-      refetchOnWindowFocus: false,
-      staleTime: 5 * 60 * 1000 // 5 minutes
+      refetchOnWindowFocus: true, // Refetch when user returns to tab
+      staleTime: 30 * 1000, // 30 seconds - allow faster updates after micro checks
+      cacheTime: 5 * 60 * 1000 // Keep in cache for 5 minutes when unmounted
     }
   );
 

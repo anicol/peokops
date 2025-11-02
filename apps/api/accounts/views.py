@@ -1106,3 +1106,52 @@ def verify_magic_link_view(request):
         'refresh': str(refresh),
         'user': UserSerializer(user).data
     })
+
+
+@extend_schema(
+    summary="Get system-wide statistics (SUPER_ADMIN only)",
+    description="Returns platform-wide metrics for system administrators"
+)
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def system_stats_view(request):
+    """
+    Get system-wide statistics for SUPER_ADMIN footer display.
+    Returns counts of brands, users, stores, and queue status.
+    """
+    # Only allow SUPER_ADMIN
+    if request.user.role != User.Role.SUPER_ADMIN:
+        return Response(
+            {'error': 'Unauthorized. SUPER_ADMIN access required.'},
+            status=status.HTTP_403_FORBIDDEN
+        )
+
+    from brands.models import Brand, Store
+    from videos.models import Inspection
+    from django.utils import timezone
+    from datetime import timedelta
+
+    # Calculate stats
+    total_brands = Brand.objects.filter(is_active=True).count()
+    total_users = User.objects.filter(is_active=True).count()
+    total_stores = Store.objects.filter(is_active=True).count()
+
+    # Active users today (users who logged in within last 24 hours)
+    yesterday = timezone.now() - timedelta(days=1)
+    active_users_today = User.objects.filter(
+        is_active=True,
+        last_login__gte=yesterday
+    ).count()
+
+    # Queue pending (inspections waiting for review)
+    queue_pending = Inspection.objects.filter(
+        status__in=['PENDING', 'PROCESSING']
+    ).count()
+
+    return Response({
+        'total_brands': total_brands,
+        'total_users': total_users,
+        'active_users_today': active_users_today,
+        'total_stores': total_stores,
+        'queue_pending': queue_pending,
+    })

@@ -318,9 +318,9 @@ export function useProgressiveNavigation(): NavigationState {
       home: 'enabled', // Always visible - Dashboard
       microChecks: 'enabled', // Daily Actions - run checks
       aiCoach: isUnlocked('ai-coach') ? 'enabled' : 'teaser', // Daily Actions - AI Walkthrough
-      inspections: isUnlocked('inspections') ? 'enabled' : 'teaser', // Show teaser
+      inspections: 'hidden', // Hide inspections in trial for simplicity
       actions: 'enabled', // Simple to-do list
-      insights: isUnlocked('insights') ? 'enabled' : 'hidden', // My Progress (when unlocked)
+      insights: 'enabled', // Insights (Lite) - Customer + Operational voices visible
       profile: 'enabled',
       settings: 'enabled', // Settings section
       integrations: 'hidden',
