@@ -62,8 +62,8 @@ class EmployeeVoiceInvitationAdmin(admin.ModelAdmin):
 
 @admin.register(EmployeeVoiceResponse)
 class EmployeeVoiceResponseAdmin(admin.ModelAdmin):
-    list_display = ['id', 'pulse', 'mood', 'confidence', 'bottleneck', 'completed_at']
-    list_filter = ['mood', 'confidence', 'bottleneck', 'completed_at']
+    list_display = ['id', 'pulse', 'mood', 'confidence', 'bottlenecks', 'completed_at']
+    list_filter = ['mood', 'confidence', 'completed_at']
     search_fields = ['pulse__title', 'comment']
     readonly_fields = ['id', 'anonymous_hash', 'submitted_at', 'completed_at', 'ip_address', 'user_agent']
     fieldsets = (
@@ -71,7 +71,7 @@ class EmployeeVoiceResponseAdmin(admin.ModelAdmin):
             'fields': ('id', 'pulse', 'invitation', 'anonymous_hash')
         }),
         ('Survey Answers', {
-            'fields': ('mood', 'confidence', 'bottleneck', 'comment')
+            'fields': ('mood', 'confidence', 'bottlenecks', 'comment')
         }),
         ('Metadata', {
             'fields': ('submitted_at', 'completed_at', 'ip_address', 'user_agent'),

@@ -252,25 +252,24 @@ class EmployeeVoiceResponse(models.Model):
     """
 
     class Mood(models.IntegerChoices):
-        VERY_BAD = 1, '😞 Very Bad'
-        BAD = 2, '😕 Bad'
-        NEUTRAL = 3, '😐 Neutral'
-        GOOD = 4, '🙂 Good'
-        VERY_GOOD = 5, '😊 Very Good'
+        EXHAUSTED = 1, '😫 Exhausted'
+        MEH = 2, '😐 Meh'
+        GOOD = 3, '🙂 Good'
+        GREAT = 4, '😄 Great'
+        FIRE = 5, '🔥 On Fire'
 
-    class Confidence(models.TextChoices):
-        LOW = 'LOW', 'Could use more training'
-        MEDIUM = 'MEDIUM', 'Mostly confident'
-        HIGH = 'HIGH', 'Very confident'
+    class Confidence(models.IntegerChoices):
+        NO = 1, '❌ No, we\'re short or disorganized'
+        MOSTLY = 2, '⚠️ Mostly, a few things missing'
+        YES = 3, '✅ Yes, I\'m all set'
 
     class Bottleneck(models.TextChoices):
-        EQUIPMENT = 'EQUIPMENT', 'Equipment/Tools'
-        STAFFING = 'STAFFING', 'Staffing/Scheduling'
-        TRAINING = 'TRAINING', 'Training/Knowledge'
-        SUPPLIES = 'SUPPLIES', 'Supplies/Inventory'
-        COMMUNICATION = 'COMMUNICATION', 'Communication'
-        PROCESSES = 'PROCESSES', 'Processes/Procedures'
-        NONE = 'NONE', 'No bottlenecks'
+        CLEANLINESS = 'CLEANLINESS', '🧹 Cleanliness / Prep setup'
+        STAFFING = 'STAFFING', '🧍 Staffing or scheduling'
+        EQUIPMENT = 'EQUIPMENT', '⚙️ Equipment issues'
+        TASKS = 'TASKS', '📋 Confusion about tasks'
+        COMMUNICATION = 'COMMUNICATION', '💬 Communication / leadership'
+        GUEST_VOLUME = 'GUEST_VOLUME', '🍴 Guest volume / rush'
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     pulse = models.ForeignKey(
@@ -298,22 +297,19 @@ class EmployeeVoiceResponse(models.Model):
         choices=Mood.choices,
         help_text="1-5 emoji slider for mood"
     )
-    confidence = models.CharField(
-        max_length=20,
+    confidence = models.IntegerField(
         choices=Confidence.choices,
-        help_text="How confident are you in your role today?"
+        help_text="Do you have what you need to do your job well today?"
     )
-    bottleneck = models.CharField(
-        max_length=20,
-        choices=Bottleneck.choices,
-        null=True,
+    bottlenecks = models.JSONField(
+        default=list,
         blank=True,
-        help_text="Biggest bottleneck faced today (optional)"
+        help_text="Multi-select: What's slowing the team down? (array of Bottleneck choices)"
     )
     comment = models.TextField(
-        max_length=280,
+        max_length=80,
         blank=True,
-        help_text="Optional comment (80-280 chars, role-gated viewing)"
+        help_text="Optional comment: Anything we should fix or celebrate today? (80 chars max)"
     )
 
     # Metadata
@@ -327,7 +323,7 @@ class EmployeeVoiceResponse(models.Model):
         indexes = [
             models.Index(fields=['pulse', 'completed_at']),
             models.Index(fields=['anonymous_hash', 'completed_at']),
-            models.Index(fields=['bottleneck', 'completed_at']),
+            # Note: bottlenecks is now a JSONField (multi-select), so no direct index
         ]
         ordering = ['-completed_at']
 

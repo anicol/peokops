@@ -141,7 +141,7 @@ class EmployeeVoiceResponseSerializer(serializers.ModelSerializer):
             'anonymous_hash',
             'mood', 'mood_display',
             'confidence', 'confidence_display',
-            'bottleneck', 'bottleneck_display',
+            'bottlenecks',  # Changed to plural for multi-select
             'comment',
             'submitted_at', 'completed_at'
         ]
@@ -160,20 +160,17 @@ class EmployeeVoiceResponseSubmitSerializer(serializers.Serializer):
     """
     token = serializers.CharField(required=True, help_text="Magic link token")
     mood = serializers.IntegerField(required=True, min_value=1, max_value=5)
-    confidence = serializers.ChoiceField(
-        required=True,
-        choices=EmployeeVoiceResponse.Confidence.choices
-    )
-    bottleneck = serializers.ChoiceField(
+    confidence = serializers.IntegerField(required=True, min_value=1, max_value=3)
+    bottlenecks = serializers.ListField(
+        child=serializers.ChoiceField(choices=EmployeeVoiceResponse.Bottleneck.choices),
         required=False,
-        allow_blank=True,
-        allow_null=True,
-        choices=EmployeeVoiceResponse.Bottleneck.choices
+        allow_empty=True,
+        default=list
     )
     comment = serializers.CharField(
         required=False,
         allow_blank=True,
-        max_length=280,
+        max_length=80,
         help_text="Optional comment (max 280 chars)"
     )
     device_fingerprint = serializers.CharField(
