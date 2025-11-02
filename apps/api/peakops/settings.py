@@ -301,6 +301,30 @@ CELERY_BEAT_SCHEDULE = {
         'schedule': crontab(day_of_week=0, hour=3, minute=0),  # Sundays at 3 AM
         'options': {'queue': 'ml'}
     },
+    # Employee Voice - Hourly pulse invitation sending (checks shift windows)
+    'send-pulse-invitations': {
+        'task': 'employee_voice.tasks.send_pulse_invitations',
+        'schedule': crontab(minute=10),  # Run at :10 past every hour
+        'options': {'queue': 'default'}
+    },
+    # Employee Voice - Daily unlock status check at 3 AM UTC
+    'check-pulse-unlock-status': {
+        'task': 'employee_voice.tasks.check_pulse_unlock_status',
+        'schedule': crontab(hour=3, minute=15),  # 3:15 AM UTC daily
+        'options': {'queue': 'default'}
+    },
+    # Employee Voice - Daily auto-fix flow evaluation at 4 AM UTC
+    'evaluate-auto-fix-flows': {
+        'task': 'employee_voice.tasks.evaluate_auto_fix_flows',
+        'schedule': crontab(hour=4, minute=0),  # 4:00 AM UTC daily
+        'options': {'queue': 'default'}
+    },
+    # Employee Voice - Daily cross-voice correlation detection at 5 AM UTC
+    'detect-cross-voice-correlations': {
+        'task': 'employee_voice.tasks.detect_cross_voice_correlations',
+        'schedule': crontab(hour=5, minute=0),  # 5:00 AM UTC daily
+        'options': {'queue': 'default'}
+    },
 }
 
 AWS_ACCESS_KEY_ID = config('AWS_ACCESS_KEY_ID', default='')
