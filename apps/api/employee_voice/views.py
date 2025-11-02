@@ -145,18 +145,21 @@ class EmployeeVoicePulseViewSet(viewsets.ModelViewSet):
         confidence_medium_pct = (confidence_stats['medium'] / total * 100) if total > 0 else 0
         confidence_low_pct = (confidence_stats['low'] / total * 100) if total > 0 else 0
 
-        # Calculate top bottlenecks
-        bottleneck_counts = responses.exclude(
-            Q(bottleneck__isnull=True) | Q(bottleneck='NONE')
-        ).values('bottleneck').annotate(count=Count('bottleneck')).order_by('-count')
+        # Calculate top bottlenecks (bottlenecks is now a JSONField array)
+        from collections import Counter
+        all_bottlenecks = []
+        for response in responses:
+            if response.bottlenecks and isinstance(response.bottlenecks, list):
+                all_bottlenecks.extend(response.bottlenecks)
 
+        bottleneck_counter = Counter(all_bottlenecks)
         top_bottlenecks = [
             {
-                'type': item['bottleneck'],
-                'count': item['count'],
-                'percentage': round((item['count'] / total * 100), 1) if total > 0 else 0
+                'type': bottleneck_type,
+                'count': count,
+                'percentage': round((count / len(responses) * 100), 1) if len(responses) > 0 else 0
             }
-            for item in bottleneck_counts[:5]
+            for bottleneck_type, count in bottleneck_counter.most_common(5)
         ]
 
         # Get recent comments (role-gated, already filtered by serializer)
@@ -372,7 +375,7 @@ class EmployeeVoiceResponseViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = EmployeeVoiceResponse.objects.all()
     serializer_class = EmployeeVoiceResponseSerializer
     permission_classes = [IsAuthenticated]
-    filterset_fields = ['pulse', 'mood', 'confidence', 'bottleneck']
+    filterset_fields = ['pulse', 'mood', 'confidence']
     ordering_fields = ['completed_at', 'mood']
     ordering = ['-completed_at']
 
