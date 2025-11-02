@@ -99,7 +99,7 @@ export default function PulseConfigModal({ pulse, isCreating, onClose, onSave }:
       const createData = {
         ...formData,
         store: user!.store!,
-        account: user!.account!,
+        account: user!.account_id!,
       };
       await createMutation.mutateAsync(createData as any);
     } else if (pulse) {
