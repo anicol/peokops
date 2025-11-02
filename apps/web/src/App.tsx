@@ -38,6 +38,7 @@ import AdminQueuePage from '@/pages/AdminQueuePage';
 import MicroCheckInvitePage from '@/pages/MicroCheckInvitePage';
 import MicroCheckPage from '@/pages/MicroCheckPage';
 import MicroCheckHistoryPage from '@/pages/MicroCheckHistoryPage';
+import PulseSurveyPage from '@/pages/PulseSurveyPage';
 import MicroCheckRunDetailPage from '@/pages/MicroCheckRunDetailPage';
 import MicroCheckTemplatesPage from '@/pages/MicroCheckTemplatesPage';
 import ReviewAnalysisPage from '@/pages/ReviewAnalysisPage';
@@ -69,6 +70,7 @@ function AppRoutes() {
         {/* Magic link routes - no auth required */}
         <Route path="/check/:token" element={<MicroCheckInvitePage />} />
         <Route path="/micro-check" element={<MicroCheckPage />} />
+        <Route path="/pulse-survey/:token" element={<PulseSurveyPage />} />
 
         {/* Review Analysis - public, no auth required */}
         <Route path="/review-analysis" element={<ReviewAnalysisPage />} />

@@ -913,4 +913,65 @@ export const insightsAPI = {
   },
 };
 
+// Employee Voice API
+export interface EmployeeVoicePulse {
+  id: string;
+  title: string;
+  description: string;
+  shift_window: string;
+  shift_window_display: string;
+  language: string;
+  language_display: string;
+  consent_text: string;
+  status: string;
+  status_display: string;
+  unlock_progress?: {
+    current: number;
+    required: number;
+    remaining: number;
+    message: string;
+  };
+}
+
+export interface ValidateMagicLinkResponse {
+  pulse: EmployeeVoicePulse;
+  invitation_id: string;
+  expires_at: string;
+}
+
+export interface SubmitSurveyRequest {
+  token: string;
+  mood: number; // 1-5
+  confidence: 'LOW' | 'MEDIUM' | 'HIGH';
+  bottleneck?: 'EQUIPMENT' | 'STAFFING' | 'TRAINING' | 'SUPPLIES' | 'COMMUNICATION' | 'PROCESSES' | 'NONE';
+  comment?: string;
+  device_fingerprint: string;
+}
+
+export interface SubmitSurveyResponse {
+  id: string;
+  pulse_title: string;
+  mood: number;
+  mood_display: string;
+  confidence: string;
+  confidence_display: string;
+  bottleneck?: string;
+  bottleneck_display?: string;
+  completed_at: string;
+}
+
+export const employeeVoiceAPI = {
+  // Validate magic link token (public endpoint)
+  validateMagicLink: async (token: string): Promise<ValidateMagicLinkResponse> => {
+    const response = await axios.get(`${API_BASE_URL}/api/employee-voice/magic-link/${token}/`);
+    return response.data;
+  },
+
+  // Submit survey response (public endpoint)
+  submitSurvey: async (data: SubmitSurveyRequest): Promise<SubmitSurveyResponse> => {
+    const response = await axios.post(`${API_BASE_URL}/api/employee-voice/submit/`, data);
+    return response.data;
+  },
+};
+
 export default api;
