@@ -395,13 +395,14 @@ class AutoFixFlowConfig(models.Model):
         bottleneck_counts = {}
         responses = EmployeeVoiceResponse.objects.filter(
             pulse=self.pulse,
-            completed_at__gte=time_window_start,
-            bottleneck__isnull=False
-        ).exclude(bottleneck=EmployeeVoiceResponse.Bottleneck.NONE)
+            completed_at__gte=time_window_start
+        )
 
+        # Count bottlenecks from JSONField array
         for response in responses:
-            bottleneck = response.bottleneck
-            bottleneck_counts[bottleneck] = bottleneck_counts.get(bottleneck, 0) + 1
+            if response.bottlenecks and isinstance(response.bottlenecks, list):
+                for bottleneck in response.bottlenecks:
+                    bottleneck_counts[bottleneck] = bottleneck_counts.get(bottleneck, 0) + 1
 
         # Create ActionItem for bottlenecks that cross threshold
         for bottleneck, count in bottleneck_counts.items():
