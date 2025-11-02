@@ -8,27 +8,31 @@ def get_tokens_with_tenant_context(user):
     """
     Generate JWT tokens with tenant context for Row-Level Security.
     
-    Adds account_id, brand_id, and role to token claims for use in
+    Adds account_id, brand_id, and role to ACCESS token claims for use in
     database-level tenant isolation via PostgreSQL RLS policies.
+    
+    Note: Tenant claims are only added to the access token, not the refresh token.
+    This ensures OutstandingToken tracking works correctly for JWT blacklisting.
     
     Args:
         user: User instance
         
     Returns:
-        dict: {'refresh': str, 'access': str} with tenant-aware tokens
+        dict: {'refresh': str, 'access': str} with tenant-aware access token
     """
     refresh = RefreshToken.for_user(user)
+    access = refresh.access_token
     
     if user.account:
-        refresh['account_id'] = user.account.id
-        refresh['brand_id'] = user.account.brand.id if user.account.brand else None
+        access['account_id'] = user.account.id
+        access['brand_id'] = user.account.brand.id if user.account.brand else None
     else:
-        refresh['account_id'] = None
-        refresh['brand_id'] = None
+        access['account_id'] = None
+        access['brand_id'] = None
     
-    refresh['role'] = user.role
+    access['role'] = user.role
     
     return {
         'refresh': str(refresh),
-        'access': str(refresh.access_token),
+        'access': str(access),
     }
