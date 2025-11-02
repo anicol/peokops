@@ -34,7 +34,7 @@ class EmployeeVoicePulseSerializer(serializers.ModelSerializer):
     def get_can_view_insights(self, obj):
         """Check if current user can view insights (requires n ≥ 5 and proper role)"""
         request = self.context.get('request')
-        if not request or not request.user:
+        if not request or not request.user or not request.user.is_authenticated:
             return False
 
         user = request.user
