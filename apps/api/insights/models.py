@@ -739,14 +739,44 @@ class StoreInsightsState(models.Model):
         if total_runs > 0:
             check_score = (completed_runs / total_runs) * 100
 
-        # 3. Employee Voice: Pulse Engagement (0-100, backfill with brand avg if locked)
+        # 3. Employee Voice: Pulse Engagement (0-100, calculated from pulse data)
         if self.employee_voice_unlocked:
-            # TODO: Calculate from actual pulse survey data when implemented
-            pulse_score = 75  # Placeholder
+            from employee_voice.models import EmployeeVoiceResponse
+            from django.db.models import Avg
+            from datetime import timedelta
+
+            # Get pulse responses from last 30 days
+            thirty_days_ago = timezone.now() - timedelta(days=30)
+            recent_responses = EmployeeVoiceResponse.objects.filter(
+                pulse__store=self.store,
+                completed_at__gte=thirty_days_ago
+            )
+
+            if recent_responses.exists():
+                # Calculate component scores
+                stats = recent_responses.aggregate(
+                    avg_mood=Avg('mood'),
+                    avg_confidence=Avg('confidence')
+                )
+
+                # Mood score: 1-5 scale → 0-100 (1=0, 5=100)
+                avg_mood = stats['avg_mood'] or 0
+                mood_score = (avg_mood - 1) * 25  # 1→0, 5→100
+
+                # Confidence score: 1-3 scale → 0-100 (1=0, 3=100)
+                # 1=No (0%), 2=Mostly (50%), 3=Yes (100%)
+                avg_confidence = stats['avg_confidence'] or 0
+                confidence_score = (avg_confidence - 1) * 50  # 1→0, 2→50, 3→100
+
+                # Weighted combination: 60% mood + 40% confidence
+                # Mood reflects team sentiment, confidence reflects operational readiness
+                pulse_score = (mood_score * 0.6) + (confidence_score * 0.4)
+            else:
+                # No recent data - use neutral score
+                pulse_score = 50
         else:
-            # Backfill with brand average or default
-            # TODO: Calculate brand.avg_pulse_engagement when pulse surveys exist
-            pulse_score = 0  # Don't penalize if not unlocked yet
+            # Don't penalize if not unlocked yet
+            pulse_score = 0
 
         # Weighted average: 40% reviews + 40% checks + 20% pulse
         weights = [0.4, 0.4, 0.2] if self.employee_voice_unlocked else [0.5, 0.5, 0.0]

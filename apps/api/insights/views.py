@@ -599,12 +599,16 @@ def _compute_correlations(store):
 
     for correlation in detected_correlations:
         # Format the correlation for display
+        # Map strength enum to numeric value
+        strength_map = {'LOW': 0.3, 'MEDIUM': 0.6, 'HIGH': 0.85}
+        strength_value = strength_map.get(correlation.strength, 0.5)
+
         correlations.append({
             "metric": f"{correlation.bottleneck_type.replace('_', ' ').title()} bottleneck",
             "correlated_with": f"{correlation.check_category} check failures",
             "insight": correlation.recommendation_text,
-            "evidence": f"{correlation.check_fail_rate}% fail rate, {correlation.bottleneck_mention_count} mentions",
-            "strength": correlation.correlation_strength
+            "evidence": f"{correlation.check_fail_rate}% check fail rate",
+            "strength": strength_value
         })
 
     # Add mood-based correlation if we have employee voice data
