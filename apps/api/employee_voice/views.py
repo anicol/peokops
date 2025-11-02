@@ -134,12 +134,12 @@ class EmployeeVoicePulseViewSet(viewsets.ModelViewSet):
             'very_good': responses.filter(mood=5).count(),
         }
 
-        # Calculate confidence metrics
+        # Calculate confidence metrics (now using integer values: 3=Yes, 2=Mostly, 1=No)
         total = responses.count()
         confidence_stats = {
-            'high': responses.filter(confidence='HIGH').count(),
-            'medium': responses.filter(confidence='MEDIUM').count(),
-            'low': responses.filter(confidence='LOW').count(),
+            'high': responses.filter(confidence=3).count(),  # "Yes, I'm all set"
+            'medium': responses.filter(confidence=2).count(),  # "Mostly, a few things missing"
+            'low': responses.filter(confidence=1).count(),  # "No, we're short or disorganized"
         }
         confidence_high_pct = (confidence_stats['high'] / total * 100) if total > 0 else 0
         confidence_medium_pct = (confidence_stats['medium'] / total * 100) if total > 0 else 0
