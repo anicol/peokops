@@ -296,7 +296,7 @@ def submit_survey_response(request):
         anonymous_hash=anonymous_hash,
         mood=serializer.validated_data['mood'],
         confidence=serializer.validated_data['confidence'],
-        bottleneck=serializer.validated_data.get('bottleneck'),
+        bottlenecks=serializer.validated_data.get('bottlenecks', []),
         comment=serializer.validated_data.get('comment', ''),
         ip_address=request.META.get('REMOTE_ADDR'),
         user_agent=request.META.get('HTTP_USER_AGENT', '')
