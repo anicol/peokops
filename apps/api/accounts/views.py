@@ -70,17 +70,18 @@ class UserDetailView(generics.RetrieveUpdateDestroyAPIView):
 @api_view(['POST'])
 @permission_classes([AllowAny])
 def login_view(request):
+    from .jwt_tokens import get_tokens_with_tenant_context
+    
     serializer = LoginSerializer(data=request.data)
     if serializer.is_valid():
         user = serializer.validated_data['user']
         login(request, user)
         
-        refresh = RefreshToken.for_user(user)
-        access_token = refresh.access_token
+        tokens = get_tokens_with_tenant_context(user)
         
         return Response({
-            'access': str(access_token),
-            'refresh': str(refresh),
+            'access': tokens['access'],
+            'refresh': tokens['refresh'],
             'user': UserSerializer(user).data
         })
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
@@ -181,18 +182,19 @@ def profile_view(request):
 @api_view(['POST'])
 @permission_classes([AllowAny])
 def trial_signup_view(request):
+    from .jwt_tokens import get_tokens_with_tenant_context
+    
     serializer = TrialSignupSerializer(data=request.data)
     if serializer.is_valid():
         user = serializer.save()
         
-        # Generate JWT tokens for immediate login
-        refresh = RefreshToken.for_user(user)
-        access_token = refresh.access_token
+        # Generate JWT tokens with tenant context
+        tokens = get_tokens_with_tenant_context(user)
         
         return Response({
             'user': UserSerializer(user).data,
-            'access': str(access_token),
-            'refresh': str(refresh),
+            'access': tokens['access'],
+            'refresh': tokens['refresh'],
         }, status=status.HTTP_201_CREATED)
     
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
@@ -300,15 +302,15 @@ def quick_signup_view(request):
     8. Return user info + tokens + magic link
     """
     from micro_checks.utils import send_magic_link_email
+    from .jwt_tokens import get_tokens_with_tenant_context
 
     # Try normal signup flow - serializer will handle existing users
     serializer = QuickSignupSerializer(data=request.data)
     if serializer.is_valid():
         user = serializer.save()
 
-        # Generate JWT tokens for immediate login
-        refresh = RefreshToken.for_user(user)
-        access_token = refresh.access_token
+        # Generate JWT tokens with tenant context
+        tokens = get_tokens_with_tenant_context(user)
 
         # Get quick signup data stored by serializer
         quick_signup_data = getattr(user, '_quick_signup_data', {})
@@ -334,8 +336,8 @@ def quick_signup_view(request):
 
         return Response({
             'user_id': user.id,
-            'access': str(access_token),
-            'refresh': str(refresh),
+            'access': tokens['access'],
+            'refresh': tokens['refresh'],
             'magic_token': magic_token,
             'run_id': quick_signup_data.get('run_id'),
             'sms_sent': sms_sent,

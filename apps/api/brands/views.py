@@ -6,13 +6,26 @@ from .serializers import BrandSerializer, StoreSerializer, StoreListSerializer
 
 
 class BrandListCreateView(generics.ListCreateAPIView):
-    queryset = Brand.objects.filter(is_active=True)
     serializer_class = BrandSerializer
     permission_classes = [IsAuthenticated]
     filter_backends = [filters.SearchFilter, filters.OrderingFilter]
     search_fields = ['name', 'description']
     ordering_fields = ['name', 'created_at']
     ordering = ['name']
+    
+    def get_queryset(self):
+        """Filter brands based on role - SUPER_ADMIN sees all, others see only their account's brand"""
+        from accounts.models import User
+        user = self.request.user
+        
+        # SUPER_ADMIN sees all brands
+        if user.role == User.Role.SUPER_ADMIN:
+            return Brand.objects.filter(is_active=True)
+        
+        if user.account and user.account.brand:
+            return Brand.objects.filter(id=user.account.brand.id, is_active=True)
+        
+        return Brand.objects.none()
 
 
 class BrandDetailView(generics.RetrieveUpdateDestroyAPIView):
