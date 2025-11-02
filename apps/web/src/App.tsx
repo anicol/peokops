@@ -193,7 +193,7 @@ function AppRoutes() {
         <Route
           path="/brands"
           element={
-            isAuthenticated ? (
+            isAuthenticated && user?.role === 'SUPER_ADMIN' ? (
               <Layout>
                 <BrandsPage />
               </Layout>
@@ -325,7 +325,7 @@ function AppRoutes() {
         <Route
           path="/admin/queue"
           element={
-            isAuthenticated ? (
+            isAuthenticated && user?.role === 'SUPER_ADMIN' ? (
               <Layout>
                 <AdminQueuePage />
               </Layout>
@@ -337,7 +337,7 @@ function AppRoutes() {
         <Route
           path="/admin/users"
           element={
-            isAuthenticated ? (
+            isAuthenticated && user?.role === 'SUPER_ADMIN' ? (
               <Layout>
                 <AdminUsersPage />
               </Layout>

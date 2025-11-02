@@ -53,9 +53,9 @@ const navigationSections = [
   {
     title: 'System Administration',
     items: [
-      { name: 'Brands', href: '/brands', icon: Building2, key: 'systemBrands' },
-      { name: 'Users', href: '/admin/users', icon: Users, key: 'systemUsers' },
-      { name: 'System Queue', href: '/admin/queue', icon: Activity, key: 'systemQueue' },
+      { name: 'Brands', href: '/brands', icon: Building2, key: 'systemBrands', roles: ['SUPER_ADMIN'] },
+      { name: 'Users', href: '/admin/users', icon: Users, key: 'systemUsers', roles: ['SUPER_ADMIN'] },
+      { name: 'System Queue', href: '/admin/queue', icon: Activity, key: 'systemQueue', roles: ['SUPER_ADMIN'] },
       { name: 'Engagement', href: '/admin/engagement', icon: BarChart3, key: 'systemEngagement', roles: ['SUPER_ADMIN'] },
     ]
   }
