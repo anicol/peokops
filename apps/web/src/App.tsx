@@ -39,6 +39,7 @@ import MicroCheckInvitePage from '@/pages/MicroCheckInvitePage';
 import MicroCheckPage from '@/pages/MicroCheckPage';
 import MicroCheckHistoryPage from '@/pages/MicroCheckHistoryPage';
 import PulseSurveyPage from '@/pages/PulseSurveyPage';
+import PulseSurveysPage from '@/pages/PulseSurveysPage';
 import MicroCheckRunDetailPage from '@/pages/MicroCheckRunDetailPage';
 import MicroCheckTemplatesPage from '@/pages/MicroCheckTemplatesPage';
 import ReviewAnalysisPage from '@/pages/ReviewAnalysisPage';
@@ -379,6 +380,18 @@ function AppRoutes() {
             isAuthenticated && (user?.role === 'ADMIN' || user?.role === 'OWNER' || user?.role === 'TRIAL_ADMIN' || user?.role === 'GM') ? (
               <Layout>
                 <MicroCheckTemplatesPage />
+              </Layout>
+            ) : (
+              <Navigate to="/" replace />
+            )
+          }
+        />
+        <Route
+          path="/pulse-surveys"
+          element={
+            isAuthenticated && (user?.role === 'ADMIN' || user?.role === 'OWNER' || user?.role === 'TRIAL_ADMIN' || user?.role === 'GM') ? (
+              <Layout>
+                <PulseSurveysPage />
               </Layout>
             ) : (
               <Navigate to="/" replace />

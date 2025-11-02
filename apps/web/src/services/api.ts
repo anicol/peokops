@@ -927,12 +927,67 @@ export interface EmployeeVoicePulse {
   consent_text: string;
   status: string;
   status_display: string;
+  is_active: boolean;
+  auto_fix_flow_enabled: boolean;
+  min_respondents_for_display: number;
+  store: number;
+  account: number;
+  created_at: string;
+  updated_at: string;
+  unlocked_at?: string;
   unlock_progress?: {
     current: number;
     required: number;
     remaining: number;
     message: string;
   };
+}
+
+export interface CreatePulseRequest {
+  title: string;
+  description: string;
+  shift_window: 'OPEN' | 'MID' | 'CLOSE';
+  language: 'en' | 'es' | 'fr';
+  consent_text?: string;
+  auto_fix_flow_enabled?: boolean;
+  min_respondents_for_display?: number;
+}
+
+export interface UpdatePulseRequest {
+  title?: string;
+  description?: string;
+  shift_window?: 'OPEN' | 'MID' | 'CLOSE';
+  language?: 'en' | 'es' | 'fr';
+  consent_text?: string;
+  is_active?: boolean;
+  auto_fix_flow_enabled?: boolean;
+  min_respondents_for_display?: number;
+}
+
+export interface EmployeeVoiceInvitation {
+  id: string;
+  pulse: string;
+  phone_number: string;
+  token: string;
+  status: string;
+  sent_at?: string;
+  opened_at?: string;
+  completed_at?: string;
+  expires_at: string;
+  created_at: string;
+}
+
+export interface AutoFixFlowConfig {
+  id: string;
+  pulse: string;
+  bottleneck_type: string;
+  check_category: string;
+  threshold_mentions: number;
+  threshold_days: number;
+  action_item_template: string;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
 }
 
 export interface ValidateMagicLinkResponse {
@@ -972,6 +1027,95 @@ export const employeeVoiceAPI = {
   // Submit survey response (public endpoint)
   submitSurvey: async (data: SubmitSurveyRequest): Promise<SubmitSurveyResponse> => {
     const response = await axios.post(`${API_BASE_URL}/api/employee-voice/submit/`, data);
+    return response.data;
+  },
+
+  // Get all pulses for a store
+  getPulses: async (storeId: number): Promise<EmployeeVoicePulse[]> => {
+    const response = await api.get('/employee-voice/pulses/', {
+      params: { store: storeId }
+    });
+    return response.data;
+  },
+
+  // Get single pulse
+  getPulse: async (pulseId: string): Promise<EmployeeVoicePulse> => {
+    const response = await api.get(`/employee-voice/pulses/${pulseId}/`);
+    return response.data;
+  },
+
+  // Create new pulse
+  createPulse: async (data: CreatePulseRequest): Promise<EmployeeVoicePulse> => {
+    const response = await api.post('/employee-voice/pulses/', data);
+    return response.data;
+  },
+
+  // Update pulse
+  updatePulse: async (pulseId: string, data: UpdatePulseRequest): Promise<EmployeeVoicePulse> => {
+    const response = await api.patch(`/employee-voice/pulses/${pulseId}/`, data);
+    return response.data;
+  },
+
+  // Delete pulse
+  deletePulse: async (pulseId: string): Promise<void> => {
+    await api.delete(`/employee-voice/pulses/${pulseId}/`);
+  },
+
+  // Get pulse insights
+  getPulseInsights: async (pulseId: string): Promise<any> => {
+    const response = await api.get(`/employee-voice/pulses/${pulseId}/insights/`);
+    return response.data;
+  },
+
+  // Get invitations for a pulse
+  getInvitations: async (pulseId?: string): Promise<EmployeeVoiceInvitation[]> => {
+    const params = pulseId ? { pulse: pulseId } : {};
+    const response = await api.get('/employee-voice/invitations/', { params });
+    return response.data;
+  },
+
+  // Manually send invitations for a pulse
+  sendInvitations: async (pulseId: string): Promise<{ sent_count: number; message: string }> => {
+    const response = await api.post(`/employee-voice/pulses/${pulseId}/send-invitations/`);
+    return response.data;
+  },
+
+  // Get responses for a pulse
+  getResponses: async (pulseId: string): Promise<any[]> => {
+    const response = await api.get('/employee-voice/responses/', {
+      params: { pulse: pulseId }
+    });
+    return response.data;
+  },
+
+  // Get auto-fix configs for a pulse
+  getAutoFixConfigs: async (pulseId?: string): Promise<AutoFixFlowConfig[]> => {
+    const params = pulseId ? { pulse: pulseId } : {};
+    const response = await api.get('/employee-voice/auto-fix-configs/', { params });
+    return response.data;
+  },
+
+  // Create auto-fix config
+  createAutoFixConfig: async (data: Partial<AutoFixFlowConfig>): Promise<AutoFixFlowConfig> => {
+    const response = await api.post('/employee-voice/auto-fix-configs/', data);
+    return response.data;
+  },
+
+  // Update auto-fix config
+  updateAutoFixConfig: async (configId: string, data: Partial<AutoFixFlowConfig>): Promise<AutoFixFlowConfig> => {
+    const response = await api.patch(`/employee-voice/auto-fix-configs/${configId}/`, data);
+    return response.data;
+  },
+
+  // Delete auto-fix config
+  deleteAutoFixConfig: async (configId: string): Promise<void> => {
+    await api.delete(`/employee-voice/auto-fix-configs/${configId}/`);
+  },
+
+  // Get correlations
+  getCorrelations: async (pulseId?: string): Promise<any[]> => {
+    const params = pulseId ? { pulse: pulseId } : {};
+    const response = await api.get('/employee-voice/correlations/', { params });
     return response.data;
   },
 };
