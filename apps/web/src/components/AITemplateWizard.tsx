@@ -25,7 +25,7 @@ const AITemplateWizard: React.FC<AITemplateWizardProps> = ({
   initialBrandName = '',
   initialIndustry = ''
 }) => {
-  const { refetchUser } = useAuth();
+  const { user, refetchUser } = useAuth();
   const [currentStep, setCurrentStep] = useState<WizardStep>('brandInfo');
   const [brandName, setBrandName] = useState(initialBrandName);
   const [industry, setIndustry] = useState<string>(initialIndustry);
@@ -123,7 +123,8 @@ const AITemplateWizard: React.FC<AITemplateWizardProps> = ({
         selectedCategory,
         5,
         brandName,
-        industry || undefined
+        industry || undefined,
+        user?.brand_id
       );
 
       clearInterval(statusInterval);
