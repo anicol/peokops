@@ -14,7 +14,10 @@ export function TrialFooter() {
     () => user?.store ? microCheckAPI.getDashboardStats(user.store) : Promise.resolve(null),
     {
       enabled: !!user?.store,
-      staleTime: 5 * 60 * 1000, // 5 minutes
+      refetchOnMount: true,
+      refetchOnWindowFocus: true,
+      staleTime: 30 * 1000, // 30 seconds - update quickly after micro checks
+      cacheTime: 5 * 60 * 1000
     }
   );
 

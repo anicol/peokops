@@ -634,3 +634,148 @@ Respond in JSON format:
         else:
             years = oldest_age.days // 365
             return f"Last {years} years"
+
+
+class StoreInsightsState(models.Model):
+    """
+    Store-level insights and unlock state for 360° operational intelligence.
+    Tracks progressive unlock of Customer, Employee, and Operational voices.
+    """
+    store = models.OneToOneField(
+        'brands.Store',
+        on_delete=models.CASCADE,
+        related_name='insights_state',
+        help_text='Store this insights state belongs to'
+    )
+
+    # Progressive unlock tracking
+    pulse_surveys_completed = models.IntegerField(
+        default=0,
+        help_text='Number of employee pulse surveys completed (unlock at 5)'
+    )
+
+    voices_active = models.JSONField(
+        default=dict,
+        help_text='Active status of each voice: {customer: bool, employee: bool, operational: bool}'
+    )
+
+    # Timestamps
+    insights_unlocked_at = models.DateTimeField(
+        auto_now_add=True,
+        help_text='When insights were first unlocked for this store'
+    )
+    last_updated = models.DateTimeField(
+        auto_now=True,
+        help_text='Last time insights state was updated'
+    )
+
+    # Historical data for trend calculation
+    previous_health_score = models.IntegerField(
+        default=0,
+        help_text='Previous health score for delta calculation'
+    )
+
+    class Meta:
+        db_table = 'store_insights_state'
+        verbose_name = 'Store Insights State'
+        verbose_name_plural = 'Store Insights States'
+
+    def __str__(self):
+        return f"Insights State for {self.store.name}"
+
+    @property
+    def employee_voice_unlocked(self):
+        """Returns True if employee voice is unlocked (5+ pulse surveys)"""
+        return self.pulse_surveys_completed >= 5
+
+    @property
+    def cross_voice_unlocked(self):
+        """
+        Returns True if cross-voice trends are unlocked.
+        Requires all 3 voices active in last 14 days.
+        """
+        # Check if all voices are active
+        customer_active = self.voices_active.get('customer', False)
+        employee_active = self.voices_active.get('employee', False)
+        operational_active = self.voices_active.get('operational', False)
+
+        all_active = customer_active and employee_active and operational_active
+
+        # Check recency (updated within 14 days)
+        from datetime import timedelta
+        recent = (timezone.now() - self.last_updated).days <= 14
+
+        return all_active and recent
+
+    @property
+    def store_health_score(self):
+        """
+        Compute store health score: weighted average of 3 voices.
+        Returns: {"score": 84, "delta": 6}
+        """
+        from statistics import mean
+
+        # Initialize scores
+        review_score = 0
+        check_score = 0
+        pulse_score = 0
+
+        # 1. Customer Voice: Review Rating (normalize 1-5 → 0-100)
+        if hasattr(self.store, 'google_location') and self.store.google_location:
+            rating = self.store.google_location.average_rating
+            if rating:
+                review_score = (float(rating) - 1) * 25  # 1→0, 5→100
+
+        # 2. Operational Voice: Micro-Check Completion (0-100)
+        from micro_checks.models import MicroCheckRun
+        completed_runs = MicroCheckRun.objects.filter(
+            store=self.store,
+            completed_at__isnull=False
+        ).count()
+        total_runs = MicroCheckRun.objects.filter(
+            store=self.store
+        ).count()
+
+        if total_runs > 0:
+            check_score = (completed_runs / total_runs) * 100
+
+        # 3. Employee Voice: Pulse Engagement (0-100, backfill with brand avg if locked)
+        if self.employee_voice_unlocked:
+            # TODO: Calculate from actual pulse survey data when implemented
+            pulse_score = 75  # Placeholder
+        else:
+            # Backfill with brand average or default
+            # TODO: Calculate brand.avg_pulse_engagement when pulse surveys exist
+            pulse_score = 0  # Don't penalize if not unlocked yet
+
+        # Weighted average: 40% reviews + 40% checks + 20% pulse
+        weights = [0.4, 0.4, 0.2] if self.employee_voice_unlocked else [0.5, 0.5, 0.0]
+        scores = [review_score, check_score, pulse_score] if self.employee_voice_unlocked else [review_score, check_score]
+
+        current_score = sum(s * w for s, w in zip(scores, weights))
+
+        # Calculate delta from previous
+        delta = round(current_score - self.previous_health_score)
+
+        return {
+            "score": round(current_score),
+            "delta": delta
+        }
+
+    def update_voices_active(self):
+        """Update voices_active based on current data availability"""
+        # Customer voice: Always active if store has Google location
+        customer_active = hasattr(self.store, 'google_location') and self.store.google_location is not None
+
+        # Employee voice: Active if unlocked
+        employee_active = self.employee_voice_unlocked
+
+        # Operational voice: Always active (micro-checks are core feature)
+        operational_active = True
+
+        self.voices_active = {
+            'customer': customer_active,
+            'employee': employee_active,
+            'operational': operational_active
+        }
+        self.save()

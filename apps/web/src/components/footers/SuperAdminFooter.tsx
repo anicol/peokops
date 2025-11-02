@@ -15,11 +15,13 @@ export function SuperAdminFooter() {
   const { data: stats } = useQuery<SystemStats>(
     'superadmin-footer-stats',
     async () => {
-      const response = await api.get('/api/admin/system-stats/');
+      const response = await api.get('/auth/admin/system-stats/');
       return response.data;
     },
     {
-      refetchInterval: 60000, // Refresh every minute
+      refetchInterval: 30000, // Refresh every 30 seconds for more responsive updates
+      refetchOnMount: true,
+      refetchOnWindowFocus: true,
       retry: false,
     }
   );

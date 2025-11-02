@@ -715,7 +715,8 @@ export const microCheckAPI = {
     category: string,
     count: number = 5,
     brandName?: string,
-    industry?: string
+    industry?: string,
+    brandId?: number
   ): Promise<{
     brand_analysis: {
       business_type: string;
@@ -728,6 +729,7 @@ export const microCheckAPI = {
     const payload: any = { category, count };
     if (brandName) payload.brand_name = brandName;
     if (industry) payload.industry = industry;
+    if (brandId) payload.brand_id = brandId;
     const response = await api.post('/micro-checks/templates/generate_with_ai/', payload);
     return response.data;
   },
