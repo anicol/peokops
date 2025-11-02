@@ -967,14 +967,21 @@ export interface UpdatePulseRequest {
 export interface EmployeeVoiceInvitation {
   id: string;
   pulse: string;
-  phone_number: string;
+  pulse_title?: string;
+  recipient_phone?: string;
+  recipient_email?: string;
   token: string;
+  delivery_method?: string;
+  delivery_method_display?: string;
   status: string;
+  status_display?: string;
+  is_valid?: boolean;
   sent_at?: string;
   opened_at?: string;
   completed_at?: string;
   expires_at: string;
   created_at: string;
+  updated_at?: string;
 }
 
 export interface AutoFixFlowConfig {

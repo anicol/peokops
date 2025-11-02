@@ -181,7 +181,7 @@ export default function InvitationHistorySection({ storeId }: InvitationHistoryS
                 {filteredInvitations.map((invitation) => (
                   <tr key={invitation.id} className="hover:bg-gray-50">
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {invitation.phone_number.slice(0, 7)}***
+                      {invitation.recipient_phone?.slice(0, 7) || 'N/A'}***
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       {getStatusBadge(invitation.status)}
