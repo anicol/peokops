@@ -112,7 +112,7 @@ class EmployeeVoiceResponseSerializer(serializers.ModelSerializer):
         Only show comments to OWNER/SUPER_ADMIN and only when n ≥ 5.
         """
         request = self.context.get('request')
-        if not request or not request.user:
+        if not request or not request.user or not request.user.is_authenticated:
             return None
 
         user = request.user
