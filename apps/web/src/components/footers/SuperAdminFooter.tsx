@@ -19,7 +19,9 @@ export function SuperAdminFooter() {
       return response.data;
     },
     {
-      refetchInterval: 60000, // Refresh every minute
+      refetchInterval: 30000, // Refresh every 30 seconds for more responsive updates
+      refetchOnMount: true,
+      refetchOnWindowFocus: true,
       retry: false,
     }
   );
