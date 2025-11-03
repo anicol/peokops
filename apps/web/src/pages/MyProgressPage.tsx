@@ -11,7 +11,7 @@ export default function MyProgressPage() {
   const { data: stats, isLoading } = useQuery<InspectionStats>(
     'my-progress-stats',
     async () => {
-      const response = await api.get('/api/inspections/stats/');
+      const response = await api.get('/inspections/stats/');
       return response.data;
     }
   );

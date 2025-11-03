@@ -15,7 +15,7 @@ export function EnterpriseFooter() {
   const { data: stats } = useQuery<EnterpriseStats>(
     'enterprise-footer-stats',
     async () => {
-      const response = await api.get('/api/inspections/stats/');
+      const response = await api.get('/inspections/stats/');
       return response.data;
     },
     {

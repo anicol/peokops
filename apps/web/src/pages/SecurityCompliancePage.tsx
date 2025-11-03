@@ -29,7 +29,7 @@ export default function SecurityCompliancePage() {
   const { data: metrics, isLoading: metricsLoading } = useQuery<SecurityMetrics>(
     'security-metrics',
     async () => {
-      const response = await api.get('/api/admin/security-metrics/');
+      const response = await api.get('/admin/security-metrics/');
       return response.data;
     }
   );
@@ -38,7 +38,7 @@ export default function SecurityCompliancePage() {
   const { data: auditLogs, isLoading: logsLoading } = useQuery<AuditLog[]>(
     'audit-logs',
     async () => {
-      const response = await api.get('/api/admin/audit-logs/?limit=10');
+      const response = await api.get('/admin/audit-logs/?limit=10');
       return response.data;
     }
   );
