@@ -38,6 +38,8 @@ import AdminQueuePage from '@/pages/AdminQueuePage';
 import MicroCheckInvitePage from '@/pages/MicroCheckInvitePage';
 import MicroCheckPage from '@/pages/MicroCheckPage';
 import MicroCheckHistoryPage from '@/pages/MicroCheckHistoryPage';
+import PulseSurveyPage from '@/pages/PulseSurveyPage';
+import PulseSurveysPage from '@/pages/PulseSurveysPage';
 import MicroCheckRunDetailPage from '@/pages/MicroCheckRunDetailPage';
 import MicroCheckTemplatesPage from '@/pages/MicroCheckTemplatesPage';
 import ReviewAnalysisPage from '@/pages/ReviewAnalysisPage';
@@ -70,6 +72,7 @@ function AppRoutes() {
         {/* Magic link routes - no auth required */}
         <Route path="/check/:token" element={<MicroCheckInvitePage />} />
         <Route path="/micro-check" element={<MicroCheckPage />} />
+        <Route path="/pulse-survey/:token" element={<PulseSurveyPage />} />
 
         {/* Review Analysis - public, no auth required */}
         <Route path="/review-analysis" element={<ReviewAnalysisPage />} />
@@ -377,6 +380,18 @@ function AppRoutes() {
             isAuthenticated && (user?.role === 'ADMIN' || user?.role === 'OWNER' || user?.role === 'TRIAL_ADMIN' || user?.role === 'GM') ? (
               <Layout>
                 <MicroCheckTemplatesPage />
+              </Layout>
+            ) : (
+              <Navigate to="/" replace />
+            )
+          }
+        />
+        <Route
+          path="/pulse-surveys"
+          element={
+            isAuthenticated && (user?.role === 'ADMIN' || user?.role === 'OWNER' || user?.role === 'TRIAL_ADMIN' || user?.role === 'GM') ? (
+              <Layout>
+                <PulseSurveysPage />
               </Layout>
             ) : (
               <Navigate to="/" replace />

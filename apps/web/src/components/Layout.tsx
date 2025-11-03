@@ -45,6 +45,7 @@ const navigationSections = [
     title: 'Settings', // Settings section
     items: [
       { name: 'Templates', href: '/micro-check-templates', icon: FileText, key: 'templates', roles: ['ADMIN', 'OWNER', 'TRIAL_ADMIN'] },
+      { name: 'Pulse Surveys', href: '/pulse-surveys', icon: Activity, key: 'pulseSurveys', roles: ['ADMIN', 'OWNER', 'TRIAL_ADMIN', 'GM'] },
       { name: 'Schedule', href: '/schedule', icon: Calendar, key: 'schedule', roles: ['ADMIN', 'OWNER', 'TRIAL_ADMIN', 'GM'] },
       { name: 'Stores', href: '/stores', icon: Store, key: 'stores', roles: ['ADMIN', 'OWNER', 'TRIAL_ADMIN'] }, // Trial users can add stores
       { name: 'Users', href: '/users', icon: Users, key: 'users', roles: ['ADMIN', 'OWNER', 'TRIAL_ADMIN'] },
