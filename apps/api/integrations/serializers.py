@@ -172,16 +172,15 @@ class GoogleLocationSerializer(serializers.ModelSerializer):
     """Serializer for GoogleLocation model"""
 
     review_count = serializers.SerializerMethodField()
-    unread_review_count = serializers.SerializerMethodField()
 
     class Meta:
         model = None  # Will be imported to avoid circular import
         fields = [
             'id', 'account', 'google_location_id', 'google_location_name',
-            'address', 'phone', 'website', 'average_rating', 'total_review_count',
-            'is_active', 'last_sync_at', 'review_count', 'unread_review_count'
+            'address', 'place_id', 'place_url', 'average_rating', 'total_review_count',
+            'is_active', 'synced_at', 'review_count'
         ]
-        read_only_fields = ['id', 'last_sync_at', 'review_count', 'unread_review_count']
+        read_only_fields = ['id', 'synced_at', 'review_count']
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -193,23 +192,19 @@ class GoogleLocationSerializer(serializers.ModelSerializer):
         """Get count of reviews stored locally"""
         return obj.reviews.count()
 
-    def get_unread_review_count(self, obj):
-        """Get count of unread reviews"""
-        return obj.reviews.filter(read_at__isnull=True).count()
-
 
 class GoogleReviewSerializer(serializers.ModelSerializer):
     """Serializer for GoogleReview model"""
 
     analysis = serializers.SerializerMethodField()
+    location = serializers.SerializerMethodField()
 
     class Meta:
         model = None  # Will be imported to avoid circular import
         fields = [
             'id', 'google_review_id', 'location', 'account', 'reviewer_name',
-            'reviewer_profile_photo_url', 'rating', 'review_text', 'review_reply',
-            'review_created_at', 'review_updated_at', 'reply_created_at',
-            'source', 'is_verified', 'read_at', 'flagged', 'analyzed_at',
+            'rating', 'review_text', 'review_reply',
+            'review_created_at', 'source', 'is_verified', 'analyzed_at',
             'needs_analysis', 'analysis'
         ]
         read_only_fields = ['id', 'analyzed_at', 'analysis']
@@ -219,6 +214,20 @@ class GoogleReviewSerializer(serializers.ModelSerializer):
         # Lazy import to avoid circular dependency
         from .models import GoogleReview
         self.Meta.model = GoogleReview
+
+    def get_location(self, obj):
+        """Get location data with store information"""
+        try:
+            return {
+                'id': str(obj.location.id),
+                'google_location_name': obj.location.google_location_name,
+                'store': {
+                    'id': obj.location.store.id if obj.location.store else None,
+                    'name': obj.location.store.name if obj.location.store else None,
+                } if obj.location.store else None
+            }
+        except:
+            return None
 
     def get_analysis(self, obj):
         """Get AI analysis if available"""
