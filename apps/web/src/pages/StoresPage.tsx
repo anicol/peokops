@@ -22,7 +22,7 @@ import {
   TrendingDown,
   MessageSquare,
 } from 'lucide-react';
-import { storesAPI, brandsAPI, insightsAPI } from '@/services/api';
+import api, { storesAPI, brandsAPI, insightsAPI } from '@/services/api';
 import type { Store, Brand } from '@/types';
 import { useAuth } from '@/hooks/useAuth';
 import axios from 'axios';
@@ -945,7 +945,7 @@ function StoreFormModal({ store, brands, currentUser, onClose }: StoreFormModalP
     setLinkError('');
 
     try {
-      await axios.post('/api/integrations/google-reviews/link-location', {
+      await api.post('/integrations/google-reviews/link-location', {
         store_id: store.id,
         business_name: result.business_name,
         place_url: result.place_url,
