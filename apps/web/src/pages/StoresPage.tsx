@@ -17,11 +17,16 @@ import {
   Phone,
   Star,
   Link as LinkIcon,
+  X,
+  TrendingUp,
+  TrendingDown,
+  MessageSquare,
 } from 'lucide-react';
-import { storesAPI, brandsAPI } from '@/services/api';
+import { storesAPI, brandsAPI, insightsAPI } from '@/services/api';
 import type { Store, Brand } from '@/types';
 import { useAuth } from '@/hooks/useAuth';
 import axios from 'axios';
+import GooglePlacesAutocomplete from '@/components/GooglePlacesAutocomplete';
 
 export default function StoresPage() {
   const { user: currentUser } = useAuth();
@@ -30,11 +35,18 @@ export default function StoresPage() {
   const [editingStore, setEditingStore] = useState<Store | null>(null);
   const [brandFilter, setBrandFilter] = useState<string>('all');
   const [stateFilter, setStateFilter] = useState<string>('all');
+  const [reviewAnalysisStore, setReviewAnalysisStore] = useState<Store | null>(null);
+  const [reviewAnalysisData, setReviewAnalysisData] = useState<any>(null);
+  const [isLoadingAnalysis, setIsLoadingAnalysis] = useState(false);
   const queryClient = useQueryClient();
 
   const { data: stores, isLoading, error } = useQuery<Store[]>(
     'stores',
-    storesAPI.getStores
+    storesAPI.getStores,
+    {
+      // Auto-refresh every 30 seconds to show updated Google review data
+      refetchInterval: 30000,
+    }
   );
 
   // Only fetch brands for admin users
@@ -54,6 +66,34 @@ export default function StoresPage() {
       },
     }
   );
+
+  const handleViewReviewAnalysis = async (store: Store) => {
+    // Check if store has Google location data and place_id
+    if (!store.google_place_id) {
+      alert('No review analysis available for this store yet.');
+      return;
+    }
+
+    try {
+      setReviewAnalysisStore(store);
+      setIsLoadingAnalysis(true);
+
+      console.log('Fetching analysis for place_id:', store.google_place_id);
+      const analysisData = await insightsAPI.getAnalysisByPlaceId(store.google_place_id);
+      console.log('Received analysis data:', analysisData);
+      setReviewAnalysisData(analysisData);
+    } catch (error: any) {
+      console.error('Failed to fetch review analysis:', error);
+      if (error.response?.status === 404) {
+        alert('Review analysis is still processing. Please check back in a few minutes.');
+      } else {
+        alert('Could not load review analysis. Please try again later.');
+      }
+      setReviewAnalysisStore(null);
+    } finally {
+      setIsLoadingAnalysis(false);
+    }
+  };
 
   const handleDelete = async (store: Store) => {
     if (window.confirm(`Are you sure you want to delete ${store.name}?`)) {
@@ -276,6 +316,28 @@ export default function StoresPage() {
                         <a href={`mailto:${store.manager_email}`} className="hover:text-indigo-600 truncate">{store.manager_email}</a>
                       </div>
                     )}
+
+                    {/* Google Reviews Status */}
+                    {store.google_location_name && (
+                      <div className="text-sm">
+                        {store.google_rating ? (
+                          <button
+                            onClick={() => handleViewReviewAnalysis(store)}
+                            className="flex items-center text-left hover:bg-gray-50 rounded p-1 -m-1 transition-colors w-full"
+                          >
+                            <Star className="h-4 w-4 mr-2 fill-yellow-400 text-yellow-400 flex-shrink-0" />
+                            <span className="font-medium text-gray-900">{store.google_rating}</span>
+                            <span className="text-gray-500 ml-1">/ 5.0</span>
+                            <span className="text-blue-600 ml-2 hover:underline">({store.google_review_count || 0} reviews)</span>
+                          </button>
+                        ) : (
+                          <div className="flex items-center">
+                            <Loader2 className="h-4 w-4 mr-2 text-blue-600 animate-spin flex-shrink-0" />
+                            <span className="text-blue-600 font-medium">Syncing Google reviews...</span>
+                          </div>
+                        )}
+                      </div>
+                    )}
                   </div>
 
                   <div className="flex items-center justify-between pt-3 border-t border-gray-100">
@@ -394,17 +456,32 @@ export default function StoresPage() {
                       </span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      {store.google_rating ? (
-                        <div className="text-sm">
-                          <div className="flex items-center text-gray-900 mb-1">
-                            <Star className="h-4 w-4 mr-1 fill-yellow-400 text-yellow-400" />
-                            <span className="font-medium">{store.google_rating}</span>
-                            <span className="text-gray-500 ml-1">/ 5.0</span>
+                      {store.google_location_name ? (
+                        store.google_rating ? (
+                          <button
+                            onClick={() => handleViewReviewAnalysis(store)}
+                            className="text-sm text-left hover:bg-gray-50 rounded p-1 -m-1 transition-colors"
+                          >
+                            <div className="flex items-center text-gray-900 mb-1">
+                              <Star className="h-4 w-4 mr-1 fill-yellow-400 text-yellow-400" />
+                              <span className="font-medium">{store.google_rating}</span>
+                              <span className="text-gray-500 ml-1">/ 5.0</span>
+                            </div>
+                            <div className="text-xs text-blue-600 hover:underline">
+                              {store.google_review_count || 0} reviews • View analysis
+                            </div>
+                          </button>
+                        ) : (
+                          <div className="text-sm">
+                            <div className="flex items-center text-blue-600 mb-1">
+                              <Loader2 className="h-3 w-3 mr-1 animate-spin" />
+                              <span className="font-medium">Syncing...</span>
+                            </div>
+                            <div className="text-xs text-gray-500">
+                              Linked to Google
+                            </div>
                           </div>
-                          <div className="text-xs text-gray-500">
-                            {store.google_review_count || 0} reviews
-                          </div>
-                        </div>
+                        )
                       ) : (
                         <span className="text-sm text-gray-400">Not linked</span>
                       )}
@@ -450,6 +527,211 @@ export default function StoresPage() {
           }}
         />
       )}
+
+      {/* Review Analysis Modal */}
+      {reviewAnalysisStore && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between">
+              <div>
+                <h2 className="text-xl font-bold text-gray-900">{reviewAnalysisStore.google_location_name}</h2>
+                <p className="text-sm text-gray-500 mt-1">{reviewAnalysisStore.name}</p>
+              </div>
+              <button
+                onClick={() => {
+                  setReviewAnalysisStore(null);
+                  setReviewAnalysisData(null);
+                }}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                <X className="h-6 w-6" />
+              </button>
+            </div>
+
+            <div className="p-6">
+              {isLoadingAnalysis ? (
+                <div className="flex items-center justify-center py-12">
+                  <Loader2 className="h-8 w-8 animate-spin text-indigo-600" />
+                  <span className="ml-3 text-gray-600">Loading analysis...</span>
+                </div>
+              ) : reviewAnalysisData ? (
+                <div className="space-y-6">
+                  {/* Debug: Show data structure */}
+                  <details className="bg-gray-100 rounded p-2 text-xs">
+                    <summary className="cursor-pointer font-mono">Debug: View raw data</summary>
+                    <pre className="mt-2 overflow-auto">{JSON.stringify(reviewAnalysisData, null, 2)}</pre>
+                  </details>
+
+                  {/* Rating Summary */}
+                  <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg p-6">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-sm text-gray-600 mb-1">Google Rating</p>
+                        <div className="flex items-center">
+                          <Star className="h-8 w-8 fill-yellow-400 text-yellow-400 mr-2" />
+                          <span className="text-4xl font-bold text-gray-900">{reviewAnalysisData.google_rating}</span>
+                          <span className="text-2xl text-gray-500 ml-2">/ 5.0</span>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-sm text-gray-600 mb-1">Reviews Analyzed</p>
+                        <p className="text-3xl font-bold text-gray-900">{reviewAnalysisData.reviews_analyzed || 0}</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Sentiment Summary */}
+                  {reviewAnalysisData.sentiment_summary && (
+                    <div>
+                      <h3 className="text-lg font-semibold text-gray-900 mb-3">Overall Sentiment</h3>
+                      <div className="bg-gray-50 rounded-lg p-4">
+                        {typeof reviewAnalysisData.sentiment_summary === 'string' ? (
+                          <p className="text-gray-700">{reviewAnalysisData.sentiment_summary}</p>
+                        ) : reviewAnalysisData.sentiment_summary.positive_percentage !== undefined ? (
+                          <div className="grid grid-cols-3 gap-4">
+                            <div className="text-center">
+                              <p className="text-2xl font-bold text-green-600">{reviewAnalysisData.sentiment_summary.positive_percentage}%</p>
+                              <p className="text-sm text-gray-600">Positive</p>
+                            </div>
+                            <div className="text-center">
+                              <p className="text-2xl font-bold text-gray-600">{reviewAnalysisData.sentiment_summary.neutral_percentage}%</p>
+                              <p className="text-sm text-gray-600">Neutral</p>
+                            </div>
+                            <div className="text-center">
+                              <p className="text-2xl font-bold text-red-600">{reviewAnalysisData.sentiment_summary.negative_percentage}%</p>
+                              <p className="text-sm text-gray-600">Negative</p>
+                            </div>
+                          </div>
+                        ) : (
+                          <p className="text-gray-700">{JSON.stringify(reviewAnalysisData.sentiment_summary)}</p>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Key Issues */}
+                  {reviewAnalysisData.key_issues && reviewAnalysisData.key_issues.length > 0 && (
+                    <div>
+                      <h3 className="text-lg font-semibold text-gray-900 mb-3">Key Issues from Reviews</h3>
+                      <div className="space-y-3">
+                        {reviewAnalysisData.key_issues.map((issue: any, idx: number) => (
+                          <div key={idx} className="bg-red-50 border border-red-200 rounded-lg p-4">
+                            <div className="flex items-start justify-between mb-2">
+                              <h4 className="font-medium text-red-900">{issue.theme || issue.category}</h4>
+                              <span className="text-sm text-red-600 font-medium">{issue.mentions} mentions</span>
+                            </div>
+                            {issue.example_quote && (
+                              <p className="text-sm text-red-700 italic">"{issue.example_quote}"</p>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* AI Insights */}
+                  {reviewAnalysisData.insights && (
+                    <div>
+                      <h3 className="text-lg font-semibold text-gray-900 mb-3">AI Insights</h3>
+                      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                        {typeof reviewAnalysisData.insights === 'string' ? (
+                          <p className="text-blue-900">{reviewAnalysisData.insights}</p>
+                        ) : reviewAnalysisData.insights.key_issues ? (
+                          <div className="space-y-3">
+                            {reviewAnalysisData.insights.common_complaints && reviewAnalysisData.insights.common_complaints.length > 0 && (
+                              <div>
+                                <h4 className="text-sm font-semibold text-blue-900 mb-2">Common Complaints</h4>
+                                <ul className="list-disc list-inside text-sm text-blue-800 space-y-1">
+                                  {reviewAnalysisData.insights.common_complaints.map((complaint: string, idx: number) => (
+                                    <li key={idx}>{complaint}</li>
+                                  ))}
+                                </ul>
+                              </div>
+                            )}
+                            {reviewAnalysisData.insights.common_praise && reviewAnalysisData.insights.common_praise.length > 0 && (
+                              <div>
+                                <h4 className="text-sm font-semibold text-blue-900 mb-2">Common Praise</h4>
+                                <ul className="list-disc list-inside text-sm text-blue-800 space-y-1">
+                                  {reviewAnalysisData.insights.common_praise.map((praise: string, idx: number) => (
+                                    <li key={idx}>{praise}</li>
+                                  ))}
+                                </ul>
+                              </div>
+                            )}
+                            {reviewAnalysisData.insights.operational_themes && reviewAnalysisData.insights.operational_themes.length > 0 && (
+                              <div>
+                                <h4 className="text-sm font-semibold text-blue-900 mb-2">Operational Themes</h4>
+                                <ul className="list-disc list-inside text-sm text-blue-800 space-y-1">
+                                  {reviewAnalysisData.insights.operational_themes.map((theme: string, idx: number) => (
+                                    <li key={idx}>{theme}</li>
+                                  ))}
+                                </ul>
+                              </div>
+                            )}
+                          </div>
+                        ) : (
+                          <p className="text-blue-900 text-sm">{JSON.stringify(reviewAnalysisData.insights)}</p>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Micro-Check Suggestions */}
+                  {reviewAnalysisData.micro_check_suggestions && reviewAnalysisData.micro_check_suggestions.length > 0 && (
+                    <div>
+                      <h3 className="text-lg font-semibold text-gray-900 mb-3">Suggested Micro-Checks</h3>
+                      <div className="space-y-3">
+                        {reviewAnalysisData.micro_check_suggestions.map((suggestion: any, idx: number) => (
+                          <div key={idx} className="bg-green-50 border border-green-200 rounded-lg p-4">
+                            {typeof suggestion === 'string' ? (
+                              <p className="text-sm font-medium text-green-900">{suggestion}</p>
+                            ) : (
+                              <div className="space-y-2">
+                                <div className="flex items-start justify-between">
+                                  <h4 className="text-sm font-semibold text-green-900">{suggestion.title || suggestion.question}</h4>
+                                  {suggestion.severity && (
+                                    <span className={`text-xs px-2 py-1 rounded-full font-medium ${
+                                      suggestion.severity === 'HIGH' || suggestion.severity === 'CRITICAL'
+                                        ? 'bg-red-100 text-red-800'
+                                        : suggestion.severity === 'MEDIUM'
+                                        ? 'bg-yellow-100 text-yellow-800'
+                                        : 'bg-green-100 text-green-800'
+                                    }`}>
+                                      {suggestion.severity}
+                                    </span>
+                                  )}
+                                </div>
+                                {suggestion.category && (
+                                  <p className="text-xs text-green-700 font-medium">Category: {suggestion.category}</p>
+                                )}
+                                {suggestion.question && suggestion.question !== suggestion.title && (
+                                  <p className="text-sm text-green-800">{suggestion.question}</p>
+                                )}
+                                {suggestion.success_criteria && (
+                                  <div className="text-xs text-green-700">
+                                    <span className="font-medium">Success Criteria:</span> {suggestion.success_criteria}
+                                  </div>
+                                )}
+                                {suggestion.mentions_in_reviews && (
+                                  <p className="text-xs text-green-600">Mentioned in {suggestion.mentions_in_reviews} review{suggestion.mentions_in_reviews !== 1 ? 's' : ''}</p>
+                                )}
+                              </div>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div className="text-center py-12 text-gray-500">
+                  No analysis data available
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -464,15 +746,25 @@ interface StoreFormModalProps {
 function StoreFormModal({ store, brands, currentUser, onClose }: StoreFormModalProps) {
   const queryClient = useQueryClient();
 
-  // For non-admin users, default to their brand
+  // For non-admin users, get brand from their current user's brand_id
+  // This should exist for all users since they're assigned to a store with a brand
   const defaultBrand = currentUser?.role === 'ADMIN'
     ? (store?.brand || '')
-    : (store?.brand || currentUser?.brand || '');
+    : (store?.brand || currentUser?.brand_id || '');
+
+  console.log('StoreFormModal - currentUser:', currentUser);
+  console.log('StoreFormModal - defaultBrand:', defaultBrand);
+  console.log('StoreFormModal - store:', store);
+
+  // Creation mode: 'choose' (initial), 'google-search', 'manual', or null for editing
+  const [creationMode, setCreationMode] = useState<'choose' | 'google-search' | 'manual' | null>(
+    store ? null : 'choose'
+  );
 
   const [formData, setFormData] = useState({
     name: store?.name || '',
     code: store?.code || '',
-    brand: defaultBrand,
+    brand: defaultBrand,  // Will be number (brand_id) or undefined
     address: store?.address || '',
     city: store?.city || '',
     state: store?.state || '',
@@ -483,18 +775,27 @@ function StoreFormModal({ store, brands, currentUser, onClose }: StoreFormModalP
     is_active: store?.is_active ?? true,
   });
 
-  // Google location linking state
+  // Google location data (for creation)
+  const [googleLocationData, setGoogleLocationData] = useState<any>(null);
+  const [selectedPlace, setSelectedPlace] = useState<any>(null);
+
+  // Google location linking/search state (for edit mode)
   const [googleSearchQuery, setGoogleSearchQuery] = useState('');
-  const [googleSearchResults, setGoogleSearchResults] = useState<any>(null);
+  const [googleSearchResults, setGoogleSearchResults] = useState<any[]>([]);
   const [isSearching, setIsSearching] = useState(false);
   const [isLinking, setIsLinking] = useState(false);
   const [linkError, setLinkError] = useState('');
 
+  // Form submission error state
+  const [formError, setFormError] = useState('');
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+
   const mutation = useMutation(
-    (data: typeof formData) => {
+    (data: any) => {
       if (store) {
         return storesAPI.updateStore(store.id, data);
       }
+      // For creation, include google_location_data if available
       return storesAPI.createStore(data);
     },
     {
@@ -502,17 +803,144 @@ function StoreFormModal({ store, brands, currentUser, onClose }: StoreFormModalP
         queryClient.invalidateQueries('stores');
         onClose();
       },
+      onError: (error: any) => {
+        // Clear previous errors
+        setFormError('');
+        setFieldErrors({});
+
+        // Handle validation errors from backend
+        if (error.response?.data) {
+          const errorData = error.response.data;
+
+          // Check if it's a field-level validation error
+          if (typeof errorData === 'object' && !errorData.detail && !errorData.error) {
+            const errors: Record<string, string> = {};
+
+            // Convert backend validation errors to user-friendly messages
+            Object.keys(errorData).forEach(field => {
+              const errorMessages = errorData[field];
+              if (Array.isArray(errorMessages) && errorMessages.length > 0) {
+                const message = errorMessages[0];
+
+                // Custom error messages for common validation issues
+                if (field === 'code' && message.includes('already exists')) {
+                  errors[field] = 'This store code is already in use. Please use a unique code.';
+                } else if (field === 'name' && message.includes('already exists')) {
+                  errors[field] = 'A store with this name already exists. Please use a different name.';
+                } else {
+                  // Use the backend message as-is
+                  errors[field] = typeof message === 'string' ? message : message.toString();
+                }
+              }
+            });
+
+            setFieldErrors(errors);
+            setFormError('Please fix the validation errors below.');
+          } else {
+            // Generic error message
+            setFormError(errorData.detail || errorData.error || 'Failed to save store. Please try again.');
+          }
+        } else {
+          setFormError('Failed to save store. Please check your connection and try again.');
+        }
+      },
     }
   );
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    mutation.mutate(formData);
+
+    // Clear previous errors
+    setFormError('');
+    setFieldErrors({});
+
+    // Prepare submission data
+    const submissionData: any = { ...formData };
+
+    // Include Google location data if creating from Google
+    if (!store && googleLocationData) {
+      submissionData.google_location_data = googleLocationData;
+    }
+
+    console.log('Submitting store data:', submissionData);
+    mutation.mutate(submissionData);
   };
 
-  // Google location search handler
+  // Handle place selected from Google Places Autocomplete (for creation mode)
+  const handlePlaceSelected = (place: any) => {
+    console.log('Place selected:', place);
+    setSelectedPlace(place);
+
+    // Parse address components
+    let streetAddress = '';
+    let city = '';
+    let state = '';
+    let zipCode = '';
+    let phone = '';
+
+    if (place.address_components && Array.isArray(place.address_components)) {
+      place.address_components.forEach((component: any) => {
+        const types = component.types || [];
+
+        // Street number + route = street address
+        if (types.includes('street_number')) {
+          streetAddress = component.long_name;
+        }
+        if (types.includes('route')) {
+          streetAddress = streetAddress ? `${streetAddress} ${component.long_name}` : component.long_name;
+        }
+
+        // City (locality or sublocality)
+        if (types.includes('locality')) {
+          city = component.long_name;
+        } else if (!city && types.includes('sublocality')) {
+          city = component.long_name;
+        }
+
+        // State (administrative_area_level_1)
+        if (types.includes('administrative_area_level_1')) {
+          state = component.short_name;
+        }
+
+        // ZIP code (postal_code)
+        if (types.includes('postal_code')) {
+          zipCode = component.long_name;
+        }
+      });
+    }
+
+    // Pre-fill form with Google data
+    setFormData({
+      ...formData,
+      name: place.name || '',
+      address: streetAddress || place.formatted_address || '',
+      city,
+      state,
+      zip_code: zipCode,
+      phone: phone || formData.phone,
+    });
+
+    // Store Google location data for backend
+    // Construct place_url from place_id
+    const placeUrl = place.place_id ? `https://www.google.com/maps/place/?q=place_id:${place.place_id}` : '';
+
+    setGoogleLocationData({
+      business_name: place.name,
+      place_url: placeUrl,
+      place_id: place.place_id,
+      google_location_id: place.place_id, // Use place_id as location_id
+      address: place.formatted_address,
+      average_rating: null, // Will be fetched by backend
+      total_reviews: null, // Will be fetched by backend
+    });
+
+    // Move to manual mode to show form
+    setCreationMode('manual');
+  };
+
+  // Google search handler for edit mode (backend-based search for existing stores)
   const handleGoogleSearch = async () => {
-    if (!googleSearchQuery.trim()) return;
+    if (!googleSearchQuery.trim() || !store) return;
 
     setIsSearching(true);
     setLinkError('');
@@ -520,21 +948,23 @@ function StoreFormModal({ store, brands, currentUser, onClose }: StoreFormModalP
     try {
       const response = await axios.post('/api/integrations/google-reviews/search-business', {
         business_name: googleSearchQuery,
-        location: `${formData.city}, ${formData.state}`.trim()
+        location: `${store.city}, ${store.state}`.trim()
       });
 
-      setGoogleSearchResults(response.data);
+      // API returns single result or multiple results
+      const results = Array.isArray(response.data) ? response.data : [response.data];
+      setGoogleSearchResults(results);
     } catch (error: any) {
       setLinkError(error.response?.data?.error || 'Failed to search for business');
-      setGoogleSearchResults(null);
+      setGoogleSearchResults([]);
     } finally {
       setIsSearching(false);
     }
   };
 
-  // Link Google location to store
-  const handleLinkGoogleLocation = async () => {
-    if (!store || !googleSearchResults) return;
+  // Link Google location to store (for edit mode)
+  const handleLinkGoogleLocation = async (result: any) => {
+    if (!store) return;
 
     setIsLinking(true);
     setLinkError('');
@@ -542,14 +972,14 @@ function StoreFormModal({ store, brands, currentUser, onClose }: StoreFormModalP
     try {
       await axios.post('/api/integrations/google-reviews/link-location', {
         store_id: store.id,
-        business_name: googleSearchResults.business_name,
-        place_url: googleSearchResults.place_url,
-        place_id: googleSearchResults.place_id
+        business_name: result.business_name,
+        place_url: result.place_url,
+        place_id: result.place_id
       });
 
       // Refresh stores list to show new Google location data
       queryClient.invalidateQueries('stores');
-      setGoogleSearchResults(null);
+      setGoogleSearchResults([]);
       setGoogleSearchQuery('');
 
       alert('Google location linked successfully! Review scraping started in background.');
@@ -575,7 +1005,159 @@ function StoreFormModal({ store, brands, currentUser, onClose }: StoreFormModalP
           {store ? 'Edit Store' : 'Create Store'}
         </h2>
 
+        {/* Step 1: Choose creation method (only for new stores) */}
+        {creationMode === 'choose' && (
+          <div className="space-y-4">
+            <p className="text-sm text-gray-600 mb-6">
+              How would you like to create your store?
+            </p>
+
+            <button
+              type="button"
+              onClick={() => setCreationMode('google-search')}
+              className="w-full p-4 border-2 border-gray-200 rounded-lg hover:border-indigo-500 hover:bg-indigo-50 transition-colors text-left"
+            >
+              <div className="flex items-center">
+                <div className="flex-shrink-0 w-12 h-12 bg-indigo-100 rounded-lg flex items-center justify-center">
+                  <Search className="w-6 h-6 text-indigo-600" />
+                </div>
+                <div className="ml-4">
+                  <h3 className="text-base font-semibold text-gray-900">Search Google Business</h3>
+                  <p className="text-sm text-gray-600 mt-1">
+                    Find your business on Google and automatically link reviews
+                  </p>
+                </div>
+              </div>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setCreationMode('manual')}
+              className="w-full p-4 border-2 border-gray-200 rounded-lg hover:border-indigo-500 hover:bg-indigo-50 transition-colors text-left"
+            >
+              <div className="flex items-center">
+                <div className="flex-shrink-0 w-12 h-12 bg-gray-100 rounded-lg flex items-center justify-center">
+                  <StoreIcon className="w-6 h-6 text-gray-600" />
+                </div>
+                <div className="ml-4">
+                  <h3 className="text-base font-semibold text-gray-900">Create Manually</h3>
+                  <p className="text-sm text-gray-600 mt-1">
+                    Enter store details manually (you can link Google later)
+                  </p>
+                </div>
+              </div>
+            </button>
+
+            <div className="flex justify-end pt-4">
+              <button
+                type="button"
+                onClick={onClose}
+                className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Step 2: Google search (for creation mode) */}
+        {creationMode === 'google-search' && (
+          <div className="space-y-4">
+            <button
+              type="button"
+              onClick={() => setCreationMode('choose')}
+              className="text-sm text-gray-600 hover:text-gray-900 mb-4"
+            >
+              ← Back to options
+            </button>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Search for your business on Google Maps
+              </label>
+              <GooglePlacesAutocomplete
+                value={googleSearchQuery}
+                onChange={setGoogleSearchQuery}
+                onPlaceSelected={handlePlaceSelected}
+                placeholder="Start typing your business name..."
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+              />
+              <p className="mt-2 text-sm text-gray-500">
+                Search for your business using Google Places. Details will be automatically filled in.
+              </p>
+            </div>
+
+            {/* Show selected place */}
+            {selectedPlace && (
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                <div className="flex items-start">
+                  <div className="flex-shrink-0">
+                    <svg className="w-5 h-5 text-blue-600 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                    </svg>
+                  </div>
+                  <div className="ml-3 flex-1">
+                    <h4 className="text-sm font-semibold text-gray-900 mb-1">Selected Business</h4>
+                    <p className="text-sm font-medium text-gray-800">{selectedPlace.name}</p>
+                    {selectedPlace.formatted_address && (
+                      <p className="text-sm text-gray-600 mt-1">{selectedPlace.formatted_address}</p>
+                    )}
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setCreationMode('manual')}
+                  className="w-full mt-4 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors"
+                >
+                  Continue to Store Details →
+                </button>
+              </div>
+            )}
+
+            <div className="flex justify-between pt-4 border-t">
+              <button
+                type="button"
+                onClick={() => setCreationMode('manual')}
+                className="text-sm text-gray-600 hover:text-gray-900"
+              >
+                Skip and create manually →
+              </button>
+              <button
+                type="button"
+                onClick={onClose}
+                className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Step 3 & Edit Mode: Form */}
+        {(creationMode === 'manual' || creationMode === null) && (
         <form onSubmit={handleSubmit} className="space-y-4">
+          {googleLocationData && (
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-4">
+              <div className="flex items-center">
+                <LinkIcon className="h-4 w-4 text-blue-600 mr-2" />
+                <p className="text-sm text-blue-900">
+                  This store will be linked to <strong>{googleLocationData.business_name}</strong> on Google
+                </p>
+              </div>
+            </div>
+          )}
+
+          {/* General form error message */}
+          {formError && (
+            <div className="bg-red-50 border border-red-200 rounded-lg p-3">
+              <div className="flex items-center">
+                <AlertCircle className="h-4 w-4 text-red-600 mr-2" />
+                <p className="text-sm text-red-900">{formError}</p>
+              </div>
+            </div>
+          )}
+
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -586,9 +1168,14 @@ function StoreFormModal({ store, brands, currentUser, onClose }: StoreFormModalP
                 required
                 value={formData.name}
                 onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 ${
+                  fieldErrors.name ? 'border-red-300 bg-red-50' : 'border-gray-300'
+                }`}
                 placeholder="e.g. Downtown Location"
               />
+              {fieldErrors.name && (
+                <p className="mt-1 text-sm text-red-600">{fieldErrors.name}</p>
+              )}
             </div>
 
             <div>
@@ -600,9 +1187,14 @@ function StoreFormModal({ store, brands, currentUser, onClose }: StoreFormModalP
                 required
                 value={formData.code}
                 onChange={(e) => setFormData({ ...formData, code: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 ${
+                  fieldErrors.code ? 'border-red-300 bg-red-50' : 'border-gray-300'
+                }`}
                 placeholder="e.g. NYC-001"
               />
+              {fieldErrors.code && (
+                <p className="mt-1 text-sm text-red-600">{fieldErrors.code}</p>
+              )}
             </div>
           </div>
 
@@ -615,13 +1207,18 @@ function StoreFormModal({ store, brands, currentUser, onClose }: StoreFormModalP
                 required
                 value={formData.brand}
                 onChange={(e) => setFormData({ ...formData, brand: Number(e.target.value) })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 ${
+                  fieldErrors.brand ? 'border-red-300 bg-red-50' : 'border-gray-300'
+                }`}
               >
                 <option value="">Select Brand</option>
                 {brands.map(brand => (
                   <option key={brand.id} value={brand.id}>{brand.name}</option>
                 ))}
               </select>
+              {fieldErrors.brand && (
+                <p className="mt-1 text-sm text-red-600">{fieldErrors.brand}</p>
+              )}
             </div>
           )}
 
@@ -799,49 +1396,56 @@ function StoreFormModal({ store, brands, currentUser, onClose }: StoreFormModalP
                   </div>
 
                   {/* Search results */}
-                  {googleSearchResults && (
-                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
-                      <div className="flex items-start justify-between mb-2">
-                        <div className="flex-1">
-                          <p className="text-sm font-medium text-blue-900">
-                            {googleSearchResults.business_name}
-                          </p>
-                          <p className="text-xs text-blue-700 mt-1">
-                            {googleSearchResults.address}
-                          </p>
-                          <div className="flex items-center gap-3 mt-2">
-                            {googleSearchResults.average_rating && (
-                              <div className="flex items-center text-sm text-blue-700">
-                                <Star className="h-3 w-3 mr-1 fill-yellow-400 text-yellow-400" />
-                                {googleSearchResults.average_rating} / 5.0
+                  {googleSearchResults.length > 0 && (
+                    <div className="space-y-3">
+                      <p className="text-sm font-medium text-gray-700">
+                        Found {googleSearchResults.length} result{googleSearchResults.length !== 1 ? 's' : ''}:
+                      </p>
+                      {googleSearchResults.map((result, index) => (
+                        <div key={index} className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                          <div className="flex items-start justify-between mb-2">
+                            <div className="flex-1">
+                              <p className="text-sm font-medium text-blue-900">
+                                {result.business_name}
+                              </p>
+                              <p className="text-xs text-blue-700 mt-1">
+                                {result.address}
+                              </p>
+                              <div className="flex items-center gap-3 mt-2">
+                                {result.average_rating && (
+                                  <div className="flex items-center text-sm text-blue-700">
+                                    <Star className="h-3 w-3 mr-1 fill-yellow-400 text-yellow-400" />
+                                    {result.average_rating} / 5.0
+                                  </div>
+                                )}
+                                {result.total_reviews !== null && (
+                                  <span className="text-sm text-blue-700">
+                                    {result.total_reviews} reviews
+                                  </span>
+                                )}
                               </div>
-                            )}
-                            {googleSearchResults.total_reviews !== null && (
-                              <span className="text-sm text-blue-700">
-                                {googleSearchResults.total_reviews} reviews
-                              </span>
-                            )}
+                            </div>
                           </div>
+                          <button
+                            type="button"
+                            onClick={() => handleLinkGoogleLocation(result)}
+                            disabled={isLinking}
+                            className="w-full mt-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 flex items-center justify-center"
+                          >
+                            {isLinking ? (
+                              <>
+                                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                                Linking...
+                              </>
+                            ) : (
+                              <>
+                                <LinkIcon className="h-4 w-4 mr-2" />
+                                Link This Location
+                              </>
+                            )}
+                          </button>
                         </div>
-                      </div>
-                      <button
-                        type="button"
-                        onClick={handleLinkGoogleLocation}
-                        disabled={isLinking}
-                        className="w-full mt-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 flex items-center justify-center"
-                      >
-                        {isLinking ? (
-                          <>
-                            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                            Linking...
-                          </>
-                        ) : (
-                          <>
-                            <LinkIcon className="h-4 w-4 mr-2" />
-                            Link This Location
-                          </>
-                        )}
-                      </button>
+                      ))}
                     </div>
                   )}
 
@@ -895,6 +1499,7 @@ function StoreFormModal({ store, brands, currentUser, onClose }: StoreFormModalP
             </button>
           </div>
         </form>
+        )}
       </div>
     </div>
   );

@@ -62,6 +62,7 @@ LOCAL_APPS = [
     'micro_checks.apps.MicroChecksConfig',
     'integrations.apps.IntegrationsConfig',
     'insights.apps.InsightsConfig',
+    'employee_voice.apps.EmployeeVoiceConfig',
 ]
 
 INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + LOCAL_APPS
@@ -302,6 +303,30 @@ CELERY_BEAT_SCHEDULE = {
         'schedule': crontab(day_of_week=0, hour=3, minute=0),  # Sundays at 3 AM
         'options': {'queue': 'ml'}
     },
+    # Employee Voice - Hourly pulse invitation sending (checks shift windows)
+    'send-pulse-invitations': {
+        'task': 'employee_voice.tasks.send_pulse_invitations',
+        'schedule': crontab(minute=10),  # Run at :10 past every hour
+        'options': {'queue': 'default'}
+    },
+    # Employee Voice - Daily unlock status check at 3 AM UTC
+    'check-pulse-unlock-status': {
+        'task': 'employee_voice.tasks.check_pulse_unlock_status',
+        'schedule': crontab(hour=3, minute=15),  # 3:15 AM UTC daily
+        'options': {'queue': 'default'}
+    },
+    # Employee Voice - Daily auto-fix flow evaluation at 4 AM UTC
+    'evaluate-auto-fix-flows': {
+        'task': 'employee_voice.tasks.evaluate_auto_fix_flows',
+        'schedule': crontab(hour=4, minute=0),  # 4:00 AM UTC daily
+        'options': {'queue': 'default'}
+    },
+    # Employee Voice - Daily cross-voice correlation detection at 5 AM UTC
+    'detect-cross-voice-correlations': {
+        'task': 'employee_voice.tasks.detect_cross_voice_correlations',
+        'schedule': crontab(hour=5, minute=0),  # 5:00 AM UTC daily
+        'options': {'queue': 'default'}
+    },
 }
 
 AWS_ACCESS_KEY_ID = config('AWS_ACCESS_KEY_ID', default='')
@@ -365,8 +390,13 @@ MAX_PEOPLE_IN_KITCHEN = config('MAX_PEOPLE_IN_KITCHEN', default=10, cast=int)
 MAX_PEOPLE_IN_LINE = config('MAX_PEOPLE_IN_LINE', default=15, cast=int)
 
 # Demo and Privacy Settings
-DEMO_MODE = config('DEMO_MODE', default=True, cast=bool)
+DEMO_MODE = config('DEMO_MODE', default=False, cast=bool)
 FACE_BLUR = config('FACE_BLUR', default=False, cast=bool)
+
+SESSION_COOKIE_AGE = config('SESSION_COOKIE_AGE', default=1209600, cast=int)  # 14 days default
+
+# CORS settings (secure defaults for production)
+CORS_ALLOW_ALL_ORIGINS = False
 
 # Demo mode configuration
 if DEMO_MODE:

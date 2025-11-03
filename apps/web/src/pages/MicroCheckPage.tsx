@@ -289,6 +289,7 @@ const MicroCheckPage = () => {
       }, 1000);
     } else {
       // Last check completed - fetch all responses and streak for summary
+      // Wait 3 seconds to give Celery time to process the streak updates
       setTimeout(async () => {
         try {
           // Fetch all responses for this run to show complete summary
@@ -331,13 +332,14 @@ const MicroCheckPage = () => {
           // Invalidate dashboard stats cache so it refetches with updated streak
           queryClient.invalidateQueries(['dashboard-stats']);
           queryClient.invalidateQueries('recent-micro-checks');
+          queryClient.invalidateQueries('superadmin-footer-stats'); // Refresh super admin stats too
         } catch (err) {
           console.error('Error fetching summary data:', err);
           // If fetch fails, just use checkResults from this session
         }
         setCurrentScreen('summary');
         setSubmitting(false);
-      }, 1000);
+      }, 3000);
     }
   };
 

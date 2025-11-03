@@ -83,8 +83,9 @@ export default function Dashboard() {
     {
       enabled: !!user?.store,
       refetchOnMount: true,
-      refetchOnWindowFocus: false,
-      staleTime: 5 * 60 * 1000 // 5 minutes
+      refetchOnWindowFocus: true, // Refetch when user returns to tab
+      staleTime: 30 * 1000, // 30 seconds - allow faster updates after micro checks
+      cacheTime: 5 * 60 * 1000 // Keep in cache for 5 minutes when unmounted
     }
   );
 
@@ -137,7 +138,7 @@ function TrialDashboard({ user, stats, dashboardStats, microCheckRuns, allRespon
         <div className="bg-gradient-to-r from-blue-600 to-teal-600 rounded-2xl text-white p-6 lg:p-8">
           <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center">
             <div className="mb-6 lg:mb-0">
-              <h2 className="text-2xl font-bold mb-2">Today's Status</h2>
+              <h2 className="text-2xl font-bold mb-2">My Daily Progress</h2>
               <div className="flex flex-col sm:flex-row sm:items-center sm:space-x-4 space-y-2 sm:space-y-0">
                 <div className="flex items-center space-x-2">
                   <span className="text-blue-200">Yesterday:</span>
@@ -469,7 +470,7 @@ function CoachingDashboard({ user, stats, dashboardStats, recentVideos, microChe
         <div className="bg-gradient-to-r from-indigo-600 to-purple-600 rounded-2xl text-white p-6 lg:p-8">
           <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center">
             <div className="mb-6 lg:mb-0">
-              <h2 className="text-2xl font-bold mb-3">Your Brand at a Glance</h2>
+              <h2 className="text-2xl font-bold mb-3">Store Performance Overview</h2>
               <div className="grid grid-cols-3 gap-4 text-sm">
                 <div>
                   <div className="text-indigo-200">Avg Store Score</div>
@@ -649,7 +650,7 @@ function EnterpriseDashboard({ user, stats, dashboardStats, recentInspections, n
     <div className="p-4 lg:p-8">
       <div className="mb-8">
         <div className="bg-gradient-to-r from-gray-900 to-gray-700 rounded-2xl text-white p-6 lg:p-8">
-          <h2 className="text-2xl font-bold mb-4">Brand Performance Overview</h2>
+          <h2 className="text-2xl font-bold mb-4">Operations Command Center</h2>
           <div className="grid grid-cols-2 sm:grid-cols-5 gap-4 text-sm">
             <div>
               <div className="text-gray-300">Total Stores</div>

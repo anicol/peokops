@@ -66,7 +66,7 @@ services:
       - key: ENABLE_AWS_REKOGNITION
         value: "True"
       - key: DEMO_MODE
-        value: "True"
+        value: "False"
       - key: FACE_BLUR
         value: "False"
       - key: FRAME_SAMPLING_FPS

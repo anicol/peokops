@@ -38,11 +38,17 @@ import AdminQueuePage from '@/pages/AdminQueuePage';
 import MicroCheckInvitePage from '@/pages/MicroCheckInvitePage';
 import MicroCheckPage from '@/pages/MicroCheckPage';
 import MicroCheckHistoryPage from '@/pages/MicroCheckHistoryPage';
+import PulseSurveyPage from '@/pages/PulseSurveyPage';
+import PulseSurveysPage from '@/pages/PulseSurveysPage';
 import MicroCheckRunDetailPage from '@/pages/MicroCheckRunDetailPage';
 import MicroCheckTemplatesPage from '@/pages/MicroCheckTemplatesPage';
 import ReviewAnalysisPage from '@/pages/ReviewAnalysisPage';
 import InsightsPage from '@/pages/InsightsPage';
+import CommandCenter from '@/pages/CommandCenter';
 import ProfilePage from '@/pages/ProfilePage';
+import MyProgressPage from '@/pages/MyProgressPage';
+import StorePerformancePage from '@/pages/StorePerformancePage';
+import SecurityCompliancePage from '@/pages/SecurityCompliancePage';
 import LockedFeatureView from '@/components/LockedFeatureView';
 import { MobileCaptureProvider } from '@/pages/MobileCaptureContext';
 import { AdminEngagementOverview } from '@/pages/admin/AdminEngagementOverview';
@@ -66,6 +72,7 @@ function AppRoutes() {
         {/* Magic link routes - no auth required */}
         <Route path="/check/:token" element={<MicroCheckInvitePage />} />
         <Route path="/micro-check" element={<MicroCheckPage />} />
+        <Route path="/pulse-survey/:token" element={<PulseSurveyPage />} />
 
         {/* Review Analysis - public, no auth required */}
         <Route path="/review-analysis" element={<ReviewAnalysisPage />} />
@@ -190,7 +197,7 @@ function AppRoutes() {
         <Route
           path="/brands"
           element={
-            isAuthenticated ? (
+            isAuthenticated && user?.role === 'SUPER_ADMIN' ? (
               <Layout>
                 <BrandsPage />
               </Layout>
@@ -322,7 +329,7 @@ function AppRoutes() {
         <Route
           path="/admin/queue"
           element={
-            isAuthenticated ? (
+            isAuthenticated && user?.role === 'SUPER_ADMIN' ? (
               <Layout>
                 <AdminQueuePage />
               </Layout>
@@ -334,7 +341,7 @@ function AppRoutes() {
         <Route
           path="/admin/users"
           element={
-            isAuthenticated ? (
+            isAuthenticated && user?.role === 'SUPER_ADMIN' ? (
               <Layout>
                 <AdminUsersPage />
               </Layout>
@@ -380,6 +387,18 @@ function AppRoutes() {
           }
         />
         <Route
+          path="/pulse-surveys"
+          element={
+            isAuthenticated && (user?.role === 'ADMIN' || user?.role === 'OWNER' || user?.role === 'TRIAL_ADMIN' || user?.role === 'GM') ? (
+              <Layout>
+                <PulseSurveysPage />
+              </Layout>
+            ) : (
+              <Navigate to="/" replace />
+            )
+          }
+        />
+        <Route
           path="/insights"
           element={
             isAuthenticated ? (
@@ -392,11 +411,59 @@ function AppRoutes() {
           }
         />
         <Route
+          path="/command-center"
+          element={
+            isAuthenticated ? (
+              <Layout>
+                <CommandCenter />
+              </Layout>
+            ) : (
+              <Navigate to="/login" replace />
+            )
+          }
+        />
+        <Route
           path="/profile"
           element={
             isAuthenticated ? (
               <Layout>
                 <ProfilePage />
+              </Layout>
+            ) : (
+              <Navigate to="/login" replace />
+            )
+          }
+        />
+        <Route
+          path="/my-progress"
+          element={
+            isAuthenticated ? (
+              <Layout>
+                <MyProgressPage />
+              </Layout>
+            ) : (
+              <Navigate to="/login" replace />
+            )
+          }
+        />
+        <Route
+          path="/store-performance"
+          element={
+            isAuthenticated ? (
+              <Layout>
+                <StorePerformancePage />
+              </Layout>
+            ) : (
+              <Navigate to="/login" replace />
+            )
+          }
+        />
+        <Route
+          path="/security-compliance"
+          element={
+            isAuthenticated ? (
+              <Layout>
+                <SecurityCompliancePage />
               </Layout>
             ) : (
               <Navigate to="/login" replace />

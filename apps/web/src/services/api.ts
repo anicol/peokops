@@ -715,7 +715,8 @@ export const microCheckAPI = {
     category: string,
     count: number = 5,
     brandName?: string,
-    industry?: string
+    industry?: string,
+    brandId?: number
   ): Promise<{
     brand_analysis: {
       business_type: string;
@@ -728,6 +729,7 @@ export const microCheckAPI = {
     const payload: any = { category, count };
     if (brandName) payload.brand_name = brandName;
     if (industry) payload.industry = industry;
+    if (brandId) payload.brand_id = brandId;
     const response = await api.post('/micro-checks/templates/generate_with_ai/', payload);
     return response.data;
   },
@@ -898,6 +900,235 @@ export const insightsAPI = {
       headers: { Authorization: '' },
     });
     return response.data;
+  },
+
+  // Get 360° Insights summary for a store (authenticated endpoint)
+  getSummary: async (storeId: number): Promise<any> => {
+    const response = await api.get(`/insights/store/${storeId}/summary/`);
+    return response.data;
+  },
+
+  // Get review analysis by Google place_id (authenticated endpoint)
+  getAnalysisByPlaceId: async (placeId: string): Promise<any> => {
+    const response = await api.get(`/insights/by-place/${placeId}/`);
+    return response.data;
+  },
+};
+
+// Employee Voice API
+export interface EmployeeVoicePulse {
+  id: string;
+  title: string;
+  description: string;
+  shift_window: string;
+  shift_window_display: string;
+  language: string;
+  language_display: string;
+  consent_text: string;
+  status: string;
+  status_display: string;
+  is_active: boolean;
+  auto_fix_flow_enabled: boolean;
+  min_respondents_for_display: number;
+  store: number;
+  account: number;
+  created_at: string;
+  updated_at: string;
+  unlocked_at?: string;
+  unlock_progress?: {
+    current: number;
+    required: number;
+    remaining: number;
+    message: string;
+  };
+}
+
+export interface CreatePulseRequest {
+  title: string;
+  description: string;
+  shift_window: 'OPEN' | 'MID' | 'CLOSE';
+  language: 'en' | 'es' | 'fr';
+  consent_text?: string;
+  auto_fix_flow_enabled?: boolean;
+  min_respondents_for_display?: number;
+}
+
+export interface UpdatePulseRequest {
+  title?: string;
+  description?: string;
+  shift_window?: 'OPEN' | 'MID' | 'CLOSE';
+  language?: 'en' | 'es' | 'fr';
+  consent_text?: string;
+  is_active?: boolean;
+  auto_fix_flow_enabled?: boolean;
+  min_respondents_for_display?: number;
+}
+
+export interface EmployeeVoiceInvitation {
+  id: string;
+  pulse: string;
+  pulse_title?: string;
+  recipient_phone?: string;
+  recipient_email?: string;
+  token: string;
+  delivery_method?: string;
+  delivery_method_display?: string;
+  status: string;
+  status_display?: string;
+  is_valid?: boolean;
+  sent_at?: string;
+  opened_at?: string;
+  completed_at?: string;
+  expires_at: string;
+  created_at: string;
+  updated_at?: string;
+}
+
+export interface AutoFixFlowConfig {
+  id: string;
+  pulse: string;
+  bottleneck_type: string;
+  check_category: string;
+  threshold_mentions: number;
+  threshold_days: number;
+  action_item_template: string;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ValidateMagicLinkResponse {
+  pulse: EmployeeVoicePulse;
+  invitation_id: string;
+  expires_at: string;
+}
+
+export interface SubmitSurveyRequest {
+  token: string;
+  mood: number; // 1-5 (😫😐🙂😄🔥)
+  confidence: number; // 1-3 (No/Mostly/Yes)
+  bottlenecks?: string[]; // Multi-select array: CLEANLINESS, STAFFING, EQUIPMENT, TASKS, COMMUNICATION, GUEST_VOLUME
+  comment?: string; // Max 80 chars
+  device_fingerprint: string;
+}
+
+export interface SubmitSurveyResponse {
+  id: string;
+  pulse_title: string;
+  mood: number;
+  mood_display: string;
+  confidence: string;
+  confidence_display: string;
+  bottleneck?: string;
+  bottleneck_display?: string;
+  completed_at: string;
+}
+
+export const employeeVoiceAPI = {
+  // Validate magic link token (public endpoint)
+  validateMagicLink: async (token: string): Promise<ValidateMagicLinkResponse> => {
+    const response = await axios.get(`${API_BASE_URL}/api/employee-voice/magic-link/${token}/`);
+    return response.data;
+  },
+
+  // Submit survey response (public endpoint)
+  submitSurvey: async (data: SubmitSurveyRequest): Promise<SubmitSurveyResponse> => {
+    const response = await axios.post(`${API_BASE_URL}/api/employee-voice/submit/`, data);
+    return response.data;
+  },
+
+  // Get all pulses for a store
+  getPulses: async (storeId: number): Promise<EmployeeVoicePulse[]> => {
+    const response = await api.get('/employee-voice/pulses/', {
+      params: { store: storeId }
+    });
+    // Handle paginated response
+    return response.data.results || response.data;
+  },
+
+  // Get single pulse
+  getPulse: async (pulseId: string): Promise<EmployeeVoicePulse> => {
+    const response = await api.get(`/employee-voice/pulses/${pulseId}/`);
+    return response.data;
+  },
+
+  // Create new pulse
+  createPulse: async (data: CreatePulseRequest): Promise<EmployeeVoicePulse> => {
+    const response = await api.post('/employee-voice/pulses/', data);
+    return response.data;
+  },
+
+  // Update pulse
+  updatePulse: async (pulseId: string, data: UpdatePulseRequest): Promise<EmployeeVoicePulse> => {
+    const response = await api.patch(`/employee-voice/pulses/${pulseId}/`, data);
+    return response.data;
+  },
+
+  // Delete pulse
+  deletePulse: async (pulseId: string): Promise<void> => {
+    await api.delete(`/employee-voice/pulses/${pulseId}/`);
+  },
+
+  // Get pulse insights
+  getPulseInsights: async (pulseId: string): Promise<any> => {
+    const response = await api.get(`/employee-voice/pulses/${pulseId}/insights/`);
+    return response.data;
+  },
+
+  // Get invitations for a pulse
+  getInvitations: async (pulseId?: string): Promise<EmployeeVoiceInvitation[]> => {
+    const params = pulseId ? { pulse: pulseId } : {};
+    const response = await api.get('/employee-voice/invitations/', { params });
+    // Handle paginated response
+    return response.data.results || response.data;
+  },
+
+  // Manually send invitations for a pulse
+  sendInvitations: async (pulseId: string): Promise<{ sent_count: number; message: string }> => {
+    const response = await api.post(`/employee-voice/pulses/${pulseId}/send-invitations/`);
+    return response.data;
+  },
+
+  // Get responses for a pulse
+  getResponses: async (pulseId: string): Promise<any[]> => {
+    const response = await api.get('/employee-voice/responses/', {
+      params: { pulse: pulseId }
+    });
+    // Handle paginated response
+    return response.data.results || response.data;
+  },
+
+  // Get auto-fix configs for a pulse
+  getAutoFixConfigs: async (pulseId?: string): Promise<AutoFixFlowConfig[]> => {
+    const params = pulseId ? { pulse: pulseId } : {};
+    const response = await api.get('/employee-voice/auto-fix-configs/', { params });
+    // Handle paginated response
+    return response.data.results || response.data;
+  },
+
+  // Create auto-fix config
+  createAutoFixConfig: async (data: Partial<AutoFixFlowConfig>): Promise<AutoFixFlowConfig> => {
+    const response = await api.post('/employee-voice/auto-fix-configs/', data);
+    return response.data;
+  },
+
+  // Update auto-fix config
+  updateAutoFixConfig: async (configId: string, data: Partial<AutoFixFlowConfig>): Promise<AutoFixFlowConfig> => {
+    const response = await api.patch(`/employee-voice/auto-fix-configs/${configId}/`, data);
+    return response.data;
+  },
+
+  // Delete auto-fix config
+  deleteAutoFixConfig: async (configId: string): Promise<void> => {
+    await api.delete(`/employee-voice/auto-fix-configs/${configId}/`);
+  },
+
+  // Get correlations
+  getCorrelations: async (pulseId?: string): Promise<any[]> => {
+    const params = pulseId ? { pulse: pulseId } : {};
+    const response = await api.get('/employee-voice/correlations/', { params });
+    // Handle paginated response
+    return response.data.results || response.data;
   },
 };
 

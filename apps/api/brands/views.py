@@ -52,6 +52,65 @@ class StoreListCreateView(generics.ListCreateAPIView):
             return StoreListSerializer
         return StoreSerializer
 
+    def create(self, request, *args, **kwargs):
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.info(f"Incoming request data: {request.data}")
+
+        serializer = self.get_serializer(data=request.data)
+        if not serializer.is_valid():
+            logger.error(f"Validation errors: {serializer.errors}")
+
+        return super().create(request, *args, **kwargs)
+
+    def perform_create(self, serializer):
+        """
+        Create store and optionally link Google location if google_location_data is provided
+        """
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.info(f"Request data: {self.request.data}")
+        logger.info(f"Validated data: {serializer.validated_data}")
+
+        # Extract google_location_data from validated_data before saving
+        google_location_data = serializer.validated_data.pop('google_location_data', None)
+        logger.info(f"Google location data: {google_location_data}")
+
+        # Create the store
+        store = serializer.save()
+
+        # Check if Google location data was provided
+        if google_location_data:
+            from integrations.models import GoogleLocation
+            from integrations.tasks import scrape_google_reviews
+            import uuid
+
+            # Get account from store or request user
+            account = store.account if store.account else (
+                self.request.user.account if hasattr(self.request.user, 'account') else None
+            )
+
+            if not account:
+                logger.warning(f"Cannot create GoogleLocation for store {store.id}: no account found")
+            else:
+                # Create GoogleLocation record
+                google_location = GoogleLocation.objects.create(
+                    account=account,
+                    store=store,
+                    google_location_id=google_location_data.get('google_location_id', '') or f'place_{uuid.uuid4()}',
+                    google_location_name=google_location_data.get('business_name', ''),
+                    place_url=google_location_data.get('place_url', ''),
+                    place_id=google_location_data.get('place_id', ''),
+                    address=google_location_data.get('address', ''),
+                    average_rating=google_location_data.get('average_rating') or None,
+                    total_review_count=google_location_data.get('total_reviews') or 0
+                )
+
+                logger.info(f"Created GoogleLocation {google_location.id} for store {store.name}")
+
+                # Trigger background task to scrape reviews
+                scrape_google_reviews.delay(str(google_location.id))
+
 
 class StoreDetailView(generics.RetrieveUpdateDestroyAPIView):
     serializer_class = StoreSerializer

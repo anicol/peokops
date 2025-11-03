@@ -33,7 +33,7 @@ export function useFeatureGates() {
       }
       // General upgrade features
       if (featureKey === 'insights') {
-        return !isTrialUser; // Hidden during trial
+        return true; // Show Insights (Lite) in trial - gate premium sections inside the page
       }
       return tier !== 'trial';
     }

@@ -320,6 +320,10 @@ class GoogleLocation(models.Model):
     google_location_name = models.CharField(max_length=200,
                                            help_text="Location name from Google")
     address = models.TextField(blank=True, help_text="Full address from Google")
+    place_id = models.CharField(max_length=200, blank=True, db_index=True,
+                                help_text="Google Places API place_id")
+    place_url = models.URLField(max_length=500, blank=True,
+                               help_text="Google Maps URL for this location")
 
     # PeakOps store mapping (OneToOne - each store has at most one Google location)
     store = models.OneToOneField('brands.Store', on_delete=models.CASCADE, null=True, blank=True,

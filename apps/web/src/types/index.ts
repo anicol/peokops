@@ -55,6 +55,7 @@ export interface User {
   onboarding_completed_at?: string;
   hours_since_signup?: number;
   total_inspections?: number;
+  accessible_stores_count?: number;
   created_at: string;
   last_active_at?: string;
   impersonation_context?: ImpersonationContext | null;
@@ -97,6 +98,7 @@ export interface Store {
   google_review_count?: number | null;
   google_location_name?: string | null;
   google_synced_at?: string | null;
+  google_place_id?: string | null;
 }
 
 export interface Video {
