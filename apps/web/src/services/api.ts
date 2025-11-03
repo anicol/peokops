@@ -1139,4 +1139,39 @@ export const employeeVoiceAPI = {
   },
 };
 
+// Google Reviews API
+export const googleReviewsAPI = {
+  // Get integration status
+  getStatus: async (): Promise<any> => {
+    const response = await api.get('/integrations/google-reviews/status/');
+    return response.data;
+  },
+
+  // List reviews with filtering
+  listReviews: async (params?: {
+    location_id?: string;
+    min_rating?: number;
+    max_rating?: number;
+    unread_only?: boolean;
+    limit?: number;
+  }): Promise<any[]> => {
+    const response = await api.get('/integrations/google-reviews/reviews/', { params });
+    return response.data;
+  },
+
+  // List Google locations
+  listLocations: async (): Promise<any[]> => {
+    const response = await api.get('/integrations/google-reviews/locations/');
+    return response.data.results || response.data;
+  },
+
+  // Trigger sync
+  syncReviews: async (locationId?: string): Promise<any> => {
+    const response = await api.post('/integrations/google-reviews/sync/', {
+      location_id: locationId
+    });
+    return response.data;
+  },
+};
+
 export default api;

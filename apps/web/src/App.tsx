@@ -43,6 +43,7 @@ import PulseSurveysPage from '@/pages/PulseSurveysPage';
 import MicroCheckRunDetailPage from '@/pages/MicroCheckRunDetailPage';
 import MicroCheckTemplatesPage from '@/pages/MicroCheckTemplatesPage';
 import ReviewAnalysisPage from '@/pages/ReviewAnalysisPage';
+import ReviewFeedPage from '@/pages/ReviewFeedPage';
 import InsightsPage from '@/pages/InsightsPage';
 import CommandCenter from '@/pages/CommandCenter';
 import ProfilePage from '@/pages/ProfilePage';
@@ -404,6 +405,18 @@ function AppRoutes() {
             isAuthenticated ? (
               <Layout>
                 <InsightsPage />
+              </Layout>
+            ) : (
+              <Navigate to="/login" replace />
+            )
+          }
+        />
+        <Route
+          path="/reviews"
+          element={
+            isAuthenticated ? (
+              <Layout>
+                <ReviewFeedPage />
               </Layout>
             ) : (
               <Navigate to="/login" replace />
