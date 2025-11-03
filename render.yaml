@@ -93,6 +93,12 @@ services:
         value: https://peakops-web.onrender.com/integrations/google-reviews
       - key: FRONTEND_URL
         value: https://peakops-web.onrender.com
+      - key: SENTRY_DSN
+        sync: false
+      - key: SENTRY_ENVIRONMENT
+        value: production
+      - key: SENTRY_TRACES_SAMPLE_RATE
+        value: "0.1"
     healthCheckPath: /health/
 
   # Celery Worker (Old - Python)
