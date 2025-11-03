@@ -1127,7 +1127,7 @@ def system_stats_view(request):
         )
 
     from brands.models import Brand, Store
-    from videos.models import Inspection
+    from inspections.models import Inspection
     from django.utils import timezone
     from datetime import timedelta
 
