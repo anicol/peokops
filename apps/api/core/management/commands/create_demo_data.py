@@ -5,9 +5,9 @@ from django.core.management.base import BaseCommand
 from django.contrib.auth import get_user_model
 from django.utils import timezone
 from brands.models import Brand, Store
-from uploads.models import Upload
+from uploads.models import Upload, Rule, Detection
 from videos.models import Video, VideoFrame
-from inspections.models import Inspection, Rule, Detection, Finding, ActionItem
+from inspections.models import Inspection, Finding, ActionItem
 from accounts.models import User
 
 User = get_user_model()
