@@ -33,7 +33,19 @@ MIN_BRAND_SAMPLES = 100  # Minimum responses needed to train a brand model
 MODEL_SCOPE = 'per_brand_segment'
 
 # S3 Storage Configuration
-S3_BUCKET = 'verity-ml-models'
+# Use environment-specific bucket (dev/staging/prod)
+import os
+from django.conf import settings
+
+_env = os.getenv('DJANGO_ENV', 'dev')
+if _env == 'production':
+    S3_BUCKET = 'verity-ml-models'
+elif _env == 'staging':
+    S3_BUCKET = 'verity-ml-models-staging'
+else:
+    # Development environment
+    S3_BUCKET = 'verity-ml-models-dev'
+
 S3_PREFIX = 'micro_checks/failure_predictor'
 
 # Model Cache Settings

@@ -32,9 +32,37 @@ class MLModelManager:
         self.s3_client = boto3.client('s3')
         self.bucket = S3_BUCKET
         self.prefix = S3_PREFIX
+        self._bucket_exists = None  # Cache bucket existence check
 
         # Ensure local cache directory exists
         os.makedirs(LOCAL_CACHE_DIR, exist_ok=True)
+
+    def _check_bucket_exists(self) -> bool:
+        """Check if S3 bucket exists (cached)"""
+        if self._bucket_exists is not None:
+            return self._bucket_exists
+
+        try:
+            self.s3_client.head_bucket(Bucket=self.bucket)
+            self._bucket_exists = True
+            logger.info(f"S3 bucket {self.bucket} is accessible")
+            return True
+        except ClientError as e:
+            error_code = e.response['Error']['Code']
+            if error_code in ['404', 'NoSuchBucket']:
+                logger.warning(
+                    f"S3 bucket {self.bucket} does not exist. "
+                    f"ML-enhanced check selection is disabled. "
+                    f"Falling back to rule-based selection."
+                )
+            else:
+                logger.warning(f"Cannot access S3 bucket {self.bucket}: {error_code}")
+            self._bucket_exists = False
+            return False
+        except Exception as e:
+            logger.warning(f"Error checking S3 bucket: {e}")
+            self._bucket_exists = False
+            return False
 
     def load_model(self, brand_id: int, segment_id: Optional[str] = None) -> Optional[Any]:
         """
@@ -70,6 +98,10 @@ class MLModelManager:
                 except Exception as e:
                     logger.warning(f"Failed to load from local cache: {e}")
                     os.remove(local_path)  # Remove corrupted cache
+
+        # Check if bucket exists before attempting S3 load
+        if not self._check_bucket_exists():
+            return None
 
         # Load from S3
         try:
@@ -201,6 +233,10 @@ class MLModelManager:
         Returns:
             Metadata dict or None if not found
         """
+        # Check if bucket exists before attempting S3 load
+        if not self._check_bucket_exists():
+            return None
+
         try:
             s3_key = self._get_s3_key(brand_id, segment_id)
             metadata_key = s3_key.replace('.pkl', '_metadata.json')
@@ -214,12 +250,12 @@ class MLModelManager:
 
         except ClientError as e:
             if e.response['Error']['Code'] == 'NoSuchKey':
-                logger.warning(f"No metadata found for brand={brand_id}, segment={segment_id}")
+                logger.debug(f"No metadata found for brand={brand_id}, segment={segment_id}")
             else:
-                logger.error(f"S3 error loading metadata: {e}")
+                logger.warning(f"S3 error loading metadata: {e}")
             return None
         except Exception as e:
-            logger.error(f"Error loading metadata: {e}")
+            logger.warning(f"Error loading metadata: {e}")
             return None
 
     def invalidate_cache(self, brand_id: int, segment_id: Optional[str] = None):

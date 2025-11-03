@@ -273,6 +273,9 @@ class GoogleReviewsSyncService:
                     location.total_review_count = location_reviews.count()
                     location.save(update_fields=['average_rating', 'total_review_count'])
 
+                # Generate review analysis for this location's store if needed
+                self._generate_analysis_for_location(location)
+
             except Exception as e:
                 logger.error(f"Failed to sync reviews for location {location.google_location_name}: {e}")
                 continue
@@ -282,3 +285,62 @@ class GoogleReviewsSyncService:
         return {
             'reviews_synced': total_reviews
         }
+
+    def _generate_analysis_for_location(self, location: GoogleLocation):
+        """
+        Generate or update review analysis for a location's store.
+        Called automatically after syncing reviews.
+
+        Args:
+            location: GoogleLocation instance to generate analysis for
+        """
+        from insights.models import ReviewAnalysis
+        from brands.models import Store
+
+        # Only generate if this location is linked to a store
+        if not hasattr(location, 'store') or not location.store:
+            logger.debug(f"Location {location.google_location_name} not linked to a store, skipping analysis")
+            return
+
+        store = location.store
+
+        # Check if we have a recent analysis (within last 7 days)
+        seven_days_ago = timezone.now() - timedelta(days=7)
+        recent_analysis = ReviewAnalysis.objects.filter(
+            store=store,
+            status=ReviewAnalysis.Status.COMPLETED,
+            completed_at__gte=seven_days_ago
+        ).exists()
+
+        if recent_analysis:
+            logger.debug(f"Recent analysis exists for {store.name}, skipping regeneration")
+            return
+
+        # Check if there are enough reviews to analyze (minimum 5)
+        review_count = GoogleReview.objects.filter(location=location).count()
+        if review_count < 5:
+            logger.debug(f"Not enough reviews for {location.google_location_name} ({review_count} < 5), skipping analysis")
+            return
+
+        # Create new analysis or update pending one
+        analysis, created = ReviewAnalysis.objects.get_or_create(
+            store=store,
+            status=ReviewAnalysis.Status.PENDING,
+            defaults={
+                'business_name': location.google_location_name,
+                'location': location.address or '',
+                'place_id': location.place_id or '',
+                'google_rating': location.average_rating,
+                'google_address': location.address or '',
+                'account': store.brand if hasattr(store, 'brand') else None,
+            }
+        )
+
+        if created:
+            logger.info(f"Created new analysis for store {store.name} (analysis_id={analysis.id})")
+
+            # Trigger async analysis task
+            from insights.tasks import process_review_analysis
+            process_review_analysis.delay(str(analysis.id))
+        else:
+            logger.debug(f"Pending analysis already exists for {store.name} (analysis_id={analysis.id})")

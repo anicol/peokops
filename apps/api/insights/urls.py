@@ -13,5 +13,6 @@ urlpatterns = [
 
     # Authenticated endpoints
     path('store/<int:store_id>/summary/', views.insights_summary, name='insights-summary'),
+    path('store/<int:store_id>/analysis/', views.analysis_by_store, name='analysis-by-store'),
     path('by-place/<str:place_id>/', views.analysis_by_place_id, name='analysis-by-place'),
 ]
