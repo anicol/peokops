@@ -913,6 +913,13 @@ export const insightsAPI = {
     const response = await api.get(`/insights/by-place/${placeId}/`);
     return response.data;
   },
+
+  // Get review analysis by store ID (authenticated endpoint)
+  // Returns combined scraped + OAuth reviews
+  getAnalysisByStoreId: async (storeId: number): Promise<any> => {
+    const response = await api.get(`/insights/store/${storeId}/analysis/`);
+    return response.data;
+  },
 };
 
 // Employee Voice API

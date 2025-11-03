@@ -371,7 +371,12 @@ export function AdminEngagementOverview() {
                   </thead>
                   <tbody className="bg-white divide-y divide-gray-200">
                     {reviewAnalytics.recent_activity.map((analysis: any) => (
-                      <tr key={analysis.id} className="hover:bg-gray-50">
+                      <tr
+                        key={analysis.id}
+                        className="hover:bg-gray-50 cursor-pointer"
+                        onClick={() => window.open(`/review-analysis/${analysis.id}`, '_blank')}
+                        title="Click to view full analysis"
+                      >
                         <td className="px-4 py-3">
                           <div className="text-sm font-medium text-gray-900">
                             {analysis.business_name}

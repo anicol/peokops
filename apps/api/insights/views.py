@@ -117,6 +117,95 @@ def analysis_by_place_id(request, place_id):
     return Response(serializer.data)
 
 
+@api_view(['GET'])
+def analysis_by_store(request, store_id):
+    """
+    Get or create review analysis for a specific store.
+    Combines scraped and OAuth reviews for comprehensive analysis.
+
+    GET /api/insights/store/{store_id}/analysis/
+    """
+    from brands.models import Store
+    from integrations.models import GoogleReview
+    from django.db.models import Q
+
+    # Require authentication
+    if not request.user.is_authenticated:
+        return Response({'error': 'Authentication required'}, status=status.HTTP_401_UNAUTHORIZED)
+
+    # Get store and verify access
+    store = get_object_or_404(Store, id=store_id)
+
+    # Verify user has access to this store
+    if not _user_can_access_store(request.user, store):
+        return Response({'error': 'Access denied'}, status=status.HTTP_403_FORBIDDEN)
+
+    # Check if store has a linked Google location
+    if not hasattr(store, 'google_location') or not store.google_location:
+        return Response(
+            {'error': 'No Google location linked to this store'},
+            status=status.HTTP_404_NOT_FOUND
+        )
+
+    google_location = store.google_location
+
+    # Try to get most recent completed analysis for this store
+    analysis = ReviewAnalysis.objects.filter(
+        Q(store=store) | Q(place_id=google_location.place_id),
+        status=ReviewAnalysis.Status.COMPLETED
+    ).order_by('-completed_at').first()
+
+    if not analysis:
+        # No analysis exists, trigger generation
+        # For now, return a message. In production, this would trigger async analysis
+        return Response({
+            'status': 'no_analysis',
+            'message': 'No analysis available for this store. Analysis will be generated during next review sync.',
+            'store_id': store_id,
+            'store_name': store.name
+        }, status=status.HTTP_404_NOT_FOUND)
+
+    # Get combined reviews (scraped + OAuth) for the review list
+    combined_reviews = []
+
+    # Get reviews from GoogleReview table
+    oauth_reviews = GoogleReview.objects.filter(
+        location=google_location
+    ).order_by('-review_created_at')
+
+    for review in oauth_reviews:
+        combined_reviews.append({
+            'author': review.reviewer_name or 'Anonymous',
+            'rating': review.rating,
+            'text': review.review_text,
+            'timestamp': review.review_created_at.isoformat() if review.review_created_at else None,
+            'source': review.source,
+            'is_verified': review.is_verified
+        })
+
+    # Also include scraped reviews from the analysis if available
+    if analysis.scraped_data and 'reviews' in analysis.scraped_data:
+        for review in analysis.scraped_data['reviews']:
+            combined_reviews.append({
+                'author': review.get('author', 'Anonymous'),
+                'rating': review.get('rating', 0),
+                'text': review.get('text', ''),
+                'timestamp': review.get('timestamp'),
+                'source': 'scraped',
+                'is_verified': False
+            })
+
+    # Serialize the analysis
+    serializer = ReviewAnalysisDetailSerializer(analysis)
+    response_data = serializer.data
+
+    # Add combined reviews to the response
+    response_data['combined_reviews'] = combined_reviews
+    response_data['total_combined_reviews'] = len(combined_reviews)
+
+    return Response(response_data)
+
+
 @api_view(['POST'])
 @permission_classes([AllowAny])  # Public endpoint
 def share_analysis(request, analysis_id):

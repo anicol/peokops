@@ -68,9 +68,9 @@ export default function StoresPage() {
   );
 
   const handleViewReviewAnalysis = async (store: Store) => {
-    // Check if store has Google location data and place_id
+    // Check if store has Google location data
     if (!store.google_place_id) {
-      alert('No review analysis available for this store yet.');
+      alert('No review analysis available for this store yet. Link a Google Business Profile to enable review analysis.');
       return;
     }
 
@@ -78,14 +78,15 @@ export default function StoresPage() {
       setReviewAnalysisStore(store);
       setIsLoadingAnalysis(true);
 
-      console.log('Fetching analysis for place_id:', store.google_place_id);
-      const analysisData = await insightsAPI.getAnalysisByPlaceId(store.google_place_id);
+      console.log('Fetching analysis for store ID:', store.id);
+      // Use the new store-based endpoint that includes combined reviews
+      const analysisData = await insightsAPI.getAnalysisByStoreId(store.id);
       console.log('Received analysis data:', analysisData);
       setReviewAnalysisData(analysisData);
     } catch (error: any) {
       console.error('Failed to fetch review analysis:', error);
       if (error.response?.status === 404) {
-        alert('Review analysis is still processing. Please check back in a few minutes.');
+        alert('Review analysis is not yet available for this store. It will be generated automatically during the next Google review sync.');
       } else {
         alert('Could not load review analysis. Please try again later.');
       }

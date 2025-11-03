@@ -34,6 +34,16 @@ class ReviewAnalysis(models.Model):
         help_text='Linked when prospect converts to customer'
     )
 
+    # Link to store (for existing customers or converted prospects)
+    store = models.ForeignKey(
+        'brands.Store',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='review_analyses',
+        help_text='Linked store for customer review analysis'
+    )
+
     # Processing status
     status = models.CharField(max_length=20, choices=Status.choices, default=Status.PENDING)
     progress_message = models.CharField(max_length=200, blank=True)
@@ -303,7 +313,8 @@ Respond in JSON format:
         self.converted_to_trial = True
         self.converted_at = timezone.now()
         self.account = brand  # Historical field name
-        self.save(update_fields=['converted_to_trial', 'converted_at', 'account'])
+        self.store = store  # Link to store
+        self.save(update_fields=['converted_to_trial', 'converted_at', 'account', 'store'])
 
         # Create micro-check templates from suggestions (only if we have suggestions)
         # This allows multiple review analyses to contribute templates
