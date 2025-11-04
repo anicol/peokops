@@ -486,21 +486,155 @@ def generate_micro_checks_from_reviews(days_back: int = 7):
     }
 
 
+def process_google_reviews_for_location(location, max_reviews=300, source='scraped'):
+    """
+    Shared function to scrape Google reviews and create GoogleReview records.
+
+    This function is used by both:
+    1. Marketing workflow (process_review_analysis) - for prospects/trials
+    2. Direct linking workflow (scrape_google_reviews) - for customer linking
+
+    Args:
+        location: GoogleLocation instance
+        max_reviews: Maximum number of reviews to scrape (default: 300)
+        source: Source of the reviews ('scraped' or 'oauth')
+
+    Returns:
+        dict with results: {
+            'success': bool,
+            'reviews_created': int,
+            'total_reviews_found': int,
+            'recommendations': list (micro-check suggestions)
+        }
+    """
+    from .models import GoogleReview
+    from marketing.management.commands.scrape_google_reviews import Command as ScrapeCommand
+    from marketing.management.commands.research_google_reviews import Command as AnalysisCommand
+    from datetime import datetime
+    import hashlib
+
+    logger.info(f"Processing reviews for {location.google_location_name}")
+
+    # Scrape reviews using Playwright
+    scraper = ScrapeCommand()
+    reviews_data = scraper.scrape_reviews(
+        business_name=location.google_location_name,
+        location=location.address or '',
+        place_id=location.place_id,
+        max_reviews=max_reviews,
+        headless=True,
+        progress_callback=None
+    )
+
+    if not reviews_data or not reviews_data.get('reviews'):
+        logger.warning(f"No reviews found for {location.google_location_name}")
+        return {
+            'success': True,
+            'reviews_created': 0,
+            'total_reviews_found': 0,
+            'recommendations': []
+        }
+
+    # Extract business info
+    business_info = reviews_data.get('business_info', {})
+    rating = business_info.get('rating')
+    total_reviews = business_info.get('total_reviews', 0)
+
+    # Update GoogleLocation with rating and review count
+    if rating:
+        location.average_rating = float(rating)
+    location.total_review_count = total_reviews
+    location.save(update_fields=['average_rating', 'total_review_count'])
+
+    logger.info(f"Updated location rating: {rating}, total: {total_reviews}")
+
+    # Create GoogleReview records
+    reviews_created = 0
+    for review in reviews_data.get('reviews', []):
+        try:
+            # Parse review date
+            review_date_str = review.get('date', '')
+            review_date = None
+            if review_date_str:
+                try:
+                    # Try common date formats
+                    for fmt in ['%Y-%m-%d', '%m/%d/%Y', '%d/%m/%Y']:
+                        try:
+                            review_date = datetime.strptime(review_date_str, fmt)
+                            break
+                        except ValueError:
+                            continue
+                except Exception:
+                    pass
+
+            if not review_date:
+                review_date = timezone.now()
+
+            # Create unique google_review_id from text hash
+            review_text = review.get('text', '')
+            reviewer_name = review.get('author', 'Anonymous')
+            rating_val = review.get('rating', 5)
+
+            unique_str = f"{location.google_location_id}:{reviewer_name}:{review_date_str}:{review_text[:100]}"
+            google_review_id = hashlib.md5(unique_str.encode()).hexdigest()
+
+            # Create or update review
+            google_review, created = GoogleReview.objects.update_or_create(
+                google_review_id=google_review_id,
+                defaults={
+                    'location': location,
+                    'account': location.account,
+                    'reviewer_name': reviewer_name,
+                    'rating': rating_val,
+                    'review_text': review_text,
+                    'review_reply': review.get('owner_response', ''),
+                    'review_created_at': review_date,
+                    'source': source,
+                    'is_verified': (source == 'oauth'),
+                    'needs_analysis': True  # Queue for AI analysis
+                }
+            )
+
+            if created:
+                reviews_created += 1
+
+        except Exception as e:
+            logger.error(f"Failed to create GoogleReview: {str(e)}")
+            continue
+
+    logger.info(f"Created {reviews_created} GoogleReview records for {location.google_location_name}")
+
+    # Generate micro-check recommendations
+    try:
+        analyzer = AnalysisCommand()
+        reviews_formatted = reviews_data.get('reviews', [])
+        insights = analyzer.analyze_reviews(reviews_formatted)
+        recommendations = analyzer.generate_microcheck_suggestions(insights)
+        logger.info(f"Generated {len(recommendations)} micro-check recommendations")
+    except Exception as e:
+        logger.error(f"Failed to generate recommendations: {str(e)}")
+        recommendations = []
+
+    return {
+        'success': True,
+        'reviews_created': reviews_created,
+        'total_reviews_found': total_reviews,
+        'recommendations': recommendations
+    }
+
+
 @shared_task(name='integrations.scrape_google_reviews')
 def scrape_google_reviews(google_location_id):
     """
-    Scrape Google reviews for a newly created GoogleLocation.
+    Scrape Google reviews for a newly created GoogleLocation and populate GoogleReview records.
 
-    This task is triggered when a store is created with a linked Google location.
-    It creates a ReviewAnalysis record and triggers the review scraping process.
+    This task is triggered when a store is manually linked with a Google location.
+    It uses the shared review processing function.
 
     Args:
         google_location_id: UUID of the GoogleLocation to scrape reviews for
     """
     from .models import GoogleLocation
-    from insights.models import ReviewAnalysis
-    from insights.tasks import process_review_analysis
-    import uuid
 
     logger.info(f"Starting review scrape for GoogleLocation {google_location_id}")
 
@@ -510,34 +644,11 @@ def scrape_google_reviews(google_location_id):
         logger.error(f"GoogleLocation {google_location_id} not found")
         return {'error': 'GoogleLocation not found'}
 
-    # Create ReviewAnalysis to track the scraping
     try:
-        analysis = ReviewAnalysis.objects.create(
-            business_name=location.google_location_name,
-            location=location.store.city if location.store else '',
-            place_id=location.place_id,
-            google_address=location.address,
-            google_rating=location.average_rating,
-            total_reviews_found=location.total_review_count,
-            status=ReviewAnalysis.Status.PENDING,
-            account=location.store.brand if location.store else location.account,
-            converted_to_trial=True
-        )
-
-        logger.info(f"Created ReviewAnalysis {analysis.id} for location {location.google_location_name}")
-
-        # Trigger the actual scraping task
-        task = process_review_analysis.delay(str(analysis.id))
-
-        logger.info(f"Triggered review scraping task {task.id} for location {location.google_location_name}")
-
-        return {
-            'success': True,
-            'location_id': str(location.id),
-            'analysis_id': str(analysis.id),
-            'scraping_task_id': task.id
-        }
+        result = process_google_reviews_for_location(location, max_reviews=300, source='scraped')
+        result['location_id'] = str(location.id)
+        return result
 
     except Exception as e:
-        logger.error(f"Failed to create ReviewAnalysis for location {google_location_id}: {str(e)}")
+        logger.error(f"Failed to scrape reviews for location {google_location_id}: {str(e)}")
         return {'error': str(e)}

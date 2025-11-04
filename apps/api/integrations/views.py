@@ -1104,23 +1104,13 @@ class GoogleReviewsIntegrationViewSet(viewsets.GenericViewSet):
             logger.info(f"Linked Google location {business_name} to store {store.name}")
 
             # Trigger Celery task to scrape reviews for this location
-            # We'll create a ReviewAnalysis to track the scraping
-            from insights.models import ReviewAnalysis
-
-            analysis = ReviewAnalysis.objects.create(
-                business_name=business_name,
-                location=store.city or store.state,
-                place_id=place_id,
-                google_address=address,
-                google_rating=None,  # Will be populated during scraping
-                total_reviews_found=0,  # Will be populated during scraping
-                status=ReviewAnalysis.Status.PENDING,
-                account=store.brand,  # Link to brand for reference
-                converted_to_trial=True  # Already converted
-            )
+            # This will populate GoogleReview records (not ReviewAnalysis)
+            from integrations.tasks import scrape_google_reviews
 
             # Queue scraping task
-            task = process_review_analysis.delay(str(analysis.id))
+            task = scrape_google_reviews.delay(str(location.id))
+
+            logger.info(f"Queued scraping task {task.id} for location {location.id}")
 
             return Response({
                 'success': True,
