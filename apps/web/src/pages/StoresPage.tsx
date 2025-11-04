@@ -319,6 +319,10 @@ export default function StoresPage() {
                     )}
 
                     {/* Google Reviews Status */}
+                    {store.google_location_name && (() => {
+                      console.log(`Store ${store.name}: rating=${store.google_rating}, synced_at=${store.google_synced_at}, truthy test: ${!!store.google_synced_at}`);
+                      return null;
+                    })()}
                     {store.google_location_name && (
                       <div className="text-sm">
                         {store.google_rating ? (
@@ -477,6 +481,16 @@ export default function StoresPage() {
                               {store.google_review_count || 0} reviews • View analysis
                             </div>
                           </button>
+                        ) : store.google_synced_at ? (
+                          <div className="text-sm">
+                            <div className="flex items-center text-gray-500 mb-1">
+                              <MapPin className="h-3 w-3 mr-1" />
+                              <span className="font-medium">Linked to Google</span>
+                            </div>
+                            <div className="text-xs text-gray-400">
+                              No reviews yet
+                            </div>
+                          </div>
                         ) : (
                           <div className="text-sm">
                             <div className="flex items-center text-blue-600 mb-1">
