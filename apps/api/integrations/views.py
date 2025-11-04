@@ -1074,25 +1074,19 @@ class GoogleReviewsIntegrationViewSet(viewsets.GenericViewSet):
             )
 
         try:
-            # Scrape basic business info from place_url
-            scraper = ScraperCommand()
-            business_info = scraper.scrape_business_from_url(place_url)
-
-            if not business_info:
-                return Response(
-                    {'error': 'Failed to fetch business information from Google Maps'},
-                    status=status.HTTP_400_BAD_REQUEST
-                )
+            # Extract address from request data (from GooglePlacesAutocomplete)
+            address = request.data.get('address', '')
 
             # Create GoogleLocation and link to Store
+            # We'll fetch rating and review count during the scraping process
             location = GoogleLocation.objects.create(
                 account=request.user.account,
                 store=store,  # OneToOne link
                 google_location_id=place_id or f'manual_{uuid.uuid4()}',
                 google_location_name=business_name,
-                address=business_info.get('address', ''),
-                average_rating=business_info.get('rating'),
-                total_review_count=business_info.get('total_reviews', 0),
+                address=address,
+                average_rating=None,  # Will be populated during scraping
+                total_review_count=0,  # Will be populated during scraping
                 is_active=True,
                 synced_at=timezone.now()
             )
@@ -1100,16 +1094,16 @@ class GoogleReviewsIntegrationViewSet(viewsets.GenericViewSet):
             logger.info(f"Linked Google location {business_name} to store {store.name}")
 
             # Trigger Celery task to scrape reviews for this location
-            # We'll create a temporary ReviewAnalysis to track the scraping
+            # We'll create a ReviewAnalysis to track the scraping
             from insights.models import ReviewAnalysis
 
             analysis = ReviewAnalysis.objects.create(
                 business_name=business_name,
                 location=store.city or store.state,
                 place_id=place_id,
-                google_address=business_info.get('address', ''),
-                google_rating=business_info.get('rating'),
-                total_reviews_found=business_info.get('total_reviews', 0),
+                google_address=address,
+                google_rating=None,  # Will be populated during scraping
+                total_reviews_found=0,  # Will be populated during scraping
                 status=ReviewAnalysis.Status.PENDING,
                 account=store.brand,  # Link to brand for reference
                 converted_to_trial=True  # Already converted
