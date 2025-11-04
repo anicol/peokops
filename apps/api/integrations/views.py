@@ -1051,6 +1051,8 @@ class GoogleReviewsIntegrationViewSet(viewsets.GenericViewSet):
         place_url = request.data.get('place_url')
         place_id = request.data.get('place_id', '')
 
+        logger.info(f"Link location request - store_id: {store_id}, type: {type(store_id)}, user: {request.user.email}, account: {request.user.account}")
+
         if not all([store_id, business_name, place_url]):
             return Response(
                 {'error': 'store_id, business_name, and place_url are required'},
@@ -1060,7 +1062,15 @@ class GoogleReviewsIntegrationViewSet(viewsets.GenericViewSet):
         # Verify store belongs to user's account
         try:
             store = Store.objects.get(id=store_id, account=request.user.account)
+            logger.info(f"Found store: {store.id} - {store.name}, account: {store.account}")
         except Store.DoesNotExist:
+            # Debug: check if store exists at all
+            try:
+                store_check = Store.objects.get(id=store_id)
+                logger.error(f"Store {store_id} exists but has account {store_check.account} (user has {request.user.account})")
+            except Store.DoesNotExist:
+                logger.error(f"Store {store_id} does not exist at all")
+
             return Response(
                 {'error': 'Store not found or does not belong to your account'},
                 status=status.HTTP_400_BAD_REQUEST

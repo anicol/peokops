@@ -130,6 +130,14 @@ export default function GooglePlacesAutocomplete({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isLoaded, error]);
 
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    // Prevent Enter key from submitting the form
+    // Let Google Places autocomplete handle Enter for selection
+    if (e.key === 'Enter') {
+      e.preventDefault();
+    }
+  };
+
   // If Google Maps failed to load, render regular input
   if (error) {
     return (
@@ -137,6 +145,7 @@ export default function GooglePlacesAutocomplete({
         type="text"
         value={value}
         onChange={(e) => onChange(e.target.value)}
+        onKeyDown={handleKeyDown}
         placeholder={placeholder}
         className={className}
       />
@@ -149,6 +158,7 @@ export default function GooglePlacesAutocomplete({
       type="text"
       value={value}
       onChange={(e) => onChange(e.target.value)}
+      onKeyDown={handleKeyDown}
       placeholder={placeholder}
       className={className}
       autoComplete="off"
