@@ -945,7 +945,7 @@ function StoreFormModal({ store, brands, currentUser, onClose }: StoreFormModalP
     setLinkError('');
 
     try {
-      await api.post('/integrations/google-reviews/link-location', {
+      await api.post('/integrations/google-reviews/link-location/', {
         store_id: store.id,
         business_name: result.business_name,
         place_url: result.place_url,
