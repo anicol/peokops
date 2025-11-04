@@ -1125,3 +1125,268 @@ class GoogleReviewsIntegrationViewSet(viewsets.GenericViewSet):
                 {'error': f'Failed to link location: {str(e)}'},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
+
+    @action(detail=False, methods=['post'], url_path='reviews/(?P<review_id>[^/.]+)/reply')
+    def create_reply(self, request, review_id=None):
+        """
+        Create or update a reply to a review.
+
+        POST /api/integrations/google-reviews/reviews/{review_id}/reply/
+
+        Body:
+        {
+            "response_text": "Thank you for your feedback!",
+            "save_as_draft": false,
+            "was_ai_suggested": false,
+            "ai_suggestion_tone": "professional"
+        }
+        """
+        from .models import GoogleReview, ReviewResponse
+        from .serializers import CreateReplyRequestSerializer, ReviewResponseSerializer
+
+        # Get the review
+        try:
+            review = GoogleReview.objects.select_related('location', 'account').get(id=review_id)
+        except GoogleReview.DoesNotExist:
+            return Response({'error': 'Review not found'}, status=status.HTTP_404_NOT_FOUND)
+
+        # Validate request data
+        serializer = CreateReplyRequestSerializer(data=request.data)
+        if not serializer.is_valid():
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+        data = serializer.validated_data
+
+        # Create or update response
+        response_obj, created = ReviewResponse.objects.update_or_create(
+            review=review,
+            defaults={
+                'response_text': data['response_text'],
+                'created_by': request.user,
+                'status': ReviewResponse.Status.DRAFT if data['save_as_draft'] else ReviewResponse.Status.PUBLISHED,
+                'published_at': None if data['save_as_draft'] else timezone.now(),
+                'was_ai_suggested': data.get('was_ai_suggested', False),
+                'ai_suggestion_tone': data.get('ai_suggestion_tone'),
+            }
+        )
+
+        # If publishing immediately, try to post to Google (for OAuth reviews)
+        if not data['save_as_draft'] and review.source == 'oauth':
+            # TODO: Implement Google API reply posting
+            # For now, just mark as published
+            logger.info(f"Would publish reply to Google for review {review_id}")
+
+        response_serializer = ReviewResponseSerializer(response_obj)
+        return Response(response_serializer.data, status=status.HTTP_201_CREATED if created else status.HTTP_200_OK)
+
+    @action(detail=False, methods=['post'], url_path='reviews/(?P<review_id>[^/.]+)/suggest-reply')
+    def suggest_reply(self, request, review_id=None):
+        """
+        Generate AI-suggested reply for a review.
+
+        POST /api/integrations/google-reviews/reviews/{review_id}/suggest-reply/
+
+        Body:
+        {
+            "tone": "professional"  // or "friendly", "apologetic"
+        }
+        """
+        from .models import GoogleReview
+        from .serializers import SuggestReplyRequestSerializer
+        from ai_services.bedrock_service import BedrockRecommendationService
+
+        # Get the review
+        try:
+            review = GoogleReview.objects.get(id=review_id)
+        except GoogleReview.DoesNotExist:
+            return Response({'error': 'Review not found'}, status=status.HTTP_404_NOT_FOUND)
+
+        # Validate request data
+        serializer = SuggestReplyRequestSerializer(data=request.data)
+        if not serializer.is_valid():
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+        tone = serializer.validated_data['tone']
+
+        # Generate AI suggestion
+        bedrock_service = BedrockRecommendationService()
+
+        try:
+            # Craft prompt based on tone
+            tone_instructions = {
+                'professional': 'Use a professional and courteous tone. Be respectful and businesslike.',
+                'friendly': 'Use a warm and friendly tone. Be personable and approachable.',
+                'apologetic': 'Use an apologetic and empathetic tone. Acknowledge concerns and express genuine regret for any issues.'
+            }
+
+            prompt = f"""Generate a response to this Google review.
+
+Review Rating: {review.rating}/5 stars
+Reviewer: {review.reviewer_name}
+Review Text: {review.review_text}
+
+{tone_instructions.get(tone, tone_instructions['professional'])}
+
+The response should:
+- Be 2-4 sentences long
+- Address specific points mentioned in the review
+- Thank the reviewer for their feedback
+- {f'Apologize for any issues if appropriate' if tone == 'apologetic' or review.rating <= 3 else 'Express appreciation for positive feedback'}
+- Include a call to action if appropriate (e.g., "Please visit us again")
+
+Generate ONLY the response text, no additional commentary."""
+
+            # Use Bedrock to generate suggestion
+            import boto3
+            import json
+
+            if bedrock_service.enabled:
+                try:
+                    bedrock_runtime = boto3.client(
+                        service_name='bedrock-runtime',
+                        region_name=bedrock_service.region
+                    )
+
+                    request_body = json.dumps({
+                        "anthropic_version": "bedrock-2023-05-31",
+                        "max_tokens": 500,
+                        "messages": [
+                            {
+                                "role": "user",
+                                "content": prompt
+                            }
+                        ],
+                        "temperature": 0.7,
+                    })
+
+                    response = bedrock_runtime.invoke_model(
+                        modelId=bedrock_service.model_id,
+                        body=request_body
+                    )
+
+                    response_body = json.loads(response['body'].read())
+                    suggested_text = response_body['content'][0]['text'].strip()
+
+                    return Response({
+                        'suggested_response': suggested_text,
+                        'tone': tone,
+                        'review_rating': review.rating,
+                    }, status=status.HTTP_200_OK)
+
+                except Exception as e:
+                    logger.error(f"Bedrock API error: {str(e)}")
+                    # Fall through to fallback
+
+            # Fallback: Template-based suggestions
+            if review.rating <= 2:
+                suggestions = {
+                    'professional': f"Thank you for sharing your feedback, {review.reviewer_name}. We sincerely apologize for not meeting your expectations. Your concerns are important to us, and we would appreciate the opportunity to make this right. Please contact us directly so we can address your experience.",
+                    'friendly': f"Hi {review.reviewer_name}, thank you for taking the time to share your thoughts. We're really sorry to hear about your experience - that's definitely not the standard we aim for! We'd love to chat with you directly to make things right. Please reach out to us!",
+                    'apologetic': f"Dear {review.reviewer_name}, we are truly sorry for your disappointing experience. This is not reflective of our usual standards, and we take full responsibility. We would very much like to speak with you personally to address your concerns and ensure this doesn't happen again. Please contact us at your earliest convenience."
+                }
+            elif review.rating == 3:
+                suggestions = {
+                    'professional': f"Thank you for your feedback, {review.reviewer_name}. We appreciate you taking the time to share your experience. We're always working to improve, and your input helps us do that. We hope to serve you better in the future.",
+                    'friendly': f"Thanks for the feedback, {review.reviewer_name}! We're glad you stopped by, and we appreciate your honest thoughts. We're always looking to improve, and we'd love to have another chance to give you a great experience. Hope to see you again soon!",
+                    'apologetic': f"Thank you for your review, {review.reviewer_name}. We're sorry we didn't quite hit the mark this time. Your feedback is valuable to us, and we're committed to doing better. We hope you'll give us another opportunity to provide you with a better experience."
+                }
+            else:
+                suggestions = {
+                    'professional': f"Thank you for your kind words, {review.reviewer_name}. We're delighted to hear you had a positive experience with us. Your feedback means a lot to our team. We look forward to serving you again soon.",
+                    'friendly': f"Wow, thank you so much for the great review, {review.reviewer_name}! We're so happy you enjoyed your visit! Your kind words really make our day. Can't wait to see you again soon!",
+                    'apologetic': f"Thank you so much for your positive feedback, {review.reviewer_name}. We're thrilled you had a good experience! We appreciate your support and look forward to welcoming you back."
+                }
+
+            suggested_text = suggestions.get(tone, suggestions['professional'])
+
+            return Response({
+                'suggested_response': suggested_text,
+                'tone': tone,
+                'review_rating': review.rating,
+                'note': 'Generated using fallback templates (AI service unavailable)'
+            }, status=status.HTTP_200_OK)
+
+        except Exception as e:
+            logger.error(f"Failed to generate reply suggestion: {str(e)}")
+            return Response(
+                {'error': 'Failed to generate suggestion'},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
+    @action(detail=False, methods=['get'], url_path='response-metrics')
+    def response_metrics(self, request):
+        """
+        Get response rate and response time metrics.
+
+        GET /api/integrations/google-reviews/response-metrics/
+        """
+        from .models import GoogleReview, ReviewResponse
+        from django.db.models import Count, Avg, Q, F, ExpressionWrapper, fields
+        from datetime import timedelta
+
+        account = request.user.account
+
+        # Total reviews
+        total_reviews = GoogleReview.objects.filter(account=account).count()
+
+        # Reviews with responses
+        reviews_with_responses = GoogleReview.objects.filter(
+            account=account,
+            response__isnull=False
+        ).count()
+
+        # Response rate
+        response_rate = (reviews_with_responses / total_reviews * 100) if total_reviews > 0 else 0
+
+        # Average response time (for published responses)
+        # Calculate time between review creation and response publication
+        responses_with_time = ReviewResponse.objects.filter(
+            review__account=account,
+            status=ReviewResponse.Status.PUBLISHED,
+            published_at__isnull=False
+        ).annotate(
+            response_time=ExpressionWrapper(
+                F('published_at') - F('review__review_created_at'),
+                output_field=fields.DurationField()
+            )
+        )
+
+        avg_response_time = responses_with_time.aggregate(
+            avg_time=Avg('response_time')
+        )['avg_time']
+
+        # Convert to hours
+        avg_response_hours = None
+        if avg_response_time:
+            avg_response_hours = avg_response_time.total_seconds() / 3600
+
+        # Response rate by rating
+        response_by_rating = {}
+        for rating in range(1, 6):
+            total = GoogleReview.objects.filter(account=account, rating=rating).count()
+            with_response = GoogleReview.objects.filter(
+                account=account,
+                rating=rating,
+                response__isnull=False
+            ).count()
+            response_by_rating[rating] = {
+                'total': total,
+                'with_response': with_response,
+                'rate': (with_response / total * 100) if total > 0 else 0
+            }
+
+        # Recent activity (last 30 days)
+        thirty_days_ago = timezone.now() - timedelta(days=30)
+        recent_responses = ReviewResponse.objects.filter(
+            review__account=account,
+            created_at__gte=thirty_days_ago
+        ).count()
+
+        return Response({
+            'total_reviews': total_reviews,
+            'reviews_with_responses': reviews_with_responses,
+            'response_rate': round(response_rate, 1),
+            'avg_response_time_hours': round(avg_response_hours, 1) if avg_response_hours else None,
+            'response_by_rating': response_by_rating,
+            'recent_responses_30d': recent_responses,
+        }, status=status.HTTP_200_OK)
