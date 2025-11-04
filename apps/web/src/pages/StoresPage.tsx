@@ -526,6 +526,9 @@ export default function StoresPage() {
             setIsCreateModalOpen(false);
             setEditingStore(null);
           }}
+          onStoreUpdate={(updatedStore) => {
+            setEditingStore(updatedStore);
+          }}
         />
       )}
 
@@ -742,9 +745,10 @@ interface StoreFormModalProps {
   brands: Brand[];
   currentUser: any;
   onClose: () => void;
+  onStoreUpdate?: (updatedStore: Store) => void;
 }
 
-function StoreFormModal({ store, brands, currentUser, onClose }: StoreFormModalProps) {
+function StoreFormModal({ store, brands, currentUser, onClose, onStoreUpdate }: StoreFormModalProps) {
   const queryClient = useQueryClient();
 
   // For non-admin users, get brand from their current user's brand_id
@@ -949,11 +953,21 @@ function StoreFormModal({ store, brands, currentUser, onClose }: StoreFormModalP
         store_id: store.id,
         business_name: result.business_name,
         place_url: result.place_url,
-        place_id: result.place_id
+        place_id: result.place_id,
+        address: result.address
       });
 
       // Refresh stores list to show new Google location data
       queryClient.invalidateQueries('stores');
+
+      // Fetch the updated store to get the new google_location data
+      const updatedStore = await storesAPI.getStore(store.id);
+
+      // Update the parent's editingStore state
+      if (onStoreUpdate) {
+        onStoreUpdate(updatedStore);
+      }
+
       setGoogleSearchQuery('');
 
       alert('Google location linked successfully! Review scraping started in background.');
