@@ -1172,6 +1172,43 @@ export const googleReviewsAPI = {
     });
     return response.data;
   },
+
+  // Phase 2: Reply Management
+
+  // Create or update a reply to a review
+  createReply: async (reviewId: string, data: {
+    response_text: string;
+    save_as_draft?: boolean;
+    was_ai_suggested?: boolean;
+    ai_suggestion_tone?: 'professional' | 'friendly' | 'apologetic';
+  }): Promise<any> => {
+    const response = await api.post(`/integrations/google-reviews/reviews/${reviewId}/reply/`, data);
+    return response.data;
+  },
+
+  // Get AI-suggested reply for a review
+  suggestReply: async (reviewId: string, tone: 'professional' | 'friendly' | 'apologetic' = 'professional'): Promise<{
+    suggested_response: string;
+    tone: string;
+    review_rating: number;
+    note?: string;
+  }> => {
+    const response = await api.post(`/integrations/google-reviews/reviews/${reviewId}/suggest-reply/`, { tone });
+    return response.data;
+  },
+
+  // Get response metrics
+  getResponseMetrics: async (): Promise<{
+    total_reviews: number;
+    reviews_with_responses: number;
+    response_rate: number;
+    avg_response_time_hours: number | null;
+    response_by_rating: Record<number, { total: number; with_response: number; rate: number }>;
+    recent_responses_30d: number;
+  }> => {
+    const response = await api.get('/integrations/google-reviews/response-metrics/');
+    return response.data;
+  },
 };
 
 export default api;
