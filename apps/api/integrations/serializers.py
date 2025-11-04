@@ -1,7 +1,7 @@
 from rest_framework import serializers
 from .models import (
     SevenShiftsConfig, SevenShiftsEmployee, SevenShiftsShift,
-    SevenShiftsSyncLog, SevenShiftsLocationMapping
+    SevenShiftsSyncLog, SevenShiftsLocationMapping, ReviewResponse
 )
 
 
@@ -268,7 +268,7 @@ class ReviewResponseSerializer(serializers.ModelSerializer):
     review_snippet = serializers.SerializerMethodField()
 
     class Meta:
-        model = models.ReviewResponse
+        model = ReviewResponse
         fields = [
             'id',
             'review',
