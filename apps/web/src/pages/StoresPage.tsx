@@ -331,6 +331,11 @@ export default function StoresPage() {
                             <span className="text-gray-500 ml-1">/ 5.0</span>
                             <span className="text-blue-600 ml-2 hover:underline">({store.google_review_count || 0} reviews)</span>
                           </button>
+                        ) : store.google_synced_at ? (
+                          <div className="flex items-center text-gray-500">
+                            <MapPin className="h-4 w-4 mr-2 flex-shrink-0" />
+                            <span className="text-sm">Linked to Google (no reviews yet)</span>
+                          </div>
                         ) : (
                           <div className="flex items-center">
                             <Loader2 className="h-4 w-4 mr-2 text-blue-600 animate-spin flex-shrink-0" />
