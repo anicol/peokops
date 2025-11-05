@@ -23,65 +23,24 @@ logger = logging.getLogger(__name__)
 
 
 class YelpFusionClient:
-    """Client for interacting with Yelp Fusion API"""
+    """Client for interacting with Yelp Fusion API
+
+    Uses a system-wide Yelp API key configured in Django settings.
+    The API key allows querying public business and review data for any business on Yelp.
+    """
 
     BASE_URL = "https://api.yelp.com/v3"
 
-    def __init__(self, api_key: str):
+    def __init__(self, api_key: str = None):
         """Initialize client with Yelp API key
 
         Args:
-            api_key: Yelp Fusion API key
+            api_key: Yelp Fusion API key (optional, defaults to settings.YELP_API_KEY)
         """
-        self.api_key = api_key
+        self.api_key = api_key or getattr(settings, 'YELP_API_KEY', None)
+        if not self.api_key:
+            raise ValueError('YELP_API_KEY not configured in Django settings')
         self.session = self._create_session()
-
-    @staticmethod
-    def encrypt_api_key(api_key: str) -> str:
-        """Encrypt API key for database storage
-
-        Args:
-            api_key: Plain text API key
-
-        Returns:
-            Encrypted API key as base64 string
-        """
-        secret_key = settings.SECRET_KEY.encode()
-        # Ensure key is 32 bytes for Fernet
-        key = base64.urlsafe_b64encode(secret_key[:32].ljust(32, b'0'))
-        f = Fernet(key)
-        # Fernet.encrypt() returns URL-safe base64-encoded token
-        encrypted = f.encrypt(api_key.encode())
-        return encrypted.decode()
-
-    @staticmethod
-    def decrypt_api_key(encrypted_api_key: bytes) -> str:
-        """Decrypt API key from database
-
-        Args:
-            encrypted_api_key: Encrypted API key as bytes/memoryview (from BinaryField)
-
-        Returns:
-            Decrypted plain text API key
-        """
-        secret_key = settings.SECRET_KEY.encode()
-        # Ensure key is 32 bytes for Fernet
-        key = base64.urlsafe_b64encode(secret_key[:32].ljust(32, b'0'))
-        f = Fernet(key)
-
-        # Convert memoryview to bytes if needed (Django BinaryField returns memoryview)
-        if isinstance(encrypted_api_key, memoryview):
-            encrypted_api_key = bytes(encrypted_api_key)
-
-        # Convert bytes to string for Fernet
-        if isinstance(encrypted_api_key, bytes):
-            encrypted_api_key_str = encrypted_api_key.decode()
-        else:
-            encrypted_api_key_str = encrypted_api_key
-
-        # Decrypt
-        decrypted = f.decrypt(encrypted_api_key_str.encode())
-        return decrypted.decode()
 
     def _create_session(self) -> requests.Session:
         """Create requests session with retry logic"""

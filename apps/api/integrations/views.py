@@ -1510,81 +1510,25 @@ Generate ONLY the response text, no additional commentary."""
 
 class YelpReviewsIntegrationViewSet(viewsets.GenericViewSet):
     """
-    ViewSet for managing Yelp Reviews integration per account.
+    ViewSet for managing Yelp Reviews integration.
 
     Provides endpoints for:
-    - Configuring Yelp API key
     - Syncing business and reviews from Yelp Fusion API
     - Viewing Yelp locations
     - Viewing Yelp reviews
     - Getting Yelp reviews status
+
+    Note: Uses system-wide Yelp API key configured in Django settings (YELP_API_KEY).
+    The API key allows querying public business data for any business on Yelp.
     """
     permission_classes = [IsAuthenticated]
-
-    @action(detail=False, methods=['post'], url_path='configure')
-    def configure(self, request):
-        """
-        POST /api/integrations/yelp-reviews/configure
-
-        Save or update Yelp API key configuration.
-
-        Body:
-        {
-            "api_key": "your_yelp_fusion_api_key"
-        }
-        """
-        from .models import YelpConfig
-        from .yelp_fusion_client import YelpFusionClient
-
-        if not request.user.account:
-            return Response(
-                {'error': 'User not associated with an account'},
-                status=status.HTTP_400_BAD_REQUEST
-            )
-
-        api_key = request.data.get('api_key')
-        if not api_key:
-            return Response(
-                {'error': 'api_key is required'},
-                status=status.HTTP_400_BAD_REQUEST
-            )
-
-        try:
-            # Encrypt API key
-            encrypted_api_key = YelpFusionClient.encrypt_api_key(api_key)
-
-            # Create or update config
-            config, created = YelpConfig.objects.update_or_create(
-                account=request.user.account,
-                defaults={
-                    'api_key_encrypted': encrypted_api_key.encode(),
-                    'is_active': True
-                }
-            )
-
-            message = 'Yelp API key configured successfully'
-            if created:
-                message = 'Yelp integration configured successfully'
-
-            return Response({
-                'success': True,
-                'message': message,
-                'config_id': str(config.id)
-            }, status=status.HTTP_201_CREATED if created else status.HTTP_200_OK)
-
-        except Exception as e:
-            logger.error(f"Yelp configuration failed: {str(e)}")
-            return Response(
-                {'error': f'Configuration failed: {str(e)}'},
-                status=status.HTTP_400_BAD_REQUEST
-            )
 
     @action(detail=False, methods=['post'], url_path='sync')
     def sync(self, request):
         """
         POST /api/integrations/yelp-reviews/sync
 
-        Sync business and reviews from Yelp Fusion API.
+        Sync business and reviews from Yelp Fusion API using system-wide API key.
 
         Body:
         {
@@ -1593,7 +1537,7 @@ class YelpReviewsIntegrationViewSet(viewsets.GenericViewSet):
             "store_id": "optional_store_uuid_to_link"
         }
         """
-        from .models import YelpConfig, YelpLocation, YelpReview
+        from .models import YelpLocation, YelpReview
         from .yelp_fusion_client import YelpFusionClient
 
         if not request.user.account:
@@ -1612,14 +1556,6 @@ class YelpReviewsIntegrationViewSet(viewsets.GenericViewSet):
                 status=status.HTTP_400_BAD_REQUEST
             )
 
-        try:
-            config = YelpConfig.objects.get(account=request.user.account, is_active=True)
-        except YelpConfig.DoesNotExist:
-            return Response(
-                {'error': 'Yelp integration not configured. Please add your API key first.'},
-                status=status.HTTP_400_BAD_REQUEST
-            )
-
         # Verify store if provided
         store = None
         if store_id:
@@ -1633,9 +1569,8 @@ class YelpReviewsIntegrationViewSet(viewsets.GenericViewSet):
                 )
 
         try:
-            # Decrypt API key and create client
-            api_key = YelpFusionClient.decrypt_api_key(config.api_key_encrypted)
-            client = YelpFusionClient(api_key)
+            # Create client with system-wide API key
+            client = YelpFusionClient()
 
             # Sync business and reviews
             result = client.sync_business_and_reviews(business_name, location)
@@ -1686,10 +1621,6 @@ class YelpReviewsIntegrationViewSet(viewsets.GenericViewSet):
                 if review_created:
                     new_reviews += 1
 
-            # Update config last sync time
-            config.last_sync_at = timezone.now()
-            config.save()
-
             return Response({
                 'success': True,
                 'message': f'Synced {len(reviews)} reviews from Yelp',
@@ -1704,6 +1635,13 @@ class YelpReviewsIntegrationViewSet(viewsets.GenericViewSet):
                 }
             })
 
+        except ValueError as e:
+            # YELP_API_KEY not configured
+            logger.error(f"Yelp API key not configured: {str(e)}")
+            return Response(
+                {'error': 'Yelp integration not configured. Please contact support.'},
+                status=status.HTTP_503_SERVICE_UNAVAILABLE
+            )
         except Exception as e:
             logger.error(f"Yelp sync failed: {str(e)}")
             return Response(
@@ -1724,37 +1662,6 @@ class YelpReviewsIntegrationViewSet(viewsets.GenericViewSet):
         if location.get('zip_code'):
             parts.append(location['zip_code'])
         return ', '.join(parts)
-
-    @action(detail=False, methods=['delete'], url_path='disconnect')
-    def disconnect(self, request):
-        """
-        DELETE /api/integrations/yelp-reviews/disconnect
-
-        Disconnect Yelp Reviews integration (deactivate).
-        """
-        from .models import YelpConfig
-
-        if not request.user.account:
-            return Response(
-                {'error': 'User not associated with an account'},
-                status=status.HTTP_400_BAD_REQUEST
-            )
-
-        try:
-            config = YelpConfig.objects.get(account=request.user.account)
-            config.is_active = False
-            config.save()
-
-            return Response({
-                'success': True,
-                'message': 'Yelp Reviews integration disconnected'
-            })
-
-        except YelpConfig.DoesNotExist:
-            return Response(
-                {'error': 'Yelp Reviews integration not configured'},
-                status=status.HTTP_400_BAD_REQUEST
-            )
 
     @action(detail=False, methods=['get'], url_path='locations')
     def get_locations(self, request):
@@ -1833,19 +1740,13 @@ class YelpReviewsIntegrationViewSet(viewsets.GenericViewSet):
 
         Get current Yelp Reviews integration status for user's account.
         """
-        from .models import YelpConfig, YelpLocation, YelpReview
+        from .models import YelpLocation, YelpReview
 
         if not request.user.account:
             return Response(
                 {'error': 'User not associated with an account'},
                 status=status.HTTP_400_BAD_REQUEST
             )
-
-        # Check if API is configured
-        has_api_config = YelpConfig.objects.filter(
-            account=request.user.account,
-            is_active=True
-        ).exists()
 
         location_count = YelpLocation.objects.filter(
             account=request.user.account,
@@ -1861,16 +1762,11 @@ class YelpReviewsIntegrationViewSet(viewsets.GenericViewSet):
             needs_analysis=True
         ).count()
 
-        # Determine source (API if configured, otherwise scraping)
-        source = 'api' if has_api_config else 'none'
-        message = 'Yelp Fusion API configured' if has_api_config else 'Add your Yelp API key to get started'
-
         return Response({
-            'is_configured': has_api_config or location_count > 0,
-            'has_api_key': has_api_config,
+            'is_configured': location_count > 0,
             'location_count': location_count,
             'review_count': review_count,
             'unread_review_count': unread_review_count,
-            'source': source,
-            'message': message
+            'source': 'coming_soon',
+            'message': 'Yelp integration coming soon'
         })
