@@ -319,27 +319,27 @@ export default function StoresPage() {
                     )}
 
                     {/* Google Reviews Status */}
-                    {store.google_location_name && (() => {
-                      console.log(`Store ${store.name}: rating=${store.google_rating}, synced_at=${store.google_synced_at}, truthy test: ${!!store.google_synced_at}`);
-                      return null;
-                    })()}
                     {store.google_location_name && (
                       <div className="text-sm">
-                        {store.google_rating ? (
+                        {store.google_synced_at ? (
                           <button
                             onClick={() => handleViewReviewAnalysis(store)}
                             className="flex items-center text-left hover:bg-gray-50 rounded p-1 -m-1 transition-colors w-full"
                           >
-                            <Star className="h-4 w-4 mr-2 fill-yellow-400 text-yellow-400 flex-shrink-0" />
-                            <span className="font-medium text-gray-900">{store.google_rating}</span>
-                            <span className="text-gray-500 ml-1">/ 5.0</span>
-                            <span className="text-blue-600 ml-2 hover:underline">({store.google_review_count || 0} reviews)</span>
+                            {store.google_rating ? (
+                              <>
+                                <Star className="h-4 w-4 mr-2 fill-yellow-400 text-yellow-400 flex-shrink-0" />
+                                <span className="font-medium text-gray-900">{store.google_rating}</span>
+                                <span className="text-gray-500 ml-1">/ 5.0</span>
+                                <span className="text-blue-600 ml-2 hover:underline">({store.google_review_count || 0} reviews)</span>
+                              </>
+                            ) : (
+                              <>
+                                <MessageSquare className="h-4 w-4 mr-2 text-blue-600 flex-shrink-0" />
+                                <span className="text-blue-600 hover:underline">View review analysis</span>
+                              </>
+                            )}
                           </button>
-                        ) : store.google_synced_at ? (
-                          <div className="flex items-center text-gray-500">
-                            <MapPin className="h-4 w-4 mr-2 flex-shrink-0" />
-                            <span className="text-sm">Linked to Google (no reviews yet)</span>
-                          </div>
                         ) : (
                           <div className="flex items-center">
                             <Loader2 className="h-4 w-4 mr-2 text-blue-600 animate-spin flex-shrink-0" />
@@ -467,30 +467,29 @@ export default function StoresPage() {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       {store.google_location_name ? (
-                        store.google_rating ? (
+                        store.google_synced_at ? (
                           <button
                             onClick={() => handleViewReviewAnalysis(store)}
                             className="text-sm text-left hover:bg-gray-50 rounded p-1 -m-1 transition-colors"
                           >
-                            <div className="flex items-center text-gray-900 mb-1">
-                              <Star className="h-4 w-4 mr-1 fill-yellow-400 text-yellow-400" />
-                              <span className="font-medium">{store.google_rating}</span>
-                              <span className="text-gray-500 ml-1">/ 5.0</span>
-                            </div>
-                            <div className="text-xs text-blue-600 hover:underline">
-                              {store.google_review_count || 0} reviews • View analysis
-                            </div>
+                            {store.google_rating ? (
+                              <>
+                                <div className="flex items-center text-gray-900 mb-1">
+                                  <Star className="h-4 w-4 mr-1 fill-yellow-400 text-yellow-400" />
+                                  <span className="font-medium">{store.google_rating}</span>
+                                  <span className="text-gray-500 ml-1">/ 5.0</span>
+                                </div>
+                                <div className="text-xs text-blue-600 hover:underline">
+                                  {store.google_review_count || 0} reviews • View analysis
+                                </div>
+                              </>
+                            ) : (
+                              <div className="flex items-center text-blue-600">
+                                <MessageSquare className="h-4 w-4 mr-2" />
+                                <span className="hover:underline">View review analysis</span>
+                              </div>
+                            )}
                           </button>
-                        ) : store.google_synced_at ? (
-                          <div className="text-sm">
-                            <div className="flex items-center text-gray-500 mb-1">
-                              <MapPin className="h-3 w-3 mr-1" />
-                              <span className="font-medium">Linked to Google</span>
-                            </div>
-                            <div className="text-xs text-gray-400">
-                              No reviews yet
-                            </div>
-                          </div>
                         ) : (
                           <div className="text-sm">
                             <div className="flex items-center text-blue-600 mb-1">
