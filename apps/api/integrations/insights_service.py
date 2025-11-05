@@ -478,7 +478,7 @@ class ReviewInsightsService:
             category_issues[category] = {
                 'top_issues': issues,
                 'total_issues': len(issues),
-                'trend_summary': self._calculate_category_trend_summary(category, trends_query, category)
+                'trend_summary': self._calculate_category_trend_summary(trends_query, category)
             }
 
         return {
