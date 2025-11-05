@@ -459,7 +459,8 @@ class ReviewInsightsService:
 
                 issues.append({
                     'topic': trend.topic,
-                    'mentions': trend.current_mentions,
+                    'total_mentions': trend.current_mentions,
+                    'affected_locations': 1,  # Store-level = always 1 location
                     'trend_direction': trend.trend_direction,
                     'trend_velocity': trend.trend_velocity,
                     'sentiment': trend.overall_sentiment,
@@ -468,18 +469,20 @@ class ReviewInsightsService:
                         {
                             'reviewer': review.reviewer_name,
                             'rating': review.rating,
-                            'text': review.review_text[:200] + '...' if len(review.review_text) > 200 else review.review_text,
+                            'review_text': review.review_text[:200] + '...' if len(review.review_text) > 200 else review.review_text,
                             'date': review.review_created_at.isoformat()
                         }
                         for review in examples
                     ]
                 })
 
-            category_issues[category] = {
-                'top_issues': issues,
-                'total_issues': len(issues),
-                'trend_summary': self._calculate_category_trend_summary(trends_query, category)
-            }
+            # Only include categories that have issues
+            if issues:
+                category_issues[category] = {
+                    'top_issues': issues,
+                    'total_issues': len(issues),
+                    'trend_summary': self._calculate_category_trend_summary(trends_query, category)
+                }
 
         return {
             'categories': category_issues,
@@ -720,7 +723,7 @@ class ReviewInsightsService:
         # Get account (franchisee) comparison
         account_comparisons = []
         for account in accounts:
-            account_stores = stores.filter(account=account)
+            account_stores = [s for s in stores if s.account_id == account.id]
             account_location_ids = list(
                 GoogleLocation.objects.filter(
                     store__in=account_stores,
@@ -844,7 +847,7 @@ class ReviewInsightsService:
                         {
                             'reviewer': review.reviewer_name,
                             'rating': review.rating,
-                            'text': review.review_text[:200] + '...' if len(review.review_text) > 200 else review.review_text,
+                            'review_text': review.review_text[:200] + '...' if len(review.review_text) > 200 else review.review_text,
                             'date': review.review_created_at.isoformat(),
                             'store': review.location.store.name if review.location and review.location.store else 'Unknown'
                         }
@@ -852,10 +855,12 @@ class ReviewInsightsService:
                     ]
                 })
 
-            category_issues[category] = {
-                'top_issues': issues,
-                'total_issues': len(issues)
-            }
+            # Only include categories that have issues
+            if issues:
+                category_issues[category] = {
+                    'top_issues': issues,
+                    'total_issues': len(issues)
+                }
 
         return category_issues
 
