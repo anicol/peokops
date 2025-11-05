@@ -287,8 +287,7 @@ export default function IntegrationsPage() {
 
           {/* Yelp Reviews Integration Card */}
           <div
-            className="bg-white rounded-2xl shadow-lg border border-gray-200 overflow-hidden hover:shadow-xl transition-all cursor-pointer group opacity-75"
-            title="Yelp integration - Coming soon"
+            className="bg-white rounded-2xl shadow-lg border border-gray-200 overflow-hidden hover:shadow-xl transition-all cursor-pointer group"
           >
             {/* Card Header */}
             <div className="bg-gradient-to-r from-red-600 to-orange-600 p-6">
@@ -355,11 +354,16 @@ export default function IntegrationsPage() {
                     <span className="text-sm font-medium text-gray-600">Not Configured</span>
                   </div>
                   <p className="text-sm text-gray-600">
-                    Monitor Yelp reviews and automatically generate micro-checks based on customer feedback.
+                    Yelp reviews are scraped and integrated into your unified insights dashboard. Use the command-line tool to import reviews.
                   </p>
-                  <div className="pt-2">
-                    <div className="text-gray-400 text-sm font-medium">
-                      Coming Soon
+                  <div className="pt-2 space-y-2">
+                    <div className="text-xs text-gray-500 bg-gray-50 rounded p-2 font-mono">
+                      python manage.py scrape_yelp_reviews<br />
+                      &nbsp;&nbsp;"Business Name" --location "City, State"<br />
+                      &nbsp;&nbsp;--account-id {'{'}account_id{'}'}
+                    </div>
+                    <div className="text-xs text-gray-500">
+                      Note: Yelp doesn't provide an official API. Reviews must be scraped manually.
                     </div>
                   </div>
                 </div>
