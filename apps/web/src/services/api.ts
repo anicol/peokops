@@ -1264,6 +1264,61 @@ export const googleReviewsAPI = {
     const response = await api.post('/integrations/google-reviews/insights/generate/', data);
     return response.data;
   },
+
+  // Phase 4: Category-Based Multi-Level Aggregation
+
+  // Get top issues by category (store OR account level)
+  getTopIssuesByCategory: async (params?: {
+    location_id?: string;
+    limit?: number;
+    days?: number;
+    categories?: string[];
+  }): Promise<any> => {
+    const queryParams = {
+      ...params,
+      categories: params?.categories?.join(','),
+    };
+    const response = await api.get('/integrations/google-reviews/insights/top-issues-by-category/', {
+      params: queryParams
+    });
+    return response.data;
+  },
+
+  // Get multi-store issues (account/franchisee level)
+  getMultiStoreIssues: async (params?: {
+    store_ids?: string[];
+    limit?: number;
+    days?: number;
+    categories?: string[];
+  }): Promise<any> => {
+    const queryParams = {
+      ...params,
+      store_ids: params?.store_ids?.join(','),
+      categories: params?.categories?.join(','),
+    };
+    const response = await api.get('/integrations/google-reviews/insights/multi-store-issues/', {
+      params: queryParams
+    });
+    return response.data;
+  },
+
+  // Get brand-level issues (requires ADMIN/SUPER_ADMIN)
+  getBrandIssues: async (brandId: string, params?: {
+    limit?: number;
+    days?: number;
+    categories?: string[];
+    region?: string;
+  }): Promise<any> => {
+    const queryParams = {
+      brand_id: brandId,
+      ...params,
+      categories: params?.categories?.join(','),
+    };
+    const response = await api.get('/integrations/google-reviews/insights/brand-issues/', {
+      params: queryParams
+    });
+    return response.data;
+  },
 };
 
 export default api;
