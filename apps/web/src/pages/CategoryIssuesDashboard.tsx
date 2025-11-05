@@ -106,14 +106,14 @@ export default function CategoryIssuesDashboard() {
         return googleReviewsAPI.getMultiStoreIssues(params);
       } else {
         // brand level
-        const brandId = user?.brand?.id || searchParams.get('brand_id');
+        const brandId = user?.brand_id?.toString() || searchParams.get('brand_id');
         if (!brandId) throw new Error('Brand ID required for brand-level view');
         return googleReviewsAPI.getBrandIssues(brandId, params);
       }
     },
     {
       refetchOnWindowFocus: false,
-      enabled: viewLevel === 'brand' ? !!user?.brand?.id : true,
+      enabled: viewLevel === 'brand' ? !!user?.brand_id : true,
     }
   );
 
