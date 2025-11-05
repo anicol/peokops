@@ -33,6 +33,7 @@ interface GoogleReviewsStatus {
 
 interface YelpReviewsStatus {
   is_configured: boolean;
+  has_api_key?: boolean;
   location_count?: number;
   review_count?: number;
   unread_review_count?: number;
@@ -286,9 +287,7 @@ export default function IntegrationsPage() {
           </div>
 
           {/* Yelp Reviews Integration Card */}
-          <div
-            className="bg-white rounded-2xl shadow-lg border border-gray-200 overflow-hidden hover:shadow-xl transition-all cursor-pointer group"
-          >
+          <div className="bg-white rounded-2xl shadow-lg border border-gray-200 overflow-hidden hover:shadow-xl transition-all">
             {/* Card Header */}
             <div className="bg-gradient-to-r from-red-600 to-orange-600 p-6">
               <div className="flex items-start justify-between">
@@ -303,17 +302,16 @@ export default function IntegrationsPage() {
                     </div>
                   </div>
                 </div>
-                <ChevronRight className="w-5 h-5 text-white opacity-0 group-hover:opacity-100 transition-opacity" />
               </div>
             </div>
 
             {/* Card Body */}
             <div className="p-6">
-              {yelpReviewsStatus?.is_configured ? (
+              {yelpReviewsStatus?.has_api_key ? (
                 <div className="space-y-4">
                   <div className="flex items-center gap-2">
                     <CheckCircle className="w-5 h-5 text-green-500" />
-                    <span className="text-sm font-medium text-green-700">Configured</span>
+                    <span className="text-sm font-medium text-green-700">API Key Configured</span>
                   </div>
                   <div className="grid grid-cols-2 gap-4">
                     <div className="bg-gray-50 rounded-lg p-3">
@@ -337,14 +335,10 @@ export default function IntegrationsPage() {
                       </span>
                     </div>
                   )}
-                  <div className="text-xs text-gray-500">
-                    Source: {yelpReviewsStatus.source || 'Scraping'}
-                  </div>
                   <div className="pt-2">
-                    <div className="text-red-600 text-sm font-medium flex items-center">
-                      View Yelp Reviews
-                      <ChevronRight className="w-4 h-4 ml-1" />
-                    </div>
+                    <button className="text-red-600 text-sm font-medium hover:text-red-700 transition-colors">
+                      Manage Yelp Integration →
+                    </button>
                   </div>
                 </div>
               ) : (
@@ -354,17 +348,73 @@ export default function IntegrationsPage() {
                     <span className="text-sm font-medium text-gray-600">Not Configured</span>
                   </div>
                   <p className="text-sm text-gray-600">
-                    Yelp reviews are scraped and integrated into your unified insights dashboard. Use the command-line tool to import reviews.
+                    Connect your Yelp Fusion API key to automatically sync reviews from your business locations.
                   </p>
-                  <div className="pt-2 space-y-2">
-                    <div className="text-xs text-gray-500 bg-gray-50 rounded p-2 font-mono">
-                      python manage.py scrape_yelp_reviews<br />
-                      &nbsp;&nbsp;"Business Name" --location "City, State"<br />
-                      &nbsp;&nbsp;--account-id {'{'}account_id{'}'}
+                  <form onSubmit={(e) => {
+                    e.preventDefault();
+                    const formData = new FormData(e.currentTarget);
+                    const apiKey = formData.get('yelp_api_key') as string;
+
+                    if (!apiKey) {
+                      alert('Please enter your Yelp API key');
+                      return;
+                    }
+
+                    // Configure Yelp API
+                    fetch(`${API_BASE_URL}/api/integrations/yelp-reviews/configure/`, {
+                      method: 'POST',
+                      headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${localStorage.getItem('access_token')}`
+                      },
+                      body: JSON.stringify({ api_key: apiKey })
+                    })
+                      .then(res => {
+                        if (!res.ok) throw new Error('Failed to configure Yelp');
+                        return res.json();
+                      })
+                      .then(() => {
+                        alert('Yelp API key configured successfully!');
+                        window.location.reload();
+                      })
+                      .catch(err => {
+                        console.error('Yelp configuration error:', err);
+                        alert('Failed to configure Yelp. Please check your API key.');
+                      });
+                  }} className="space-y-3">
+                    <div>
+                      <label htmlFor="yelp_api_key" className="block text-sm font-medium text-gray-700 mb-1">
+                        Yelp Fusion API Key
+                      </label>
+                      <input
+                        type="text"
+                        id="yelp_api_key"
+                        name="yelp_api_key"
+                        placeholder="Enter your Yelp API key"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500 text-sm"
+                      />
                     </div>
-                    <div className="text-xs text-gray-500">
-                      Note: Yelp doesn't provide an official API. Reviews must be scraped manually.
-                    </div>
+                    <button
+                      type="submit"
+                      className="w-full bg-red-600 text-white px-4 py-2 rounded-md hover:bg-red-700 transition-colors text-sm font-medium"
+                    >
+                      Connect Yelp
+                    </button>
+                  </form>
+                  <div className="text-xs text-gray-500 space-y-1">
+                    <p>
+                      <a
+                        href="https://www.yelp.com/developers/documentation/v3/authentication"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-red-600 hover:text-red-700 underline"
+                      >
+                        Get your Yelp API key
+                      </a>
+                    </p>
+                    <p className="text-gray-400">
+                      Note: Yelp Fusion API returns up to 3 reviews per business
+                    </p>
                   </div>
                 </div>
               )}
