@@ -806,3 +806,234 @@ class TopicTrend(models.Model):
     def __str__(self):
         loc_str = f' at {self.location.google_location_name}' if self.location else ''
         return f'{self.topic}{loc_str} - {self.trend_direction} ({self.current_mentions} mentions)'
+
+
+# ============================================================================
+# Yelp Reviews Integration Models
+# ============================================================================
+
+class YelpLocation(models.Model):
+    """Yelp business location
+
+    Represents a business on Yelp that can have reviews.
+    Similar to GoogleLocation but for Yelp data.
+    """
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    account = models.ForeignKey(
+        'accounts.Account',
+        on_delete=models.CASCADE,
+        related_name='yelp_locations',
+        help_text='Account this location belongs to'
+    )
+    store = models.OneToOneField(
+        'brands.Store',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='yelp_location',
+        help_text='Associated PeakOps store (if linked)'
+    )
+
+    # Yelp business data
+    yelp_business_id = models.CharField(
+        max_length=200,
+        unique=True,
+        db_index=True,
+        help_text='Yelp business ID'
+    )
+    business_name = models.CharField(
+        max_length=255,
+        help_text='Business name on Yelp'
+    )
+    address = models.TextField(blank=True, help_text='Business address')
+    city = models.CharField(max_length=100, blank=True)
+    state = models.CharField(max_length=50, blank=True)
+    zip_code = models.CharField(max_length=20, blank=True)
+    phone = models.CharField(max_length=50, blank=True)
+    yelp_url = models.URLField(blank=True, help_text='URL to Yelp page')
+
+    # Ratings
+    average_rating = models.FloatField(null=True, blank=True, help_text='Average Yelp rating')
+    total_review_count = models.IntegerField(default=0, help_text='Total reviews on Yelp')
+
+    # Status
+    is_active = models.BooleanField(default=True, help_text='Whether this location is actively synced')
+    synced_at = models.DateTimeField(null=True, blank=True, help_text='Last sync timestamp')
+
+    # Audit fields
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = 'yelp_locations'
+        verbose_name = 'Yelp Location'
+        verbose_name_plural = 'Yelp Locations'
+        ordering = ['business_name']
+        indexes = [
+            models.Index(fields=['account', 'is_active']),
+            models.Index(fields=['yelp_business_id']),
+        ]
+
+    def __str__(self):
+        return f'{self.business_name} (Yelp)'
+
+
+class YelpReview(models.Model):
+    """Cached review data from Yelp
+
+    Reviews are scraped from Yelp and analyzed by AI to identify
+    recurring issues. Integrated with unified review storage.
+    """
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    location = models.ForeignKey(
+        YelpLocation,
+        on_delete=models.CASCADE,
+        related_name='reviews',
+        help_text='Yelp location this review belongs to'
+    )
+    account = models.ForeignKey(
+        'accounts.Account',
+        on_delete=models.CASCADE,
+        related_name='yelp_reviews',
+        help_text='Account this review belongs to'
+    )
+
+    # Yelp review data
+    yelp_review_id = models.CharField(
+        max_length=200,
+        unique=True,
+        db_index=True,
+        help_text='Yelp review ID'
+    )
+    reviewer_name = models.CharField(
+        max_length=200,
+        blank=True,
+        help_text='Reviewer display name'
+    )
+    reviewer_location = models.CharField(
+        max_length=200,
+        blank=True,
+        help_text='Reviewer location (e.g., "San Francisco, CA")'
+    )
+    rating = models.IntegerField(help_text='Star rating 1-5')
+    review_text = models.TextField(blank=True, help_text='Review comment text')
+
+    # Yelp-specific fields
+    is_elite = models.BooleanField(
+        default=False,
+        help_text='Whether reviewer is Yelp Elite'
+    )
+    check_in_count = models.IntegerField(
+        default=0,
+        help_text='Number of check-ins at this business'
+    )
+
+    # Timestamps
+    review_created_at = models.DateTimeField(
+        db_index=True,
+        help_text='When review was posted on Yelp'
+    )
+    synced_at = models.DateTimeField(
+        auto_now=True,
+        help_text='Last sync from Yelp'
+    )
+
+    # Analysis flags
+    needs_analysis = models.BooleanField(
+        default=True,
+        db_index=True,
+        help_text='Review needs AI analysis'
+    )
+    analyzed_at = models.DateTimeField(
+        null=True,
+        blank=True,
+        help_text='When AI analysis was completed'
+    )
+
+    # Source tracking
+    source = models.CharField(
+        max_length=20,
+        choices=[
+            ('scraped', 'Public Scrape'),
+        ],
+        default='scraped',
+        db_index=True,
+        help_text='Where this review came from (Yelp only supports scraping)'
+    )
+    is_verified = models.BooleanField(
+        default=False,
+        help_text='Always False for Yelp (no official API for reviews)'
+    )
+
+    class Meta:
+        db_table = 'yelp_reviews'
+        verbose_name = 'Yelp Review'
+        verbose_name_plural = 'Yelp Reviews'
+        ordering = ['-review_created_at']
+        indexes = [
+            models.Index(fields=['location', 'rating', '-review_created_at']),
+            models.Index(fields=['account', '-review_created_at']),
+            models.Index(fields=['needs_analysis', 'rating']),
+            models.Index(fields=['source', 'is_verified']),
+        ]
+
+    def __str__(self):
+        return f"{self.rating}★ at {self.location.business_name} - {self.review_created_at.strftime('%Y-%m-%d')}"
+
+
+class YelpReviewAnalysis(models.Model):
+    """AI analysis results for a Yelp review
+
+    Extracts topics, sentiment, and actionable insights from review text.
+    Same structure as GoogleReviewAnalysis for consistency.
+    """
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    review = models.OneToOneField(
+        YelpReview,
+        on_delete=models.CASCADE,
+        related_name='analysis'
+    )
+
+    # AI-extracted data
+    topics = models.JSONField(
+        default=list,
+        help_text="List of topics mentioned (e.g., ['cleanliness', 'service'])"
+    )
+    sentiment_score = models.FloatField(
+        null=True,
+        blank=True,
+        help_text="Sentiment score from -1 (negative) to 1 (positive)"
+    )
+    actionable_issues = models.JSONField(
+        default=list,
+        help_text="List of specific, actionable issues (e.g., 'Bathroom sink was dirty')"
+    )
+    suggested_category = models.CharField(
+        max_length=100,
+        blank=True,
+        help_text="Suggested micro-check category if issues found"
+    )
+    confidence = models.FloatField(
+        default=0.0,
+        help_text="AI confidence score 0-1"
+    )
+
+    # Analysis metadata
+    analyzed_at = models.DateTimeField(auto_now_add=True)
+    model_version = models.CharField(
+        max_length=50,
+        default='gpt-4',
+        help_text="AI model used for analysis"
+    )
+
+    class Meta:
+        db_table = 'yelp_review_analysis'
+        verbose_name = 'Yelp Review Analysis'
+        verbose_name_plural = 'Yelp Review Analyses'
+        ordering = ['-analyzed_at']
+
+    def __str__(self):
+        return f"Analysis of {self.review.rating}★ review"
