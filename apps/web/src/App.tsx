@@ -25,6 +25,7 @@ import AccountPage from '@/pages/AccountPage';
 import IntegrationsPage from '@/pages/IntegrationsPage';
 import SevenShiftsDetailPage from '@/pages/SevenShiftsDetailPage';
 import GoogleReviewsDetailPage from '@/pages/GoogleReviewsDetailPage';
+import GoogleReviewsInsightsPage from '@/pages/GoogleReviewsInsightsPage';
 import IntegrationsSyncLogsPage from '@/pages/IntegrationsSyncLogsPage';
 import IntegrationsSyncLogDetailPage from '@/pages/IntegrationsSyncLogDetailPage';
 import SchedulePage from '@/pages/SchedulePage';
@@ -43,6 +44,7 @@ import PulseSurveysPage from '@/pages/PulseSurveysPage';
 import MicroCheckRunDetailPage from '@/pages/MicroCheckRunDetailPage';
 import MicroCheckTemplatesPage from '@/pages/MicroCheckTemplatesPage';
 import ReviewAnalysisPage from '@/pages/ReviewAnalysisPage';
+import ReviewFeedPage from '@/pages/ReviewFeedPage';
 import InsightsPage from '@/pages/InsightsPage';
 import CommandCenter from '@/pages/CommandCenter';
 import ProfilePage from '@/pages/ProfilePage';
@@ -255,6 +257,18 @@ function AppRoutes() {
           }
         />
         <Route
+          path="/integrations/google-reviews/insights"
+          element={
+            isAuthenticated ? (
+              <Layout>
+                <GoogleReviewsInsightsPage />
+              </Layout>
+            ) : (
+              <Navigate to="/login" replace />
+            )
+          }
+        />
+        <Route
           path="/integrations/sync-logs"
           element={
             isAuthenticated ? (
@@ -404,6 +418,18 @@ function AppRoutes() {
             isAuthenticated ? (
               <Layout>
                 <InsightsPage />
+              </Layout>
+            ) : (
+              <Navigate to="/login" replace />
+            )
+          }
+        />
+        <Route
+          path="/reviews"
+          element={
+            isAuthenticated ? (
+              <Layout>
+                <ReviewFeedPage />
               </Layout>
             ) : (
               <Navigate to="/login" replace />

@@ -506,6 +506,12 @@ Respond in JSON format:
             defaults=defaults
         )
 
+        # Set synced_at to indicate the location has been populated with data
+        from django.utils import timezone
+        if created or not location.synced_at:
+            location.synced_at = timezone.now()
+            location.save()
+
         # Migrate each scraped review to GoogleReview table
         reviews_migrated = 0
         bedrock_service = BedrockRecommendationService()

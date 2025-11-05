@@ -1,7 +1,7 @@
 from rest_framework import serializers
 from .models import (
     SevenShiftsConfig, SevenShiftsEmployee, SevenShiftsShift,
-    SevenShiftsSyncLog, SevenShiftsLocationMapping
+    SevenShiftsSyncLog, SevenShiftsLocationMapping, ReviewResponse
 )
 
 
@@ -172,16 +172,15 @@ class GoogleLocationSerializer(serializers.ModelSerializer):
     """Serializer for GoogleLocation model"""
 
     review_count = serializers.SerializerMethodField()
-    unread_review_count = serializers.SerializerMethodField()
 
     class Meta:
         model = None  # Will be imported to avoid circular import
         fields = [
             'id', 'account', 'google_location_id', 'google_location_name',
-            'address', 'phone', 'website', 'average_rating', 'total_review_count',
-            'is_active', 'last_sync_at', 'review_count', 'unread_review_count'
+            'address', 'place_id', 'place_url', 'average_rating', 'total_review_count',
+            'is_active', 'synced_at', 'review_count'
         ]
-        read_only_fields = ['id', 'last_sync_at', 'review_count', 'unread_review_count']
+        read_only_fields = ['id', 'synced_at', 'review_count']
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -193,23 +192,19 @@ class GoogleLocationSerializer(serializers.ModelSerializer):
         """Get count of reviews stored locally"""
         return obj.reviews.count()
 
-    def get_unread_review_count(self, obj):
-        """Get count of unread reviews"""
-        return obj.reviews.filter(read_at__isnull=True).count()
-
 
 class GoogleReviewSerializer(serializers.ModelSerializer):
     """Serializer for GoogleReview model"""
 
     analysis = serializers.SerializerMethodField()
+    location = serializers.SerializerMethodField()
 
     class Meta:
         model = None  # Will be imported to avoid circular import
         fields = [
             'id', 'google_review_id', 'location', 'account', 'reviewer_name',
-            'reviewer_profile_photo_url', 'rating', 'review_text', 'review_reply',
-            'review_created_at', 'review_updated_at', 'reply_created_at',
-            'source', 'is_verified', 'read_at', 'flagged', 'analyzed_at',
+            'rating', 'review_text', 'review_reply',
+            'review_created_at', 'source', 'is_verified', 'analyzed_at',
             'needs_analysis', 'analysis'
         ]
         read_only_fields = ['id', 'analyzed_at', 'analysis']
@@ -219,6 +214,20 @@ class GoogleReviewSerializer(serializers.ModelSerializer):
         # Lazy import to avoid circular dependency
         from .models import GoogleReview
         self.Meta.model = GoogleReview
+
+    def get_location(self, obj):
+        """Get location data with store information"""
+        try:
+            return {
+                'id': str(obj.location.id),
+                'google_location_name': obj.location.google_location_name,
+                'store': {
+                    'id': obj.location.store.id if obj.location.store else None,
+                    'name': obj.location.store.name if obj.location.store else None,
+                } if obj.location.store else None
+            }
+        except:
+            return None
 
     def get_analysis(self, obj):
         """Get AI analysis if available"""
@@ -250,3 +259,144 @@ class GoogleReviewsSyncRequestSerializer(serializers.Serializer):
         allow_null=True,
         help_text="Specific location ID to sync (if not provided, syncs all locations)"
     )
+
+
+class ReviewResponseSerializer(serializers.ModelSerializer):
+    """Serializer for ReviewResponse model"""
+
+    created_by_name = serializers.SerializerMethodField()
+    review_snippet = serializers.SerializerMethodField()
+
+    class Meta:
+        model = ReviewResponse
+        fields = [
+            'id',
+            'review',
+            'response_text',
+            'status',
+            'created_by',
+            'created_by_name',
+            'created_at',
+            'updated_at',
+            'published_at',
+            'was_ai_suggested',
+            'ai_suggestion_tone',
+            'google_reply_id',
+            'error_message',
+            'review_snippet',
+        ]
+        read_only_fields = ['id', 'created_at', 'updated_at', 'created_by', 'created_by_name', 'review_snippet']
+
+    def get_created_by_name(self, obj):
+        """Get the name of the user who created the response"""
+        if obj.created_by:
+            return f"{obj.created_by.first_name} {obj.created_by.last_name}".strip() or obj.created_by.email
+        return None
+
+    def get_review_snippet(self, obj):
+        """Get a snippet of the review being responded to"""
+        if obj.review:
+            return {
+                'id': str(obj.review.id),
+                'reviewer_name': obj.review.reviewer_name,
+                'rating': obj.review.rating,
+                'review_text': obj.review.review_text[:100] + '...' if len(obj.review.review_text) > 100 else obj.review.review_text,
+            }
+        return None
+
+
+class SuggestReplyRequestSerializer(serializers.Serializer):
+    """Serializer for AI reply suggestion requests"""
+
+    tone = serializers.ChoiceField(
+        choices=['professional', 'friendly', 'apologetic'],
+        default='professional',
+        help_text="Tone for the suggested reply"
+    )
+
+
+class CreateReplyRequestSerializer(serializers.Serializer):
+    """Serializer for creating/updating review replies"""
+
+    response_text = serializers.CharField(
+        required=True,
+        help_text="The reply text"
+    )
+    save_as_draft = serializers.BooleanField(
+        default=False,
+        help_text="Save as draft (true) or publish immediately (false)"
+    )
+    was_ai_suggested = serializers.BooleanField(
+        default=False,
+        help_text="Was this text generated by AI?"
+    )
+    ai_suggestion_tone = serializers.ChoiceField(
+        choices=['professional', 'friendly', 'apologetic'],
+        required=False,
+        allow_null=True,
+        help_text="Tone used for AI suggestion (if applicable)"
+    )
+
+
+# ============================================================================
+# Phase 3: Review Insights & Trending Issues Serializers
+# ============================================================================
+
+class ReviewTopicSnapshotSerializer(serializers.ModelSerializer):
+    """Serializer for ReviewTopicSnapshot model"""
+    
+    class Meta:
+        model = None  # Will be imported to avoid circular import
+        fields = [
+            'id', 'account', 'location', 'topic', 'mention_count',
+            'positive_mentions', 'negative_mentions', 'avg_sentiment',
+            'snapshot_date', 'window_type', 'created_at'
+        ]
+        read_only_fields = fields
+    
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        from .models import ReviewTopicSnapshot
+        self.Meta.model = ReviewTopicSnapshot
+
+
+class TopicTrendSerializer(serializers.ModelSerializer):
+    """Serializer for TopicTrend model"""
+    
+    location_name = serializers.CharField(source='location.google_location_name', read_only=True)
+    trend_icon = serializers.SerializerMethodField()
+    
+    class Meta:
+        model = None  # Will be imported to avoid circular import
+        fields = [
+            'id', 'account', 'location', 'location_name', 'topic', 'category',
+            'overall_sentiment', 'trend_direction', 'trend_velocity',
+            'current_mentions', 'previous_mentions', 'percent_change',
+            'first_seen', 'last_updated', 'is_active', 'trend_icon'
+        ]
+        read_only_fields = fields
+    
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        from .models import TopicTrend
+        self.Meta.model = TopicTrend
+    
+    def get_trend_icon(self, obj):
+        """Get emoji icon for trend direction"""
+        icons = {
+            'INCREASING': '↑',
+            'DECREASING': '↓',
+            'STABLE': '→',
+            'NEW': '🆕'
+        }
+        return icons.get(obj.trend_direction, '')
+
+
+class InsightsSummarySerializer(serializers.Serializer):
+    """Serializer for insights summary response"""
+    
+    top_issues = TopicTrendSerializer(many=True, read_only=True)
+    improving_areas = TopicTrendSerializer(many=True, read_only=True)
+    top_praise = TopicTrendSerializer(many=True, read_only=True)
+    new_topics = TopicTrendSerializer(many=True, read_only=True)
+    sentiment_breakdown = serializers.DictField(read_only=True)

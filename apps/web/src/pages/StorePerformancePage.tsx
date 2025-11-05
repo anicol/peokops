@@ -19,7 +19,7 @@ export default function StorePerformancePage() {
   const { data: stores, isLoading } = useQuery<StorePerformance[]>(
     'store-performance',
     async () => {
-      const response = await api.get('/api/stores/performance/');
+      const response = await api.get('/stores/performance/');
       return response.data;
     }
   );

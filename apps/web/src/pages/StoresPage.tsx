@@ -22,7 +22,7 @@ import {
   TrendingDown,
   MessageSquare,
 } from 'lucide-react';
-import { storesAPI, brandsAPI, insightsAPI } from '@/services/api';
+import api, { storesAPI, brandsAPI, insightsAPI } from '@/services/api';
 import type { Store, Brand } from '@/types';
 import { useAuth } from '@/hooks/useAuth';
 import axios from 'axios';
@@ -69,7 +69,7 @@ export default function StoresPage() {
 
   const handleViewReviewAnalysis = async (store: Store) => {
     // Check if store has Google location data
-    if (!store.google_place_id) {
+    if (!store.google_location_name) {
       alert('No review analysis available for this store yet. Link a Google Business Profile to enable review analysis.');
       return;
     }
@@ -321,15 +321,24 @@ export default function StoresPage() {
                     {/* Google Reviews Status */}
                     {store.google_location_name && (
                       <div className="text-sm">
-                        {store.google_rating ? (
+                        {store.google_synced_at ? (
                           <button
                             onClick={() => handleViewReviewAnalysis(store)}
                             className="flex items-center text-left hover:bg-gray-50 rounded p-1 -m-1 transition-colors w-full"
                           >
-                            <Star className="h-4 w-4 mr-2 fill-yellow-400 text-yellow-400 flex-shrink-0" />
-                            <span className="font-medium text-gray-900">{store.google_rating}</span>
-                            <span className="text-gray-500 ml-1">/ 5.0</span>
-                            <span className="text-blue-600 ml-2 hover:underline">({store.google_review_count || 0} reviews)</span>
+                            {store.google_rating ? (
+                              <>
+                                <Star className="h-4 w-4 mr-2 fill-yellow-400 text-yellow-400 flex-shrink-0" />
+                                <span className="font-medium text-gray-900">{store.google_rating}</span>
+                                <span className="text-gray-500 ml-1">/ 5.0</span>
+                                <span className="text-blue-600 ml-2 hover:underline">({store.google_review_count || 0} reviews)</span>
+                              </>
+                            ) : (
+                              <>
+                                <MessageSquare className="h-4 w-4 mr-2 text-blue-600 flex-shrink-0" />
+                                <span className="text-blue-600 hover:underline">View review analysis</span>
+                              </>
+                            )}
                           </button>
                         ) : (
                           <div className="flex items-center">
@@ -458,19 +467,28 @@ export default function StoresPage() {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       {store.google_location_name ? (
-                        store.google_rating ? (
+                        store.google_synced_at ? (
                           <button
                             onClick={() => handleViewReviewAnalysis(store)}
                             className="text-sm text-left hover:bg-gray-50 rounded p-1 -m-1 transition-colors"
                           >
-                            <div className="flex items-center text-gray-900 mb-1">
-                              <Star className="h-4 w-4 mr-1 fill-yellow-400 text-yellow-400" />
-                              <span className="font-medium">{store.google_rating}</span>
-                              <span className="text-gray-500 ml-1">/ 5.0</span>
-                            </div>
-                            <div className="text-xs text-blue-600 hover:underline">
-                              {store.google_review_count || 0} reviews • View analysis
-                            </div>
+                            {store.google_rating ? (
+                              <>
+                                <div className="flex items-center text-gray-900 mb-1">
+                                  <Star className="h-4 w-4 mr-1 fill-yellow-400 text-yellow-400" />
+                                  <span className="font-medium">{store.google_rating}</span>
+                                  <span className="text-gray-500 ml-1">/ 5.0</span>
+                                </div>
+                                <div className="text-xs text-blue-600 hover:underline">
+                                  {store.google_review_count || 0} reviews • View analysis
+                                </div>
+                              </>
+                            ) : (
+                              <div className="flex items-center text-blue-600">
+                                <MessageSquare className="h-4 w-4 mr-2" />
+                                <span className="hover:underline">View review analysis</span>
+                              </div>
+                            )}
                           </button>
                         ) : (
                           <div className="text-sm">
@@ -525,6 +543,9 @@ export default function StoresPage() {
           onClose={() => {
             setIsCreateModalOpen(false);
             setEditingStore(null);
+          }}
+          onStoreUpdate={(updatedStore) => {
+            setEditingStore(updatedStore);
           }}
         />
       )}
@@ -742,9 +763,10 @@ interface StoreFormModalProps {
   brands: Brand[];
   currentUser: any;
   onClose: () => void;
+  onStoreUpdate?: (updatedStore: Store) => void;
 }
 
-function StoreFormModal({ store, brands, currentUser, onClose }: StoreFormModalProps) {
+function StoreFormModal({ store, brands, currentUser, onClose, onStoreUpdate }: StoreFormModalProps) {
   const queryClient = useQueryClient();
 
   // For non-admin users, get brand from their current user's brand_id
@@ -782,8 +804,6 @@ function StoreFormModal({ store, brands, currentUser, onClose }: StoreFormModalP
 
   // Google location linking/search state (for edit mode)
   const [googleSearchQuery, setGoogleSearchQuery] = useState('');
-  const [googleSearchResults, setGoogleSearchResults] = useState<any[]>([]);
-  const [isSearching, setIsSearching] = useState(false);
   const [isLinking, setIsLinking] = useState(false);
   const [linkError, setLinkError] = useState('');
 
@@ -939,30 +959,6 @@ function StoreFormModal({ store, brands, currentUser, onClose }: StoreFormModalP
     setCreationMode('manual');
   };
 
-  // Google search handler for edit mode (backend-based search for existing stores)
-  const handleGoogleSearch = async () => {
-    if (!googleSearchQuery.trim() || !store) return;
-
-    setIsSearching(true);
-    setLinkError('');
-
-    try {
-      const response = await axios.post('/api/integrations/google-reviews/search-business', {
-        business_name: googleSearchQuery,
-        location: `${store.city}, ${store.state}`.trim()
-      });
-
-      // API returns single result or multiple results
-      const results = Array.isArray(response.data) ? response.data : [response.data];
-      setGoogleSearchResults(results);
-    } catch (error: any) {
-      setLinkError(error.response?.data?.error || 'Failed to search for business');
-      setGoogleSearchResults([]);
-    } finally {
-      setIsSearching(false);
-    }
-  };
-
   // Link Google location to store (for edit mode)
   const handleLinkGoogleLocation = async (result: any) => {
     if (!store) return;
@@ -971,16 +967,25 @@ function StoreFormModal({ store, brands, currentUser, onClose }: StoreFormModalP
     setLinkError('');
 
     try {
-      await axios.post('/api/integrations/google-reviews/link-location', {
+      await api.post('/integrations/google-reviews/link-location/', {
         store_id: store.id,
         business_name: result.business_name,
         place_url: result.place_url,
-        place_id: result.place_id
+        place_id: result.place_id,
+        address: result.address
       });
 
       // Refresh stores list to show new Google location data
       queryClient.invalidateQueries('stores');
-      setGoogleSearchResults([]);
+
+      // Fetch the updated store to get the new google_location data
+      const updatedStore = await storesAPI.getStore(store.id);
+
+      // Update the parent's editingStore state
+      if (onStoreUpdate) {
+        onStoreUpdate(updatedStore);
+      }
+
       setGoogleSearchQuery('');
 
       alert('Google location linked successfully! Review scraping started in background.');
@@ -1367,86 +1372,36 @@ function StoreFormModal({ store, brands, currentUser, onClose }: StoreFormModalP
               {/* Search for Google location */}
               {!store.google_location_name && (
                 <>
-                  <div className="flex gap-2 mb-3">
-                    <input
-                      type="text"
+                  <div className="mb-3">
+                    <GooglePlacesAutocomplete
                       value={googleSearchQuery}
-                      onChange={(e) => setGoogleSearchQuery(e.target.value)}
-                      placeholder="Search for business on Google Maps..."
-                      className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-                      onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), handleGoogleSearch())}
+                      onChange={setGoogleSearchQuery}
+                      onPlaceSelected={(place) => {
+                        // When a place is selected, automatically link it
+                        if (place.place_id && place.name) {
+                          handleLinkGoogleLocation({
+                            business_name: place.name,
+                            place_id: place.place_id,
+                            place_url: `https://www.google.com/maps/place/?q=place_id:${place.place_id}`,
+                            address: place.formatted_address || ''
+                          });
+                        }
+                      }}
+                      placeholder="Search for your business on Google Maps..."
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
                     />
-                    <button
-                      type="button"
-                      onClick={handleGoogleSearch}
-                      disabled={isSearching || !googleSearchQuery.trim()}
-                      className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50 flex items-center"
-                    >
-                      {isSearching ? (
-                        <>
-                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                          Searching...
-                        </>
-                      ) : (
-                        <>
-                          <Search className="h-4 w-4 mr-2" />
-                          Search
-                        </>
-                      )}
-                    </button>
+                    <p className="text-xs text-gray-500 mt-2">
+                      Start typing your business name and select it from the dropdown
+                    </p>
                   </div>
 
-                  {/* Search results */}
-                  {googleSearchResults.length > 0 && (
-                    <div className="space-y-3">
-                      <p className="text-sm font-medium text-gray-700">
-                        Found {googleSearchResults.length} result{googleSearchResults.length !== 1 ? 's' : ''}:
-                      </p>
-                      {googleSearchResults.map((result, index) => (
-                        <div key={index} className="bg-blue-50 border border-blue-200 rounded-lg p-3">
-                          <div className="flex items-start justify-between mb-2">
-                            <div className="flex-1">
-                              <p className="text-sm font-medium text-blue-900">
-                                {result.business_name}
-                              </p>
-                              <p className="text-xs text-blue-700 mt-1">
-                                {result.address}
-                              </p>
-                              <div className="flex items-center gap-3 mt-2">
-                                {result.average_rating && (
-                                  <div className="flex items-center text-sm text-blue-700">
-                                    <Star className="h-3 w-3 mr-1 fill-yellow-400 text-yellow-400" />
-                                    {result.average_rating} / 5.0
-                                  </div>
-                                )}
-                                {result.total_reviews !== null && (
-                                  <span className="text-sm text-blue-700">
-                                    {result.total_reviews} reviews
-                                  </span>
-                                )}
-                              </div>
-                            </div>
-                          </div>
-                          <button
-                            type="button"
-                            onClick={() => handleLinkGoogleLocation(result)}
-                            disabled={isLinking}
-                            className="w-full mt-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 flex items-center justify-center"
-                          >
-                            {isLinking ? (
-                              <>
-                                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                                Linking...
-                              </>
-                            ) : (
-                              <>
-                                <LinkIcon className="h-4 w-4 mr-2" />
-                                Link This Location
-                              </>
-                            )}
-                          </button>
-                        </div>
-                      ))}
+                  {/* Linking status */}
+                  {isLinking && (
+                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-3">
+                      <div className="flex items-center">
+                        <Loader2 className="h-4 w-4 mr-2 animate-spin text-blue-600" />
+                        <span className="text-sm text-blue-900">Linking Google location...</span>
+                      </div>
                     </div>
                   )}
 

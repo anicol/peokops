@@ -26,6 +26,7 @@ import {
   Calendar,
   ChevronDown,
   Command,
+  MessageSquare,
 } from 'lucide-react';
 
 const navigationSections = [
@@ -37,6 +38,7 @@ const navigationSections = [
       { name: 'AI Walkthrough', href: '/videos', icon: Sparkles, key: 'aiCoach' },
       { name: 'Inspections', href: '/inspections', icon: FileSearch, key: 'inspections' },
       { name: 'Actions', href: '/actions', icon: ListTodo, key: 'actions' },
+      { name: 'Guest Reviews', href: '/reviews', icon: MessageSquare, key: 'reviews' },
       { name: 'Insights', href: '/insights', icon: BarChart3, key: 'insights' },
       { name: 'Command Center', href: '/command-center', icon: Command, key: 'commandCenter' },
     ]

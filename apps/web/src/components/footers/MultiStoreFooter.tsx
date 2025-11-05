@@ -14,7 +14,7 @@ export function MultiStoreFooter() {
   const { data: stats } = useQuery<DashboardStats>(
     'dashboard-footer-stats',
     async () => {
-      const response = await api.get('/api/inspections/stats/');
+      const response = await api.get('/inspections/stats/');
       return response.data;
     },
     {
