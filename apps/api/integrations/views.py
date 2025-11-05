@@ -1477,20 +1477,20 @@ Generate ONLY the response text, no additional commentary."""
     def generate_insights(self, request):
         """Manually trigger insights generation for account"""
         account = request.user.account
-        
+
         from .insights_service import ReviewInsightsService
         service = ReviewInsightsService()
-        
+
         try:
             # Generate snapshots
             snapshots = service.generate_topic_snapshots(
                 account_id=account.id,
                 window_type='weekly'
             )
-            
+
             # Calculate trends
             trends = service.calculate_trends(account_id=account.id)
-            
+
             return Response({
                 'message': 'Insights generated successfully',
                 'snapshots_created': len(snapshots),
@@ -1501,6 +1501,238 @@ Generate ONLY the response text, no additional commentary."""
             logger.exception('Failed to generate insights')
             return Response({
                 'error': f'Failed to generate insights: {str(e)}'
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+    # ========================================================================
+    # Phase 4: Category-Based Multi-Level Aggregation Endpoints
+    # ========================================================================
+
+    @action(detail=False, methods=['get'], url_path='insights/top-issues-by-category')
+    def top_issues_by_category(self, request):
+        """
+        GET /api/integrations/google-reviews/insights/top-issues-by-category
+
+        Get top N issues grouped by category with trend analysis.
+        Works at store-level OR account-level.
+
+        Query params:
+        - location_id: Optional store location UUID (if omitted, shows account-level)
+        - limit: Number of top issues per category (default: 3)
+        - days: Number of days to analyze (default: 30)
+        - categories: Optional comma-separated list of categories to filter
+
+        Returns:
+        {
+            "categories": {
+                "Food Quality": {
+                    "top_issues": [
+                        {
+                            "topic": "Cold food",
+                            "total_mentions": 15,
+                            "affected_locations": 3,
+                            "trend_direction": "INCREASING",
+                            "examples": [...]
+                        }
+                    ]
+                }
+            },
+            "scope": {
+                "level": "store" | "account",
+                "location_id": "uuid",
+                "account_id": "uuid"
+            }
+        }
+        """
+        from .insights_service import ReviewInsightsService
+
+        account = request.user.account
+        location_id = request.query_params.get('location_id')
+        limit = int(request.query_params.get('limit', 3))
+        days = int(request.query_params.get('days', 30))
+
+        # Parse categories filter
+        categories_param = request.query_params.get('categories')
+        categories = None
+        if categories_param:
+            categories = [c.strip() for c in categories_param.split(',')]
+
+        service = ReviewInsightsService()
+
+        try:
+            result = service.get_top_issues_by_category(
+                account_id=str(account.id),
+                location_id=location_id,
+                limit=limit,
+                days=days,
+                categories=categories
+            )
+
+            return Response(result, status=status.HTTP_200_OK)
+
+        except Exception as e:
+            logger.exception('Failed to get top issues by category')
+            return Response({
+                'error': f'Failed to get top issues: {str(e)}'
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+    @action(detail=False, methods=['get'], url_path='insights/multi-store-issues')
+    def multi_store_issues_by_category(self, request):
+        """
+        GET /api/integrations/google-reviews/insights/multi-store-issues
+
+        Get top issues across multiple stores with per-store breakdown.
+        Aggregates at the account/franchisee level.
+
+        Query params:
+        - store_ids: Optional comma-separated list of store UUIDs (if omitted, uses all stores)
+        - limit: Number of top issues per category (default: 3)
+        - days: Number of days to analyze (default: 30)
+        - categories: Optional comma-separated list of categories to filter
+
+        Returns:
+        {
+            "categories": {
+                "Food Quality": {
+                    "top_issues": [...]
+                }
+            },
+            "stores": [
+                {
+                    "store_id": "uuid",
+                    "store_name": "Downtown Location",
+                    "categories": {...}
+                }
+            ],
+            "scope": {
+                "level": "multi_store",
+                "account_id": "uuid",
+                "store_count": 5
+            }
+        }
+        """
+        from .insights_service import ReviewInsightsService
+
+        account = request.user.account
+        limit = int(request.query_params.get('limit', 3))
+        days = int(request.query_params.get('days', 30))
+
+        # Parse store_ids filter
+        store_ids_param = request.query_params.get('store_ids')
+        store_ids = None
+        if store_ids_param:
+            store_ids = [s.strip() for s in store_ids_param.split(',')]
+
+        # Parse categories filter
+        categories_param = request.query_params.get('categories')
+        categories = None
+        if categories_param:
+            categories = [c.strip() for c in categories_param.split(',')]
+
+        service = ReviewInsightsService()
+
+        try:
+            result = service.get_multi_store_issues_by_category(
+                account_id=str(account.id),
+                store_ids=store_ids,
+                limit=limit,
+                days=days,
+                categories=categories
+            )
+
+            return Response(result, status=status.HTTP_200_OK)
+
+        except Exception as e:
+            logger.exception('Failed to get multi-store issues by category')
+            return Response({
+                'error': f'Failed to get multi-store issues: {str(e)}'
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+    @action(detail=False, methods=['get'], url_path='insights/brand-issues')
+    def brand_issues_by_category(self, request):
+        """
+        GET /api/integrations/google-reviews/insights/brand-issues
+
+        Get top issues across entire brand (all accounts/stores) with regional breakdown.
+        Requires ADMIN or SUPER_ADMIN role for brand-level access.
+
+        Query params:
+        - brand_id: Brand UUID (required)
+        - limit: Number of top issues per category (default: 3)
+        - days: Number of days to analyze (default: 30)
+        - categories: Optional comma-separated list of categories to filter
+        - region: Optional region filter
+
+        Returns:
+        {
+            "categories": {
+                "Food Quality": {
+                    "top_issues": [...]
+                }
+            },
+            "regions": [
+                {
+                    "region": "Northeast",
+                    "categories": {...}
+                }
+            ],
+            "accounts": [
+                {
+                    "account_id": "uuid",
+                    "account_name": "Franchisee A",
+                    "categories": {...}
+                }
+            ],
+            "scope": {
+                "level": "brand",
+                "brand_id": "uuid",
+                "account_count": 10,
+                "store_count": 50
+            }
+        }
+        """
+        from .insights_service import ReviewInsightsService
+
+        # Check user has brand-level access
+        if not request.user.role in ['ADMIN', 'SUPER_ADMIN']:
+            return Response({
+                'error': 'Brand-level insights require ADMIN or SUPER_ADMIN role'
+            }, status=status.HTTP_403_FORBIDDEN)
+
+        brand_id = request.query_params.get('brand_id')
+        if not brand_id:
+            return Response({
+                'error': 'brand_id is required'
+            }, status=status.HTTP_400_BAD_REQUEST)
+
+        limit = int(request.query_params.get('limit', 3))
+        days = int(request.query_params.get('days', 30))
+
+        # Parse categories filter
+        categories_param = request.query_params.get('categories')
+        categories = None
+        if categories_param:
+            categories = [c.strip() for c in categories_param.split(',')]
+
+        # Parse region filter
+        region = request.query_params.get('region')
+
+        service = ReviewInsightsService()
+
+        try:
+            result = service.get_brand_issues_by_category(
+                brand_id=brand_id,
+                limit=limit,
+                days=days,
+                categories=categories,
+                region=region
+            )
+
+            return Response(result, status=status.HTTP_200_OK)
+
+        except Exception as e:
+            logger.exception('Failed to get brand issues by category')
+            return Response({
+                'error': f'Failed to get brand issues: {str(e)}'
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 

@@ -517,3 +517,371 @@ class ReviewInsightsService:
             'increasing_topics': increasing_count,
             'decreasing_topics': decreasing_count
         }
+
+    def get_multi_store_issues_by_category(
+        self,
+        account_id: str,
+        store_ids: Optional[List[str]] = None,
+        limit: int = 3,
+        days: int = 30,
+        categories: Optional[List[str]] = None
+    ) -> Dict:
+        """Get top issues across multiple stores with store-level breakdown
+
+        Args:
+            account_id: Account UUID
+            store_ids: Optional list of store UUIDs (if None, uses all stores in account)
+            limit: Number of top issues per category
+            days: Number of days to analyze
+            categories: Optional list of categories to filter
+
+        Returns:
+            Dict with category-grouped issues aggregated across stores, plus per-store breakdown
+        """
+        from datetime import timedelta
+        from django.utils import timezone
+        from django.db.models import Count, Q
+        from brands.models import Store
+
+        # Get stores for this account
+        stores_query = Store.objects.filter(account_id=account_id, is_active=True)
+        if store_ids:
+            stores_query = stores_query.filter(id__in=store_ids)
+
+        stores = list(stores_query)
+        if not stores:
+            return {
+                'categories': {},
+                'stores': [],
+                'error': 'No active stores found for this account'
+            }
+
+        # Get locations linked to these stores
+        from .models import GoogleLocation
+        location_ids = list(
+            GoogleLocation.objects.filter(
+                store__in=stores,
+                account_id=account_id
+            ).values_list('id', flat=True)
+        )
+
+        # Define categories
+        all_categories = ['Food Quality', 'Service', 'Cleanliness', 'Atmosphere', 'Value', 'Other']
+        target_categories = categories if categories else all_categories
+
+        # Calculate date range
+        end_date = timezone.now()
+        start_date = end_date - timedelta(days=days)
+
+        # Aggregate issues across all stores
+        aggregated_issues = self._aggregate_issues_across_locations(
+            account_id=account_id,
+            location_ids=location_ids,
+            target_categories=target_categories,
+            start_date=start_date,
+            end_date=end_date,
+            limit=limit
+        )
+
+        # Get per-store breakdown
+        store_breakdowns = []
+        for store in stores:
+            store_location = GoogleLocation.objects.filter(store=store, account_id=account_id).first()
+            if store_location:
+                store_data = self.get_top_issues_by_category(
+                    account_id=account_id,
+                    location_id=str(store_location.id),
+                    limit=limit,
+                    days=days,
+                    categories=target_categories
+                )
+                store_breakdowns.append({
+                    'store_id': str(store.id),
+                    'store_name': store.name,
+                    'store_code': store.code,
+                    'region': store.region,
+                    'issues': store_data
+                })
+
+        return {
+            'categories': aggregated_issues,
+            'stores': store_breakdowns,
+            'store_count': len(stores),
+            'date_range': {
+                'start': start_date.isoformat(),
+                'end': end_date.isoformat(),
+                'days': days
+            },
+            'scope': {
+                'account_id': str(account_id),
+                'level': 'multi_store'
+            }
+        }
+
+    def get_brand_issues_by_category(
+        self,
+        brand_id: str,
+        limit: int = 3,
+        days: int = 30,
+        categories: Optional[List[str]] = None,
+        region: Optional[str] = None
+    ) -> Dict:
+        """Get top issues across entire brand (all accounts/stores) with regional breakdown
+
+        Args:
+            brand_id: Brand UUID
+            limit: Number of top issues per category
+            days: Number of days to analyze
+            categories: Optional list of categories to filter
+            region: Optional region filter
+
+        Returns:
+            Dict with brand-wide category issues, regional breakdown, and account comparisons
+        """
+        from datetime import timedelta
+        from django.utils import timezone
+        from brands.models import Store, Brand
+        from accounts.models import Account
+
+        # Verify brand exists
+        try:
+            brand = Brand.objects.get(id=brand_id)
+        except Brand.DoesNotExist:
+            return {'error': 'Brand not found'}
+
+        # Get all stores for this brand
+        stores_query = Store.objects.filter(brand_id=brand_id, is_active=True)
+        if region:
+            stores_query = stores_query.filter(region=region)
+
+        stores = list(stores_query)
+        if not stores:
+            return {
+                'categories': {},
+                'regions': [],
+                'accounts': [],
+                'error': 'No active stores found for this brand'
+            }
+
+        # Get all accounts (franchisees) in this brand
+        account_ids = stores_query.values_list('account_id', flat=True).distinct()
+        accounts = Account.objects.filter(id__in=account_ids)
+
+        # Get all locations for these stores
+        from .models import GoogleLocation
+        all_location_ids = list(
+            GoogleLocation.objects.filter(
+                store__in=stores
+            ).values_list('id', flat=True)
+        )
+
+        # Define categories
+        all_categories = ['Food Quality', 'Service', 'Cleanliness', 'Atmosphere', 'Value', 'Other']
+        target_categories = categories if categories else all_categories
+
+        # Calculate date range
+        end_date = timezone.now()
+        start_date = end_date - timedelta(days=days)
+
+        # Get brand-wide aggregated issues (need to aggregate across multiple accounts)
+        brand_wide_issues = self._aggregate_brand_wide_issues(
+            stores=stores,
+            target_categories=target_categories,
+            start_date=start_date,
+            end_date=end_date,
+            limit=limit
+        )
+
+        # Get regional breakdown
+        regions = stores_query.values_list('region', flat=True).distinct()
+        regional_breakdowns = []
+        for region_name in regions:
+            if region_name:  # Skip empty regions
+                region_stores = stores_query.filter(region=region_name)
+                region_location_ids = list(
+                    GoogleLocation.objects.filter(
+                        store__in=region_stores
+                    ).values_list('id', flat=True)
+                )
+                region_issues = self._aggregate_issues_across_locations(
+                    account_id=None,  # Brand level - cross-account
+                    location_ids=region_location_ids,
+                    target_categories=target_categories,
+                    start_date=start_date,
+                    end_date=end_date,
+                    limit=limit
+                )
+                regional_breakdowns.append({
+                    'region': region_name,
+                    'store_count': region_stores.count(),
+                    'issues': region_issues
+                })
+
+        # Get account (franchisee) comparison
+        account_comparisons = []
+        for account in accounts:
+            account_stores = stores.filter(account=account)
+            account_location_ids = list(
+                GoogleLocation.objects.filter(
+                    store__in=account_stores,
+                    account=account
+                ).values_list('id', flat=True)
+            )
+            if account_location_ids:
+                account_issues = self._aggregate_issues_across_locations(
+                    account_id=str(account.id),
+                    location_ids=account_location_ids,
+                    target_categories=target_categories,
+                    start_date=start_date,
+                    end_date=end_date,
+                    limit=limit
+                )
+                account_comparisons.append({
+                    'account_id': str(account.id),
+                    'account_name': account.name,
+                    'store_count': len(account_stores),
+                    'issues': account_issues
+                })
+
+        return {
+            'brand': {
+                'id': str(brand.id),
+                'name': brand.name
+            },
+            'categories': brand_wide_issues,
+            'regions': regional_breakdowns,
+            'accounts': account_comparisons,
+            'total_stores': len(stores),
+            'date_range': {
+                'start': start_date.isoformat(),
+                'end': end_date.isoformat(),
+                'days': days
+            },
+            'scope': {
+                'brand_id': str(brand_id),
+                'level': 'brand',
+                'region_filter': region
+            }
+        }
+
+    def _aggregate_issues_across_locations(
+        self,
+        account_id: Optional[str],
+        location_ids: List[str],
+        target_categories: List[str],
+        start_date,
+        end_date,
+        limit: int
+    ) -> Dict:
+        """Helper to aggregate issues across multiple locations"""
+        from django.db.models import Sum, Avg
+
+        category_issues = {}
+
+        for category in target_categories:
+            # Aggregate trends across all locations
+            from .models import TopicTrend, GoogleReview
+
+            # Get all negative trends for this category across locations
+            trends_query = TopicTrend.objects.filter(
+                location_id__in=location_ids,
+                category=category,
+                overall_sentiment='NEGATIVE',
+                is_active=True
+            )
+
+            # Group by topic name and aggregate mentions
+            topic_aggregates = {}
+            for trend in trends_query:
+                if trend.topic not in topic_aggregates:
+                    topic_aggregates[trend.topic] = {
+                        'total_mentions': 0,
+                        'locations': [],
+                        'trend_directions': []
+                    }
+                topic_aggregates[trend.topic]['total_mentions'] += trend.current_mentions
+                topic_aggregates[trend.topic]['locations'].append(str(trend.location_id))
+                topic_aggregates[trend.topic]['trend_directions'].append(trend.trend_direction)
+
+            # Sort by total mentions and take top N
+            sorted_topics = sorted(
+                topic_aggregates.items(),
+                key=lambda x: x[1]['total_mentions'],
+                reverse=True
+            )[:limit]
+
+            # Build issues list with examples
+            issues = []
+            for topic, data in sorted_topics:
+                # Get example reviews for this topic across all locations
+                reviews_query = GoogleReview.objects.filter(
+                    location_id__in=location_ids,
+                    review_created_at__gte=start_date,
+                    review_created_at__lte=end_date,
+                    analysis__topics__contains=[topic]
+                )
+                if account_id:
+                    reviews_query = reviews_query.filter(account_id=account_id)
+
+                examples = reviews_query.select_related('analysis', 'location').order_by('-rating')[:3]
+
+                # Determine predominant trend direction
+                increasing = data['trend_directions'].count('INCREASING')
+                decreasing = data['trend_directions'].count('DECREASING')
+                if increasing > decreasing:
+                    predominant_direction = 'INCREASING'
+                elif decreasing > increasing:
+                    predominant_direction = 'DECREASING'
+                else:
+                    predominant_direction = 'STABLE'
+
+                issues.append({
+                    'topic': topic,
+                    'total_mentions': data['total_mentions'],
+                    'affected_locations': len(set(data['locations'])),
+                    'trend_direction': predominant_direction,
+                    'examples': [
+                        {
+                            'reviewer': review.reviewer_name,
+                            'rating': review.rating,
+                            'text': review.review_text[:200] + '...' if len(review.review_text) > 200 else review.review_text,
+                            'date': review.review_created_at.isoformat(),
+                            'store': review.location.store.name if review.location and review.location.store else 'Unknown'
+                        }
+                        for review in examples
+                    ]
+                })
+
+            category_issues[category] = {
+                'top_issues': issues,
+                'total_issues': len(issues)
+            }
+
+        return category_issues
+
+    def _aggregate_brand_wide_issues(
+        self,
+        stores: List,
+        target_categories: List[str],
+        start_date,
+        end_date,
+        limit: int
+    ) -> Dict:
+        """Helper to aggregate issues across all stores in a brand (cross-account)"""
+        from .models import GoogleLocation
+
+        # Get all locations for these stores (across different accounts)
+        all_location_ids = list(
+            GoogleLocation.objects.filter(
+                store__in=stores
+            ).values_list('id', flat=True)
+        )
+
+        return self._aggregate_issues_across_locations(
+            account_id=None,  # Cross-account aggregation
+            location_ids=all_location_ids,
+            target_categories=target_categories,
+            start_date=start_date,
+            end_date=end_date,
+            limit=limit
+        )
