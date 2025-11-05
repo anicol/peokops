@@ -1390,3 +1390,115 @@ Generate ONLY the response text, no additional commentary."""
             'response_by_rating': response_by_rating,
             'recent_responses_30d': recent_responses,
         }, status=status.HTTP_200_OK)
+
+    # ========================================================================
+    # Phase 3: Review Insights & Trending Issues Endpoints
+    # ========================================================================
+
+    @action(detail=False, methods=['get'], url_path='insights')
+    def insights_summary(self, request):
+        """Get comprehensive insights summary for account"""
+        account = request.user.account
+        location_id = request.query_params.get('location_id')
+        
+        from .insights_service import ReviewInsightsService
+        service = ReviewInsightsService()
+        
+        insights = service.get_insights_summary(
+            account_id=account.id,
+            location_id=location_id
+        )
+        
+        return Response(insights, status=status.HTTP_200_OK)
+    
+    @action(detail=False, methods=['get'], url_path='insights/topics')
+    def topic_trends(self, request):
+        """Get topic trends for account"""
+        account = request.user.account
+        location_id = request.query_params.get('location_id')
+        
+        from .models import TopicTrend
+        from .serializers import TopicTrendSerializer
+        
+        trends_query = TopicTrend.objects.filter(
+            account=account,
+            is_active=True
+        )
+        
+        if location_id:
+            trends_query = trends_query.filter(location_id=location_id)
+        
+        # Filter by trend direction
+        direction_filter = request.query_params.get('direction')
+        if direction_filter:
+            trends_query = trends_query.filter(trend_direction=direction_filter.upper())
+        
+        # Filter by sentiment
+        sentiment_filter = request.query_params.get('sentiment')
+        if sentiment_filter:
+            trends_query = trends_query.filter(overall_sentiment=sentiment_filter.upper())
+        
+        # Filter by category
+        category_filter = request.query_params.get('category')
+        if category_filter:
+            trends_query = trends_query.filter(category=category_filter)
+        
+        # Order by mentions (most popular first)
+        trends = trends_query.order_by('-current_mentions')
+        
+        serializer = TopicTrendSerializer(trends, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+    
+    @action(detail=False, methods=['get'], url_path='insights/topic/(?P<topic_name>[^/.]+)')
+    def topic_detail(self, request, topic_name=None):
+        """Get detailed timeline for a specific topic"""
+        account = request.user.account
+        location_id = request.query_params.get('location_id')
+        
+        from .models import ReviewTopicSnapshot
+        from .serializers import ReviewTopicSnapshotSerializer
+        
+        # Get snapshots for this topic over time
+        snapshots_query = ReviewTopicSnapshot.objects.filter(
+            account=account,
+            topic=topic_name,
+            window_type='weekly'
+        )
+        
+        if location_id:
+            snapshots_query = snapshots_query.filter(location_id=location_id)
+        
+        snapshots = snapshots_query.order_by('-snapshot_date')[:12]  # Last 12 weeks
+        
+        serializer = ReviewTopicSnapshotSerializer(snapshots, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+    
+    @action(detail=False, methods=['post'], url_path='insights/generate')
+    def generate_insights(self, request):
+        """Manually trigger insights generation for account"""
+        account = request.user.account
+        
+        from .insights_service import ReviewInsightsService
+        service = ReviewInsightsService()
+        
+        try:
+            # Generate snapshots
+            snapshots = service.generate_topic_snapshots(
+                account_id=account.id,
+                window_type='weekly'
+            )
+            
+            # Calculate trends
+            trends = service.calculate_trends(account_id=account.id)
+            
+            return Response({
+                'message': 'Insights generated successfully',
+                'snapshots_created': len(snapshots),
+                'trends_calculated': len(trends)
+            }, status=status.HTTP_200_OK)
+            
+        except Exception as e:
+            logger.exception('Failed to generate insights')
+            return Response({
+                'error': f'Failed to generate insights: {str(e)}'
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

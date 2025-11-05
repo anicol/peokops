@@ -336,3 +336,67 @@ class CreateReplyRequestSerializer(serializers.Serializer):
         allow_null=True,
         help_text="Tone used for AI suggestion (if applicable)"
     )
+
+
+# ============================================================================
+# Phase 3: Review Insights & Trending Issues Serializers
+# ============================================================================
+
+class ReviewTopicSnapshotSerializer(serializers.ModelSerializer):
+    """Serializer for ReviewTopicSnapshot model"""
+    
+    class Meta:
+        model = None  # Will be imported to avoid circular import
+        fields = [
+            'id', 'account', 'location', 'topic', 'mention_count',
+            'positive_mentions', 'negative_mentions', 'avg_sentiment',
+            'snapshot_date', 'window_type', 'created_at'
+        ]
+        read_only_fields = fields
+    
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        from .models import ReviewTopicSnapshot
+        self.Meta.model = ReviewTopicSnapshot
+
+
+class TopicTrendSerializer(serializers.ModelSerializer):
+    """Serializer for TopicTrend model"""
+    
+    location_name = serializers.CharField(source='location.google_location_name', read_only=True)
+    trend_icon = serializers.SerializerMethodField()
+    
+    class Meta:
+        model = None  # Will be imported to avoid circular import
+        fields = [
+            'id', 'account', 'location', 'location_name', 'topic', 'category',
+            'overall_sentiment', 'trend_direction', 'trend_velocity',
+            'current_mentions', 'previous_mentions', 'percent_change',
+            'first_seen', 'last_updated', 'is_active', 'trend_icon'
+        ]
+        read_only_fields = fields
+    
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        from .models import TopicTrend
+        self.Meta.model = TopicTrend
+    
+    def get_trend_icon(self, obj):
+        """Get emoji icon for trend direction"""
+        icons = {
+            'INCREASING': '↑',
+            'DECREASING': '↓',
+            'STABLE': '→',
+            'NEW': '🆕'
+        }
+        return icons.get(obj.trend_direction, '')
+
+
+class InsightsSummarySerializer(serializers.Serializer):
+    """Serializer for insights summary response"""
+    
+    top_issues = TopicTrendSerializer(many=True, read_only=True)
+    improving_areas = TopicTrendSerializer(many=True, read_only=True)
+    top_praise = TopicTrendSerializer(many=True, read_only=True)
+    new_topics = TopicTrendSerializer(many=True, read_only=True)
+    sentiment_breakdown = serializers.DictField(read_only=True)
