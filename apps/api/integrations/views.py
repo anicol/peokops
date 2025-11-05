@@ -1496,9 +1496,133 @@ Generate ONLY the response text, no additional commentary."""
                 'snapshots_created': len(snapshots),
                 'trends_calculated': len(trends)
             }, status=status.HTTP_200_OK)
-            
+
         except Exception as e:
             logger.exception('Failed to generate insights')
             return Response({
                 'error': f'Failed to generate insights: {str(e)}'
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+# ============================================================================
+# Yelp Reviews Integration ViewSet
+# ============================================================================
+
+class YelpReviewsIntegrationViewSet(viewsets.GenericViewSet):
+    """
+    ViewSet for managing Yelp Reviews integration per account.
+
+    Provides endpoints for:
+    - Viewing Yelp locations
+    - Viewing Yelp reviews
+    - Getting Yelp reviews status
+    """
+    permission_classes = [IsAuthenticated]
+
+    @action(detail=False, methods=['get'], url_path='locations')
+    def get_locations(self, request):
+        """
+        GET /api/integrations/yelp-reviews/locations/
+
+        Get all Yelp locations for user's account.
+        """
+        from .models import YelpLocation
+        from .serializers import YelpLocationSerializer
+
+        if not request.user.account:
+            return Response(
+                {'error': 'User not associated with an account'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        locations = YelpLocation.objects.filter(
+            account=request.user.account,
+            is_active=True
+        ).order_by('business_name')
+
+        serializer = YelpLocationSerializer(locations, many=True)
+        return Response(serializer.data)
+
+    @action(detail=False, methods=['get'], url_path='reviews')
+    def get_reviews(self, request):
+        """
+        GET /api/integrations/yelp-reviews/reviews/
+
+        Get Yelp reviews for user's account.
+
+        Query params:
+        - location_id: Filter by location UUID
+        - rating: Filter by specific rating (1-5)
+        - unread_only: Show only unread reviews (true/false)
+        - limit: Number of reviews to return (default: 50)
+        """
+        from .models import YelpReview
+        from .serializers import YelpReviewSerializer
+
+        if not request.user.account:
+            return Response(
+                {'error': 'User not associated with an account'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        reviews = YelpReview.objects.filter(
+            account=request.user.account
+        ).order_by('-review_created_at')
+
+        # Apply filters
+        location_id = request.query_params.get('location_id')
+        if location_id:
+            reviews = reviews.filter(location_id=location_id)
+
+        rating = request.query_params.get('rating')
+        if rating:
+            reviews = reviews.filter(rating=int(rating))
+
+        unread_only = request.query_params.get('unread_only', '').lower() == 'true'
+        if unread_only:
+            reviews = reviews.filter(needs_analysis=True)
+
+        # Limit results
+        limit = int(request.query_params.get('limit', 50))
+        reviews = reviews[:limit]
+
+        serializer = YelpReviewSerializer(reviews, many=True)
+        return Response(serializer.data)
+
+    @action(detail=False, methods=['get'], url_path='status')
+    def get_status(self, request):
+        """
+        GET /api/integrations/yelp-reviews/status/
+
+        Get current Yelp Reviews integration status for user's account.
+        """
+        from .models import YelpLocation, YelpReview
+
+        if not request.user.account:
+            return Response(
+                {'error': 'User not associated with an account'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        location_count = YelpLocation.objects.filter(
+            account=request.user.account,
+            is_active=True
+        ).count()
+
+        review_count = YelpReview.objects.filter(
+            account=request.user.account
+        ).count()
+
+        unread_review_count = YelpReview.objects.filter(
+            account=request.user.account,
+            needs_analysis=True
+        ).count()
+
+        return Response({
+            'is_configured': location_count > 0,
+            'location_count': location_count,
+            'review_count': review_count,
+            'unread_review_count': unread_review_count,
+            'source': 'scraping',  # Yelp only supports scraping
+            'message': 'Yelp reviews are stored from scraping operations'
+        })
