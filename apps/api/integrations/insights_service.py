@@ -386,3 +386,134 @@ class ReviewInsightsService:
             'percent_change': trend.percent_change,
             'last_updated': trend.last_updated.isoformat(),
         }
+
+    def get_top_issues_by_category(
+        self,
+        account_id: str,
+        location_id: Optional[str] = None,
+        limit: int = 3,
+        days: int = 30,
+        categories: Optional[List[str]] = None
+    ) -> Dict:
+        """Get top N issues grouped by category with trend analysis
+
+        Args:
+            account_id: Account UUID
+            location_id: Optional location UUID for store-level analysis
+            limit: Number of top issues per category (default 3)
+            days: Number of days to analyze (default 30)
+            categories: Optional list of categories to filter (default: all)
+
+        Returns:
+            Dict with category-grouped issues and trends
+        """
+        from datetime import timedelta
+        from django.utils import timezone
+        from django.db.models import Count, Avg, Q
+
+        # Define all possible categories if none specified
+        all_categories = ['Food Quality', 'Service', 'Cleanliness', 'Atmosphere', 'Value', 'Other']
+        target_categories = categories if categories else all_categories
+
+        # Calculate date range
+        end_date = timezone.now()
+        start_date = end_date - timedelta(days=days)
+
+        # Get trends for this account/location
+        trends_query = TopicTrend.objects.filter(
+            account_id=account_id,
+            is_active=True
+        )
+
+        if location_id:
+            trends_query = trends_query.filter(location_id=location_id)
+        else:
+            trends_query = trends_query.filter(location__isnull=True)
+
+        # Group issues by category
+        category_issues = {}
+
+        for category in target_categories:
+            # Get negative sentiment trends for this category
+            category_trends = trends_query.filter(
+                category=category,
+                overall_sentiment='NEGATIVE'
+            ).order_by('-current_mentions', '-trend_velocity')[:limit]
+
+            # Get example reviews for each issue
+            issues = []
+            for trend in category_trends:
+                # Find reviews mentioning this topic
+                review_query = GoogleReview.objects.filter(
+                    account_id=account_id,
+                    review_created_at__gte=start_date,
+                    review_created_at__lte=end_date,
+                    analysis__topics__contains=[trend.topic]
+                )
+
+                if location_id:
+                    review_query = review_query.filter(location_id=location_id)
+
+                # Get example reviews (up to 3)
+                examples = review_query.select_related('analysis').order_by('-rating')[:3]
+
+                issues.append({
+                    'topic': trend.topic,
+                    'mentions': trend.current_mentions,
+                    'trend_direction': trend.trend_direction,
+                    'trend_velocity': trend.trend_velocity,
+                    'sentiment': trend.overall_sentiment,
+                    'percent_change': trend.percent_change,
+                    'examples': [
+                        {
+                            'reviewer': review.reviewer_name,
+                            'rating': review.rating,
+                            'text': review.review_text[:200] + '...' if len(review.review_text) > 200 else review.review_text,
+                            'date': review.review_created_at.isoformat()
+                        }
+                        for review in examples
+                    ]
+                })
+
+            category_issues[category] = {
+                'top_issues': issues,
+                'total_issues': len(issues),
+                'trend_summary': self._calculate_category_trend_summary(category, trends_query, category)
+            }
+
+        return {
+            'categories': category_issues,
+            'date_range': {
+                'start': start_date.isoformat(),
+                'end': end_date.isoformat(),
+                'days': days
+            },
+            'scope': {
+                'account_id': str(account_id),
+                'location_id': str(location_id) if location_id else None,
+                'level': 'store' if location_id else 'account'
+            }
+        }
+
+    def _calculate_category_trend_summary(self, trends_query, category: str) -> Dict:
+        """Calculate overall trend summary for a category"""
+        category_trends = trends_query.filter(category=category)
+
+        total_mentions = sum(t.current_mentions for t in category_trends)
+        increasing_count = category_trends.filter(trend_direction='INCREASING').count()
+        decreasing_count = category_trends.filter(trend_direction='DECREASING').count()
+
+        # Determine overall category direction
+        if increasing_count > decreasing_count:
+            overall_direction = 'WORSENING'
+        elif decreasing_count > increasing_count:
+            overall_direction = 'IMPROVING'
+        else:
+            overall_direction = 'STABLE'
+
+        return {
+            'total_mentions': total_mentions,
+            'trend_direction': overall_direction,
+            'increasing_topics': increasing_count,
+            'decreasing_topics': decreasing_count
+        }
