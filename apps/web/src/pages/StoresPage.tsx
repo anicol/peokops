@@ -69,7 +69,7 @@ export default function StoresPage() {
 
   const handleViewReviewAnalysis = async (store: Store) => {
     // Check if store has Google location data
-    if (!store.google_place_id) {
+    if (!store.google_location_name) {
       alert('No review analysis available for this store yet. Link a Google Business Profile to enable review analysis.');
       return;
     }
