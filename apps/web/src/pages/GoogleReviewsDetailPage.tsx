@@ -14,6 +14,7 @@ import {
   Calendar,
   ArrowLeft,
   ExternalLink,
+  TrendingUp,
 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 
@@ -404,6 +405,13 @@ export default function GoogleReviewsDetailPage() {
 
                 {/* Actions */}
                 <div className="flex items-center gap-3 pb-6 border-b border-gray-200">
+                  <button
+                    onClick={() => navigate('/integrations/google-reviews/insights')}
+                    className="inline-flex items-center px-4 py-2 bg-gradient-to-r from-purple-600 to-blue-600 text-white rounded-lg hover:from-purple-700 hover:to-blue-700 transition-colors font-medium"
+                  >
+                    <TrendingUp className="w-4 h-4 mr-2" />
+                    View Insights
+                  </button>
                   <button
                     onClick={handleSync}
                     disabled={syncing}

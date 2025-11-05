@@ -1209,6 +1209,61 @@ export const googleReviewsAPI = {
     const response = await api.get('/integrations/google-reviews/response-metrics/');
     return response.data;
   },
+
+  // Phase 3: Review Insights & Trending Topics
+
+  // Get comprehensive insights summary
+  getInsights: async (locationId?: string): Promise<{
+    top_issues: any[];
+    improving_areas: any[];
+    top_praise: any[];
+    new_topics: any[];
+    sentiment_breakdown: {
+      total: number;
+      positive: number;
+      neutral: number;
+      negative: number;
+      positive_percent: number;
+      neutral_percent: number;
+      negative_percent: number;
+    };
+  }> => {
+    const params = locationId ? { location_id: locationId } : {};
+    const response = await api.get('/integrations/google-reviews/insights/', { params });
+    return response.data;
+  },
+
+  // Get topic trends with filtering
+  getTopicTrends: async (params?: {
+    location_id?: string;
+    direction?: 'INCREASING' | 'DECREASING' | 'STABLE' | 'NEW';
+    sentiment?: 'POSITIVE' | 'NEUTRAL' | 'NEGATIVE';
+    category?: string;
+    limit?: number;
+  }): Promise<any[]> => {
+    const response = await api.get('/integrations/google-reviews/insights/topics/', { params });
+    return response.data;
+  },
+
+  // Get detailed timeline for a specific topic
+  getTopicDetail: async (topicName: string, params?: {
+    location_id?: string;
+    window_type?: 'daily' | 'weekly' | 'monthly';
+  }): Promise<any[]> => {
+    const response = await api.get(`/integrations/google-reviews/insights/topic/${encodeURIComponent(topicName)}/`, { params });
+    return response.data;
+  },
+
+  // Manually trigger insights generation
+  generateInsights: async (locationId?: string): Promise<{
+    message: string;
+    snapshots_created: number;
+    trends_calculated: number;
+  }> => {
+    const data = locationId ? { location_id: locationId } : {};
+    const response = await api.post('/integrations/google-reviews/insights/generate/', data);
+    return response.data;
+  },
 };
 
 export default api;
