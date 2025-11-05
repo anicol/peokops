@@ -9,7 +9,7 @@ from django.db.models import Count, Avg, Q
 from django.utils import timezone
 
 from .models import (
-    GoogleReview, ReviewTopicSnapshot,
+    GoogleReview, YelpReview, ReviewTopicSnapshot,
     TopicTrend, GoogleLocation
 )
 
@@ -54,21 +54,36 @@ class ReviewInsightsService:
             end_date = next_month.replace(day=1)
         
         logger.info(f"Generating {window_type} snapshots for {account_id} from {start_date} to {end_date}")
-        
-        # Query reviews in this time window
-        reviews_query = GoogleReview.objects.filter(
+
+        # Query Google Reviews in this time window
+        google_reviews_query = GoogleReview.objects.filter(
             account_id=account_id,
             review_created_at__gte=start_date,
             review_created_at__lt=end_date
         )
-        
+
+        # Query Yelp Reviews in this time window
+        yelp_reviews_query = YelpReview.objects.filter(
+            account_id=account_id,
+            review_created_at__gte=start_date,
+            review_created_at__lt=end_date
+        )
+
         if location_id:
-            reviews_query = reviews_query.filter(location_id=location_id)
-        
-        # Get reviews with analysis
-        reviews_with_analysis = reviews_query.filter(
+            google_reviews_query = google_reviews_query.filter(location_id=location_id)
+            yelp_reviews_query = yelp_reviews_query.filter(location_id=location_id)
+
+        # Get reviews with analysis from both sources
+        google_reviews_with_analysis = google_reviews_query.filter(
             analysis__isnull=False
         ).prefetch_related('analysis')
+
+        yelp_reviews_with_analysis = yelp_reviews_query.filter(
+            analysis__isnull=False
+        ).prefetch_related('analysis')
+
+        # Combine both review sources
+        reviews_with_analysis = list(google_reviews_with_analysis) + list(yelp_reviews_with_analysis)
         
         # Aggregate topic data
         topic_data = defaultdict(lambda: {
@@ -316,15 +331,30 @@ class ReviewInsightsService:
             trend_direction=TopicTrend.TrendDirection.NEW
         ).order_by('-current_mentions')[:5]
         
-        # Get sentiment breakdown
-        reviews_query = GoogleReview.objects.filter(account_id=account_id)
+        # Get sentiment breakdown from both Google and Yelp reviews
+        google_reviews_query = GoogleReview.objects.filter(account_id=account_id)
+        yelp_reviews_query = YelpReview.objects.filter(account_id=account_id)
+
         if location_id:
-            reviews_query = reviews_query.filter(location_id=location_id)
-        
-        total_reviews = reviews_query.count()
-        positive_reviews = reviews_query.filter(rating__gte=4).count()
-        neutral_reviews = reviews_query.filter(rating=3).count()
-        negative_reviews = reviews_query.filter(rating__lte=2).count()
+            google_reviews_query = google_reviews_query.filter(location_id=location_id)
+            yelp_reviews_query = yelp_reviews_query.filter(location_id=location_id)
+
+        # Count reviews from both sources
+        google_total = google_reviews_query.count()
+        google_positive = google_reviews_query.filter(rating__gte=4).count()
+        google_neutral = google_reviews_query.filter(rating=3).count()
+        google_negative = google_reviews_query.filter(rating__lte=2).count()
+
+        yelp_total = yelp_reviews_query.count()
+        yelp_positive = yelp_reviews_query.filter(rating__gte=4).count()
+        yelp_neutral = yelp_reviews_query.filter(rating=3).count()
+        yelp_negative = yelp_reviews_query.filter(rating__lte=2).count()
+
+        # Aggregate totals
+        total_reviews = google_total + yelp_total
+        positive_reviews = google_positive + yelp_positive
+        neutral_reviews = google_neutral + yelp_neutral
+        negative_reviews = google_negative + yelp_negative
         
         return {
             'top_issues': [self._serialize_trend(t) for t in top_issues],
