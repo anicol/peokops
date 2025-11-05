@@ -15,6 +15,7 @@ import {
   ArrowLeft,
   ExternalLink,
   TrendingUp,
+  BarChart3,
 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 
@@ -411,6 +412,13 @@ export default function GoogleReviewsDetailPage() {
                   >
                     <TrendingUp className="w-4 h-4 mr-2" />
                     View Insights
+                  </button>
+                  <button
+                    onClick={() => navigate('/integrations/google-reviews/category-issues')}
+                    className="inline-flex items-center px-4 py-2 bg-gradient-to-r from-green-600 to-teal-600 text-white rounded-lg hover:from-green-700 hover:to-teal-700 transition-colors font-medium"
+                  >
+                    <BarChart3 className="w-4 h-4 mr-2" />
+                    Category Dashboard
                   </button>
                   <button
                     onClick={handleSync}

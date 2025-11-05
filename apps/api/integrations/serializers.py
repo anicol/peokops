@@ -394,9 +394,89 @@ class TopicTrendSerializer(serializers.ModelSerializer):
 
 class InsightsSummarySerializer(serializers.Serializer):
     """Serializer for insights summary response"""
-    
+
     top_issues = TopicTrendSerializer(many=True, read_only=True)
     improving_areas = TopicTrendSerializer(many=True, read_only=True)
     top_praise = TopicTrendSerializer(many=True, read_only=True)
     new_topics = TopicTrendSerializer(many=True, read_only=True)
     sentiment_breakdown = serializers.DictField(read_only=True)
+
+
+# ============================================================================
+# Yelp Serializers
+# ============================================================================
+
+class YelpLocationSerializer(serializers.ModelSerializer):
+    """Serializer for YelpLocation model"""
+
+    review_count = serializers.SerializerMethodField()
+
+    class Meta:
+        model = None  # Will be imported to avoid circular import
+        fields = [
+            'id', 'account', 'yelp_business_id', 'business_name',
+            'address', 'phone', 'yelp_url', 'average_rating', 'total_review_count',
+            'is_active', 'synced_at', 'review_count'
+        ]
+        read_only_fields = ['id', 'synced_at', 'review_count']
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Lazy import to avoid circular dependency
+        from .models import YelpLocation
+        self.Meta.model = YelpLocation
+
+    def get_review_count(self, obj):
+        """Get count of reviews stored locally"""
+        return obj.reviews.count()
+
+
+class YelpReviewSerializer(serializers.ModelSerializer):
+    """Serializer for YelpReview model"""
+
+    analysis = serializers.SerializerMethodField()
+    location = serializers.SerializerMethodField()
+
+    class Meta:
+        model = None  # Will be imported to avoid circular import
+        fields = [
+            'id', 'yelp_review_id', 'location', 'account', 'reviewer_name',
+            'reviewer_location', 'rating', 'review_text', 'is_elite', 'check_in_count',
+            'review_created_at', 'source', 'is_verified', 'analyzed_at',
+            'needs_analysis', 'analysis'
+        ]
+        read_only_fields = ['id', 'analyzed_at', 'analysis']
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Lazy import to avoid circular dependency
+        from .models import YelpReview
+        self.Meta.model = YelpReview
+
+    def get_location(self, obj):
+        """Get location data with store information"""
+        try:
+            return {
+                'id': str(obj.location.id),
+                'business_name': obj.location.business_name,
+                'store': {
+                    'id': obj.location.store.id if obj.location.store else None,
+                    'name': obj.location.store.name if obj.location.store else None,
+                } if obj.location.store else None
+            }
+        except:
+            return None
+
+    def get_analysis(self, obj):
+        """Get AI analysis if available"""
+        try:
+            analysis = obj.analysis
+            return {
+                'topics': analysis.topics,
+                'sentiment_score': analysis.sentiment_score,
+                'actionable_issues': analysis.actionable_issues,
+                'suggested_category': analysis.suggested_category,
+                'confidence': analysis.confidence
+            }
+        except:
+            return None

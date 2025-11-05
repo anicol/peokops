@@ -1477,28 +1477,528 @@ Generate ONLY the response text, no additional commentary."""
     def generate_insights(self, request):
         """Manually trigger insights generation for account"""
         account = request.user.account
-        
+
         from .insights_service import ReviewInsightsService
         service = ReviewInsightsService()
-        
+
         try:
             # Generate snapshots
             snapshots = service.generate_topic_snapshots(
                 account_id=account.id,
                 window_type='weekly'
             )
-            
+
             # Calculate trends
             trends = service.calculate_trends(account_id=account.id)
-            
+
             return Response({
                 'message': 'Insights generated successfully',
                 'snapshots_created': len(snapshots),
                 'trends_calculated': len(trends)
             }, status=status.HTTP_200_OK)
-            
+
         except Exception as e:
             logger.exception('Failed to generate insights')
             return Response({
                 'error': f'Failed to generate insights: {str(e)}'
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+    # ========================================================================
+    # Phase 4: Category-Based Multi-Level Aggregation Endpoints
+    # ========================================================================
+
+    @action(detail=False, methods=['get'], url_path='insights/top-issues-by-category')
+    def top_issues_by_category(self, request):
+        """
+        GET /api/integrations/google-reviews/insights/top-issues-by-category
+
+        Get top N issues grouped by category with trend analysis.
+        Works at store-level OR account-level.
+
+        Query params:
+        - location_id: Optional store location UUID (if omitted, shows account-level)
+        - limit: Number of top issues per category (default: 3)
+        - days: Number of days to analyze (default: 30)
+        - categories: Optional comma-separated list of categories to filter
+
+        Returns:
+        {
+            "categories": {
+                "Food Quality": {
+                    "top_issues": [
+                        {
+                            "topic": "Cold food",
+                            "total_mentions": 15,
+                            "affected_locations": 3,
+                            "trend_direction": "INCREASING",
+                            "examples": [...]
+                        }
+                    ]
+                }
+            },
+            "scope": {
+                "level": "store" | "account",
+                "location_id": "uuid",
+                "account_id": "uuid"
+            }
+        }
+        """
+        from .insights_service import ReviewInsightsService
+
+        account = request.user.account
+        location_id = request.query_params.get('location_id')
+        limit = int(request.query_params.get('limit', 3))
+        days = int(request.query_params.get('days', 30))
+
+        # Parse categories filter
+        categories_param = request.query_params.get('categories')
+        categories = None
+        if categories_param:
+            categories = [c.strip() for c in categories_param.split(',')]
+
+        service = ReviewInsightsService()
+
+        try:
+            result = service.get_top_issues_by_category(
+                account_id=str(account.id),
+                location_id=location_id,
+                limit=limit,
+                days=days,
+                categories=categories
+            )
+
+            return Response(result, status=status.HTTP_200_OK)
+
+        except Exception as e:
+            logger.exception('Failed to get top issues by category')
+            return Response({
+                'error': f'Failed to get top issues: {str(e)}'
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+    @action(detail=False, methods=['get'], url_path='insights/multi-store-issues')
+    def multi_store_issues_by_category(self, request):
+        """
+        GET /api/integrations/google-reviews/insights/multi-store-issues
+
+        Get top issues across multiple stores with per-store breakdown.
+        Aggregates at the account/franchisee level.
+
+        Query params:
+        - store_ids: Optional comma-separated list of store UUIDs (if omitted, uses all stores)
+        - limit: Number of top issues per category (default: 3)
+        - days: Number of days to analyze (default: 30)
+        - categories: Optional comma-separated list of categories to filter
+
+        Returns:
+        {
+            "categories": {
+                "Food Quality": {
+                    "top_issues": [...]
+                }
+            },
+            "stores": [
+                {
+                    "store_id": "uuid",
+                    "store_name": "Downtown Location",
+                    "categories": {...}
+                }
+            ],
+            "scope": {
+                "level": "multi_store",
+                "account_id": "uuid",
+                "store_count": 5
+            }
+        }
+        """
+        from .insights_service import ReviewInsightsService
+
+        account = request.user.account
+        limit = int(request.query_params.get('limit', 3))
+        days = int(request.query_params.get('days', 30))
+
+        # Parse store_ids filter
+        store_ids_param = request.query_params.get('store_ids')
+        store_ids = None
+        if store_ids_param:
+            store_ids = [s.strip() for s in store_ids_param.split(',')]
+
+        # Parse categories filter
+        categories_param = request.query_params.get('categories')
+        categories = None
+        if categories_param:
+            categories = [c.strip() for c in categories_param.split(',')]
+
+        service = ReviewInsightsService()
+
+        try:
+            result = service.get_multi_store_issues_by_category(
+                account_id=str(account.id),
+                store_ids=store_ids,
+                limit=limit,
+                days=days,
+                categories=categories
+            )
+
+            return Response(result, status=status.HTTP_200_OK)
+
+        except Exception as e:
+            logger.exception('Failed to get multi-store issues by category')
+            return Response({
+                'error': f'Failed to get multi-store issues: {str(e)}'
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+    @action(detail=False, methods=['get'], url_path='insights/brand-issues')
+    def brand_issues_by_category(self, request):
+        """
+        GET /api/integrations/google-reviews/insights/brand-issues
+
+        Get top issues across entire brand (all accounts/stores) with regional breakdown.
+        Requires ADMIN or SUPER_ADMIN role for brand-level access.
+
+        Query params:
+        - brand_id: Brand UUID (required)
+        - limit: Number of top issues per category (default: 3)
+        - days: Number of days to analyze (default: 30)
+        - categories: Optional comma-separated list of categories to filter
+        - region: Optional region filter
+
+        Returns:
+        {
+            "categories": {
+                "Food Quality": {
+                    "top_issues": [...]
+                }
+            },
+            "regions": [
+                {
+                    "region": "Northeast",
+                    "categories": {...}
+                }
+            ],
+            "accounts": [
+                {
+                    "account_id": "uuid",
+                    "account_name": "Franchisee A",
+                    "categories": {...}
+                }
+            ],
+            "scope": {
+                "level": "brand",
+                "brand_id": "uuid",
+                "account_count": 10,
+                "store_count": 50
+            }
+        }
+        """
+        from .insights_service import ReviewInsightsService
+
+        # Check user has brand-level access
+        if not request.user.role in ['ADMIN', 'SUPER_ADMIN']:
+            return Response({
+                'error': 'Brand-level insights require ADMIN or SUPER_ADMIN role'
+            }, status=status.HTTP_403_FORBIDDEN)
+
+        brand_id = request.query_params.get('brand_id')
+        if not brand_id:
+            return Response({
+                'error': 'brand_id is required'
+            }, status=status.HTTP_400_BAD_REQUEST)
+
+        limit = int(request.query_params.get('limit', 3))
+        days = int(request.query_params.get('days', 30))
+
+        # Parse categories filter
+        categories_param = request.query_params.get('categories')
+        categories = None
+        if categories_param:
+            categories = [c.strip() for c in categories_param.split(',')]
+
+        # Parse region filter
+        region = request.query_params.get('region')
+
+        service = ReviewInsightsService()
+
+        try:
+            result = service.get_brand_issues_by_category(
+                brand_id=brand_id,
+                limit=limit,
+                days=days,
+                categories=categories,
+                region=region
+            )
+
+            return Response(result, status=status.HTTP_200_OK)
+
+        except Exception as e:
+            logger.exception('Failed to get brand issues by category')
+            return Response({
+                'error': f'Failed to get brand issues: {str(e)}'
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+# ============================================================================
+# Yelp Reviews Integration ViewSet
+# ============================================================================
+
+class YelpReviewsIntegrationViewSet(viewsets.GenericViewSet):
+    """
+    ViewSet for managing Yelp Reviews integration.
+
+    Provides endpoints for:
+    - Syncing business and reviews from Yelp Fusion API
+    - Viewing Yelp locations
+    - Viewing Yelp reviews
+    - Getting Yelp reviews status
+
+    Note: Uses system-wide Yelp API key configured in Django settings (YELP_API_KEY).
+    The API key allows querying public business data for any business on Yelp.
+    """
+    permission_classes = [IsAuthenticated]
+
+    @action(detail=False, methods=['post'], url_path='sync')
+    def sync(self, request):
+        """
+        POST /api/integrations/yelp-reviews/sync
+
+        Sync business and reviews from Yelp Fusion API using system-wide API key.
+
+        Body:
+        {
+            "business_name": "Marco's Pizza",
+            "location": "Mt Pleasant, SC",
+            "store_id": "optional_store_uuid_to_link"
+        }
+        """
+        from .models import YelpLocation, YelpReview
+        from .yelp_fusion_client import YelpFusionClient
+
+        if not request.user.account:
+            return Response(
+                {'error': 'User not associated with an account'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        business_name = request.data.get('business_name')
+        location = request.data.get('location')
+        store_id = request.data.get('store_id')
+
+        if not business_name or not location:
+            return Response(
+                {'error': 'business_name and location are required'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        # Verify store if provided
+        store = None
+        if store_id:
+            from brands.models import Store
+            try:
+                store = Store.objects.get(id=store_id, account=request.user.account)
+            except Store.DoesNotExist:
+                return Response(
+                    {'error': 'Store not found or does not belong to your account'},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+
+        try:
+            # Create client with system-wide API key
+            client = YelpFusionClient()
+
+            # Sync business and reviews
+            result = client.sync_business_and_reviews(business_name, location)
+            if not result:
+                return Response(
+                    {'error': f'Business not found: "{business_name}" in "{location}"'},
+                    status=status.HTTP_404_NOT_FOUND
+                )
+
+            business = result['business']
+            reviews = result['reviews']
+
+            # Create or update YelpLocation
+            yelp_location, created = YelpLocation.objects.update_or_create(
+                account=request.user.account,
+                yelp_business_id=business['id'],
+                defaults={
+                    'business_name': business.get('name', business_name),
+                    'address': self._format_address(business.get('location', {})),
+                    'phone': business.get('display_phone', ''),
+                    'yelp_url': business.get('url', ''),
+                    'average_rating': business.get('rating', 0),
+                    'total_review_count': business.get('review_count', 0),
+                    'is_active': True,
+                    'synced_at': timezone.now(),
+                    'store': store
+                }
+            )
+
+            # Store reviews
+            new_reviews = 0
+            for review in reviews:
+                _, review_created = YelpReview.objects.update_or_create(
+                    account=request.user.account,
+                    yelp_review_id=review['id'],
+                    defaults={
+                        'location': yelp_location,
+                        'reviewer_name': review['user'].get('name', 'Anonymous'),
+                        'reviewer_location': review['user'].get('location', ''),
+                        'rating': review['rating'],
+                        'review_text': review['text'],
+                        'review_created_at': review['time_created'],
+                        'source': 'api',
+                        'is_verified': True,
+                        'needs_analysis': True
+                    }
+                )
+                if review_created:
+                    new_reviews += 1
+
+            return Response({
+                'success': True,
+                'message': f'Synced {len(reviews)} reviews from Yelp',
+                'location': {
+                    'id': str(yelp_location.id),
+                    'name': yelp_location.business_name,
+                    'yelp_id': yelp_location.yelp_business_id
+                },
+                'reviews': {
+                    'total': len(reviews),
+                    'new': new_reviews
+                }
+            })
+
+        except ValueError as e:
+            # YELP_API_KEY not configured
+            logger.error(f"Yelp API key not configured: {str(e)}")
+            return Response(
+                {'error': 'Yelp integration not configured. Please contact support.'},
+                status=status.HTTP_503_SERVICE_UNAVAILABLE
+            )
+        except Exception as e:
+            logger.error(f"Yelp sync failed: {str(e)}")
+            return Response(
+                {'error': f'Sync failed: {str(e)}'},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
+    @staticmethod
+    def _format_address(location: dict) -> str:
+        """Format Yelp location dict to address string"""
+        parts = []
+        if location.get('address1'):
+            parts.append(location['address1'])
+        if location.get('city'):
+            parts.append(location['city'])
+        if location.get('state'):
+            parts.append(location['state'])
+        if location.get('zip_code'):
+            parts.append(location['zip_code'])
+        return ', '.join(parts)
+
+    @action(detail=False, methods=['get'], url_path='locations')
+    def get_locations(self, request):
+        """
+        GET /api/integrations/yelp-reviews/locations/
+
+        Get all Yelp locations for user's account.
+        """
+        from .models import YelpLocation
+        from .serializers import YelpLocationSerializer
+
+        if not request.user.account:
+            return Response(
+                {'error': 'User not associated with an account'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        locations = YelpLocation.objects.filter(
+            account=request.user.account,
+            is_active=True
+        ).order_by('business_name')
+
+        serializer = YelpLocationSerializer(locations, many=True)
+        return Response(serializer.data)
+
+    @action(detail=False, methods=['get'], url_path='reviews')
+    def get_reviews(self, request):
+        """
+        GET /api/integrations/yelp-reviews/reviews/
+
+        Get Yelp reviews for user's account.
+
+        Query params:
+        - location_id: Filter by location UUID
+        - rating: Filter by specific rating (1-5)
+        - unread_only: Show only unread reviews (true/false)
+        - limit: Number of reviews to return (default: 50)
+        """
+        from .models import YelpReview
+        from .serializers import YelpReviewSerializer
+
+        if not request.user.account:
+            return Response(
+                {'error': 'User not associated with an account'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        reviews = YelpReview.objects.filter(
+            account=request.user.account
+        ).order_by('-review_created_at')
+
+        # Apply filters
+        location_id = request.query_params.get('location_id')
+        if location_id:
+            reviews = reviews.filter(location_id=location_id)
+
+        rating = request.query_params.get('rating')
+        if rating:
+            reviews = reviews.filter(rating=int(rating))
+
+        unread_only = request.query_params.get('unread_only', '').lower() == 'true'
+        if unread_only:
+            reviews = reviews.filter(needs_analysis=True)
+
+        # Limit results
+        limit = int(request.query_params.get('limit', 50))
+        reviews = reviews[:limit]
+
+        serializer = YelpReviewSerializer(reviews, many=True)
+        return Response(serializer.data)
+
+    @action(detail=False, methods=['get'], url_path='status')
+    def get_status(self, request):
+        """
+        GET /api/integrations/yelp-reviews/status/
+
+        Get current Yelp Reviews integration status for user's account.
+        """
+        from .models import YelpLocation, YelpReview
+
+        if not request.user.account:
+            return Response(
+                {'error': 'User not associated with an account'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        location_count = YelpLocation.objects.filter(
+            account=request.user.account,
+            is_active=True
+        ).count()
+
+        review_count = YelpReview.objects.filter(
+            account=request.user.account
+        ).count()
+
+        unread_review_count = YelpReview.objects.filter(
+            account=request.user.account,
+            needs_analysis=True
+        ).count()
+
+        return Response({
+            'is_configured': location_count > 0,
+            'location_count': location_count,
+            'review_count': review_count,
+            'unread_review_count': unread_review_count,
+            'source': 'coming_soon',
+            'message': 'Yelp integration coming soon'
+        })

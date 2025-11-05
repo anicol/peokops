@@ -26,6 +26,7 @@ import IntegrationsPage from '@/pages/IntegrationsPage';
 import SevenShiftsDetailPage from '@/pages/SevenShiftsDetailPage';
 import GoogleReviewsDetailPage from '@/pages/GoogleReviewsDetailPage';
 import GoogleReviewsInsightsPage from '@/pages/GoogleReviewsInsightsPage';
+import CategoryIssuesDashboard from '@/pages/CategoryIssuesDashboard';
 import IntegrationsSyncLogsPage from '@/pages/IntegrationsSyncLogsPage';
 import IntegrationsSyncLogDetailPage from '@/pages/IntegrationsSyncLogDetailPage';
 import SchedulePage from '@/pages/SchedulePage';
@@ -262,6 +263,18 @@ function AppRoutes() {
             isAuthenticated ? (
               <Layout>
                 <GoogleReviewsInsightsPage />
+              </Layout>
+            ) : (
+              <Navigate to="/login" replace />
+            )
+          }
+        />
+        <Route
+          path="/integrations/google-reviews/category-issues"
+          element={
+            isAuthenticated ? (
+              <Layout>
+                <CategoryIssuesDashboard />
               </Layout>
             ) : (
               <Navigate to="/login" replace />

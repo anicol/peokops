@@ -7,6 +7,7 @@ import {
   Star,
   ChevronRight,
   AlertCircle,
+  MessageSquare,
 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 
@@ -30,6 +31,15 @@ interface GoogleReviewsStatus {
   last_sync_at?: string;
 }
 
+interface YelpReviewsStatus {
+  is_configured: boolean;
+  location_count?: number;
+  review_count?: number;
+  unread_review_count?: number;
+  source?: string;
+  message?: string;
+}
+
 // API Functions
 const integrationsAPI = {
   getSevenShiftsStatus: async (): Promise<SevenShiftsStatus> => {
@@ -49,6 +59,16 @@ const integrationsAPI = {
       },
     });
     if (!response.ok) throw new Error('Failed to fetch Google Reviews status');
+    return response.json();
+  },
+
+  getYelpReviewsStatus: async (): Promise<YelpReviewsStatus> => {
+    const response = await fetch(`${API_BASE_URL}/api/integrations/yelp-reviews/status/`, {
+      headers: {
+        'Authorization': `Bearer ${localStorage.getItem('access_token')}`,
+      },
+    });
+    if (!response.ok) throw new Error('Failed to fetch Yelp Reviews status');
     return response.json();
   },
 };
@@ -74,7 +94,15 @@ export default function IntegrationsPage() {
     }
   );
 
-  if (isLoading7Shifts || isLoadingGoogleReviews) {
+  const { data: yelpReviewsStatus, isLoading: isLoadingYelpReviews } = useQuery<YelpReviewsStatus>(
+    'yelp-reviews-status',
+    integrationsAPI.getYelpReviewsStatus,
+    {
+      refetchOnWindowFocus: false,
+    }
+  );
+
+  if (isLoading7Shifts || isLoadingGoogleReviews || isLoadingYelpReviews) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
@@ -254,6 +282,39 @@ export default function IntegrationsPage() {
                   </div>
                 </div>
               )}
+            </div>
+          </div>
+
+          {/* Yelp Reviews Integration Card */}
+          <div className="bg-white rounded-2xl shadow-lg border border-gray-200 overflow-hidden hover:shadow-xl transition-all opacity-75">
+            {/* Card Header */}
+            <div className="bg-gradient-to-r from-red-600 to-orange-600 p-6">
+              <div className="flex items-start justify-between">
+                <div className="flex-1">
+                  <div className="flex items-center gap-3 mb-2">
+                    <div className="w-12 h-12 bg-white rounded-lg flex items-center justify-center">
+                      <MessageSquare className="w-6 h-6 text-red-600" />
+                    </div>
+                    <div>
+                      <h2 className="text-xl font-bold text-white">Yelp Reviews</h2>
+                      <p className="text-red-100 text-sm">Customer Feedback</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Card Body */}
+            <div className="p-6">
+              <div className="space-y-4">
+                <div className="flex items-center gap-2">
+                  <XCircle className="w-5 h-5 text-gray-400" />
+                  <span className="text-sm font-medium text-gray-600">Coming Soon</span>
+                </div>
+                <p className="text-sm text-gray-600">
+                  Yelp reviews integration will be available soon. Automatically sync reviews from your Yelp business locations into unified insights.
+                </p>
+              </div>
             </div>
           </div>
         </div>
