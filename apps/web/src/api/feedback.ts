@@ -38,12 +38,12 @@ export const feedbackAPI = {
     if (params.store_id) queryParams.append('store_id', params.store_id.toString());
     if (params.sources) queryParams.append('sources', params.sources);
 
-    const response = await apiClient.get(`/api/integrations/feedback/overview/?${queryParams.toString()}`);
+    const response = await apiClient.get(`/integrations/feedback/overview/?${queryParams.toString()}`);
     return response.data;
   },
 
   createFocusPeriod: async (params: CreateFocusPeriodParams) => {
-    const response = await apiClient.post('/api/integrations/feedback/focus/', params);
+    const response = await apiClient.post('/integrations/feedback/focus/', params);
     return response.data;
   },
 };
