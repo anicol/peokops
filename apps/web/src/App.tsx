@@ -49,6 +49,7 @@ import ReviewFeedPage from '@/pages/ReviewFeedPage';
 import InsightsPage from '@/pages/InsightsPage';
 import CommandCenter from '@/pages/CommandCenter';
 import ProfilePage from '@/pages/ProfilePage';
+import FeedbackPage from '@/pages/FeedbackPage';
 import MyProgressPage from '@/pages/MyProgressPage';
 import StorePerformancePage from '@/pages/StorePerformancePage';
 import SecurityCompliancePage from '@/pages/SecurityCompliancePage';
@@ -443,6 +444,18 @@ function AppRoutes() {
             isAuthenticated ? (
               <Layout>
                 <ReviewFeedPage />
+              </Layout>
+            ) : (
+              <Navigate to="/login" replace />
+            )
+          }
+        />
+        <Route
+          path="/feedback"
+          element={
+            isAuthenticated ? (
+              <Layout>
+                <FeedbackPage />
               </Layout>
             ) : (
               <Navigate to="/login" replace />
