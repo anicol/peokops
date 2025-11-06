@@ -10,7 +10,7 @@ from django.db.models import Count, Avg, Q, F
 from django.utils import timezone
 
 from integrations.models import GoogleReview, GoogleReviewAnalysis, TopicTrend
-from employee_voice.models import EmployeePulse
+from employee_voice.models import EmployeeVoicePulse
 
 logger = logging.getLogger(__name__)
 
@@ -191,7 +191,7 @@ class FeedbackService:
     ) -> Dict:
         """Calculate employee sentiment from pulse surveys"""
         # Build query
-        pulses_query = EmployeePulse.objects.filter(
+        pulses_query = EmployeeVoicePulse.objects.filter(
             account_id=account_id,
             created_at__gte=start_date,
             created_at__lte=end_date
@@ -218,7 +218,7 @@ class FeedbackService:
 
         # Calculate previous period
         prev_start = start_date - timedelta(days=(end_date - start_date).days)
-        prev_pulses = EmployeePulse.objects.filter(
+        prev_pulses = EmployeeVoicePulse.objects.filter(
             account_id=account_id,
             created_at__gte=prev_start,
             created_at__lt=start_date
@@ -321,7 +321,7 @@ class FeedbackService:
 
         # Process Employee Pulse (map to themes based on feedback content)
         if 'employee' in sources:
-            pulses = EmployeePulse.objects.filter(
+            pulses = EmployeeVoicePulse.objects.filter(
                 account_id=account_id,
                 created_at__gte=start_date,
                 created_at__lte=end_date
@@ -524,7 +524,7 @@ class FeedbackService:
 
         # Get Employee Pulse
         if 'employee' in sources:
-            pulses = EmployeePulse.objects.filter(
+            pulses = EmployeeVoicePulse.objects.filter(
                 account_id=account_id,
                 created_at__gte=start_date,
                 created_at__lte=end_date
