@@ -190,86 +190,16 @@ class FeedbackService:
         end_date: datetime
     ) -> Dict:
         """Calculate employee sentiment from pulse surveys"""
-        # Build query
-        pulses_query = EmployeeVoicePulse.objects.filter(
-            account_id=account_id,
-            created_at__gte=start_date,
-            created_at__lte=end_date
-        )
-
-        if store_id:
-            pulses_query = pulses_query.filter(store_id=store_id)
-
-        total_count = pulses_query.count()
-
-        if total_count == 0:
-            return {
-                'rating': 0,
-                'delta': 0,
-                'trend': 'stable',
-                'count': 0,
-                'weekly_data': [],
-                'breakdown': {'very_happy': 0, 'happy': 0, 'neutral': 0, 'unhappy': 0}
-            }
-
-        # Calculate average rating (assuming mood field: 5=very happy, 4=happy, 3=neutral, 2=unhappy, 1=very unhappy)
-        avg_rating = pulses_query.aggregate(avg=Avg('mood'))['avg'] or 0
-        current_rating = round(avg_rating, 1)
-
-        # Calculate previous period
-        prev_start = start_date - timedelta(days=(end_date - start_date).days)
-        prev_pulses = EmployeeVoicePulse.objects.filter(
-            account_id=account_id,
-            created_at__gte=prev_start,
-            created_at__lt=start_date
-        )
-
-        if store_id:
-            prev_pulses = prev_pulses.filter(store_id=store_id)
-
-        prev_avg = prev_pulses.aggregate(avg=Avg('mood'))['avg'] or current_rating
-        prev_rating = round(prev_avg, 1)
-
-        delta = round(current_rating - prev_rating, 1)
-        trend = 'up' if delta > 0.2 else ('down' if delta < -0.2 else 'stable')
-
-        # Breakdown by mood
-        breakdown = {
-            'very_happy': pulses_query.filter(mood=5).count(),
-            'happy': pulses_query.filter(mood=4).count(),
-            'neutral': pulses_query.filter(mood=3).count(),
-            'unhappy': pulses_query.filter(mood__lte=2).count()
-        }
-
-        # Generate daily breakdown
-        weekly_data = []
-        current_date = start_date
-
-        while current_date <= end_date:
-            day_end = current_date + timedelta(days=1)
-            day_pulses = pulses_query.filter(
-                created_at__gte=current_date,
-                created_at__lt=day_end
-            )
-
-            day_avg = day_pulses.aggregate(avg=Avg('mood'))['avg'] or 0
-            day_rating = round(day_avg, 1)
-
-            weekly_data.append({
-                'day': current_date.strftime('%a'),
-                'rating': day_rating,
-                'label': current_date.strftime('%a %m/%d')
-            })
-
-            current_date = day_end
-
+        # TODO: Employee pulse integration pending - model structure doesn't match yet
+        # The EmployeeVoicePulse model doesn't have 'mood' or 'feedback' fields
+        # Return empty data for now
         return {
-            'rating': current_rating,
-            'delta': abs(delta),
-            'trend': trend,
-            'count': total_count,
-            'weekly_data': weekly_data,
-            'breakdown': breakdown
+            'rating': 0,
+            'delta': 0,
+            'trend': 'stable',
+            'count': 0,
+            'weekly_data': [],
+            'breakdown': {'very_happy': 0, 'happy': 0, 'neutral': 0, 'unhappy': 0}
         }
 
     def _extract_themes(
@@ -320,46 +250,10 @@ class FeedbackService:
                         themes_data[category]['topics'][topic] += 1
 
         # Process Employee Pulse (map to themes based on feedback content)
-        if 'employee' in sources:
-            pulses = EmployeeVoicePulse.objects.filter(
-                account_id=account_id,
-                created_at__gte=start_date,
-                created_at__lte=end_date
-            ).exclude(feedback='')
-
-            if store_id:
-                pulses = pulses.filter(store_id=store_id)
-
-            # Simple keyword mapping for employee feedback
-            category_keywords = {
-                'Cleanliness': ['clean', 'dirty', 'restroom', 'mess', 'tidy'],
-                'Service': ['customer', 'guest', 'service', 'friendly', 'rude'],
-                'Staff Attitude': ['team', 'morale', 'stress', 'happy', 'support', 'communication'],
-                'Speed/Wait Time': ['rush', 'busy', 'wait', 'fast', 'slow', 'queue'],
-                'Other': []
-            }
-
-            for pulse in pulses:
-                feedback_lower = pulse.feedback.lower()
-                matched = False
-
-                for category, keywords in category_keywords.items():
-                    if any(kw in feedback_lower for kw in keywords):
-                        themes_data[category]['volume'] += 1
-
-                        # Employee mood affects sentiment
-                        if pulse.mood >= 4:
-                            themes_data[category]['positive'] += 1
-                        elif pulse.mood <= 2:
-                            themes_data[category]['negative'] += 1
-                        else:
-                            themes_data[category]['neutral'] += 1
-
-                        matched = True
-                        break
-
-                if not matched and pulse.feedback:
-                    themes_data['Other']['volume'] += 1
+        # TODO: Employee pulse integration pending - model structure doesn't match yet
+        # The EmployeeVoicePulse model is survey configuration, not response data
+        # if 'employee' in sources:
+        #     pass
 
         # Calculate previous period for trends
         prev_start = start_date - timedelta(days=(end_date - start_date).days)
@@ -523,56 +417,9 @@ class FeedbackService:
                 })
 
         # Get Employee Pulse
-        if 'employee' in sources:
-            pulses = EmployeeVoicePulse.objects.filter(
-                account_id=account_id,
-                created_at__gte=start_date,
-                created_at__lte=end_date
-            ).exclude(feedback='').select_related('store').order_by('-created_at')[:limit]
-
-            if store_id:
-                pulses = pulses.filter(store_id=store_id)
-
-            for pulse in pulses:
-                # Simple category detection
-                feedback_lower = pulse.feedback.lower()
-                category = 'Other'
-
-                if any(kw in feedback_lower for kw in ['clean', 'dirty', 'restroom']):
-                    category = 'Cleanliness'
-                elif any(kw in feedback_lower for kw in ['team', 'morale', 'support']):
-                    category = 'Staff Attitude'
-                elif any(kw in feedback_lower for kw in ['rush', 'busy', 'wait']):
-                    category = 'Speed/Wait Time'
-
-                # Sentiment from mood
-                if pulse.mood >= 4:
-                    sentiment = 'positive'
-                elif pulse.mood <= 2:
-                    sentiment = 'negative'
-                else:
-                    sentiment = 'neutral'
-
-                # Time ago
-                time_diff = timezone.now() - pulse.created_at
-                if time_diff.days > 0:
-                    time_ago = f"{time_diff.days} day{'s' if time_diff.days != 1 else ''} ago"
-                else:
-                    hours = time_diff.seconds // 3600
-                    time_ago = f"{hours} hour{'s' if hours != 1 else ''} ago"
-
-                evidence.append({
-                    'id': str(pulse.id),
-                    'source': 'employee',
-                    'timestamp': time_ago,
-                    'store': pulse.store.name if pulse.store else None,
-                    'quote': pulse.feedback[:200] + '...' if len(pulse.feedback) > 200 else pulse.feedback,
-                    'full_text': pulse.feedback,
-                    'theme': category,
-                    'sentiment': sentiment,
-                    'author': None,
-                    'rating': None
-                })
+        # TODO: Employee pulse integration pending - model structure doesn't match yet
+        # if 'employee' in sources:
+        #     pass
 
         # Sort by timestamp (most recent first)
         evidence.sort(key=lambda x: x['timestamp'])
