@@ -65,14 +65,11 @@ class EmployeeVoicePulseViewSet(viewsets.ModelViewSet):
         if user.role == User.Role.OWNER:
             if user.account:
                 return self.queryset.filter(account=user.account)
+            return self.queryset.none()
 
-        # ADMIN, TRIAL_ADMIN, and GM see pulses for their store only
-        if user.role in [User.Role.ADMIN, User.Role.TRIAL_ADMIN, User.Role.GM]:
-            if user.store:
-                return self.queryset.filter(store=user.store)
-
-        # Other roles have no access
-        return self.queryset.none()
+        # Other roles see pulses for their accessible stores
+        accessible_stores = user.get_accessible_stores()
+        return self.queryset.filter(store__in=accessible_stores)
 
     def perform_create(self, serializer):
         """Set created_by on pulse creation"""
@@ -341,7 +338,7 @@ class EmployeeVoiceInvitationViewSet(viewsets.ReadOnlyModelViewSet):
     ordering = ['-sent_at']
 
     def get_queryset(self):
-        """Filter invitations based on user role"""
+        """Filter invitations based on user role and accessible stores"""
         user = self.request.user
 
         # SUPER_ADMIN sees all invitations
@@ -352,14 +349,11 @@ class EmployeeVoiceInvitationViewSet(viewsets.ReadOnlyModelViewSet):
         if user.role == User.Role.OWNER:
             if user.account:
                 return self.queryset.filter(pulse__account=user.account)
+            return self.queryset.none()
 
-        # ADMIN sees invitations for their store
-        if user.role in [User.Role.ADMIN, User.Role.TRIAL_ADMIN]:
-            if user.store:
-                return self.queryset.filter(pulse__store=user.store)
-
-        # Other roles have no access
-        return self.queryset.none()
+        # Other roles see invitations for their accessible stores
+        accessible_stores = user.get_accessible_stores()
+        return self.queryset.filter(pulse__store__in=accessible_stores)
 
 
 class EmployeeVoiceResponseViewSet(viewsets.ReadOnlyModelViewSet):
