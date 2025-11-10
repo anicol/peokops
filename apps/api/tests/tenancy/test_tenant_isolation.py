@@ -255,18 +255,12 @@ class TenantIsolationTestCase(TestCase):
         pulse_a = EmployeeVoicePulse.objects.create(
             account=self.account_a,
             store=self.store_a,
-            name="Pulse A",
-            shift_window="OPEN",
-            language="en",
-            created_by=self.owner_a
+            shift_window="OPEN"
         )
         pulse_b = EmployeeVoicePulse.objects.create(
             account=self.account_b,
             store=self.store_b,
-            name="Pulse B",
-            shift_window="CLOSE",
-            language="en",
-            created_by=self.owner_b
+            shift_window="CLOSE"
         )
         
         self.client.force_authenticate(user=self.owner_a)
