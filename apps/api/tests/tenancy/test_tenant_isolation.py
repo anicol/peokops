@@ -23,60 +23,90 @@ class TenantIsolationTestCase(TestCase):
     def setUp(self):
         """Create test data for two separate tenants"""
         self.brand_a = Brand.objects.create(name="Brand A")
-        self.account_a = Account.objects.create(name="Account A", brand=self.brand_a)
-        self.store_a = Store.objects.create(
-            name="Store A",
-            code="STORE-A",
-            account=self.account_a,
-            brand=self.brand_a,
-            timezone="America/New_York"
-        )
         
         self.owner_a = User.objects.create_user(
             username="owner_a",
             email="owner_a@test.com",
             password="password123",
-            role=User.Role.OWNER,
-            account=self.account_a,
-            store=self.store_a
+            role=User.Role.OWNER
         )
+        
+        self.account_a = Account.objects.create(
+            name="Account A",
+            brand=self.brand_a,
+            owner=self.owner_a
+        )
+        
+        self.owner_a.account = self.account_a
+        self.owner_a.save()
+        
+        self.store_a = Store.objects.create(
+            name="Store A",
+            code="STORE-A",
+            account=self.account_a,
+            brand=self.brand_a,
+            address="123 Test St",
+            city="Testville",
+            state="TS",
+            zip_code="00000",
+            timezone="America/New_York"
+        )
+        
+        self.owner_a.store = self.store_a
+        self.owner_a.save()
         
         self.gm_a = User.objects.create_user(
             username="gm_a",
             email="gm_a@test.com",
             password="password123",
-            role=User.Role.GM,
-            account=self.account_a,
-            store=self.store_a
+            role=User.Role.GM
         )
+        self.gm_a.account = self.account_a
+        self.gm_a.store = self.store_a
+        self.gm_a.save()
         
         self.brand_b = Brand.objects.create(name="Brand B")
-        self.account_b = Account.objects.create(name="Account B", brand=self.brand_b)
-        self.store_b = Store.objects.create(
-            name="Store B",
-            code="STORE-B",
-            account=self.account_b,
-            brand=self.brand_b,
-            timezone="America/Los_Angeles"
-        )
         
         self.owner_b = User.objects.create_user(
             username="owner_b",
             email="owner_b@test.com",
             password="password123",
-            role=User.Role.OWNER,
-            account=self.account_b,
-            store=self.store_b
+            role=User.Role.OWNER
         )
+        
+        self.account_b = Account.objects.create(
+            name="Account B",
+            brand=self.brand_b,
+            owner=self.owner_b
+        )
+        
+        self.owner_b.account = self.account_b
+        self.owner_b.save()
+        
+        self.store_b = Store.objects.create(
+            name="Store B",
+            code="STORE-B",
+            account=self.account_b,
+            brand=self.brand_b,
+            address="456 Test Ave",
+            city="Testburg",
+            state="TB",
+            zip_code="11111",
+            timezone="America/Los_Angeles"
+        )
+        
+        self.owner_b.store = self.store_b
+        self.owner_b.save()
         
         self.gm_b = User.objects.create_user(
             username="gm_b",
             email="gm_b@test.com",
             password="password123",
-            role=User.Role.GM,
-            account=self.account_b,
-            store=self.store_b
+            role=User.Role.GM
         )
+        self.gm_b.account = self.account_b
+        self.gm_b.store = self.store_b
+        self.gm_b.save()
         
         self.super_admin = User.objects.create_user(
             username="super_admin",
