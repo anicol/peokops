@@ -538,37 +538,10 @@ class MicroCheckRunViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         """Filter runs based on user's accessible stores"""
         user = self.request.user
+        accessible_stores = user.get_accessible_stores()
 
-        # Super admins see all
-        if user.role == 'SUPER_ADMIN':
-            return self.queryset
-
-        # Admins see all runs for their brand
-        if user.role == 'ADMIN':
-            if user.store:
-                return self.queryset.filter(store__brand=user.store.brand)
-            return self.queryset
-
-        # Owners see all runs for their brand
-        if user.role == 'OWNER':
-            if user.store:
-                return self.queryset.filter(store__brand=user.store.brand)
-            return self.queryset
-
-        # GMs see only their store's runs
-        if user.role == 'GM':
-            if user.store:
-                return self.queryset.filter(store=user.store)
-            return self.queryset.none()
-
-        # Trial admins see all runs for their brand
-        if user.role == 'TRIAL_ADMIN':
-            if user.store:
-                return self.queryset.filter(store__brand=user.store.brand)
-            return self.queryset
-
-        # Inspectors see nothing (micro-checks are for managers only)
-        return self.queryset.none()
+        # Filter by accessible stores (handles all roles)
+        return self.queryset.filter(store__in=accessible_stores)
 
     def perform_create(self, serializer):
         serializer.save(created_by=self.request.user)
@@ -1137,35 +1110,8 @@ class MicroCheckResponseViewSet(viewsets.ModelViewSet):
         if not user.is_authenticated:
             return self.queryset.none()
 
-        # Super admins see all
-        if user.role == 'SUPER_ADMIN':
-            return self.queryset
-
-        # Admins see all for their brand
-        if user.role == 'ADMIN':
-            if user.store:
-                return self.queryset.filter(store__brand=user.store.brand)
-            return self.queryset
-
-        # Owners see all for their brand
-        if user.role == 'OWNER':
-            if user.store:
-                return self.queryset.filter(store__brand=user.store.brand)
-            return self.queryset
-
-        # GMs see only their store's responses
-        if user.role == 'GM':
-            if user.store:
-                return self.queryset.filter(store=user.store)
-            return self.queryset.none()
-
-        # Trial admins see all for their brand
-        if user.role == 'TRIAL_ADMIN':
-            if user.store:
-                return self.queryset.filter(store__brand=user.store.brand)
-            return self.queryset
-
-        return self.queryset.none()
+        accessible_stores = user.get_accessible_stores()
+        return self.queryset.filter(store__in=accessible_stores)
 
     def perform_create(self, serializer):
         """Auto-populate metadata when creating response"""
@@ -1394,36 +1340,8 @@ class MicroCheckStreakViewSet(viewsets.ReadOnlyModelViewSet):
     def get_queryset(self):
         """Filter streaks based on user's accessible stores"""
         user = self.request.user
-
-        # Super admins see all
-        if user.role == 'SUPER_ADMIN':
-            return self.queryset
-
-        # Admins see all for their brand
-        if user.role == 'ADMIN':
-            if user.store:
-                return self.queryset.filter(store__brand=user.store.brand)
-            return self.queryset
-
-        # Owners see all for their brand
-        if user.role == 'OWNER':
-            if user.store:
-                return self.queryset.filter(store__brand=user.store.brand)
-            return self.queryset
-
-        # GMs see only their store's streaks
-        if user.role == 'GM':
-            if user.store:
-                return self.queryset.filter(store=user.store)
-            return self.queryset.none()
-
-        # Trial admins see all for their brand
-        if user.role == 'TRIAL_ADMIN':
-            if user.store:
-                return self.queryset.filter(store__brand=user.store.brand)
-            return self.queryset
-
-        return self.queryset.none()
+        accessible_stores = user.get_accessible_stores()
+        return self.queryset.filter(store__in=accessible_stores)
 
     @extend_schema(
         summary="Get leaderboard for a store",
@@ -1513,46 +1431,14 @@ class CorrectiveActionViewSet(viewsets.ModelViewSet):
     ordering = ['-created_at']  # Use created_at instead of due_date to avoid NULL issues
 
     def get_queryset(self):
-        """Filter actions based on user's accessible stores"""
+        """Filter actions based on user's accessible stores and assignments"""
         user = self.request.user
+        accessible_stores = user.get_accessible_stores()
 
-        # Super admins see all
-        if user.role == 'SUPER_ADMIN':
-            return self.queryset
-
-        # Admins see all for their brand or assigned to them
-        if user.role == 'ADMIN':
-            if user.store:
-                return self.queryset.filter(
-                    Q(store__brand=user.store.brand) | Q(assigned_to=user)
-                )
-            return self.queryset
-
-        # Owners see all for their brand or assigned to them
-        if user.role == 'OWNER':
-            if user.store:
-                return self.queryset.filter(
-                    Q(store__brand=user.store.brand) | Q(assigned_to=user)
-                )
-            return self.queryset
-
-        # GMs see their store's actions or actions assigned to them
-        if user.role == 'GM':
-            if user.store:
-                return self.queryset.filter(
-                    Q(store=user.store) | Q(assigned_to=user)
-                )
-            return self.queryset.none()
-
-        # Trial admins see all for their brand or assigned to them
-        if user.role == 'TRIAL_ADMIN':
-            if user.store:
-                return self.queryset.filter(
-                    Q(store__brand=user.store.brand) | Q(assigned_to=user)
-                )
-            return self.queryset
-
-        return self.queryset.none()
+        # Show actions in accessible stores OR assigned to user
+        return self.queryset.filter(
+            Q(store__in=accessible_stores) | Q(assigned_to=user)
+        )
 
     def perform_create(self, serializer):
         serializer.save(created_by=self.request.user)
@@ -1698,36 +1584,8 @@ class CheckCoverageViewSet(viewsets.ReadOnlyModelViewSet):
     def get_queryset(self):
         """Filter coverage based on user's accessible stores"""
         user = self.request.user
-
-        # Super admins see all
-        if user.role == 'SUPER_ADMIN':
-            return self.queryset
-
-        # Admins see all for their brand
-        if user.role == 'ADMIN':
-            if user.store:
-                return self.queryset.filter(store__brand=user.store.brand)
-            return self.queryset
-
-        # Owners see all for their brand
-        if user.role == 'OWNER':
-            if user.store:
-                return self.queryset.filter(store__brand=user.store.brand)
-            return self.queryset
-
-        # GMs see only their store's coverage
-        if user.role == 'GM':
-            if user.store:
-                return self.queryset.filter(store=user.store)
-            return self.queryset.none()
-
-        # Trial admins see all for their brand
-        if user.role == 'TRIAL_ADMIN':
-            if user.store:
-                return self.queryset.filter(store__brand=user.store.brand)
-            return self.queryset
-
-        return self.queryset.none()
+        accessible_stores = user.get_accessible_stores()
+        return self.queryset.filter(store__in=accessible_stores)
 
     @extend_schema(
         summary="Get coverage summary by category",

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from 'react-query';
 import { format } from 'date-fns';
 import { useAuth } from '@/hooks/useAuth';
@@ -20,24 +20,44 @@ import {
   Crown,
   Key,
   UserCog,
+  ChevronLeft,
+  ChevronRight,
 } from 'lucide-react';
 import { API_CONFIG } from '@/config/api';
 import { brandsAPI, storesAPI } from '@/services/api';
 import type { User, Brand, Store } from '@/types';
 
+// Paginated response type
+interface PaginatedResponse<T> {
+  count: number;
+  next: string | null;
+  previous: string | null;
+  results: T[];
+}
+
 // Admin-specific API endpoint
 const adminUsersAPI = {
-  getUsers: async (): Promise<User[]> => {
-    const response = await fetch(`${API_CONFIG.baseURL}/auth/admin/users/`, {
+  getUsers: async (params: {
+    page?: number;
+    search?: string;
+    role?: string;
+    brand?: string;
+  }): Promise<PaginatedResponse<User>> => {
+    const queryParams = new URLSearchParams();
+    if (params.page) queryParams.append('page', params.page.toString());
+    if (params.search) queryParams.append('search', params.search);
+    if (params.role && params.role !== 'all') queryParams.append('role', params.role);
+    if (params.brand && params.brand !== 'all') queryParams.append('store__brand', params.brand);
+
+    const url = `${API_CONFIG.baseURL}/auth/admin/users/?${queryParams.toString()}`;
+    const response = await fetch(url, {
       headers: {
         'Authorization': `Bearer ${localStorage.getItem('access_token')}`,
         ...API_CONFIG.headers,
       },
     });
     if (!response.ok) throw new Error('Failed to fetch users');
-    const data = await response.json();
-    // Handle both paginated and non-paginated responses
-    return data.results || data;
+    return response.json();
   },
   
   createUser: async (userData: Partial<User>): Promise<User> => {
@@ -96,6 +116,8 @@ const adminUsersAPI = {
 
 export default function AdminUsersPage() {
   const [searchTerm, setSearchTerm] = useState('');
+  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [editingUser, setEditingUser] = useState<User | null>(null);
   const [resettingPasswordUser, setResettingPasswordUser] = useState<User | null>(null);
@@ -105,13 +127,41 @@ export default function AdminUsersPage() {
   const { user: currentUser, startImpersonation } = useAuth();
   const navigate = useNavigate();
 
-  const { data: users, isLoading, error } = useQuery<User[]>(
-    'admin-users',
-    adminUsersAPI.getUsers
+  // Debounce search term
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearchTerm(searchTerm);
+      setCurrentPage(1); // Reset to first page on search
+    }, 500);
+
+    return () => clearTimeout(timer);
+  }, [searchTerm]);
+
+  // Reset to first page when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [roleFilter, brandFilter]);
+
+  const { data: paginatedData, isLoading, error } = useQuery<PaginatedResponse<User>>(
+    ['admin-users', currentPage, debouncedSearchTerm, roleFilter, brandFilter],
+    () => adminUsersAPI.getUsers({
+      page: currentPage,
+      search: debouncedSearchTerm,
+      role: roleFilter,
+      brand: brandFilter,
+    }),
+    {
+      keepPreviousData: true, // Keep showing old data while fetching new page
+    }
   );
 
   const { data: brands } = useQuery<Brand[]>('brands', brandsAPI.getBrands);
   const { data: stores } = useQuery<Store[]>('stores', storesAPI.getStores);
+
+  const users = paginatedData?.results || [];
+  const totalCount = paginatedData?.count || 0;
+  const pageSize = 20;
+  const totalPages = Math.ceil(totalCount / pageSize);
 
   const deleteMutation = useMutation(
     (id: number) => adminUsersAPI.deleteUser(id),
@@ -142,20 +192,6 @@ export default function AdminUsersPage() {
       }
     }
   };
-
-  const filteredUsers = users?.filter(user => {
-    const matchesSearch =
-      user.username.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      user.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      user.first_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      user.last_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      user.brand_name?.toLowerCase().includes(searchTerm.toLowerCase());
-
-    const matchesRole = roleFilter === 'all' || user.role === roleFilter;
-    const matchesBrand = brandFilter === 'all' || user.brand_id?.toString() === brandFilter;
-
-    return matchesSearch && matchesRole && matchesBrand;
-  }) || [];
 
   const getRoleBadgeColor = (role: string) => {
     switch (role) {
@@ -246,12 +282,12 @@ export default function AdminUsersPage() {
         </select>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <div className="bg-white rounded-lg shadow p-6">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm text-gray-600">Total Users</p>
-              <p className="text-2xl font-bold text-gray-900">{users?.length || 0}</p>
+              <p className="text-2xl font-bold text-gray-900">{totalCount}</p>
             </div>
             <UsersIcon className="h-8 w-8 text-indigo-600" />
           </div>
@@ -260,45 +296,21 @@ export default function AdminUsersPage() {
         <div className="bg-white rounded-lg shadow p-6">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-gray-600">Active</p>
-              <p className="text-2xl font-bold text-green-600">
-                {users?.filter(u => u.is_active).length || 0}
-              </p>
-            </div>
-            <CheckCircle className="h-8 w-8 text-green-600" />
-          </div>
-        </div>
-
-        <div className="bg-white rounded-lg shadow p-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-600">Trial Users</p>
-              <p className="text-2xl font-bold text-yellow-600">
-                {users?.filter(u => u.is_trial_user).length || 0}
-              </p>
-            </div>
-            <UserCheck className="h-8 w-8 text-yellow-600" />
-          </div>
-        </div>
-
-        <div className="bg-white rounded-lg shadow p-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-600">Owners</p>
+              <p className="text-sm text-gray-600">Showing</p>
               <p className="text-2xl font-bold text-blue-600">
-                {users?.filter(u => u.role === 'OWNER').length || 0}
+                {users.length > 0 ? `${(currentPage - 1) * pageSize + 1}-${Math.min(currentPage * pageSize, totalCount)}` : '0'}
               </p>
             </div>
-            <Crown className="h-8 w-8 text-blue-600" />
+            <CheckCircle className="h-8 w-8 text-blue-600" />
           </div>
         </div>
 
         <div className="bg-white rounded-lg shadow p-6">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-gray-600">Admins</p>
+              <p className="text-sm text-gray-600">Page</p>
               <p className="text-2xl font-bold text-purple-600">
-                {users?.filter(u => u.role === 'ADMIN').length || 0}
+                {currentPage} of {totalPages || 1}
               </p>
             </div>
             <Shield className="h-8 w-8 text-purple-600" />
@@ -307,29 +319,30 @@ export default function AdminUsersPage() {
       </div>
 
       <div className="bg-white rounded-lg shadow overflow-hidden">
-        {filteredUsers.length === 0 ? (
+        {users.length === 0 ? (
           <div className="text-center py-12">
             <UsersIcon className="h-12 w-12 text-gray-400 mx-auto mb-4" />
             <p className="text-gray-600">
-              {searchTerm ? 'No users found matching your search' : 'No users yet'}
+              {searchTerm || roleFilter !== 'all' || brandFilter !== 'all' ? 'No users found matching your filters' : 'No users yet'}
             </p>
           </div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">User</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Brand</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Role</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Store</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Created</th>
-                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
-                {filteredUsers.map((user) => (
+          <>
+            <div className="overflow-x-auto">
+              <table className="min-w-full divide-y divide-gray-200">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">User</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Brand</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Role</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Store</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Created</th>
+                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-200">
+                  {users.map((user) => (
                   <tr key={user.id} className="hover:bg-gray-50">
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex items-center">
@@ -425,6 +438,93 @@ export default function AdminUsersPage() {
               </tbody>
             </table>
           </div>
+
+          {/* Pagination Controls */}
+          {totalPages > 1 && (
+            <div className="bg-gray-50 px-4 py-3 border-t border-gray-200 sm:px-6">
+              <div className="flex items-center justify-between">
+                <div className="flex-1 flex justify-between sm:hidden">
+                  <button
+                    onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                    disabled={currentPage === 1}
+                    className="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    Previous
+                  </button>
+                  <button
+                    onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                    disabled={currentPage === totalPages}
+                    className="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    Next
+                  </button>
+                </div>
+                <div className="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
+                  <div>
+                    <p className="text-sm text-gray-700">
+                      Showing{' '}
+                      <span className="font-medium">{(currentPage - 1) * pageSize + 1}</span>
+                      {' '} to{' '}
+                      <span className="font-medium">{Math.min(currentPage * pageSize, totalCount)}</span>
+                      {' '} of{' '}
+                      <span className="font-medium">{totalCount}</span>
+                      {' '} results
+                    </p>
+                  </div>
+                  <div>
+                    <nav className="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
+                      <button
+                        onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                        disabled={currentPage === 1}
+                        className="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        <span className="sr-only">Previous</span>
+                        <ChevronLeft className="h-5 w-5" aria-hidden="true" />
+                      </button>
+
+                      {/* Page numbers */}
+                      {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                        let pageNum;
+                        if (totalPages <= 5) {
+                          pageNum = i + 1;
+                        } else if (currentPage <= 3) {
+                          pageNum = i + 1;
+                        } else if (currentPage >= totalPages - 2) {
+                          pageNum = totalPages - 4 + i;
+                        } else {
+                          pageNum = currentPage - 2 + i;
+                        }
+
+                        return (
+                          <button
+                            key={pageNum}
+                            onClick={() => setCurrentPage(pageNum)}
+                            className={`relative inline-flex items-center px-4 py-2 border text-sm font-medium ${
+                              currentPage === pageNum
+                                ? 'z-10 bg-indigo-50 border-indigo-500 text-indigo-600'
+                                : 'bg-white border-gray-300 text-gray-500 hover:bg-gray-50'
+                            }`}
+                          >
+                            {pageNum}
+                          </button>
+                        );
+                      })}
+
+                      <button
+                        onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                        disabled={currentPage === totalPages}
+                        className="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        <span className="sr-only">Next</span>
+                        <ChevronRight className="h-5 w-5" aria-hidden="true" />
+                      </button>
+                    </nav>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+          </>
         )}
       </div>
 

@@ -129,11 +129,31 @@ export const authAPI = {
   },
 };
 
+// Paginated response type
+export interface PaginatedResponse<T> {
+  count: number;
+  next: string | null;
+  previous: string | null;
+  results: T[];
+}
+
 // Users API
 export const usersAPI = {
-  getUsers: async (): Promise<User[]> => {
-    const response = await api.get('/auth/users/');
-    return response.data.results || response.data;
+  getUsers: async (params?: {
+    page?: number;
+    search?: string;
+    role?: string;
+    store?: number;
+  }): Promise<PaginatedResponse<User>> => {
+    const queryParams = new URLSearchParams();
+    if (params?.page) queryParams.append('page', params.page.toString());
+    if (params?.search) queryParams.append('search', params.search);
+    if (params?.role && params.role !== 'all') queryParams.append('role', params.role);
+    if (params?.store) queryParams.append('store', params.store.toString());
+
+    const url = `/auth/users/${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
+    const response = await api.get(url);
+    return response.data;
   },
   
   createUser: async (userData: Partial<User>): Promise<User> => {
