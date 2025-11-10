@@ -267,9 +267,20 @@ class TrialSignupSerializer(serializers.Serializer):
         # Auto-create trial brand
         brand = Brand.create_trial_brand(user)
 
+        # Auto-create account for the brand
+        from .models import Account
+        account = Account.objects.create(
+            name=f"{brand.name} Account",
+            brand=brand,
+            owner=user,
+            company_name=brand.name,
+            is_active=True
+        )
+
         # Auto-create demo store
         store = Store.objects.create(
             brand=brand,
+            account=account,
             name="Demo Store",
             code=f"TRIAL-{user.id}",
             address="123 Demo Street",
@@ -279,8 +290,9 @@ class TrialSignupSerializer(serializers.Serializer):
             manager_email=user.email
         )
 
-        # Assign user to store
+        # Assign user to store and account
         user.store = store
+        user.account = account
         user.increment_trial_usage('store')  # Count the auto-created store
         user.save()
 

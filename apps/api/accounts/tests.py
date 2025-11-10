@@ -395,9 +395,10 @@ class OnboardingCompletionTest(TestCase):
 
         roles = ['GM', 'OWNER', 'ADMIN']
         for role in roles:
-            # Reset user role
+            # Reset user role and store (OWNER clears store, so we need to restore it)
             self.user.role = User.Role.TRIAL_ADMIN
             self.user.onboarding_completed_at = None
+            self.user.store = self.store  # Restore store for next iteration
             self.user.save()
 
             data = {

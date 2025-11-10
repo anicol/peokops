@@ -138,6 +138,7 @@ def complete_onboarding(request):
         )
 
     # Get user's brand (trial users should have store.brand)
+    # Save brand reference BEFORE potentially clearing store
     if not user.store or not user.store.brand:
         return Response(
             {'error': 'User has no associated brand. Please contact support.'},
@@ -149,6 +150,12 @@ def complete_onboarding(request):
     # Update user role and onboarding completion
     user.role = role
     user.onboarding_completed_at = timezone.now()
+
+    # If user selects OWNER role, clear store assignment for account-wide access
+    # (Brand reference is already saved above)
+    if role == User.Role.OWNER:
+        user.store = None
+
     user.save()
 
     # Update brand profile
