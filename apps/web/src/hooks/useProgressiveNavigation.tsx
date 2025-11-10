@@ -148,7 +148,7 @@ export function useProgressiveNavigation(): NavigationState {
             insights: 'enabled', // Personal stats
             profile: 'enabled',
             settings: 'enabled', // Profile, notifications
-            integrations: 'hidden',
+            integrations: 'enabled', // Enable integrations for inspectors
 
             // System Administration
             systemBrands: 'hidden',
@@ -323,7 +323,7 @@ export function useProgressiveNavigation(): NavigationState {
       insights: 'enabled', // Insights (Lite) - Customer + Operational voices visible
       profile: 'enabled',
       settings: 'enabled', // Settings section
-      integrations: 'hidden',
+      integrations: 'enabled', // Enable integrations for trial users
 
       // System Administration - Hidden for trial
       systemBrands: 'hidden',
