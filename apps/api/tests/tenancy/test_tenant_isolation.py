@@ -304,7 +304,7 @@ class TenantUtilsTestCase(TestCase):
     
     def setUp(self):
         """Create test users with different roles"""
-        self.brand = Brand.objects.create(name="Test Brand", slug="test-brand")
+        self.brand = Brand.objects.create(name="Test Brand")
         self.account = Account.objects.create(name="Test Account", brand=self.brand)
         self.store = Store.objects.create(
             name="Test Store",
