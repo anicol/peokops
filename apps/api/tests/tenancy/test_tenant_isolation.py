@@ -4,6 +4,7 @@ Comprehensive tenant isolation tests.
 Tests that users cannot access data from other tenants across all major endpoints.
 """
 from django.test import TestCase
+from django.utils import timezone
 from rest_framework.test import APIClient
 from rest_framework import status
 from accounts.models import User, Account
