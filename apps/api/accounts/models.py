@@ -254,6 +254,9 @@ class User(AbstractUser):
             # Brand admins see all stores in their brand
             if self.account and self.account.brand:
                 return Store.objects.filter(brand=self.account.brand, is_active=True)
+            # Fallback: if no account but has store, use store's brand
+            elif self.store and self.store.brand:
+                return Store.objects.filter(brand=self.store.brand, is_active=True)
             return Store.objects.none()
         elif self.role == self.Role.OWNER:
             # Owners see all stores in their account (franchisee), regardless of user.store
