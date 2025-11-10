@@ -20,18 +20,10 @@ import {
   ChevronLeft,
   ChevronRight,
 } from 'lucide-react';
-import { usersAPI, storesAPI } from '@/services/api';
+import { usersAPI, storesAPI, PaginatedResponse } from '@/services/api';
 import type { User, Store } from '@/types';
 import { useAuth } from '@/hooks/useAuth';
 import { formatPhoneNumber, formatPhoneInput } from '@/utils/phone';
-
-// Paginated response type
-interface PaginatedResponse<T> {
-  count: number;
-  next: string | null;
-  previous: string | null;
-  results: T[];
-}
 
 export default function UsersPage() {
   const { user: currentUser } = useAuth();
@@ -41,6 +33,7 @@ export default function UsersPage() {
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [editingUser, setEditingUser] = useState<User | null>(null);
   const [roleFilter, setRoleFilter] = useState<string>('all');
+  const [storeFilter, setStoreFilter] = useState<string>('all');
   const queryClient = useQueryClient();
 
   // Debounce search term
@@ -56,14 +49,15 @@ export default function UsersPage() {
   // Reset to first page when filters change
   useEffect(() => {
     setCurrentPage(1);
-  }, [roleFilter]);
+  }, [roleFilter, storeFilter]);
 
-  const { data: paginatedData, isLoading, error } = useQuery<PaginatedResponse<User>>(
-    ['users', currentPage, debouncedSearchTerm, roleFilter],
+  const { data: paginatedData, isLoading, error } = useQuery(
+    ['users', currentPage, debouncedSearchTerm, roleFilter, storeFilter],
     () => usersAPI.getUsers({
       page: currentPage,
       search: debouncedSearchTerm,
       role: roleFilter,
+      store: storeFilter !== 'all' ? parseInt(storeFilter) : undefined,
     }),
     {
       keepPreviousData: true,
@@ -75,9 +69,9 @@ export default function UsersPage() {
   const pageSize = 20;
   const totalPages = Math.ceil(totalCount / pageSize);
 
-  const { data: stores } = useQuery<Store[]>(
+  const { data: stores } = useQuery(
     'stores',
-    storesAPI.getStores
+    () => storesAPI.getStores()
   );
 
   const deleteMutation = useMutation(
@@ -234,15 +228,25 @@ export default function UsersPage() {
           <option value="INSPECTOR">Inspector</option>
           <option value="EMPLOYEE">Employee</option>
         </select>
+        <select
+          value={storeFilter}
+          onChange={(e) => setStoreFilter(e.target.value)}
+          className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+        >
+          <option value="all">All Stores</option>
+          {stores?.map(store => (
+            <option key={store.id} value={store.id}>{store.name}</option>
+          ))}
+        </select>
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <div className="bg-white rounded-lg shadow p-6">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm text-gray-600">Total Users</p>
-              <p className="text-2xl font-bold text-gray-900">{users?.length || 0}</p>
+              <p className="text-2xl font-bold text-gray-900">{totalCount}</p>
             </div>
             <UsersIcon className="h-8 w-8 text-indigo-600" />
           </div>
@@ -251,36 +255,24 @@ export default function UsersPage() {
         <div className="bg-white rounded-lg shadow p-6">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-gray-600">Active Users</p>
-              <p className="text-2xl font-bold text-green-600">
-                {users?.filter(u => u.is_active).length || 0}
+              <p className="text-sm text-gray-600">Showing</p>
+              <p className="text-2xl font-bold text-blue-600">
+                {users.length > 0 ? `${(currentPage - 1) * pageSize + 1}-${Math.min(currentPage * pageSize, totalCount)}` : '0'}
               </p>
             </div>
-            <CheckCircle className="h-8 w-8 text-green-600" />
+            <CheckCircle className="h-8 w-8 text-blue-600" />
           </div>
         </div>
 
         <div className="bg-white rounded-lg shadow p-6">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-gray-600">Inspectors</p>
-              <p className="text-2xl font-bold text-gray-900">
-                {users?.filter(u => u.role === 'INSPECTOR').length || 0}
+              <p className="text-sm text-gray-600">Page</p>
+              <p className="text-2xl font-bold text-purple-600">
+                {currentPage} of {totalPages || 1}
               </p>
             </div>
-            <UserCheck className="h-8 w-8 text-purple-600" />
-          </div>
-        </div>
-
-        <div className="bg-white rounded-lg shadow p-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-600">Managers</p>
-              <p className="text-2xl font-bold text-gray-900">
-                {users?.filter(u => u.role === 'GM' || u.role === 'OWNER').length || 0}
-              </p>
-            </div>
-            <Shield className="h-8 w-8 text-blue-600" />
+            <Shield className="h-8 w-8 text-purple-600" />
           </div>
         </div>
       </div>
