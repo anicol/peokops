@@ -22,7 +22,7 @@ class TenantIsolationTestCase(TestCase):
     
     def setUp(self):
         """Create test data for two separate tenants"""
-        self.brand_a = Brand.objects.create(name="Brand A", slug="brand-a")
+        self.brand_a = Brand.objects.create(name="Brand A")
         self.account_a = Account.objects.create(name="Account A", brand=self.brand_a)
         self.store_a = Store.objects.create(
             name="Store A",
@@ -50,7 +50,7 @@ class TenantIsolationTestCase(TestCase):
             store=self.store_a
         )
         
-        self.brand_b = Brand.objects.create(name="Brand B", slug="brand-b")
+        self.brand_b = Brand.objects.create(name="Brand B")
         self.account_b = Account.objects.create(name="Account B", brand=self.brand_b)
         self.store_b = Store.objects.create(
             name="Store B",
