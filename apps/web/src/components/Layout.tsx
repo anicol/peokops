@@ -51,7 +51,7 @@ const navigationSections = [
       { name: 'Schedule', href: '/schedule', icon: Calendar, key: 'schedule', roles: ['ADMIN', 'OWNER', 'TRIAL_ADMIN', 'GM'] },
       { name: 'Stores', href: '/stores', icon: Store, key: 'stores', roles: ['ADMIN', 'OWNER', 'TRIAL_ADMIN'] }, // Trial users can add stores
       { name: 'Users', href: '/users', icon: Users, key: 'users', roles: ['ADMIN', 'OWNER', 'TRIAL_ADMIN'] },
-      { name: 'Integrations', href: '/integrations', icon: Plug, key: 'integrations', roles: ['ADMIN', 'OWNER'] }, // Hidden for trial
+      { name: 'Integrations', href: '/integrations', icon: Plug, key: 'integrations', roles: ['ADMIN', 'OWNER', 'TRIAL_ADMIN', 'INSPECTOR'] }, // Now visible for trial and inspectors
       { name: 'Account', href: '/account', icon: Building2, key: 'account', roles: ['ADMIN', 'OWNER', 'TRIAL_ADMIN'] },
     ]
   },
