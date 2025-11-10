@@ -83,50 +83,14 @@ class MicroCheckTemplateViewSet(ScopedQuerysetMixin, ScopedCreateMixin, viewsets
 
     def get_queryset(self):
         """Filter templates based on user role and brand access"""
-        user = self.request.user
-
-        # Annotate with usage count for sorting
-        queryset = self.queryset.annotate(
+        queryset = super().get_queryset()
+        
+        # Add annotations for sorting
+        queryset = queryset.annotate(
             times_used=Count('microcheckresponse')
         )
-
-        # ADMIN sees all templates
-        if user.role == 'ADMIN':
-            return queryset
-
-        # For non-admin users, apply brand filtering
-        # If a specific brand is requested in query params, show only that brand's templates
-        brand_param = self.request.query_params.get('brand')
-        if brand_param:
-            # Show only templates for the specified brand (excludes global templates)
-            if user.role in ['OWNER', 'TRIAL_ADMIN', 'GM']:
-                if user.store and user.store.brand and str(user.store.brand.id) == brand_param:
-                    return queryset.filter(brand=user.store.brand)
-            return queryset.none()
-
-        # If is_local=false is requested, show global templates
-        is_local_param = self.request.query_params.get('is_local')
-        if is_local_param == 'false':
-            return queryset.filter(brand__isnull=True)
-
-        # Default: OWNER and TRIAL_ADMIN see templates for their brand + global templates
-        if user.role in ['OWNER', 'TRIAL_ADMIN']:
-            if user.store and user.store.brand:
-                return queryset.filter(
-                    Q(brand=user.store.brand) | Q(brand__isnull=True)
-                )
-            return queryset.filter(brand__isnull=True)
-
-        # GM sees templates for their brand + global templates (read-only)
-        if user.role == 'GM':
-            if user.store and user.store.brand:
-                return queryset.filter(
-                    Q(brand=user.store.brand) | Q(brand__isnull=True)
-                )
-            return queryset.filter(brand__isnull=True)
-
-        # INSPECTOR has no access to templates
-        return queryset.none()
+        
+        return queryset
 
     def perform_create(self, serializer):
         """ADMIN, OWNER, and TRIAL_ADMIN can create templates"""
