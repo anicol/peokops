@@ -263,8 +263,16 @@ class User(AbstractUser):
             if self.account:
                 return Store.objects.filter(account=self.account, is_active=True)
             return Store.objects.none()
-        elif self.role in [self.Role.GM, self.Role.TRIAL_ADMIN, self.Role.INSPECTOR, self.Role.EMPLOYEE]:
-            # GMs, Trial Admins, Inspectors, and Employees see only their assigned store
+        elif self.role == self.Role.TRIAL_ADMIN:
+            # Trial admins with no store get account-wide access (like OWNER)
+            # Trial admins with assigned store see only that store
+            if self.store:
+                return Store.objects.filter(id=self.store.id, is_active=True)
+            elif self.account:
+                return Store.objects.filter(account=self.account, is_active=True)
+            return Store.objects.none()
+        elif self.role in [self.Role.GM, self.Role.INSPECTOR, self.Role.EMPLOYEE]:
+            # GMs, Inspectors, and Employees see only their assigned store
             if self.store:
                 return Store.objects.filter(id=self.store.id, is_active=True)
             return Store.objects.none()

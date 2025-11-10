@@ -99,8 +99,9 @@ class UserCreateSerializer(serializers.ModelSerializer):
                 'store': 'Account Owners should not be assigned to a specific store. Leave blank for account-wide access.'
             })
 
-        # GM, TRIAL_ADMIN, INSPECTOR, EMPLOYEE roles must have a store
-        if role in [User.Role.GM, User.Role.TRIAL_ADMIN, User.Role.INSPECTOR, User.Role.EMPLOYEE]:
+        # TRIAL_ADMIN can optionally have no store (account-wide access during trial)
+        # GM, INSPECTOR, EMPLOYEE roles must have a store
+        if role in [User.Role.GM, User.Role.INSPECTOR, User.Role.EMPLOYEE]:
             if store is None:
                 raise serializers.ValidationError({
                     'store': f'{role} role requires a store assignment.'
