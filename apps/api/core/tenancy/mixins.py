@@ -1,0 +1,92 @@
+"""
+Tenant isolation mixins for DRF ViewSets.
+
+Provides mixins to automatically scope querysets and validate tenant ownership
+on create/update operations.
+"""
+from rest_framework.exceptions import PermissionDenied
+from .utils import build_tenant_filter, tenant_ids
+
+
+class ScopedQuerysetMixin:
+    """
+    Mixin to automatically scope querysets by tenant.
+    
+    Usage:
+        class MyViewSet(ScopedQuerysetMixin, viewsets.ModelViewSet):
+            tenant_scope = 'account'  # or 'brand', 'store', 'auto'
+            tenant_field_paths = {
+                'brand': 'brand',
+                'account': 'account', 
+                'store': 'store'
+            }
+    """
+    
+    tenant_scope = 'auto'  # 'brand', 'account', 'store', or 'auto'
+    tenant_field_paths = {
+        'brand': 'brand',
+        'account': 'account',
+        'store': 'store'
+    }
+    
+    def get_queryset(self):
+        """Apply tenant filtering to queryset"""
+        queryset = super().get_queryset()
+        user = self.request.user
+        
+        if not user or not user.is_authenticated:
+            return queryset.none()
+        
+        tenant_filter = build_tenant_filter(
+            user=user,
+            model_scope=self.tenant_scope,
+            field_paths=self.tenant_field_paths
+        )
+        
+        return queryset.filter(tenant_filter)
+
+
+class ScopedCreateMixin:
+    """
+    Mixin to auto-assign tenant FKs on create and validate tenant ownership.
+    
+    Usage:
+        class MyViewSet(ScopedCreateMixin, viewsets.ModelViewSet):
+            tenant_create_fields = {
+                'account': 'account',
+                'store': 'store'
+            }
+    """
+    
+    tenant_create_fields = {}  # Override in ViewSet
+    
+    def perform_create(self, serializer):
+        """Auto-assign tenant FKs and validate"""
+        user = self.request.user
+        ids = tenant_ids(user)
+        
+        tenant_data = {}
+        for scope_level, field_name in self.tenant_create_fields.items():
+            if scope_level == 'account' and ids['account_id']:
+                # Import here to avoid circular dependency
+                from accounts.models import Account
+                tenant_data[field_name] = Account.objects.get(id=ids['account_id'])
+            elif scope_level == 'store' and ids['store_id']:
+                from brands.models import Store
+                tenant_data[field_name] = Store.objects.get(id=ids['store_id'])
+            elif scope_level == 'brand' and ids['brand_id']:
+                from brands.models import Brand
+                tenant_data[field_name] = Brand.objects.get(id=ids['brand_id'])
+        
+        validated_data = serializer.validated_data
+        for scope_level, field_name in self.tenant_create_fields.items():
+            if field_name in validated_data:
+                provided_obj = validated_data[field_name]
+                provided_id = provided_obj.id if hasattr(provided_obj, 'id') else provided_obj
+                expected_obj = tenant_data.get(field_name)
+                expected_id = expected_obj.id if expected_obj and hasattr(expected_obj, 'id') else expected_obj
+                
+                if expected_id and provided_id != expected_id:
+                    raise PermissionDenied(f"Cannot create resource for another tenant's {scope_level}")
+        
+        serializer.save(**tenant_data)

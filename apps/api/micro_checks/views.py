@@ -13,6 +13,9 @@ from drf_spectacular.utils import extend_schema, OpenApiParameter
 import hashlib
 import uuid
 
+from core.tenancy.mixins import ScopedQuerysetMixin, ScopedCreateMixin
+from core.tenancy.permissions import TenantObjectPermission
+
 from .models import (
     MicroCheckTemplate,
     MicroCheckRun,
@@ -45,7 +48,7 @@ from .utils import (
 from .tasks import process_micro_check_response
 
 
-class MicroCheckTemplateViewSet(viewsets.ModelViewSet):
+class MicroCheckTemplateViewSet(ScopedQuerysetMixin, ScopedCreateMixin, viewsets.ModelViewSet):
     """
     ViewSet for managing micro-check templates.
 
@@ -59,11 +62,24 @@ class MicroCheckTemplateViewSet(viewsets.ModelViewSet):
     """
     queryset = MicroCheckTemplate.objects.all()
     serializer_class = MicroCheckTemplateSerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, TenantObjectPermission]
     filterset_fields = ['category', 'severity', 'is_active', 'brand', 'is_local', 'source', 'level']
     search_fields = ['title', 'description', 'success_criteria']
     ordering_fields = ['created_at', 'category', 'severity', 'rotation_priority', 'title', 'times_used']
     ordering = ['-created_at']  # Show newest templates first
+    
+    tenant_scope = 'auto'  # Templates can be BRAND/ACCOUNT/STORE level
+    tenant_field_paths = {
+        'brand': 'brand',
+        'account': 'account',
+        'store': 'store'
+    }
+    tenant_create_fields = {'brand': 'brand'}
+    tenant_object_paths = {
+        'brand': 'brand_id',
+        'account': 'account_id',
+        'store': 'store_id'
+    }
 
     def get_queryset(self):
         """Filter templates based on user role and brand access"""
@@ -521,7 +537,7 @@ class MicroCheckTemplateViewSet(viewsets.ModelViewSet):
             )
 
 
-class MicroCheckRunViewSet(viewsets.ModelViewSet):
+class MicroCheckRunViewSet(ScopedQuerysetMixin, viewsets.ModelViewSet):
     """
     ViewSet for managing micro-check runs.
 
@@ -529,11 +545,15 @@ class MicroCheckRunViewSet(viewsets.ModelViewSet):
     """
     queryset = MicroCheckRun.objects.select_related('store', 'created_by').prefetch_related('items')
     serializer_class = MicroCheckRunSerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, TenantObjectPermission]
     filter_backends = [DjangoFilterBackend, OrderingFilter]
     filterset_fields = ['store', 'status', 'scheduled_for']
     ordering_fields = ['scheduled_for', 'created_at']
     ordering = ['-scheduled_for']
+    
+    tenant_scope = 'store'
+    tenant_field_paths = {'store': 'store'}
+    tenant_object_paths = {'store': 'store_id'}
 
     def get_queryset(self):
         """Filter runs based on user's accessible stores"""
@@ -1107,7 +1127,7 @@ class MicroCheckRunViewSet(viewsets.ModelViewSet):
         }, status=status.HTTP_201_CREATED)
 
 
-class MicroCheckResponseViewSet(viewsets.ModelViewSet):
+class MicroCheckResponseViewSet(ScopedQuerysetMixin, viewsets.ModelViewSet):
     """
     ViewSet for submitting and viewing micro-check responses.
 
@@ -1119,10 +1139,15 @@ class MicroCheckResponseViewSet(viewsets.ModelViewSet):
         'completed_by'
     )
     serializer_class = MicroCheckResponseSerializer
+    permission_classes = [IsAuthenticated, TenantObjectPermission]
     filter_backends = [DjangoFilterBackend, OrderingFilter]
     filterset_fields = ['store', 'category', 'status', 'severity_snapshot', 'run']
     ordering_fields = ['completed_at', 'created_at']
     ordering = ['-completed_at']
+    
+    tenant_scope = 'store'
+    tenant_field_paths = {'store': 'store'}
+    tenant_object_paths = {'store': 'store_id'}
 
     def get_permissions(self):
         """Allow unauthenticated access for magic link submissions"""
@@ -1494,7 +1519,7 @@ class StoreStreakViewSet(viewsets.ReadOnlyModelViewSet):
         return self.queryset.none()
 
 
-class CorrectiveActionViewSet(viewsets.ModelViewSet):
+class CorrectiveActionViewSet(ScopedQuerysetMixin, viewsets.ModelViewSet):
     """
     ViewSet for managing corrective actions.
 
@@ -1507,10 +1532,14 @@ class CorrectiveActionViewSet(viewsets.ModelViewSet):
         'resolved_by'
     )
     serializer_class = CorrectiveActionSerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, TenantObjectPermission]
     filterset_fields = ['store', 'category', 'status', 'assigned_to']
     ordering_fields = ['due_date', 'created_at', 'resolved_at']
     ordering = ['-created_at']  # Use created_at instead of due_date to avoid NULL issues
+    
+    tenant_scope = 'store'
+    tenant_field_paths = {'store': 'store'}
+    tenant_object_paths = {'store': 'store_id'}
 
     def get_queryset(self):
         """Filter actions based on user's accessible stores"""
