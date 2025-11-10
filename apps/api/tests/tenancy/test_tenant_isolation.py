@@ -335,14 +335,36 @@ class TenantUtilsTestCase(TestCase):
     def setUp(self):
         """Create test users with different roles"""
         self.brand = Brand.objects.create(name="Test Brand")
-        self.account = Account.objects.create(name="Test Account", brand=self.brand)
+        
+        self.owner = User.objects.create_user(
+            username="owner",
+            email="owner@test.com",
+            role=User.Role.OWNER
+        )
+        
+        self.account = Account.objects.create(
+            name="Test Account",
+            brand=self.brand,
+            owner=self.owner
+        )
+        
+        self.owner.account = self.account
+        self.owner.save()
+        
         self.store = Store.objects.create(
             name="Test Store",
             code="TEST-001",
             account=self.account,
             brand=self.brand,
+            address="789 Test Blvd",
+            city="Testopolis",
+            state="TP",
+            zip_code="22222",
             timezone="America/New_York"
         )
+        
+        self.owner.store = self.store
+        self.owner.save()
         
         self.super_admin = User.objects.create_user(
             username="super",
@@ -353,26 +375,20 @@ class TenantUtilsTestCase(TestCase):
         self.admin = User.objects.create_user(
             username="admin",
             email="admin@test.com",
-            role=User.Role.ADMIN,
-            account=self.account,
-            store=self.store
+            role=User.Role.ADMIN
         )
-        
-        self.owner = User.objects.create_user(
-            username="owner",
-            email="owner@test.com",
-            role=User.Role.OWNER,
-            account=self.account,
-            store=self.store
-        )
+        self.admin.account = self.account
+        self.admin.store = self.store
+        self.admin.save()
         
         self.gm = User.objects.create_user(
             username="gm",
             email="gm@test.com",
-            role=User.Role.GM,
-            account=self.account,
-            store=self.store
+            role=User.Role.GM
         )
+        self.gm.account = self.account
+        self.gm.store = self.store
+        self.gm.save()
     
     def test_determine_scope_super_admin(self):
         """Super admin has super_admin scope"""
