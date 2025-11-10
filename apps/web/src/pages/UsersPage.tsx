@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from 'react-query';
 import { format } from 'date-fns';
 import {
@@ -17,24 +17,63 @@ import {
   Shield,
   UserCheck,
   Send,
+  ChevronLeft,
+  ChevronRight,
 } from 'lucide-react';
 import { usersAPI, storesAPI } from '@/services/api';
 import type { User, Store } from '@/types';
 import { useAuth } from '@/hooks/useAuth';
 import { formatPhoneNumber, formatPhoneInput } from '@/utils/phone';
 
+// Paginated response type
+interface PaginatedResponse<T> {
+  count: number;
+  next: string | null;
+  previous: string | null;
+  results: T[];
+}
+
 export default function UsersPage() {
   const { user: currentUser } = useAuth();
   const [searchTerm, setSearchTerm] = useState('');
+  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [editingUser, setEditingUser] = useState<User | null>(null);
   const [roleFilter, setRoleFilter] = useState<string>('all');
   const queryClient = useQueryClient();
 
-  const { data: users, isLoading, error } = useQuery<User[]>(
-    'users',
-    usersAPI.getUsers
+  // Debounce search term
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearchTerm(searchTerm);
+      setCurrentPage(1); // Reset to first page on search
+    }, 500);
+
+    return () => clearTimeout(timer);
+  }, [searchTerm]);
+
+  // Reset to first page when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [roleFilter]);
+
+  const { data: paginatedData, isLoading, error } = useQuery<PaginatedResponse<User>>(
+    ['users', currentPage, debouncedSearchTerm, roleFilter],
+    () => usersAPI.getUsers({
+      page: currentPage,
+      search: debouncedSearchTerm,
+      role: roleFilter,
+    }),
+    {
+      keepPreviousData: true,
+    }
   );
+
+  const users = paginatedData?.results || [];
+  const totalCount = paginatedData?.count || 0;
+  const pageSize = 20;
+  const totalPages = Math.ceil(totalCount / pageSize);
 
   const { data: stores } = useQuery<Store[]>(
     'stores',
@@ -86,18 +125,6 @@ export default function UsersPage() {
       }
     }
   };
-
-  const filteredUsers = users?.filter(user => {
-    const matchesSearch =
-      user.username.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      user.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      user.first_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      user.last_name?.toLowerCase().includes(searchTerm.toLowerCase());
-
-    const matchesRole = roleFilter === 'all' || user.role === roleFilter;
-
-    return matchesSearch && matchesRole;
-  }) || [];
 
   const getRoleBadgeColor = (role: string) => {
     switch (role) {
@@ -260,43 +287,44 @@ export default function UsersPage() {
 
       {/* Users List */}
       <div className="bg-white rounded-lg shadow overflow-hidden">
-        {filteredUsers.length === 0 ? (
+        {users.length === 0 ? (
           <div className="text-center py-12">
             <UsersIcon className="h-12 w-12 text-gray-400 mx-auto mb-4" />
             <p className="text-gray-600">
-              {searchTerm ? 'No users found matching your search' : 'No users yet'}
+              {searchTerm || roleFilter !== 'all' ? 'No users found matching your filters' : 'No users yet'}
             </p>
           </div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    User
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Role
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Store
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Phone
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Status
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Created
-                  </th>
-                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Actions
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
-                {filteredUsers.map((user) => (
+          <>
+            <div className="overflow-x-auto">
+              <table className="min-w-full divide-y divide-gray-200">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      User
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Role
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Store
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Phone
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Status
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Created
+                    </th>
+                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Actions
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-200">
+                  {users.map((user) => (
                   <tr key={user.id} className="hover:bg-gray-50">
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex items-center">
@@ -397,6 +425,93 @@ export default function UsersPage() {
               </tbody>
             </table>
           </div>
+
+          {/* Pagination Controls */}
+          {totalPages > 1 && (
+            <div className="bg-gray-50 px-4 py-3 border-t border-gray-200 sm:px-6">
+              <div className="flex items-center justify-between">
+                <div className="flex-1 flex justify-between sm:hidden">
+                  <button
+                    onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                    disabled={currentPage === 1}
+                    className="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    Previous
+                  </button>
+                  <button
+                    onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                    disabled={currentPage === totalPages}
+                    className="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    Next
+                  </button>
+                </div>
+                <div className="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
+                  <div>
+                    <p className="text-sm text-gray-700">
+                      Showing{' '}
+                      <span className="font-medium">{(currentPage - 1) * pageSize + 1}</span>
+                      {' '} to{' '}
+                      <span className="font-medium">{Math.min(currentPage * pageSize, totalCount)}</span>
+                      {' '} of{' '}
+                      <span className="font-medium">{totalCount}</span>
+                      {' '} results
+                    </p>
+                  </div>
+                  <div>
+                    <nav className="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
+                      <button
+                        onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                        disabled={currentPage === 1}
+                        className="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        <span className="sr-only">Previous</span>
+                        <ChevronLeft className="h-5 w-5" aria-hidden="true" />
+                      </button>
+
+                      {/* Page numbers */}
+                      {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                        let pageNum;
+                        if (totalPages <= 5) {
+                          pageNum = i + 1;
+                        } else if (currentPage <= 3) {
+                          pageNum = i + 1;
+                        } else if (currentPage >= totalPages - 2) {
+                          pageNum = totalPages - 4 + i;
+                        } else {
+                          pageNum = currentPage - 2 + i;
+                        }
+
+                        return (
+                          <button
+                            key={pageNum}
+                            onClick={() => setCurrentPage(pageNum)}
+                            className={`relative inline-flex items-center px-4 py-2 border text-sm font-medium ${
+                              currentPage === pageNum
+                                ? 'z-10 bg-indigo-50 border-indigo-500 text-indigo-600'
+                                : 'bg-white border-gray-300 text-gray-500 hover:bg-gray-50'
+                            }`}
+                          >
+                            {pageNum}
+                          </button>
+                        );
+                      })}
+
+                      <button
+                        onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                        disabled={currentPage === totalPages}
+                        className="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        <span className="sr-only">Next</span>
+                        <ChevronRight className="h-5 w-5" aria-hidden="true" />
+                      </button>
+                    </nav>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+          </>
         )}
       </div>
 
@@ -573,7 +688,7 @@ function UserFormModal({ user, stores, currentUserRole, onClose }: UserFormModal
                   setFormData({
                     ...formData,
                     role: newRole,
-                    // Clear store if switching to OWNER
+                    // Clear store if switching to OWNER (TRIAL_ADMIN can have null store too)
                     store: newRole === 'OWNER' ? null : formData.store
                   });
                 }}
@@ -601,19 +716,26 @@ function UserFormModal({ user, stores, currentUserRole, onClose }: UserFormModal
             ) : (
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Store *
+                  Store {formData.role !== 'TRIAL_ADMIN' && '*'}
                 </label>
                 <select
-                  required
+                  required={formData.role !== 'TRIAL_ADMIN'}
                   value={formData.store || ''}
-                  onChange={(e) => setFormData({ ...formData, store: Number(e.target.value) })}
+                  onChange={(e) => setFormData({ ...formData, store: e.target.value ? Number(e.target.value) : null })}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
                 >
-                  <option value="">Select Store</option>
+                  <option value="">
+                    {formData.role === 'TRIAL_ADMIN' ? 'No store (account-wide access)' : 'Select Store'}
+                  </option>
                   {stores.map(store => (
                     <option key={store.id} value={store.id}>{store.name}</option>
                   ))}
                 </select>
+                {formData.role === 'TRIAL_ADMIN' && (
+                  <p className="mt-1 text-xs text-gray-500">
+                    Trial users can optionally be assigned to a specific store
+                  </p>
+                )}
               </div>
             )}
           </div>
