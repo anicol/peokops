@@ -1218,8 +1218,27 @@ def assign_store_view(request, pk):
                 status=status.HTTP_400_BAD_REQUEST
             )
         user_to_update.store = None
+    elif user_to_update.role == User.Role.TRIAL_ADMIN:
+        # TRIAL_ADMIN can have null store (flexible during trial period)
+        if store_id is None:
+            user_to_update.store = None
+        else:
+            # Validate store exists and is in same account
+            try:
+                store = Store.objects.get(id=store_id)
+                if user_to_update.account and store.account != user_to_update.account:
+                    return Response(
+                        {'detail': 'Store must be in the same account as the user'},
+                        status=status.HTTP_400_BAD_REQUEST
+                    )
+                user_to_update.store = store
+            except Store.DoesNotExist:
+                return Response(
+                    {'detail': 'Store not found'},
+                    status=status.HTTP_404_NOT_FOUND
+                )
     else:
-        # Other roles must have a store
+        # Other roles (GM, INSPECTOR, EMPLOYEE, ADMIN) must have a store
         if store_id is None:
             return Response(
                 {'detail': f'{user_to_update.get_role_display()} role requires a store assignment.'},
