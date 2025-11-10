@@ -21,10 +21,8 @@ class VideoListCreateView(generics.ListCreateAPIView):
 
     def get_queryset(self):
         user = self.request.user
-        if user.role == 'ADMIN':
-            return Video.objects.all()
-        else:
-            return Video.objects.filter(store=user.store)
+        accessible_stores = user.get_accessible_stores()
+        return Video.objects.filter(store__in=accessible_stores)
 
     def get_serializer_class(self):
         if self.request.method == 'GET':
@@ -57,10 +55,8 @@ class VideoDetailView(generics.RetrieveUpdateDestroyAPIView):
 
     def get_queryset(self):
         user = self.request.user
-        if user.role == 'ADMIN':
-            return Video.objects.all()
-        else:
-            return Video.objects.filter(store=user.store)
+        accessible_stores = user.get_accessible_stores()
+        return Video.objects.filter(store__in=accessible_stores)
 
 
 class VideoFrameListView(generics.ListAPIView):
@@ -70,13 +66,12 @@ class VideoFrameListView(generics.ListAPIView):
     def get_queryset(self):
         video_id = self.kwargs['video_id']
         user = self.request.user
-        
-        if user.role == 'ADMIN':
-            video_filter = {'video_id': video_id}
-        else:
-            video_filter = {'video_id': video_id, 'video__store': user.store}
-        
-        return VideoFrame.objects.filter(**video_filter)
+        accessible_stores = user.get_accessible_stores()
+
+        return VideoFrame.objects.filter(
+            video_id=video_id,
+            video__store__in=accessible_stores
+        )
 
 
 @api_view(['POST'])
@@ -95,12 +90,10 @@ def reprocess_video(request, pk):
         from videos.tasks import apply_inspection_rules, apply_coaching_rules
 
         user = request.user
+        accessible_stores = user.get_accessible_stores()
 
         # Get the video
-        if user.role == 'ADMIN':
-            video = Video.objects.get(pk=pk)
-        else:
-            video = Video.objects.get(pk=pk, store=user.store)
+        video = Video.objects.get(pk=pk, store__in=accessible_stores)
 
         logger.info(f"Reprocessing video {pk}: {video.title}, status={video.status}")
 

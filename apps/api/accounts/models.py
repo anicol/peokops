@@ -243,6 +243,31 @@ class User(AbstractUser):
             # Employees, Inspectors have no store count
             return 0
 
+    def get_accessible_stores(self):
+        """Get QuerySet of stores this user has access to"""
+        from brands.models import Store
+
+        if self.role == self.Role.SUPER_ADMIN:
+            # Super admins see all stores
+            return Store.objects.filter(is_active=True)
+        elif self.role == self.Role.ADMIN:
+            # Brand admins see all stores in their brand
+            if self.account and self.account.brand:
+                return Store.objects.filter(brand=self.account.brand, is_active=True)
+            return Store.objects.none()
+        elif self.role == self.Role.OWNER:
+            # Owners see all stores in their account (franchisee), regardless of user.store
+            if self.account:
+                return Store.objects.filter(account=self.account, is_active=True)
+            return Store.objects.none()
+        elif self.role in [self.Role.GM, self.Role.TRIAL_ADMIN, self.Role.INSPECTOR, self.Role.EMPLOYEE]:
+            # GMs, Trial Admins, Inspectors, and Employees see only their assigned store
+            if self.store:
+                return Store.objects.filter(id=self.store.id, is_active=True)
+            return Store.objects.none()
+        else:
+            return Store.objects.none()
+
     # Trial limitation checks
     def can_upload_video(self):
         """Check if user can upload more videos (max 10 for trial)"""
