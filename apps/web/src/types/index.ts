@@ -56,6 +56,7 @@ export interface User {
   hours_since_signup?: number;
   total_inspections?: number;
   accessible_stores_count?: number;
+  has_account_wide_access?: boolean;
   created_at: string;
   last_active_at?: string;
   impersonation_context?: ImpersonationContext | null;

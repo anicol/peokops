@@ -319,10 +319,17 @@ export default function UsersPage() {
                       </span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="flex items-center text-sm text-gray-900">
-                        <Building2 className="h-4 w-4 mr-1 text-gray-400" />
-                        {user.store_name || '-'}
-                      </div>
+                      {user.has_account_wide_access ? (
+                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                          <Building2 className="h-3 w-3 mr-1" />
+                          Account-wide Access
+                        </span>
+                      ) : (
+                        <div className="flex items-center text-sm text-gray-900">
+                          <Building2 className="h-4 w-4 mr-1 text-gray-400" />
+                          {user.store_name || '-'}
+                        </div>
+                      )}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       {user.phone ? (
@@ -461,13 +468,20 @@ function UserFormModal({ user, stores, currentUserRole, onClose }: UserFormModal
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
+    // Prepare data with proper store handling
+    const submitData = {
+      ...formData,
+      // Ensure store is null for OWNER role
+      store: formData.role === 'OWNER' ? null : formData.store
+    };
+
     // For new users, generate a random password on backend and send magic link
     if (user) {
-      mutation.mutate(formData);
+      mutation.mutate(submitData);
     } else {
       const randomPassword = Math.random().toString(36).slice(-16) + Math.random().toString(36).slice(-16);
       mutation.mutate({
-        ...formData,
+        ...submitData,
         password: randomPassword,
         password_confirm: randomPassword
       });
@@ -554,7 +568,15 @@ function UserFormModal({ user, stores, currentUserRole, onClose }: UserFormModal
               <select
                 required
                 value={formData.role}
-                onChange={(e) => setFormData({ ...formData, role: e.target.value as typeof formData.role })}
+                onChange={(e) => {
+                  const newRole = e.target.value as typeof formData.role;
+                  setFormData({
+                    ...formData,
+                    role: newRole,
+                    // Clear store if switching to OWNER
+                    store: newRole === 'OWNER' ? null : formData.store
+                  });
+                }}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
               >
                 {availableRoles.map(role => (
@@ -563,22 +585,37 @@ function UserFormModal({ user, stores, currentUserRole, onClose }: UserFormModal
               </select>
             </div>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Store *
-              </label>
-              <select
-                required
-                value={formData.store || ''}
-                onChange={(e) => setFormData({ ...formData, store: Number(e.target.value) })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-              >
-                <option value="">Select Store</option>
-                {stores.map(store => (
-                  <option key={store.id} value={store.id}>{store.name}</option>
-                ))}
-              </select>
-            </div>
+            {formData.role === 'OWNER' ? (
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Store Access
+                </label>
+                <div className="w-full px-3 py-2 border border-gray-200 rounded-lg bg-blue-50 flex items-center">
+                  <Building2 className="h-4 w-4 mr-2 text-blue-600" />
+                  <span className="text-sm text-blue-800 font-medium">Account-wide Access</span>
+                </div>
+                <p className="mt-1 text-xs text-gray-500">
+                  Owners can access all stores in the account
+                </p>
+              </div>
+            ) : (
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Store *
+                </label>
+                <select
+                  required
+                  value={formData.store || ''}
+                  onChange={(e) => setFormData({ ...formData, store: Number(e.target.value) })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                >
+                  <option value="">Select Store</option>
+                  {stores.map(store => (
+                    <option key={store.id} value={store.id}>{store.name}</option>
+                  ))}
+                </select>
+              </div>
+            )}
           </div>
 
           <div>
