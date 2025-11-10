@@ -22,10 +22,8 @@ class InspectionListView(generics.ListAPIView):
 
     def get_queryset(self):
         user = self.request.user
-        if user.role == 'ADMIN':
-            return Inspection.objects.all()
-        else:
-            return Inspection.objects.filter(store=user.store)
+        accessible_stores = user.get_accessible_stores()
+        return Inspection.objects.filter(store__in=accessible_stores)
 
 
 class InspectionDetailView(generics.RetrieveUpdateAPIView):
@@ -34,10 +32,8 @@ class InspectionDetailView(generics.RetrieveUpdateAPIView):
 
     def get_queryset(self):
         user = self.request.user
-        if user.role == 'ADMIN':
-            return Inspection.objects.all()
-        else:
-            return Inspection.objects.filter(store=user.store)
+        accessible_stores = user.get_accessible_stores()
+        return Inspection.objects.filter(store__in=accessible_stores)
 
 
 class FindingListView(generics.ListAPIView):
@@ -51,13 +47,12 @@ class FindingListView(generics.ListAPIView):
     def get_queryset(self):
         inspection_id = self.kwargs['inspection_id']
         user = self.request.user
+        accessible_stores = user.get_accessible_stores()
 
-        if user.role == 'ADMIN':
-            inspection_filter = {'inspection_id': inspection_id}
-        else:
-            inspection_filter = {'inspection_id': inspection_id, 'inspection__store': user.store}
-
-        return Finding.objects.filter(**inspection_filter)
+        return Finding.objects.filter(
+            inspection_id=inspection_id,
+            inspection__store__in=accessible_stores
+        )
 
 
 class ActionItemListCreateView(generics.ListCreateAPIView):
@@ -70,10 +65,8 @@ class ActionItemListCreateView(generics.ListCreateAPIView):
 
     def get_queryset(self):
         user = self.request.user
-        if user.role == 'ADMIN':
-            return ActionItem.objects.all()
-        else:
-            return ActionItem.objects.filter(inspection__store=user.store)
+        accessible_stores = user.get_accessible_stores()
+        return ActionItem.objects.filter(inspection__store__in=accessible_stores)
 
     def perform_create(self, serializer):
         # Auto-assign high priority items to GM if available
@@ -108,14 +101,11 @@ def start_inspection(request, video_id):
     try:
         user = request.user
         mode = request.data.get('mode', 'INSPECTION')
+        accessible_stores = user.get_accessible_stores()
 
         # Check if user has access to the video
-        if user.role == 'ADMIN':
-            from videos.models import Video
-            video = Video.objects.get(pk=video_id)
-        else:
-            from videos.models import Video
-            video = Video.objects.get(pk=video_id, store=user.store)
+        from videos.models import Video
+        video = Video.objects.get(pk=video_id, store__in=accessible_stores)
 
         # Check if inspection already exists
         if video.inspection:
@@ -165,15 +155,13 @@ def inspection_stats(request):
     from django.utils import timezone as tz
 
     user = request.user
+    accessible_stores = user.get_accessible_stores()
     now = tz.now()
     today_start = now.replace(hour=0, minute=0, second=0, microsecond=0)
     yesterday_start = today_start - timedelta(days=1)
     week_start = today_start - timedelta(days=7)
 
-    if user.role == 'ADMIN':
-        inspections = Inspection.objects.all()
-    else:
-        inspections = Inspection.objects.filter(store=user.store)
+    inspections = Inspection.objects.filter(store__in=accessible_stores)
 
     total_inspections = inspections.count()
     completed_inspections = inspections.filter(status=Inspection.Status.COMPLETED).count()
