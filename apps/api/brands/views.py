@@ -25,10 +25,20 @@ class BrandViewSet(ScopedQuerysetMixin, ScopedCreateMixin, viewsets.ModelViewSet
 
     # Tenant isolation configuration
     tenant_scope = 'brand'
-    tenant_field_paths = {'brand': 'id'}  # Brand filters on its own ID
+    tenant_field_paths = {'brand': 'id'}
     tenant_unrestricted_roles = ['SUPER_ADMIN', 'ADMIN']
     tenant_object_paths = {'brand': 'id'}
     tenant_create_fields = {}  # Don't auto-assign brand when creating a brand
+
+    def get_tenant_filter(self, user):
+        """Override to filter brands by user's brand_id regardless of user scope"""
+        from core.tenancy.utils import tenant_ids
+        from django.db.models import Q
+
+        ids = tenant_ids(user)
+        if ids['brand_id']:
+            return Q(id=ids['brand_id'])
+        return Q(pk__in=[])  # No brand access
 
 
 class BrandListCreateView(generics.ListCreateAPIView):

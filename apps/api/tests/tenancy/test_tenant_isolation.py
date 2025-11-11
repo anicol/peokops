@@ -537,7 +537,7 @@ class InspectionTenantIsolationTests(TenantIsolationTestCase):
     def test_owner_a_cannot_see_finding_b(self):
         """Owner A cannot see findings from store B"""
         self.client.force_authenticate(user=self.owner_a)
-        response = self.client.get('/api/findings/')
+        response = self.client.get('/api/inspections/findings/')
         
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         finding_ids = [f['id'] for f in response.data['results']]
@@ -547,14 +547,14 @@ class InspectionTenantIsolationTests(TenantIsolationTestCase):
     def test_retrieve_cross_tenant_finding_returns_404(self):
         """Retrieving finding from another tenant returns 404"""
         self.client.force_authenticate(user=self.owner_a)
-        response = self.client.get(f'/api/findings/{self.finding_b.id}/')
+        response = self.client.get(f'/api/inspections/findings/{self.finding_b.id}/')
         
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
     
     def test_owner_a_cannot_see_action_item_b(self):
         """Owner A cannot see action items from store B"""
         self.client.force_authenticate(user=self.owner_a)
-        response = self.client.get('/api/action-items/')
+        response = self.client.get('/api/inspections/action-items/')
         
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         action_ids = [a['id'] for a in response.data['results']]
@@ -564,7 +564,7 @@ class InspectionTenantIsolationTests(TenantIsolationTestCase):
     def test_retrieve_cross_tenant_action_item_returns_404(self):
         """Retrieving action item from another tenant returns 404"""
         self.client.force_authenticate(user=self.owner_a)
-        response = self.client.get(f'/api/action-items/{self.action_item_b.id}/')
+        response = self.client.get(f'/api/inspections/action-items/{self.action_item_b.id}/')
         
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
 
@@ -589,7 +589,9 @@ class VideoTenantIsolationTests(TenantIsolationTestCase):
             video=self.video_a,
             frame_number=100,
             timestamp=10.0,
-            image="frames/test_a_100.jpg"
+            image="frames/test_a_100.jpg",
+            width=1920,
+            height=1080
         )
         
         # Create videos for tenant B
@@ -605,7 +607,9 @@ class VideoTenantIsolationTests(TenantIsolationTestCase):
             video=self.video_b,
             frame_number=200,
             timestamp=20.0,
-            image="frames/test_b_200.jpg"
+            image="frames/test_b_200.jpg",
+            width=1920,
+            height=1080
         )
         
         self.client = APIClient()
@@ -630,7 +634,7 @@ class VideoTenantIsolationTests(TenantIsolationTestCase):
     def test_owner_a_cannot_see_frame_b(self):
         """Owner A cannot see video frames from store B"""
         self.client.force_authenticate(user=self.owner_a)
-        response = self.client.get('/api/video-frames/')
+        response = self.client.get('/api/videos/video-frames/')
         
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         frame_ids = [f['id'] for f in response.data['results']]
@@ -708,17 +712,7 @@ class MicroCheckStreakTenantIsolationTests(TenantIsolationTestCase):
             longest_streak=15
         )
         
-        # Create streaks for tenant B
-        self.gm_b = User.objects.create_user(
-            username="gm_b",
-            email="gm_b@test.com",
-            password="password123",
-            role=User.Role.GM
-        )
-        self.gm_b.account = self.account_b
-        self.gm_b.store = self.store_b
-        self.gm_b.save()
-        
+        # Create streaks for tenant B (gm_b already created by parent setUp)
         self.user_streak_b = MicroCheckStreak.objects.create(
             user=self.gm_b,
             store=self.store_b,

@@ -35,6 +35,24 @@ class InspectionViewSet(ScopedQuerysetMixin, viewsets.ModelViewSet):
     tenant_unrestricted_roles = ['SUPER_ADMIN', 'ADMIN']
     tenant_object_paths = {'store': 'store_id'}
 
+    def get_tenant_filter(self, user):
+        """Override to support both store and account level users"""
+        from core.tenancy.utils import tenant_ids, determine_scope
+        from django.db.models import Q
+
+        user_scope = determine_scope(user)
+        ids = tenant_ids(user)
+
+        if user_scope == 'store' and ids['store_id']:
+            return Q(store_id=ids['store_id'])
+        elif user_scope == 'account' and ids['account_id']:
+            # Account-level users see all inspections for stores in their account
+            return Q(store__account_id=ids['account_id'])
+        elif user_scope == 'brand' and ids['brand_id']:
+            return Q(store__brand_id=ids['brand_id'])
+
+        return Q(pk__in=[])
+
     def get_serializer_class(self):
         if self.action == 'list':
             return InspectionListSerializer
@@ -93,6 +111,23 @@ class FindingViewSet(ScopedQuerysetMixin, viewsets.ModelViewSet):
     tenant_unrestricted_roles = ['SUPER_ADMIN', 'ADMIN']
     tenant_object_paths = {'store': 'inspection.store_id'}
 
+    def get_tenant_filter(self, user):
+        """Override to support both store and account level users"""
+        from core.tenancy.utils import tenant_ids, determine_scope
+        from django.db.models import Q
+
+        user_scope = determine_scope(user)
+        ids = tenant_ids(user)
+
+        if user_scope == 'store' and ids['store_id']:
+            return Q(inspection__store_id=ids['store_id'])
+        elif user_scope == 'account' and ids['account_id']:
+            return Q(inspection__store__account_id=ids['account_id'])
+        elif user_scope == 'brand' and ids['brand_id']:
+            return Q(inspection__store__brand_id=ids['brand_id'])
+
+        return Q(pk__in=[])
+
 
 class FindingListView(generics.ListAPIView):
     """Legacy view - prefer using FindingViewSet"""
@@ -137,6 +172,23 @@ class ActionItemViewSet(ScopedQuerysetMixin, ScopedCreateMixin, viewsets.ModelVi
     tenant_unrestricted_roles = ['SUPER_ADMIN', 'ADMIN']
     tenant_object_paths = {'store': 'inspection.store_id'}
     tenant_create_fields = {}  # Don't auto-assign store (it comes from inspection)
+
+    def get_tenant_filter(self, user):
+        """Override to support both store and account level users"""
+        from core.tenancy.utils import tenant_ids, determine_scope
+        from django.db.models import Q
+
+        user_scope = determine_scope(user)
+        ids = tenant_ids(user)
+
+        if user_scope == 'store' and ids['store_id']:
+            return Q(inspection__store_id=ids['store_id'])
+        elif user_scope == 'account' and ids['account_id']:
+            return Q(inspection__store__account_id=ids['account_id'])
+        elif user_scope == 'brand' and ids['brand_id']:
+            return Q(inspection__store__brand_id=ids['brand_id'])
+
+        return Q(pk__in=[])
 
     def perform_create(self, serializer):
         # Auto-assign high priority items to GM if available
