@@ -1130,7 +1130,7 @@ class CorrectiveActionTenantIsolationTests(TenantIsolationTestCase):
     def test_owner_a_cannot_see_action_b(self):
         """Owner A cannot see corrective actions from store B"""
         self.client.force_authenticate(user=self.owner_a)
-        response = self.client.get('/api/micro-checks/corrective-actions/')
+        response = self.client.get('/api/micro-checks/actions/')
         
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         action_ids = [str(a['id']) for a in response.data['results']]
@@ -1140,14 +1140,14 @@ class CorrectiveActionTenantIsolationTests(TenantIsolationTestCase):
     def test_retrieve_cross_tenant_action_returns_404(self):
         """Retrieving corrective action from another tenant returns 404"""
         self.client.force_authenticate(user=self.owner_a)
-        response = self.client.get(f'/api/micro-checks/corrective-actions/{self.action_b.id}/')
+        response = self.client.get(f'/api/micro-checks/actions/{self.action_b.id}/')
         
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
     
     def test_gm_a_cannot_see_action_b(self):
         """GM A cannot see corrective actions from store B"""
         self.client.force_authenticate(user=self.gm_a)
-        response = self.client.get('/api/micro-checks/corrective-actions/')
+        response = self.client.get('/api/micro-checks/actions/')
         
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         action_ids = [str(a['id']) for a in response.data['results']]
@@ -1158,7 +1158,7 @@ class CorrectiveActionTenantIsolationTests(TenantIsolationTestCase):
         """Owner A cannot update corrective action from store B"""
         self.client.force_authenticate(user=self.owner_a)
         response = self.client.patch(
-            f'/api/micro-checks/corrective-actions/{self.action_b.id}/',
+            f'/api/micro-checks/actions/{self.action_b.id}/',
             {'status': 'RESOLVED'}
         )
         
@@ -1167,7 +1167,7 @@ class CorrectiveActionTenantIsolationTests(TenantIsolationTestCase):
     def test_super_admin_sees_all_actions(self):
         """Super admin can see corrective actions from all tenants"""
         self.client.force_authenticate(user=self.super_admin)
-        response = self.client.get('/api/micro-checks/corrective-actions/')
+        response = self.client.get('/api/micro-checks/actions/')
         
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         action_ids = [str(a['id']) for a in response.data['results']]
