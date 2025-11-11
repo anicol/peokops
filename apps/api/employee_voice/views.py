@@ -9,6 +9,9 @@ from django.db.models import Q, Count, Avg, F
 from drf_spectacular.utils import extend_schema, OpenApiParameter, OpenApiResponse
 from datetime import timedelta
 
+from core.tenancy.mixins import ScopedQuerysetMixin, ScopedCreateMixin
+from core.tenancy.permissions import TenantObjectPermission
+
 from .models import (
     EmployeeVoicePulse,
     EmployeeVoiceInvitation,
@@ -30,7 +33,7 @@ from .utils import generate_anonymous_hash_from_request
 from accounts.models import User
 
 
-class EmployeeVoicePulseViewSet(viewsets.ModelViewSet):
+class EmployeeVoicePulseViewSet(ScopedQuerysetMixin, ScopedCreateMixin, viewsets.ModelViewSet):
     """
     ViewSet for managing employee voice pulse surveys.
 
@@ -41,11 +44,22 @@ class EmployeeVoicePulseViewSet(viewsets.ModelViewSet):
     - INSPECTOR: No access
     """
     queryset = EmployeeVoicePulse.objects.all()
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, TenantObjectPermission]
     filterset_fields = ['store', 'account', 'status', 'is_active', 'shift_window', 'language']
     search_fields = ['title', 'description']
     ordering_fields = ['created_at', 'status', 'unlocked_at']
     ordering = ['-created_at']
+    
+    tenant_scope = 'account'
+    tenant_field_paths = {
+        'account': 'account',
+        'store': 'store'
+    }
+    tenant_create_fields = {'account': 'account', 'store': 'store'}
+    tenant_object_paths = {
+        'account': 'account_id',
+        'store': 'store_id'
+    }
 
     def get_serializer_class(self):
         """Use detailed serializer for retrieve actions"""
@@ -321,7 +335,7 @@ def submit_survey_response(request):
     return Response(response_serializer.data, status=status.HTTP_201_CREATED)
 
 
-class EmployeeVoiceInvitationViewSet(viewsets.ReadOnlyModelViewSet):
+class EmployeeVoiceInvitationViewSet(ScopedQuerysetMixin, viewsets.ReadOnlyModelViewSet):
     """
     Read-only viewset for viewing invitation history.
 
@@ -332,10 +346,20 @@ class EmployeeVoiceInvitationViewSet(viewsets.ReadOnlyModelViewSet):
     """
     queryset = EmployeeVoiceInvitation.objects.all()
     serializer_class = EmployeeVoiceInvitationSerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, TenantObjectPermission]
     filterset_fields = ['pulse', 'status']
     ordering_fields = ['sent_at', 'completed_at']
     ordering = ['-sent_at']
+    
+    tenant_scope = 'account'
+    tenant_field_paths = {
+        'account': 'pulse__account',
+        'store': 'pulse__store'
+    }
+    tenant_object_paths = {
+        'account': 'pulse.account_id',
+        'store': 'pulse.store_id'
+    }
 
     def get_queryset(self):
         """Filter invitations based on user role and accessible stores"""
@@ -356,7 +380,7 @@ class EmployeeVoiceInvitationViewSet(viewsets.ReadOnlyModelViewSet):
         return self.queryset.filter(pulse__store__in=accessible_stores)
 
 
-class EmployeeVoiceResponseViewSet(viewsets.ReadOnlyModelViewSet):
+class EmployeeVoiceResponseViewSet(ScopedQuerysetMixin, viewsets.ReadOnlyModelViewSet):
     """
     Read-only viewset for employee voice responses.
     Comments are role-gated via serializer.
@@ -368,10 +392,20 @@ class EmployeeVoiceResponseViewSet(viewsets.ReadOnlyModelViewSet):
     """
     queryset = EmployeeVoiceResponse.objects.all()
     serializer_class = EmployeeVoiceResponseSerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, TenantObjectPermission]
     filterset_fields = ['pulse', 'mood', 'confidence']
     ordering_fields = ['completed_at', 'mood']
     ordering = ['-completed_at']
+    
+    tenant_scope = 'account'
+    tenant_field_paths = {
+        'account': 'pulse__account',
+        'store': 'pulse__store'
+    }
+    tenant_object_paths = {
+        'account': 'pulse.account_id',
+        'store': 'pulse.store_id'
+    }
 
     def get_queryset(self):
         """Filter responses based on user role"""
@@ -392,7 +426,7 @@ class EmployeeVoiceResponseViewSet(viewsets.ReadOnlyModelViewSet):
         return self.queryset.none()
 
 
-class AutoFixFlowConfigViewSet(viewsets.ModelViewSet):
+class AutoFixFlowConfigViewSet(ScopedQuerysetMixin, ScopedCreateMixin, viewsets.ModelViewSet):
     """
     ViewSet for managing auto-fix flow configurations.
 
@@ -402,8 +436,18 @@ class AutoFixFlowConfigViewSet(viewsets.ModelViewSet):
     """
     queryset = AutoFixFlowConfig.objects.all()
     serializer_class = AutoFixFlowConfigSerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, TenantObjectPermission]
     filterset_fields = ['pulse', 'is_enabled']
+    
+    tenant_scope = 'account'
+    tenant_field_paths = {
+        'account': 'pulse__account',
+        'store': 'pulse__store'
+    }
+    tenant_object_paths = {
+        'account': 'pulse.account_id',
+        'store': 'pulse.store_id'
+    }
 
     def get_queryset(self):
         """Filter configs based on user role"""
@@ -418,7 +462,7 @@ class AutoFixFlowConfigViewSet(viewsets.ModelViewSet):
         return self.queryset.none()
 
 
-class CrossVoiceCorrelationViewSet(viewsets.ReadOnlyModelViewSet):
+class CrossVoiceCorrelationViewSet(ScopedQuerysetMixin, viewsets.ReadOnlyModelViewSet):
     """
     Read-only viewset for cross-voice correlations.
     Shows correlations between pulse trends and micro-check failures.
@@ -429,10 +473,20 @@ class CrossVoiceCorrelationViewSet(viewsets.ReadOnlyModelViewSet):
     """
     queryset = CrossVoiceCorrelation.objects.all()
     serializer_class = CrossVoiceCorrelationSerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, TenantObjectPermission]
     filterset_fields = ['pulse', 'correlation_type', 'strength', 'is_resolved', 'is_actionable']
     ordering_fields = ['created_at', 'strength']
     ordering = ['-created_at']
+    
+    tenant_scope = 'account'
+    tenant_field_paths = {
+        'account': 'pulse__account',
+        'store': 'pulse__store'
+    }
+    tenant_object_paths = {
+        'account': 'pulse.account_id',
+        'store': 'pulse.store_id'
+    }
 
     def get_queryset(self):
         """Filter correlations based on user role"""

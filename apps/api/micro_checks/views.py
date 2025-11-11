@@ -13,6 +13,9 @@ from drf_spectacular.utils import extend_schema, OpenApiParameter
 import hashlib
 import uuid
 
+from core.tenancy.mixins import ScopedQuerysetMixin, ScopedCreateMixin
+from core.tenancy.permissions import TenantObjectPermission
+
 from .models import (
     MicroCheckTemplate,
     MicroCheckRun,
@@ -45,72 +48,79 @@ from .utils import (
 from .tasks import process_micro_check_response
 
 
-class MicroCheckTemplateViewSet(viewsets.ModelViewSet):
+class MicroCheckTemplateViewSet(ScopedQuerysetMixin, ScopedCreateMixin, viewsets.ModelViewSet):
     """
     ViewSet for managing micro-check templates.
 
     Templates define the checks that can be assigned to managers.
 
     Access Control:
-    - ADMIN: Full access (create, edit, delete, publish, archive)
-    - OWNER: View all for their brand, can clone templates
-    - GM: View-only access to assigned templates
+    - SUPER_ADMIN: Full access to all templates (unrestricted)
+    - ADMIN: Full access to all templates (unrestricted)
+    - OWNER: View templates for their brand + global templates, can clone
+    - GM: View-only access to templates for their brand + global templates
     - INSPECTOR: No access
     """
     queryset = MicroCheckTemplate.objects.all()
     serializer_class = MicroCheckTemplateSerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, TenantObjectPermission]
     filterset_fields = ['category', 'severity', 'is_active', 'brand', 'is_local', 'source', 'level']
     search_fields = ['title', 'description', 'success_criteria']
     ordering_fields = ['created_at', 'category', 'severity', 'rotation_priority', 'title', 'times_used']
     ordering = ['-created_at']  # Show newest templates first
+    
+    tenant_scope = 'auto'  # Templates can be BRAND/ACCOUNT/STORE level
+    tenant_field_paths = {
+        'brand': 'brand',
+        'account': 'account',
+        'store': 'store'
+    }
+    tenant_create_fields = {'brand': 'brand'}
+    tenant_object_paths = {
+        'brand': 'brand_id',
+        'account': 'account_id',
+        'store': 'store_id'
+    }
+    tenant_unrestricted_roles = ['SUPER_ADMIN']  # These roles see all templates
+
+    def get_tenant_filter(self, user):
+        """
+        Build composite filter for templates.
+        
+        Templates have multi-level scoping (BRAND/ACCOUNT/STORE) plus global templates.
+        Users should see templates at their level + global templates.
+        """
+        from core.tenancy.utils import tenant_ids
+        
+        ids = tenant_ids(user)
+        filters = Q()
+        
+        filters |= Q(brand__isnull=True)
+        
+        if ids['brand_id']:
+            filters |= Q(brand_id=ids['brand_id'])
+        
+        if ids['account_id']:
+            filters |= Q(account_id=ids['account_id'])
+        
+        if ids['store_id']:
+            filters |= Q(store_id=ids['store_id'])
+        
+        if not any([ids['brand_id'], ids['account_id'], ids['store_id']]):
+            return Q(pk__in=[])
+        
+        return filters
 
     def get_queryset(self):
         """Filter templates based on user role and brand access"""
-        user = self.request.user
-
-        # Annotate with usage count for sorting
-        queryset = self.queryset.annotate(
+        queryset = super().get_queryset()
+        
+        # Add annotations for sorting
+        queryset = queryset.annotate(
             times_used=Count('microcheckresponse')
         )
-
-        # ADMIN sees all templates
-        if user.role == 'ADMIN':
-            return queryset
-
-        # For non-admin users, apply brand filtering
-        # If a specific brand is requested in query params, show only that brand's templates
-        brand_param = self.request.query_params.get('brand')
-        if brand_param:
-            # Show only templates for the specified brand (excludes global templates)
-            if user.role in ['OWNER', 'TRIAL_ADMIN', 'GM']:
-                if user.store and user.store.brand and str(user.store.brand.id) == brand_param:
-                    return queryset.filter(brand=user.store.brand)
-            return queryset.none()
-
-        # If is_local=false is requested, show global templates
-        is_local_param = self.request.query_params.get('is_local')
-        if is_local_param == 'false':
-            return queryset.filter(brand__isnull=True)
-
-        # Default: OWNER and TRIAL_ADMIN see templates for their brand + global templates
-        if user.role in ['OWNER', 'TRIAL_ADMIN']:
-            if user.store and user.store.brand:
-                return queryset.filter(
-                    Q(brand=user.store.brand) | Q(brand__isnull=True)
-                )
-            return queryset.filter(brand__isnull=True)
-
-        # GM sees templates for their brand + global templates (read-only)
-        if user.role == 'GM':
-            if user.store and user.store.brand:
-                return queryset.filter(
-                    Q(brand=user.store.brand) | Q(brand__isnull=True)
-                )
-            return queryset.filter(brand__isnull=True)
-
-        # INSPECTOR has no access to templates
-        return queryset.none()
+        
+        return queryset
 
     def perform_create(self, serializer):
         """ADMIN, OWNER, and TRIAL_ADMIN can create templates"""
@@ -521,7 +531,7 @@ class MicroCheckTemplateViewSet(viewsets.ModelViewSet):
             )
 
 
-class MicroCheckRunViewSet(viewsets.ModelViewSet):
+class MicroCheckRunViewSet(ScopedQuerysetMixin, viewsets.ModelViewSet):
     """
     ViewSet for managing micro-check runs.
 
@@ -529,11 +539,15 @@ class MicroCheckRunViewSet(viewsets.ModelViewSet):
     """
     queryset = MicroCheckRun.objects.select_related('store', 'created_by').prefetch_related('items')
     serializer_class = MicroCheckRunSerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, TenantObjectPermission]
     filter_backends = [DjangoFilterBackend, OrderingFilter]
     filterset_fields = ['store', 'status', 'scheduled_for']
     ordering_fields = ['scheduled_for', 'created_at']
     ordering = ['-scheduled_for']
+    
+    tenant_scope = 'store'
+    tenant_field_paths = {'store': 'store'}
+    tenant_object_paths = {'store': 'store_id'}
 
     def get_queryset(self):
         """Filter runs based on user's accessible stores"""
@@ -1080,7 +1094,7 @@ class MicroCheckRunViewSet(viewsets.ModelViewSet):
         }, status=status.HTTP_201_CREATED)
 
 
-class MicroCheckResponseViewSet(viewsets.ModelViewSet):
+class MicroCheckResponseViewSet(ScopedQuerysetMixin, viewsets.ModelViewSet):
     """
     ViewSet for submitting and viewing micro-check responses.
 
@@ -1092,10 +1106,15 @@ class MicroCheckResponseViewSet(viewsets.ModelViewSet):
         'completed_by'
     )
     serializer_class = MicroCheckResponseSerializer
+    permission_classes = [IsAuthenticated, TenantObjectPermission]
     filter_backends = [DjangoFilterBackend, OrderingFilter]
     filterset_fields = ['store', 'category', 'status', 'severity_snapshot', 'run']
     ordering_fields = ['completed_at', 'created_at']
     ordering = ['-completed_at']
+    
+    tenant_scope = 'store'
+    tenant_field_paths = {'store': 'store'}
+    tenant_object_paths = {'store': 'store_id'}
 
     def get_permissions(self):
         """Allow unauthenticated access for magic link submissions"""
@@ -1324,24 +1343,24 @@ class MicroCheckResponseViewSet(viewsets.ModelViewSet):
         return Response(serializer.data)
 
 
-class MicroCheckStreakViewSet(viewsets.ReadOnlyModelViewSet):
+class MicroCheckStreakViewSet(ScopedQuerysetMixin, viewsets.ReadOnlyModelViewSet):
     """
-    ViewSet for viewing streak information.
+    ViewSet for viewing streak information with tenant isolation.
 
     Read-only - streaks are calculated automatically by tasks.
+    Streaks are scoped to stores.
     """
     queryset = MicroCheckStreak.objects.select_related('store', 'user')
     serializer_class = MicroCheckStreakSerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, TenantObjectPermission]
     filterset_fields = ['store', 'user']
     ordering_fields = ['current_streak', 'longest_streak', 'last_completed_date']
     ordering = ['-current_streak']
 
-    def get_queryset(self):
-        """Filter streaks based on user's accessible stores"""
-        user = self.request.user
-        accessible_stores = user.get_accessible_stores()
-        return self.queryset.filter(store__in=accessible_stores)
+    tenant_scope = 'store'
+    tenant_field_paths = {'store': 'store'}
+    tenant_object_paths = {'store': 'store_id'}
+    tenant_unrestricted_roles = ['SUPER_ADMIN']
 
     @extend_schema(
         summary="Get leaderboard for a store",
@@ -1364,55 +1383,27 @@ class MicroCheckStreakViewSet(viewsets.ReadOnlyModelViewSet):
         return Response(serializer.data)
 
 
-class StoreStreakViewSet(viewsets.ReadOnlyModelViewSet):
+class StoreStreakViewSet(ScopedQuerysetMixin, viewsets.ReadOnlyModelViewSet):
     """
-    ViewSet for viewing store-level streak information.
+    ViewSet for viewing store-level streak information with tenant isolation.
 
     Read-only - streaks are calculated automatically by tasks.
+    Streaks are scoped to stores.
     """
     queryset = StoreStreak.objects.select_related('store')
     serializer_class = StoreStreakSerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, TenantObjectPermission]
     filterset_fields = ['store']
     ordering_fields = ['current_streak', 'longest_streak', 'last_completion_date']
     ordering = ['-current_streak']
 
-    def get_queryset(self):
-        """Filter store streaks based on user's accessible stores"""
-        user = self.request.user
-
-        # Super admins see all
-        if user.role == 'SUPER_ADMIN':
-            return self.queryset
-
-        # Admins see all for their brand
-        if user.role == 'ADMIN':
-            if user.store:
-                return self.queryset.filter(store__brand=user.store.brand)
-            return self.queryset
-
-        # Owners see all for their brand
-        if user.role == 'OWNER':
-            if user.store:
-                return self.queryset.filter(store__brand=user.store.brand)
-            return self.queryset
-
-        # GMs see only their store
-        if user.role == 'GM':
-            if user.store:
-                return self.queryset.filter(store=user.store)
-            return self.queryset.none()
-
-        # Trial admins see all for their brand
-        if user.role == 'TRIAL_ADMIN':
-            if user.store:
-                return self.queryset.filter(store__brand=user.store.brand)
-            return self.queryset
-
-        return self.queryset.none()
+    tenant_scope = 'store'
+    tenant_field_paths = {'store': 'store'}
+    tenant_object_paths = {'store': 'store_id'}
+    tenant_unrestricted_roles = ['SUPER_ADMIN']
 
 
-class CorrectiveActionViewSet(viewsets.ModelViewSet):
+class CorrectiveActionViewSet(ScopedQuerysetMixin, viewsets.ModelViewSet):
     """
     ViewSet for managing corrective actions.
 
@@ -1425,10 +1416,14 @@ class CorrectiveActionViewSet(viewsets.ModelViewSet):
         'resolved_by'
     )
     serializer_class = CorrectiveActionSerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, TenantObjectPermission]
     filterset_fields = ['store', 'category', 'status', 'assigned_to']
     ordering_fields = ['due_date', 'created_at', 'resolved_at']
     ordering = ['-created_at']  # Use created_at instead of due_date to avoid NULL issues
+    
+    tenant_scope = 'store'
+    tenant_field_paths = {'store': 'store'}
+    tenant_object_paths = {'store': 'store_id'}
 
     def get_queryset(self):
         """Filter actions based on user's accessible stores and assignments"""
@@ -1568,24 +1563,24 @@ class CorrectiveActionViewSet(viewsets.ModelViewSet):
         return Response(serializer.data)
 
 
-class CheckCoverageViewSet(viewsets.ReadOnlyModelViewSet):
+class CheckCoverageViewSet(ScopedQuerysetMixin, viewsets.ReadOnlyModelViewSet):
     """
-    ViewSet for viewing check coverage statistics.
+    ViewSet for viewing check coverage statistics with tenant isolation.
 
     Read-only - coverage is tracked automatically.
+    Coverage is scoped to stores.
     """
     queryset = CheckCoverage.objects.select_related('store', 'template')
     serializer_class = CheckCoverageSerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, TenantObjectPermission]
     filterset_fields = ['store', 'category', 'template']
     ordering_fields = ['last_used_date', 'times_used', 'consecutive_passes', 'consecutive_fails']
     ordering = ['-last_used_date']
 
-    def get_queryset(self):
-        """Filter coverage based on user's accessible stores"""
-        user = self.request.user
-        accessible_stores = user.get_accessible_stores()
-        return self.queryset.filter(store__in=accessible_stores)
+    tenant_scope = 'store'
+    tenant_field_paths = {'store': 'store'}
+    tenant_object_paths = {'store': 'store_id'}
+    tenant_unrestricted_roles = ['SUPER_ADMIN']
 
     @extend_schema(
         summary="Get coverage summary by category",
@@ -1747,12 +1742,35 @@ def list_templates(request):
     }, status=status.HTTP_200_OK)
 
 
-class MediaAssetViewSet(viewsets.ModelViewSet):
+class MediaAssetViewSet(ScopedQuerysetMixin, viewsets.ModelViewSet):
     """Upload and manage media assets"""
     queryset = MediaAsset.objects.all()
     serializer_class = MediaAssetSerializer
-    permission_classes = [AllowAny]  # TODO: Change to IsAuthenticated when auth is ready
+    permission_classes = [IsAuthenticated, TenantObjectPermission]
     parser_classes = [MultiPartParser, FormParser]
+
+    # Tenant isolation configuration
+    tenant_scope = 'store'
+    tenant_field_paths = {'store': 'store'}
+    tenant_object_paths = {'store': 'store_id'}
+    tenant_unrestricted_roles = ['SUPER_ADMIN']
+
+    def get_tenant_filter(self, user):
+        """Override to support brand, account, and store level users"""
+        from core.tenancy.utils import tenant_ids, determine_scope
+        from django.db.models import Q
+
+        user_scope = determine_scope(user)
+        ids = tenant_ids(user)
+
+        if user_scope == 'store' and ids['store_id']:
+            return Q(store_id=ids['store_id'])
+        elif user_scope == 'account' and ids['account_id']:
+            return Q(store__account_id=ids['account_id'])
+        elif user_scope == 'brand' and ids['brand_id']:
+            return Q(store__brand_id=ids['brand_id'])
+
+        return Q(pk__in=[])
 
     def create(self, request, *args, **kwargs):
         """Upload a new media file"""
@@ -1781,8 +1799,15 @@ class MediaAssetViewSet(viewsets.ModelViewSet):
         # Upload to S3
         s3_path = default_storage.save(s3_key, file)
 
-        # Get store from request (default to store ID 10 for now)
-        store_id = request.data.get('store_id', 10)
+        # Get store from request or use user's store
+        store_id = request.data.get('store_id')
+        if not store_id and request.user.store:
+            store_id = request.user.store.id
+        if not store_id:
+            return Response(
+                {'error': 'No store specified and user has no default store'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
 
         # Create MediaAsset
         media_asset = MediaAsset.objects.create(
@@ -1793,7 +1818,7 @@ class MediaAssetViewSet(viewsets.ModelViewSet):
             sha256=sha256,
             bytes=file.size,
             retention_policy=MediaAsset.RetentionPolicy.COACHING_7D,
-            created_by=request.user if request.user.is_authenticated else None
+            created_by=request.user
         )
 
         serializer = self.get_serializer(media_asset)

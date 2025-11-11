@@ -7,6 +7,10 @@ from rest_framework import viewsets, status
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
+
+from core.tenancy.mixins import ScopedQuerysetMixin
+from core.tenancy.permissions import TenantObjectPermission
+
 from .models import Upload
 from .serializers import UploadSerializer
 
@@ -277,23 +281,48 @@ def trigger_manual_cleanup(request):
         )
 
 
-class UploadViewSet(viewsets.ReadOnlyModelViewSet):
+class UploadViewSet(ScopedQuerysetMixin, viewsets.ReadOnlyModelViewSet):
     """
-    ViewSet for viewing upload status and history
+    ViewSet for viewing upload status and history with tenant isolation.
+
+    Uploads are scoped to stores. Access control:
+    - SUPER_ADMIN: Full access to all uploads (unrestricted)
+    - ADMIN: Access to all uploads in their brand
+    - OWNER, GM: Access to uploads in their store
     """
+    queryset = Upload.objects.all()
     serializer_class = UploadSerializer
-    permission_classes = [IsAuthenticated]
-    
+    permission_classes = [IsAuthenticated, TenantObjectPermission]
+
+    tenant_scope = 'store'
+    tenant_field_paths = {'store': 'store'}
+    tenant_object_paths = {'store': 'store_id'}
+    tenant_unrestricted_roles = ['SUPER_ADMIN']
+
+    def get_tenant_filter(self, user):
+        """Override to support brand, account, and store level users"""
+        from core.tenancy.utils import tenant_ids, determine_scope
+        from django.db.models import Q
+
+        user_scope = determine_scope(user)
+        ids = tenant_ids(user)
+
+        if user_scope == 'store' and ids['store_id']:
+            return Q(store_id=ids['store_id'])
+        elif user_scope == 'account' and ids['account_id']:
+            return Q(store__account_id=ids['account_id'])
+        elif user_scope == 'brand' and ids['brand_id']:
+            return Q(store__brand_id=ids['brand_id'])
+
+        return Q(pk__in=[])
+
     def get_queryset(self):
-        queryset = Upload.objects.all()
-        
-        # Filter by store if user has store assignment
-        if hasattr(self.request.user, 'store') and self.request.user.store:
-            queryset = queryset.filter(store=self.request.user.store)
-        
+        """Apply tenant filtering and optional mode filter"""
+        queryset = super().get_queryset()
+
         # Filter by mode if specified
         mode = self.request.query_params.get('mode')
         if mode:
             queryset = queryset.filter(mode=mode)
-            
+
         return queryset.order_by('-created_at')

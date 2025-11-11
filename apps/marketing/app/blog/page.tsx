@@ -8,6 +8,16 @@ import NewsletterSignup from '../../components/NewsletterSignup';
 const Blog = () => {
   const blogPosts = [
     {
+      id: 'passwordless-access',
+      title: 'How PeakOps Eliminated Passwords (And Why Your Managers Will Thank You)',
+      excerpt: 'Discover how passwordless SMS access increased check completion rates by 53% and eliminated password reset tickets. One-tap authentication transforms restaurant operations.',
+      author: 'PeakOps Team',
+      date: '2025-11-11',
+      readTime: '5 min read',
+      category: 'Product Updates',
+      slug: '/blog/passwordless-access'
+    },
+    {
       id: 'reviews-to-action',
       title: 'From Reviews to Action: How Customer Feedback Drives Better Operations',
       excerpt: 'Your customers are leaving you detailed reports every week about what\'s working and what\'s not. Learn how to transform Google reviews into actionable micro-checks that improve operations and drive measurable results.',

@@ -1,11 +1,48 @@
-from rest_framework import generics, filters
+from rest_framework import generics, filters, viewsets
 from rest_framework.permissions import IsAuthenticated
 from django_filters.rest_framework import DjangoFilterBackend
+from core.tenancy.mixins import ScopedQuerysetMixin, ScopedCreateMixin
+from core.tenancy.permissions import TenantObjectPermission
 from .models import Brand, Store
 from .serializers import BrandSerializer, StoreSerializer, StoreListSerializer
 
 
+class BrandViewSet(ScopedQuerysetMixin, ScopedCreateMixin, viewsets.ModelViewSet):
+    """
+    ViewSet for managing brands.
+
+    Access Control:
+    - SUPER_ADMIN/ADMIN: Can see and manage all brands
+    - OWNER/GM/Others: Can only see their own brand
+    """
+    queryset = Brand.objects.filter(is_active=True)
+    serializer_class = BrandSerializer
+    permission_classes = [IsAuthenticated, TenantObjectPermission]
+    filter_backends = [filters.SearchFilter, filters.OrderingFilter]
+    search_fields = ['name', 'description']
+    ordering_fields = ['name', 'created_at']
+    ordering = ['name']
+
+    # Tenant isolation configuration
+    tenant_scope = 'brand'
+    tenant_field_paths = {'brand': 'id'}
+    tenant_unrestricted_roles = ['SUPER_ADMIN']
+    tenant_object_paths = {'brand': 'id'}
+    tenant_create_fields = {}  # Don't auto-assign brand when creating a brand
+
+    def get_tenant_filter(self, user):
+        """Override to filter brands by user's brand_id regardless of user scope"""
+        from core.tenancy.utils import tenant_ids
+        from django.db.models import Q
+
+        ids = tenant_ids(user)
+        if ids['brand_id']:
+            return Q(id=ids['brand_id'])
+        return Q(pk__in=[])  # No brand access
+
+
 class BrandListCreateView(generics.ListCreateAPIView):
+    """Legacy view - prefer using BrandViewSet"""
     queryset = Brand.objects.filter(is_active=True)
     serializer_class = BrandSerializer
     permission_classes = [IsAuthenticated]
@@ -14,11 +51,42 @@ class BrandListCreateView(generics.ListCreateAPIView):
     ordering_fields = ['name', 'created_at']
     ordering = ['name']
 
+    def get_queryset(self):
+        """Filter brands based on user's brand"""
+        from accounts.models import User
+        user = self.request.user
+
+        # SUPER_ADMIN and ADMIN see all brands
+        if user.role in [User.Role.SUPER_ADMIN, User.Role.ADMIN]:
+            return Brand.objects.filter(is_active=True)
+
+        # Other users see only their brand
+        if user.store and user.store.brand:
+            return Brand.objects.filter(id=user.store.brand.id, is_active=True)
+
+        return Brand.objects.none()
+
 
 class BrandDetailView(generics.RetrieveUpdateDestroyAPIView):
+    """Legacy view - prefer using BrandViewSet"""
     queryset = Brand.objects.all()
     serializer_class = BrandSerializer
     permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        """Filter brands based on user's brand"""
+        from accounts.models import User
+        user = self.request.user
+
+        # SUPER_ADMIN and ADMIN see all brands
+        if user.role in [User.Role.SUPER_ADMIN, User.Role.ADMIN]:
+            return Brand.objects.all()
+
+        # Other users see only their brand
+        if user.store and user.store.brand:
+            return Brand.objects.filter(id=user.store.brand.id)
+
+        return Brand.objects.none()
 
 
 class StoreListCreateView(generics.ListCreateAPIView):
@@ -68,16 +136,21 @@ class StoreListCreateView(generics.ListCreateAPIView):
         google_location_data = serializer.validated_data.pop('google_location_data', None)
         logger.info(f"Google location data: {google_location_data}")
 
-        # Auto-set account based on brand's account
-        brand = serializer.validated_data.get('brand')
-        if brand and brand.account:
-            serializer.validated_data['account'] = brand.account
-            logger.info(f"Auto-setting account to {brand.account} from brand {brand.name}")
-        elif not serializer.validated_data.get('account'):
-            # Fallback: use request user's account if no brand account
+        # Auto-set account if not provided
+        if not serializer.validated_data.get('account'):
+            # Use request user's account if available
             if hasattr(self.request.user, 'account') and self.request.user.account:
                 serializer.validated_data['account'] = self.request.user.account
                 logger.info(f"Auto-setting account to {self.request.user.account} from request user")
+
+        # Validate account matches brand if both are provided
+        account = serializer.validated_data.get('account')
+        brand = serializer.validated_data.get('brand')
+        if account and brand and account.brand_id != brand.id:
+            from rest_framework.exceptions import ValidationError
+            raise ValidationError({
+                'account': f'Account must belong to brand {brand.name}'
+            })
 
         # Create the store
         store = serializer.save()

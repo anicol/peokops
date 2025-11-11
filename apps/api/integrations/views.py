@@ -7,6 +7,9 @@ from django.utils import timezone
 from datetime import timedelta
 import logging
 
+from core.tenancy.mixins import ScopedQuerysetMixin, ScopedCreateMixin
+from core.tenancy.permissions import TenantObjectPermission
+
 from accounts.models import Account
 from .models import (
     SevenShiftsConfig, SevenShiftsEmployee, SevenShiftsShift,
@@ -25,7 +28,7 @@ from .sync_service import SevenShiftsSyncService
 logger = logging.getLogger(__name__)
 
 
-class SevenShiftsIntegrationViewSet(viewsets.GenericViewSet):
+class SevenShiftsIntegrationViewSet(ScopedQuerysetMixin, viewsets.GenericViewSet):
     """
     ViewSet for managing 7shifts integration per account.
 
@@ -37,8 +40,12 @@ class SevenShiftsIntegrationViewSet(viewsets.GenericViewSet):
     - Disconnecting integration
     """
 
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, TenantObjectPermission]
     serializer_class = SevenShiftsConfigSerializer
+    
+    tenant_scope = 'account'
+    tenant_field_paths = {'account': 'account'}
+    tenant_object_paths = {'account': 'account_id'}
 
     def get_queryset(self):
         """Filter configurations by user's account"""
@@ -589,9 +596,9 @@ class SevenShiftsIntegrationViewSet(viewsets.GenericViewSet):
 # Google Reviews Integration ViewSet
 # ============================================================================
 
-class GoogleReviewsIntegrationViewSet(viewsets.GenericViewSet):
+class GoogleReviewsIntegrationViewSet(ScopedQuerysetMixin, viewsets.GenericViewSet):
     """
-    ViewSet for managing Google Reviews integration per account.
+    ViewSet for managing Google Reviews integration per account with tenant isolation.
 
     Provides endpoints for:
     - OAuth connection flow
@@ -600,16 +607,22 @@ class GoogleReviewsIntegrationViewSet(viewsets.GenericViewSet):
     - Managing locations
     - Viewing reviews
     - Disconnecting integration
+
+    Scoped to accounts for tenant isolation.
     """
 
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, TenantObjectPermission]
+
+    tenant_scope = 'account'
+    tenant_field_paths = {'account': 'account'}
+    tenant_object_paths = {'account': 'account_id'}
+    tenant_unrestricted_roles = ['SUPER_ADMIN']
 
     def get_queryset(self):
-        """Filter configurations by user's account"""
+        """Filter configurations by user's account with tenant filtering"""
         from .models import GoogleReviewsConfig
-        if self.request.user.account:
-            return GoogleReviewsConfig.objects.filter(account=self.request.user.account)
-        return GoogleReviewsConfig.objects.none()
+        queryset = GoogleReviewsConfig.objects.all()
+        return super().get_queryset() if hasattr(super(), 'get_queryset') else queryset.filter(account=self.request.user.account) if self.request.user.account else queryset.none()
 
     @action(detail=False, methods=['get'], url_path='status')
     def get_status(self, request):

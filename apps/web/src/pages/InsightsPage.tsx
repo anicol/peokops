@@ -1,13 +1,14 @@
 import { useQuery } from 'react-query';
 import { useNavigate } from 'react-router-dom';
+import { useState, useEffect } from 'react';
 import { useAuth } from '@/hooks/useAuth';
-import { insightsAPI } from '@/services/api';
+import { insightsAPI, storesAPI } from '@/services/api';
 import { InsightsSummaryStrip } from '@/components/insights/InsightsSummaryStrip';
 import { CustomerVoiceSection } from '@/components/insights/CustomerVoiceSection';
 import { EmployeeVoiceSection } from '@/components/insights/EmployeeVoiceSection';
 import { OperationalVoiceSection } from '@/components/insights/OperationalVoiceSection';
 import { CrossVoiceTrendsSection } from '@/components/insights/CrossVoiceTrendsSection';
-import { Loader2 } from 'lucide-react';
+import { Loader2, Store as StoreIcon } from 'lucide-react';
 
 export default function InsightsPage() {
   const { user } = useAuth();
@@ -15,12 +16,34 @@ export default function InsightsPage() {
 
   const isTrialUser = user?.is_trial_user || false;
 
+  // Fetch stores for account-level users
+  const { data: stores } = useQuery(
+    ['stores'],
+    () => storesAPI.getStores(),
+    {
+      enabled: !user?.store, // Only fetch if user doesn't have a single store
+    }
+  );
+
+  // State for selected store
+  const [selectedStoreId, setSelectedStoreId] = useState<number | null>(null);
+
+  // Determine which store ID to use
+  const storeId = user?.store || selectedStoreId;
+
+  // Auto-select first store if user has no assigned store
+  useEffect(() => {
+    if (!user?.store && stores && stores.length > 0 && !selectedStoreId) {
+      setSelectedStoreId(stores[0].id);
+    }
+  }, [user?.store, stores, selectedStoreId]);
+
   // Fetch insights data
   const { data: insights, isLoading, error } = useQuery(
-    ['insights', user?.store],
-    () => insightsAPI.getSummary(user!.store!),
+    ['insights', storeId],
+    () => insightsAPI.getSummary(storeId!),
     {
-      enabled: !!user?.store,
+      enabled: !!storeId,
       refetchInterval: 30000, // Refresh every 30 seconds
       staleTime: 10000, // Consider data stale after 10 seconds
     }
@@ -57,6 +80,29 @@ export default function InsightsPage() {
 
       {/* Main Content */}
       <div className="max-w-5xl mx-auto px-6 py-8">
+        {/* Store Selector for account-level users */}
+        {!user?.store && stores && stores.length > 1 && (
+          <div className="mb-6 bg-white rounded-lg border border-gray-200 p-4">
+            <div className="flex items-center space-x-3">
+              <StoreIcon className="w-5 h-5 text-gray-600" />
+              <label htmlFor="store-select" className="text-sm font-medium text-gray-700">
+                Select Store:
+              </label>
+              <select
+                id="store-select"
+                value={selectedStoreId || ''}
+                onChange={(e) => setSelectedStoreId(Number(e.target.value))}
+                className="flex-1 rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+              >
+                {stores.map((store) => (
+                  <option key={store.id} value={store.id}>
+                    {store.name} {store.code ? `(${store.code})` : ''}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+        )}
         {/* Customer Voice */}
         <CustomerVoiceSection
           data={insights.voices.customer}

@@ -352,7 +352,11 @@ def _user_can_access_store(user, store):
     if user.role in [User.Role.SUPER_ADMIN, User.Role.ADMIN]:
         return True
 
-    # Other roles see stores in their brand/account
+    # Account-level users (OWNER, TRIAL_ADMIN) see stores in their account
+    if user.account:
+        return store.account == user.account
+
+    # Store-level users (GM, INSPECTOR, EMPLOYEE) see stores in their brand
     if user.store and user.store.brand:
         return store.brand == user.store.brand
 
