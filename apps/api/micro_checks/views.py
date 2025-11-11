@@ -55,9 +55,10 @@ class MicroCheckTemplateViewSet(ScopedQuerysetMixin, ScopedCreateMixin, viewsets
     Templates define the checks that can be assigned to managers.
 
     Access Control:
-    - ADMIN: Full access (create, edit, delete, publish, archive)
-    - OWNER: View all for their brand, can clone templates
-    - GM: View-only access to assigned templates
+    - SUPER_ADMIN: Full access to all templates (unrestricted)
+    - ADMIN: Full access to all templates (unrestricted)
+    - OWNER: View templates for their brand + global templates, can clone
+    - GM: View-only access to templates for their brand + global templates
     - INSPECTOR: No access
     """
     queryset = MicroCheckTemplate.objects.all()
@@ -80,6 +81,35 @@ class MicroCheckTemplateViewSet(ScopedQuerysetMixin, ScopedCreateMixin, viewsets
         'account': 'account_id',
         'store': 'store_id'
     }
+    tenant_unrestricted_roles = ['SUPER_ADMIN', 'ADMIN']  # These roles see all templates
+
+    def get_tenant_filter(self, user):
+        """
+        Build composite filter for templates.
+        
+        Templates have multi-level scoping (BRAND/ACCOUNT/STORE) plus global templates.
+        Users should see templates at their level + global templates.
+        """
+        from core.tenancy.utils import tenant_ids
+        
+        ids = tenant_ids(user)
+        filters = Q()
+        
+        filters |= Q(brand__isnull=True)
+        
+        if ids['brand_id']:
+            filters |= Q(brand_id=ids['brand_id'])
+        
+        if ids['account_id']:
+            filters |= Q(account_id=ids['account_id'])
+        
+        if ids['store_id']:
+            filters |= Q(store_id=ids['store_id'])
+        
+        if not any([ids['brand_id'], ids['account_id'], ids['store_id']]):
+            return Q(pk__in=[])
+        
+        return filters
 
     def get_queryset(self):
         """Filter templates based on user role and brand access"""
