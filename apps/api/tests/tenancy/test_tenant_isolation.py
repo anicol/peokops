@@ -1235,14 +1235,13 @@ class EmployeeVoiceResponseTenantIsolationTests(TenantIsolationTestCase):
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
     
     def test_gm_a_cannot_see_response_b(self):
-        """GM A cannot see employee voice responses from account B"""
+        """GM A cannot see employee voice responses (no access for GM role)"""
         self.client.force_authenticate(user=self.gm_a)
         response = self.client.get('/api/employee-voice/responses/')
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        response_ids = [str(r['id']) for r in response.data['results']]
-        self.assertIn(str(self.response_a.id), response_ids)
-        self.assertNotIn(str(self.response_b.id), response_ids)
+        # GM role has no access to employee voice responses
+        self.assertEqual(len(response.data['results']), 0)
 
     def test_super_admin_sees_all_responses(self):
         """Super admin can see employee voice responses from all tenants"""
