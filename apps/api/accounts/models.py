@@ -127,7 +127,7 @@ class User(AbstractUser):
         SUPER_ADMIN = 'SUPER_ADMIN', 'Super Admin'  # System-wide authority
         ADMIN = 'ADMIN', 'Admin'  # Brand-level authority
         OWNER = 'OWNER', 'Owner'  # Regional/Franchisee
-        GM = 'GM', 'General Manager'  # Store manager
+        GM = 'GM', 'Manager'  # Store manager
         INSPECTOR = 'INSPECTOR', 'Inspector'  # Store inspector
         EMPLOYEE = 'EMPLOYEE', 'Employee'  # Store employee (servers, cooks, hosts, etc.)
         TRIAL_ADMIN = 'TRIAL_ADMIN', 'Trial Admin'  # Trial user admin
