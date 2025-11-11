@@ -1040,8 +1040,10 @@ class CorrectiveActionTenantIsolationTests(TenantIsolationTestCase):
     
     def setUp(self):
         super().setUp()
-        from micro_checks.models import MicroCheckRun, MicroCheckRunItem, CorrectiveAction
-        
+        from micro_checks.models import MicroCheckRun, MicroCheckRunItem, MicroCheckResponse, MicroCheckAssignment, CorrectiveAction
+        from django.utils.crypto import get_random_string
+        import hashlib
+
         # Create runs for both tenants
         self.run_a = MicroCheckRun.objects.create(
             store=self.store_a,
@@ -1061,10 +1063,27 @@ class CorrectiveActionTenantIsolationTests(TenantIsolationTestCase):
             severity_snapshot=self.template_a.severity
         )
 
-        self.action_a = CorrectiveAction.objects.create(
+        # Create assignment and response for tenant A
+        token_a = get_random_string(32)
+        assignment_a = MicroCheckAssignment.objects.create(
+            run=self.run_a,
+            store=self.store_a,
+            sent_to=self.gm_a,
+            access_token_hash=hashlib.sha256(token_a.encode()).hexdigest(),
+            token_expires_at=timezone.now() + timezone.timedelta(days=7),
+            purpose='RUN_ACCESS'
+        )
+
+        response_a = MicroCheckResponse.objects.create(
             run_item=self.run_item_a,
-            title='Fix issue A',
-            description='Corrective action for store A',
+            run=self.run_a,
+            assignment=assignment_a,
+            template=self.template_a,
+            status='FAIL'
+        )
+
+        self.action_a = CorrectiveAction.objects.create(
+            response=response_a,
             status='OPEN',
             created_from='MANUAL'
         )
@@ -1087,10 +1106,27 @@ class CorrectiveActionTenantIsolationTests(TenantIsolationTestCase):
             severity_snapshot=self.template_b.severity
         )
 
-        self.action_b = CorrectiveAction.objects.create(
+        # Create assignment and response for tenant B
+        token_b = get_random_string(32)
+        assignment_b = MicroCheckAssignment.objects.create(
+            run=self.run_b,
+            store=self.store_b,
+            sent_to=self.gm_b,
+            access_token_hash=hashlib.sha256(token_b.encode()).hexdigest(),
+            token_expires_at=timezone.now() + timezone.timedelta(days=7),
+            purpose='RUN_ACCESS'
+        )
+
+        response_b = MicroCheckResponse.objects.create(
             run_item=self.run_item_b,
-            title='Fix issue B',
-            description='Corrective action for store B',
+            run=self.run_b,
+            assignment=assignment_b,
+            template=self.template_b,
+            status='FAIL'
+        )
+
+        self.action_b = CorrectiveAction.objects.create(
+            response=response_b,
             status='OPEN',
             created_from='MANUAL'
         )
