@@ -1912,12 +1912,17 @@ def list_templates(request):
     }, status=status.HTTP_200_OK)
 
 
-class MediaAssetViewSet(viewsets.ModelViewSet):
+class MediaAssetViewSet(ScopedQuerysetMixin, viewsets.ModelViewSet):
     """Upload and manage media assets"""
     queryset = MediaAsset.objects.all()
     serializer_class = MediaAssetSerializer
-    permission_classes = [AllowAny]  # TODO: Change to IsAuthenticated when auth is ready
+    permission_classes = [IsAuthenticated, TenantObjectPermission]
     parser_classes = [MultiPartParser, FormParser]
+
+    # Tenant isolation configuration
+    tenant_scope = 'store'
+    tenant_field_paths = {'store': 'store'}
+    tenant_object_paths = {'store': 'store_id'}
 
     def create(self, request, *args, **kwargs):
         """Upload a new media file"""
@@ -1946,8 +1951,15 @@ class MediaAssetViewSet(viewsets.ModelViewSet):
         # Upload to S3
         s3_path = default_storage.save(s3_key, file)
 
-        # Get store from request (default to store ID 10 for now)
-        store_id = request.data.get('store_id', 10)
+        # Get store from request or use user's store
+        store_id = request.data.get('store_id')
+        if not store_id and request.user.store:
+            store_id = request.user.store.id
+        if not store_id:
+            return Response(
+                {'error': 'No store specified and user has no default store'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
 
         # Create MediaAsset
         media_asset = MediaAsset.objects.create(
@@ -1958,7 +1970,7 @@ class MediaAssetViewSet(viewsets.ModelViewSet):
             sha256=sha256,
             bytes=file.size,
             retention_policy=MediaAsset.RetentionPolicy.COACHING_7D,
-            created_by=request.user if request.user.is_authenticated else None
+            created_by=request.user
         )
 
         serializer = self.get_serializer(media_asset)

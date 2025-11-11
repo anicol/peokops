@@ -66,6 +66,24 @@ class UserDetailView(generics.RetrieveUpdateDestroyAPIView):
     serializer_class = UserSerializer
     permission_classes = [IsAuthenticated]
 
+    def get_queryset(self):
+        """Filter users based on role - SUPER_ADMIN/ADMIN sees all, OWNER/GM/TRIAL_ADMIN see only their account"""
+        user = self.request.user
+
+        # SUPER_ADMIN and ADMIN see all users across all tenants
+        if user.role in [User.Role.SUPER_ADMIN, User.Role.ADMIN]:
+            return User.objects.all()
+
+        # OWNER, GM, and TRIAL_ADMIN see users in their account
+        if user.role in [User.Role.OWNER, User.Role.GM, User.Role.TRIAL_ADMIN]:
+            if user.account:
+                # Get all users in the same account (tenant)
+                return User.objects.filter(account=user.account)
+            return User.objects.none()
+
+        # Other roles can only see themselves
+        return User.objects.filter(id=user.id)
+
 
 @api_view(['POST'])
 @permission_classes([AllowAny])

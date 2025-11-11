@@ -1,11 +1,38 @@
-from rest_framework import generics, filters
+from rest_framework import generics, filters, viewsets
 from rest_framework.permissions import IsAuthenticated
 from django_filters.rest_framework import DjangoFilterBackend
+from core.tenancy.mixins import ScopedQuerysetMixin, ScopedCreateMixin
+from core.tenancy.permissions import TenantObjectPermission
 from .models import Brand, Store
 from .serializers import BrandSerializer, StoreSerializer, StoreListSerializer
 
 
+class BrandViewSet(ScopedQuerysetMixin, ScopedCreateMixin, viewsets.ModelViewSet):
+    """
+    ViewSet for managing brands.
+
+    Access Control:
+    - SUPER_ADMIN/ADMIN: Can see and manage all brands
+    - OWNER/GM/Others: Can only see their own brand
+    """
+    queryset = Brand.objects.filter(is_active=True)
+    serializer_class = BrandSerializer
+    permission_classes = [IsAuthenticated, TenantObjectPermission]
+    filter_backends = [filters.SearchFilter, filters.OrderingFilter]
+    search_fields = ['name', 'description']
+    ordering_fields = ['name', 'created_at']
+    ordering = ['name']
+
+    # Tenant isolation configuration
+    tenant_scope = 'brand'
+    tenant_field_paths = {'brand': 'id'}  # Brand filters on its own ID
+    tenant_unrestricted_roles = ['SUPER_ADMIN', 'ADMIN']
+    tenant_object_paths = {'brand': 'id'}
+    tenant_create_fields = {}  # Don't auto-assign brand when creating a brand
+
+
 class BrandListCreateView(generics.ListCreateAPIView):
+    """Legacy view - prefer using BrandViewSet"""
     queryset = Brand.objects.filter(is_active=True)
     serializer_class = BrandSerializer
     permission_classes = [IsAuthenticated]
@@ -14,11 +41,42 @@ class BrandListCreateView(generics.ListCreateAPIView):
     ordering_fields = ['name', 'created_at']
     ordering = ['name']
 
+    def get_queryset(self):
+        """Filter brands based on user's brand"""
+        from accounts.models import User
+        user = self.request.user
+
+        # SUPER_ADMIN and ADMIN see all brands
+        if user.role in [User.Role.SUPER_ADMIN, User.Role.ADMIN]:
+            return Brand.objects.filter(is_active=True)
+
+        # Other users see only their brand
+        if user.store and user.store.brand:
+            return Brand.objects.filter(id=user.store.brand.id, is_active=True)
+
+        return Brand.objects.none()
+
 
 class BrandDetailView(generics.RetrieveUpdateDestroyAPIView):
+    """Legacy view - prefer using BrandViewSet"""
     queryset = Brand.objects.all()
     serializer_class = BrandSerializer
     permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        """Filter brands based on user's brand"""
+        from accounts.models import User
+        user = self.request.user
+
+        # SUPER_ADMIN and ADMIN see all brands
+        if user.role in [User.Role.SUPER_ADMIN, User.Role.ADMIN]:
+            return Brand.objects.all()
+
+        # Other users see only their brand
+        if user.store and user.store.brand:
+            return Brand.objects.filter(id=user.store.brand.id)
+
+        return Brand.objects.none()
 
 
 class StoreListCreateView(generics.ListCreateAPIView):
