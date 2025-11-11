@@ -136,16 +136,21 @@ class StoreListCreateView(generics.ListCreateAPIView):
         google_location_data = serializer.validated_data.pop('google_location_data', None)
         logger.info(f"Google location data: {google_location_data}")
 
-        # Auto-set account based on brand's account
-        brand = serializer.validated_data.get('brand')
-        if brand and brand.account:
-            serializer.validated_data['account'] = brand.account
-            logger.info(f"Auto-setting account to {brand.account} from brand {brand.name}")
-        elif not serializer.validated_data.get('account'):
-            # Fallback: use request user's account if no brand account
+        # Auto-set account if not provided
+        if not serializer.validated_data.get('account'):
+            # Use request user's account if available
             if hasattr(self.request.user, 'account') and self.request.user.account:
                 serializer.validated_data['account'] = self.request.user.account
                 logger.info(f"Auto-setting account to {self.request.user.account} from request user")
+
+        # Validate account matches brand if both are provided
+        account = serializer.validated_data.get('account')
+        brand = serializer.validated_data.get('brand')
+        if account and brand and account.brand_id != brand.id:
+            from rest_framework.exceptions import ValidationError
+            raise ValidationError({
+                'account': f'Account must belong to brand {brand.name}'
+            })
 
         # Create the store
         store = serializer.save()
