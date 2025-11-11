@@ -1754,6 +1754,23 @@ class MediaAssetViewSet(ScopedQuerysetMixin, viewsets.ModelViewSet):
     tenant_field_paths = {'store': 'store'}
     tenant_object_paths = {'store': 'store_id'}
 
+    def get_tenant_filter(self, user):
+        """Override to support brand, account, and store level users"""
+        from core.tenancy.utils import tenant_ids, determine_scope
+        from django.db.models import Q
+
+        user_scope = determine_scope(user)
+        ids = tenant_ids(user)
+
+        if user_scope == 'store' and ids['store_id']:
+            return Q(store_id=ids['store_id'])
+        elif user_scope == 'account' and ids['account_id']:
+            return Q(store__account_id=ids['account_id'])
+        elif user_scope == 'brand' and ids['brand_id']:
+            return Q(store__brand_id=ids['brand_id'])
+
+        return Q(pk__in=[])
+
     def create(self, request, *args, **kwargs):
         """Upload a new media file"""
         file = request.FILES.get('file')

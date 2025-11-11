@@ -1221,11 +1221,11 @@ class EmployeeVoiceResponseTenantIsolationTests(TenantIsolationTestCase):
         """Owner A cannot see employee voice responses from account B"""
         self.client.force_authenticate(user=self.owner_a)
         response = self.client.get('/api/employee-voice/responses/')
-        
+
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        response_ids = [r['id'] for r in response.data['results']]
-        self.assertIn(self.response_a.id, response_ids)
-        self.assertNotIn(self.response_b.id, response_ids)
+        response_ids = [str(r['id']) for r in response.data['results']]
+        self.assertIn(str(self.response_a.id), response_ids)
+        self.assertNotIn(str(self.response_b.id), response_ids)
     
     def test_retrieve_cross_tenant_response_returns_404(self):
         """Retrieving employee voice response from another tenant returns 404"""
@@ -1238,21 +1238,21 @@ class EmployeeVoiceResponseTenantIsolationTests(TenantIsolationTestCase):
         """GM A cannot see employee voice responses from account B"""
         self.client.force_authenticate(user=self.gm_a)
         response = self.client.get('/api/employee-voice/responses/')
-        
+
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        response_ids = [r['id'] for r in response.data['results']]
-        self.assertIn(self.response_a.id, response_ids)
-        self.assertNotIn(self.response_b.id, response_ids)
-    
+        response_ids = [str(r['id']) for r in response.data['results']]
+        self.assertIn(str(self.response_a.id), response_ids)
+        self.assertNotIn(str(self.response_b.id), response_ids)
+
     def test_super_admin_sees_all_responses(self):
         """Super admin can see employee voice responses from all tenants"""
         self.client.force_authenticate(user=self.super_admin)
         response = self.client.get('/api/employee-voice/responses/')
-        
+
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        response_ids = [r['id'] for r in response.data['results']]
-        self.assertIn(self.response_a.id, response_ids)
-        self.assertIn(self.response_b.id, response_ids)
+        response_ids = [str(r['id']) for r in response.data['results']]
+        self.assertIn(str(self.response_a.id), response_ids)
+        self.assertIn(str(self.response_b.id), response_ids)
 
 
 class AdminBrandLevelAccessTests(TenantIsolationTestCase):
