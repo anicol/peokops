@@ -41,7 +41,7 @@ const Login = () => {
 
       // First, try to use the token directly as a JWT access token (for invitation links)
       // Test if it's a valid JWT by trying to fetch user data
-      fetch(`${API_CONFIG.baseURL}/auth/me/`, {
+      fetch(`${API_CONFIG.baseURL}/auth/profile/`, {
         headers: {
           ...API_CONFIG.headers,
           'Authorization': `Bearer ${token}`
