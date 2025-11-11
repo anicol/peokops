@@ -30,7 +30,7 @@ def setup_seven_shifts_periodic_tasks(apps, schema_editor):
 
     every_12_hours, _ = IntervalSchedule.objects.get_or_create(
         every=12,
-        period=IntervalSchedule.HOURS
+        period='hours'
     )
 
     # Create periodic tasks
