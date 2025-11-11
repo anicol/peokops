@@ -163,15 +163,34 @@ class InspectorWorkflowTest(TestCase):
     def setUp(self):
         self.client = APIClient()
         self.brand = Brand.objects.create(name="Test Brand")
+
+        # Create account owner first (needed for Account.owner field)
+        self.owner = User.objects.create_user(
+            username="owner", email="owner@test.com", password="test123",
+            role=User.Role.OWNER
+        )
+
+        # Create account
+        from accounts.models import Account
+        self.account = Account.objects.create(
+            name="Test Account",
+            brand=self.brand,
+            owner=self.owner
+        )
+
+        # Link owner to account
+        self.owner.account = self.account
+        self.owner.save()
+
         self.store1 = Store.objects.create(
-            brand=self.brand, name="Store 1", code="ST001",
+            brand=self.brand, account=self.account, name="Store 1", code="ST001",
             address="123 Test St", city="Test City", state="TS", zip_code="12345"
         )
         self.store2 = Store.objects.create(
-            brand=self.brand, name="Store 2", code="ST002", 
+            brand=self.brand, account=self.account, name="Store 2", code="ST002",
             address="456 Test Ave", city="Test City", state="TS", zip_code="12345"
         )
-        
+
         # Create users with different roles
         self.inspector = User.objects.create_user(
             username="inspector", email="inspector@test.com", password="test123",
@@ -179,8 +198,11 @@ class InspectorWorkflowTest(TestCase):
         )
         self.admin = User.objects.create_user(
             username="admin", email="admin@test.com", password="test123",
-            role=User.Role.ADMIN, store=self.store1
+            role=User.Role.ADMIN
         )
+        # ADMIN needs account association to get brand_id
+        self.admin.account = self.account
+        self.admin.save()
         self.manager = User.objects.create_user(
             username="manager", email="manager@test.com", password="test123",
             role=User.Role.GM, store=self.store2
@@ -252,17 +274,17 @@ class InspectorWorkflowTest(TestCase):
     def test_inspection_assignment(self):
         """Test assigning inspections to specific inspectors"""
         self.client.force_authenticate(user=self.admin)
-        
+
         # Assign inspection to inspector
         data = {'assigned_to': self.inspector.id}
         response = self.client.patch(
             f'/api/inspections/{self.pending_inspection.id}/',
             data
         )
-        
+
         # Check if assignment endpoints exist
         self.assertIn(response.status_code, [
-            status.HTTP_200_OK, 
+            status.HTTP_200_OK,
             status.HTTP_404_NOT_FOUND  # If endpoint doesn't exist yet
         ])
         

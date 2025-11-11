@@ -46,29 +46,65 @@ class TenantObjectPermission(BasePermission):
         paths = getattr(view, 'tenant_object_paths', self.tenant_object_paths)
 
         # For nested relationships like inspection__store, we need to check account or brand level
-        if user_scope == 'brand' and 'brand' in paths:
-            obj_brand_id = self._get_nested_attr(obj, paths['brand'])
-            return obj_brand_id == ids['brand_id']
+        if user_scope == 'brand':
+            # Check direct brand field
+            if 'brand' in paths:
+                obj_brand_id = self._get_nested_attr(obj, paths['brand'])
+                if obj_brand_id == ids['brand_id']:
+                    return True
+            # Fallback: Check if object's store belongs to user's brand
+            if 'store' in paths:
+                obj_store_id = self._get_nested_attr(obj, paths['store'])
+                from brands.models import Store
+                try:
+                    store = Store.objects.get(id=obj_store_id)
+                    if store.brand_id == ids['brand_id']:
+                        return True
+                except Store.DoesNotExist:
+                    pass
+            return False
 
         elif user_scope == 'account':
             # Account-level users can access if the object belongs to their account
             if 'account' in paths:
                 obj_account_id = self._get_nested_attr(obj, paths['account'])
-                return obj_account_id == ids['account_id']
+                if obj_account_id == ids['account_id']:
+                    return True
             # Or if the object's store belongs to their account
-            elif 'store' in paths:
+            if 'store' in paths:
                 obj_store_id = self._get_nested_attr(obj, paths['store'])
                 # Need to check if this store belongs to their account
                 from brands.models import Store
                 try:
                     store = Store.objects.get(id=obj_store_id)
-                    return store.account_id == ids['account_id']
+                    if store.account_id == ids['account_id']:
+                        return True
                 except Store.DoesNotExist:
-                    return False
+                    pass
+            # Or if the object belongs to their brand (for brand-level objects like templates)
+            if 'brand' in paths:
+                obj_brand_id = self._get_nested_attr(obj, paths['brand'])
+                if obj_brand_id == ids['brand_id']:
+                    return True
+            return False
 
-        elif user_scope == 'store' and 'store' in paths:
-            obj_store_id = self._get_nested_attr(obj, paths['store'])
-            return obj_store_id == ids['store_id']
+        elif user_scope == 'store':
+            # Store-level users can access if the object belongs to their store
+            if 'store' in paths:
+                obj_store_id = self._get_nested_attr(obj, paths['store'])
+                if obj_store_id == ids['store_id']:
+                    return True
+            # Or if the object belongs to their account (for account-level objects)
+            if 'account' in paths:
+                obj_account_id = self._get_nested_attr(obj, paths['account'])
+                if obj_account_id == ids['account_id']:
+                    return True
+            # Or if the object belongs to their brand (for brand-level objects like templates)
+            if 'brand' in paths:
+                obj_brand_id = self._get_nested_attr(obj, paths['brand'])
+                if obj_brand_id == ids['brand_id']:
+                    return True
+            return False
 
         return False
     

@@ -177,15 +177,37 @@ class RoleBasedPermissionsTests(APITestCase):
         self.brand1 = Brand.objects.create(name='Brand 1')
         self.brand2 = Brand.objects.create(name='Brand 2')
 
+        # Create owner users first (needed for Account.owner field)
+        self.owner1_user = User.objects.create_user(
+            username='account_owner1',
+            email='account_owner1@test.com',
+            password='password123',
+            role='OWNER'
+        )
+        self.owner2_user = User.objects.create_user(
+            username='account_owner2',
+            email='account_owner2@test.com',
+            password='password123',
+            role='OWNER'
+        )
+
         # Create accounts
         self.account1 = Account.objects.create(
             name='Account 1',
-            brand=self.brand1
+            brand=self.brand1,
+            owner=self.owner1_user
         )
         self.account2 = Account.objects.create(
             name='Account 2',
-            brand=self.brand2
+            brand=self.brand2,
+            owner=self.owner2_user
         )
+
+        # Link owners to their accounts
+        self.owner1_user.account = self.account1
+        self.owner1_user.save()
+        self.owner2_user.account = self.account2
+        self.owner2_user.save()
 
         # Create stores
         self.store1 = Store.objects.create(
@@ -304,10 +326,23 @@ class TemplateActionsTests(APITestCase):
     def setUp(self):
         self.brand = Brand.objects.create(name='Test Brand')
 
+        # Create owner user first (needed for Account.owner field)
+        self.account_owner = User.objects.create_user(
+            username='account_owner',
+            email='account_owner@test.com',
+            password='password123',
+            role='OWNER'
+        )
+
         self.account = Account.objects.create(
             name='Test Account',
-            brand=self.brand
+            brand=self.brand,
+            owner=self.account_owner
         )
+
+        # Link account owner to their account
+        self.account_owner.account = self.account
+        self.account_owner.save()
 
         self.store = Store.objects.create(
             brand=self.brand,
@@ -338,6 +373,9 @@ class TemplateActionsTests(APITestCase):
             role='OWNER',
             store=self.store
         )
+        # OWNER needs account association to get brand_id
+        self.owner_user.account = self.account
+        self.owner_user.save()
 
         self.gm_user = User.objects.create_user(
             username='gm',
