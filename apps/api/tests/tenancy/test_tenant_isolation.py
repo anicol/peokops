@@ -1155,31 +1155,33 @@ class EmployeeVoiceResponseTenantIsolationTests(TenantIsolationTestCase):
         # Create pulses for both tenants
         self.pulse_a = EmployeeVoicePulse.objects.create(
             account=self.account_a,
+            store=self.store_a,
             title='Pulse A',
-            prompt='How are you feeling?'
+            description='How are you feeling?'
         )
-        
+
         self.response_a = EmployeeVoiceResponse.objects.create(
             pulse=self.pulse_a,
-            store=self.store_a,
             mood=3,
-            bottleneck='None',
-            wins='Great week',
+            confidence=3,
+            bottlenecks=[],
+            comment='Great week',
             anonymous_hash='hash_a'
         )
-        
+
         self.pulse_b = EmployeeVoicePulse.objects.create(
             account=self.account_b,
+            store=self.store_b,
             title='Pulse B',
-            prompt='How are you feeling?'
+            description='How are you feeling?'
         )
-        
+
         self.response_b = EmployeeVoiceResponse.objects.create(
             pulse=self.pulse_b,
-            store=self.store_b,
             mood=2,
-            bottleneck='Staffing',
-            wins='None',
+            confidence=1,
+            bottlenecks=['STAFFING'],
+            comment='',
             anonymous_hash='hash_b'
         )
         
