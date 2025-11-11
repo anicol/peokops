@@ -1592,9 +1592,11 @@ class WriteOperationTenantIsolationTests(TenantIsolationTestCase):
         
         self.client.force_authenticate(user=self.owner_a)
         response = self.client.delete(f'/api/uploads/{upload_b.id}/')
-        
-        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
-        
+
+        # Upload ViewSet is ReadOnly, so DELETE returns 405 (Method Not Allowed)
+        # This is acceptable since the resource can't be deleted at all
+        self.assertEqual(response.status_code, status.HTTP_405_METHOD_NOT_ALLOWED)
+
         # Verify it still exists
         self.assertTrue(Upload.objects.filter(id=upload_b.id).exists())
     
@@ -1614,10 +1616,12 @@ class WriteOperationTenantIsolationTests(TenantIsolationTestCase):
     
     def test_can_delete_own_finding(self):
         """User CAN delete their own finding"""
+        from inspections.models import Finding
+
         self.client.force_authenticate(user=self.owner_a)
         response = self.client.delete(f'/api/inspections/findings/{self.finding_a.id}/')
-        
+
         self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
-        
+
         # Verify it was deleted
         self.assertFalse(Finding.objects.filter(id=self.finding_a.id).exists())

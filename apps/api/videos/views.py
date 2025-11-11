@@ -288,6 +288,7 @@ class VideoViewSet(ScopedQuerysetMixin, ScopedCreateMixin, viewsets.ModelViewSet
     tenant_field_paths = {'store': 'store'}
     tenant_object_paths = {'store': 'store_id'}
     tenant_unrestricted_roles = ['SUPER_ADMIN']
+    tenant_create_fields = {'store': 'store'}  # Validate store FK on create
 
     def get_tenant_filter(self, user):
         """Override to support both store and account level users"""
@@ -328,7 +329,11 @@ class VideoViewSet(ScopedQuerysetMixin, ScopedCreateMixin, viewsets.ModelViewSet
                     f'Unsupported format. Supported: {", ".join(settings.SUPPORTED_VIDEO_FORMATS)}'
                 )
 
-        serializer.save(uploaded_by=self.request.user)
+        # Validate tenant and auto-assign store (calls ScopedCreateMixin.perform_create)
+        # This will check that the user can only create videos for their own tenant
+        # We need to manually add uploaded_by since super() will call save()
+        serializer.validated_data['uploaded_by'] = self.request.user
+        super().perform_create(serializer)
 
     @action(detail=True, methods=['post'])
     def reprocess(self, request, pk=None):
