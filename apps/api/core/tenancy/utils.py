@@ -55,6 +55,8 @@ def tenant_ids(user) -> Dict[str, Optional[int]]:
             account_id = user.store.account.id
             if user.store.account.brand:
                 brand_id = user.store.account.brand.id
+        if not brand_id and hasattr(user.store, 'brand') and user.store.brand:
+            brand_id = user.store.brand.id
     elif user.account:
         account_id = user.account.id
         if user.account.brand:
