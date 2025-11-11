@@ -835,20 +835,27 @@ class MediaAssetTenantIsolationTests(TenantIsolationTestCase):
     def setUp(self):
         super().setUp()
         from micro_checks.models import MediaAsset
-        
+        import hashlib
+
         # Create media assets for tenant A
         self.media_a = MediaAsset.objects.create(
             store=self.store_a,
             kind='IMAGE',
             s3_key='media/store_a/image1.jpg',
+            s3_bucket='test-bucket',
+            sha256=hashlib.sha256(b'test_image_a').hexdigest(),
+            bytes=1024,
             retention_policy='COACHING_7D'
         )
-        
+
         # Create media assets for tenant B
         self.media_b = MediaAsset.objects.create(
             store=self.store_b,
             kind='VIDEO',
             s3_key='media/store_b/video1.mp4',
+            s3_bucket='test-bucket',
+            sha256=hashlib.sha256(b'test_video_b').hexdigest(),
+            bytes=2048,
             retention_policy='ENTERPRISE_90D'
         )
         
