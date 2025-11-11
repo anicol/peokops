@@ -39,20 +39,40 @@ const Login = () => {
     if (token) {
       setIsLoading(true);
 
-      // Verify the magic link token and get JWT tokens
-      fetch(`${API_CONFIG.baseURL}/auth/magic-link/verify/`, {
-        method: 'POST',
-        headers: API_CONFIG.headers,
-        body: JSON.stringify({ token })
+      // First, try to use the token directly as a JWT access token (for invitation links)
+      // Test if it's a valid JWT by trying to fetch user data
+      fetch(`${API_CONFIG.baseURL}/auth/me/`, {
+        headers: {
+          ...API_CONFIG.headers,
+          'Authorization': `Bearer ${token}`
+        }
       })
         .then(res => {
+          if (res.ok) {
+            // Token is a valid JWT access token - store it and redirect
+            localStorage.setItem('access_token', token);
+            // Note: No refresh token available from invitation links, user will need to login again when it expires
+            window.location.href = '/';
+            return null;
+          } else {
+            // Not a JWT token, try magic link verification
+            return fetch(`${API_CONFIG.baseURL}/auth/magic-link/verify/`, {
+              method: 'POST',
+              headers: API_CONFIG.headers,
+              body: JSON.stringify({ token })
+            });
+          }
+        })
+        .then(res => {
+          if (!res) return; // Already handled as JWT token
           if (!res.ok) {
             throw new Error(`Token verification failed: ${res.status}`);
           }
           return res.json();
         })
         .then(data => {
-          // Store JWT tokens
+          if (!data) return; // Already handled as JWT token
+          // Store JWT tokens from magic link verification
           localStorage.setItem('access_token', data.access);
           localStorage.setItem('refresh_token', data.refresh);
 
