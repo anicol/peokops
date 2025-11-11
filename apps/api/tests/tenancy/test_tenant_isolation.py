@@ -470,7 +470,7 @@ class InspectionTenantIsolationTests(TenantIsolationTestCase):
             severity="HIGH",
             title="Finding A",
             description="Test finding",
-            confidence=0.95
+            confidence=0.95,
         )
         
         self.action_item_a = ActionItem.objects.create(
@@ -747,3 +747,863 @@ class MicroCheckStreakTenantIsolationTests(TenantIsolationTestCase):
         streak_ids = [s['id'] for s in response.data['results']]
         self.assertIn(self.store_streak_a.id, streak_ids)
         self.assertNotIn(self.store_streak_b.id, streak_ids)
+
+class UploadTenantIsolationTests(TenantIsolationTestCase):
+    """Tests for upload tenant isolation"""
+    
+    def setUp(self):
+        super().setUp()
+        from uploads.models import Upload
+        
+        # Create uploads for tenant A
+        self.upload_a = Upload.objects.create(
+            store=self.store_a,
+            mode='COACHING',
+            s3_key='uploads/store_a/video1.mp4',
+            status='COMPLETE',
+            duration_s=120
+        )
+        
+        # Create uploads for tenant B
+        self.upload_b = Upload.objects.create(
+            store=self.store_b,
+            mode='ENTERPRISE',
+            s3_key='uploads/store_b/video1.mp4',
+            status='COMPLETE',
+            duration_s=150
+        )
+        
+        self.client = APIClient()
+    
+    def test_owner_a_cannot_see_upload_b(self):
+        """Owner A cannot see uploads from store B"""
+        self.client.force_authenticate(user=self.owner_a)
+        response = self.client.get('/api/uploads/')
+        
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        upload_ids = [u['id'] for u in response.data['results']]
+        self.assertIn(self.upload_a.id, upload_ids)
+        self.assertNotIn(self.upload_b.id, upload_ids)
+    
+    def test_retrieve_cross_tenant_upload_returns_404(self):
+        """Retrieving upload from another tenant returns 404"""
+        self.client.force_authenticate(user=self.owner_a)
+        response = self.client.get(f'/api/uploads/{self.upload_b.id}/')
+        
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+    
+    def test_gm_a_cannot_see_upload_b(self):
+        """GM A cannot see uploads from store B"""
+        self.client.force_authenticate(user=self.gm_a)
+        response = self.client.get('/api/uploads/')
+        
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        upload_ids = [u['id'] for u in response.data['results']]
+        self.assertIn(self.upload_a.id, upload_ids)
+        self.assertNotIn(self.upload_b.id, upload_ids)
+    
+    def test_super_admin_sees_all_uploads(self):
+        """Super admin can see uploads from all tenants"""
+        self.client.force_authenticate(user=self.super_admin)
+        response = self.client.get('/api/uploads/')
+        
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        upload_ids = [u['id'] for u in response.data['results']]
+        self.assertIn(self.upload_a.id, upload_ids)
+        self.assertIn(self.upload_b.id, upload_ids)
+
+
+class MediaAssetTenantIsolationTests(TenantIsolationTestCase):
+    """Tests for media asset tenant isolation"""
+    
+    def setUp(self):
+        super().setUp()
+        from micro_checks.models import MediaAsset
+        
+        # Create media assets for tenant A
+        self.media_a = MediaAsset.objects.create(
+            store=self.store_a,
+            kind='IMAGE',
+            s3_key='media/store_a/image1.jpg',
+            retention_policy='COACHING_7D'
+        )
+        
+        # Create media assets for tenant B
+        self.media_b = MediaAsset.objects.create(
+            store=self.store_b,
+            kind='VIDEO',
+            s3_key='media/store_b/video1.mp4',
+            retention_policy='ENTERPRISE_90D'
+        )
+        
+        self.client = APIClient()
+    
+    def test_owner_a_cannot_see_media_b(self):
+        """Owner A cannot see media assets from store B"""
+        self.client.force_authenticate(user=self.owner_a)
+        response = self.client.get('/api/micro-checks/media/')
+        
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        media_ids = [str(m['id']) for m in response.data['results']]
+        self.assertIn(str(self.media_a.id), media_ids)
+        self.assertNotIn(str(self.media_b.id), media_ids)
+    
+    def test_retrieve_cross_tenant_media_returns_404(self):
+        """Retrieving media asset from another tenant returns 404"""
+        self.client.force_authenticate(user=self.owner_a)
+        response = self.client.get(f'/api/micro-checks/media/{self.media_b.id}/')
+        
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+    
+    def test_gm_a_cannot_see_media_b(self):
+        """GM A cannot see media assets from store B"""
+        self.client.force_authenticate(user=self.gm_a)
+        response = self.client.get('/api/micro-checks/media/')
+        
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        media_ids = [str(m['id']) for m in response.data['results']]
+        self.assertIn(str(self.media_a.id), media_ids)
+        self.assertNotIn(str(self.media_b.id), media_ids)
+    
+    def test_unauthenticated_user_cannot_create_media(self):
+        """Unauthenticated users cannot create media assets"""
+        response = self.client.post('/api/micro-checks/media/', {
+            'store': self.store_a.id,
+            'kind': 'IMAGE',
+            's3_key': 'test.jpg',
+            'retention_policy': 'COACHING_7D'
+        })
+        
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+    
+    def test_super_admin_sees_all_media(self):
+        """Super admin can see media from all tenants"""
+        self.client.force_authenticate(user=self.super_admin)
+        response = self.client.get('/api/micro-checks/media/')
+        
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        media_ids = [str(m['id']) for m in response.data['results']]
+        self.assertIn(str(self.media_a.id), media_ids)
+        self.assertIn(str(self.media_b.id), media_ids)
+
+
+class MicroCheckResponseTenantIsolationTests(TenantIsolationTestCase):
+    """Tests for micro check response tenant isolation"""
+    
+    def setUp(self):
+        super().setUp()
+        from micro_checks.models import MicroCheckRun, MicroCheckResponse, MicroCheckRunItem
+        
+        # Create runs and responses for tenant A
+        self.run_a = MicroCheckRun.objects.create(
+            store=self.store_a,
+            template=self.template_a,
+            submitted_by=self.gm_a,
+            mode='COACHING'
+        )
+        
+        self.run_item_a = MicroCheckRunItem.objects.create(
+            run=self.run_a,
+            template=self.template_a,
+            title=self.template_a.title,
+            category=self.template_a.category,
+            severity=self.template_a.severity
+        )
+        
+        self.response_a = MicroCheckResponse.objects.create(
+            run_item=self.run_item_a,
+            template=self.template_a,
+            status='PASS'
+        )
+        
+        # Create runs and responses for tenant B
+        self.run_b = MicroCheckRun.objects.create(
+            store=self.store_b,
+            template=self.template_b,
+            submitted_by=self.gm_b,
+            mode='COACHING'
+        )
+        
+        self.run_item_b = MicroCheckRunItem.objects.create(
+            run=self.run_b,
+            template=self.template_b,
+            title=self.template_b.title,
+            category=self.template_b.category,
+            severity=self.template_b.severity
+        )
+        
+        self.response_b = MicroCheckResponse.objects.create(
+            run_item=self.run_item_b,
+            template=self.template_b,
+            status='FAIL'
+        )
+        
+        self.client = APIClient()
+    
+    def test_owner_a_cannot_see_response_b(self):
+        """Owner A cannot see responses from store B"""
+        self.client.force_authenticate(user=self.owner_a)
+        response = self.client.get('/api/micro-checks/responses/')
+        
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        response_ids = [str(r['id']) for r in response.data['results']]
+        self.assertIn(str(self.response_a.id), response_ids)
+        self.assertNotIn(str(self.response_b.id), response_ids)
+    
+    def test_retrieve_cross_tenant_response_returns_404(self):
+        """Retrieving response from another tenant returns 404"""
+        self.client.force_authenticate(user=self.owner_a)
+        response = self.client.get(f'/api/micro-checks/responses/{self.response_b.id}/')
+        
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+    
+    def test_gm_a_cannot_see_response_b(self):
+        """GM A cannot see responses from store B"""
+        self.client.force_authenticate(user=self.gm_a)
+        response = self.client.get('/api/micro-checks/responses/')
+        
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        response_ids = [str(r['id']) for r in response.data['results']]
+        self.assertIn(str(self.response_a.id), response_ids)
+        self.assertNotIn(str(self.response_b.id), response_ids)
+    
+    def test_super_admin_sees_all_responses(self):
+        """Super admin can see responses from all tenants"""
+        self.client.force_authenticate(user=self.super_admin)
+        response = self.client.get('/api/micro-checks/responses/')
+        
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        response_ids = [str(r['id']) for r in response.data['results']]
+        self.assertIn(str(self.response_a.id), response_ids)
+        self.assertIn(str(self.response_b.id), response_ids)
+
+
+class CorrectiveActionTenantIsolationTests(TenantIsolationTestCase):
+    """Tests for corrective action tenant isolation"""
+    
+    def setUp(self):
+        super().setUp()
+        from micro_checks.models import MicroCheckRun, MicroCheckRunItem, CorrectiveAction
+        
+        # Create runs for both tenants
+        self.run_a = MicroCheckRun.objects.create(
+            store=self.store_a,
+            template=self.template_a,
+            submitted_by=self.gm_a,
+            mode='COACHING'
+        )
+        
+        self.run_item_a = MicroCheckRunItem.objects.create(
+            run=self.run_a,
+            template=self.template_a,
+            title=self.template_a.title,
+            category=self.template_a.category,
+            severity=self.template_a.severity
+        )
+        
+        self.action_a = CorrectiveAction.objects.create(
+            run_item=self.run_item_a,
+            title='Fix issue A',
+            description='Corrective action for store A',
+            status='OPEN',
+            created_from='MANUAL'
+        )
+        
+        self.run_b = MicroCheckRun.objects.create(
+            store=self.store_b,
+            template=self.template_b,
+            submitted_by=self.gm_b,
+            mode='COACHING'
+        )
+        
+        self.run_item_b = MicroCheckRunItem.objects.create(
+            run=self.run_b,
+            template=self.template_b,
+            title=self.template_b.title,
+            category=self.template_b.category,
+            severity=self.template_b.severity
+        )
+        
+        self.action_b = CorrectiveAction.objects.create(
+            run_item=self.run_item_b,
+            title='Fix issue B',
+            description='Corrective action for store B',
+            status='OPEN',
+            created_from='MANUAL'
+        )
+        
+        self.client = APIClient()
+    
+    def test_owner_a_cannot_see_action_b(self):
+        """Owner A cannot see corrective actions from store B"""
+        self.client.force_authenticate(user=self.owner_a)
+        response = self.client.get('/api/micro-checks/corrective-actions/')
+        
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        action_ids = [str(a['id']) for a in response.data['results']]
+        self.assertIn(str(self.action_a.id), action_ids)
+        self.assertNotIn(str(self.action_b.id), action_ids)
+    
+    def test_retrieve_cross_tenant_action_returns_404(self):
+        """Retrieving corrective action from another tenant returns 404"""
+        self.client.force_authenticate(user=self.owner_a)
+        response = self.client.get(f'/api/micro-checks/corrective-actions/{self.action_b.id}/')
+        
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+    
+    def test_gm_a_cannot_see_action_b(self):
+        """GM A cannot see corrective actions from store B"""
+        self.client.force_authenticate(user=self.gm_a)
+        response = self.client.get('/api/micro-checks/corrective-actions/')
+        
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        action_ids = [str(a['id']) for a in response.data['results']]
+        self.assertIn(str(self.action_a.id), action_ids)
+        self.assertNotIn(str(self.action_b.id), action_ids)
+    
+    def test_update_cross_tenant_action_rejected(self):
+        """Owner A cannot update corrective action from store B"""
+        self.client.force_authenticate(user=self.owner_a)
+        response = self.client.patch(
+            f'/api/micro-checks/corrective-actions/{self.action_b.id}/',
+            {'status': 'RESOLVED'}
+        )
+        
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+    
+    def test_super_admin_sees_all_actions(self):
+        """Super admin can see corrective actions from all tenants"""
+        self.client.force_authenticate(user=self.super_admin)
+        response = self.client.get('/api/micro-checks/corrective-actions/')
+        
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        action_ids = [str(a['id']) for a in response.data['results']]
+        self.assertIn(str(self.action_a.id), action_ids)
+        self.assertIn(str(self.action_b.id), action_ids)
+
+
+class EmployeeVoiceResponseTenantIsolationTests(TenantIsolationTestCase):
+    """Tests for employee voice response tenant isolation"""
+    
+    def setUp(self):
+        super().setUp()
+        from employee_voice.models import EmployeeVoicePulse, EmployeeVoiceResponse
+        
+        # Create pulses for both tenants
+        self.pulse_a = EmployeeVoicePulse.objects.create(
+            account=self.account_a,
+            title='Pulse A',
+            prompt='How are you feeling?'
+        )
+        
+        self.response_a = EmployeeVoiceResponse.objects.create(
+            pulse=self.pulse_a,
+            store=self.store_a,
+            mood=3,
+            bottleneck='None',
+            wins='Great week',
+            anonymous_hash='hash_a'
+        )
+        
+        self.pulse_b = EmployeeVoicePulse.objects.create(
+            account=self.account_b,
+            title='Pulse B',
+            prompt='How are you feeling?'
+        )
+        
+        self.response_b = EmployeeVoiceResponse.objects.create(
+            pulse=self.pulse_b,
+            store=self.store_b,
+            mood=2,
+            bottleneck='Staffing',
+            wins='None',
+            anonymous_hash='hash_b'
+        )
+        
+        self.client = APIClient()
+    
+    def test_owner_a_cannot_see_response_b(self):
+        """Owner A cannot see employee voice responses from account B"""
+        self.client.force_authenticate(user=self.owner_a)
+        response = self.client.get('/api/employee-voice/responses/')
+        
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        response_ids = [r['id'] for r in response.data['results']]
+        self.assertIn(self.response_a.id, response_ids)
+        self.assertNotIn(self.response_b.id, response_ids)
+    
+    def test_retrieve_cross_tenant_response_returns_404(self):
+        """Retrieving employee voice response from another tenant returns 404"""
+        self.client.force_authenticate(user=self.owner_a)
+        response = self.client.get(f'/api/employee-voice/responses/{self.response_b.id}/')
+        
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+    
+    def test_gm_a_cannot_see_response_b(self):
+        """GM A cannot see employee voice responses from account B"""
+        self.client.force_authenticate(user=self.gm_a)
+        response = self.client.get('/api/employee-voice/responses/')
+        
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        response_ids = [r['id'] for r in response.data['results']]
+        self.assertIn(self.response_a.id, response_ids)
+        self.assertNotIn(self.response_b.id, response_ids)
+    
+    def test_super_admin_sees_all_responses(self):
+        """Super admin can see employee voice responses from all tenants"""
+        self.client.force_authenticate(user=self.super_admin)
+        response = self.client.get('/api/employee-voice/responses/')
+        
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        response_ids = [r['id'] for r in response.data['results']]
+        self.assertIn(self.response_a.id, response_ids)
+        self.assertIn(self.response_b.id, response_ids)
+
+
+class AdminBrandLevelAccessTests(TenantIsolationTestCase):
+    """Tests for ADMIN role brand-level access across multiple accounts"""
+    
+    def setUp(self):
+        super().setUp()
+        from inspections.models import Inspection
+        
+        # Create ADMIN user for Brand A
+        self.admin_a = User.objects.create_user(
+            username="admin_a",
+            email="admin_a@test.com",
+            password="password123",
+            role=User.Role.ADMIN
+        )
+        # ADMIN needs account set to get brand_id via user.account.brand
+        self.admin_a.account = self.account_a
+        self.admin_a.save()
+        
+        # Create a second account and store for Brand A
+        self.account_a2 = Account.objects.create(
+            name="Account A2",
+            brand=self.brand_a,
+            owner=self.owner_a
+        )
+        
+        self.store_a2 = Store.objects.create(
+            name="Store A2",
+            code="STORE-A2",
+            account=self.account_a2,
+            brand=self.brand_a,
+            address="789 Test Blvd",
+            city="Testland",
+            state="TL",
+            zip_code="22222",
+            timezone="America/Chicago"
+        )
+        
+        # Create inspections in both stores of Brand A
+        self.inspection_a1 = Inspection.objects.create(
+            title="Inspection A1",
+            store=self.store_a,
+            created_by=self.owner_a,
+            mode="INSPECTION",
+            status="COMPLETED"
+        )
+        
+        self.inspection_a2 = Inspection.objects.create(
+            title="Inspection A2",
+            store=self.store_a2,
+            created_by=self.owner_a,
+            mode="INSPECTION",
+            status="COMPLETED"
+        )
+        
+        # Create inspection in Brand B
+        self.inspection_b = Inspection.objects.create(
+            title="Inspection B",
+            store=self.store_b,
+            created_by=self.owner_b,
+            mode="INSPECTION",
+            status="COMPLETED"
+        )
+        
+        self.client = APIClient()
+    
+    def test_admin_sees_all_brand_inspections(self):
+        """ADMIN sees inspections from all accounts/stores in their brand"""
+        self.client.force_authenticate(user=self.admin_a)
+        response = self.client.get('/api/inspections/')
+        
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        inspection_ids = [i['id'] for i in response.data['results']]
+        
+        # Should see both inspections from Brand A (different accounts)
+        self.assertIn(self.inspection_a1.id, inspection_ids)
+        self.assertIn(self.inspection_a2.id, inspection_ids)
+        
+        # Should NOT see Brand B
+        self.assertNotIn(self.inspection_b.id, inspection_ids)
+    
+    def test_admin_sees_all_brand_videos(self):
+        """ADMIN sees videos from all accounts/stores in their brand"""
+        from videos.models import Video
+        
+        video_a1 = Video.objects.create(
+            title="Video A1",
+            store=self.store_a,
+            uploaded_by=self.owner_a,
+            file="videos/a1.mp4"
+        )
+        
+        video_a2 = Video.objects.create(
+            title="Video A2",
+            store=self.store_a2,
+            uploaded_by=self.owner_a,
+            file="videos/a2.mp4"
+        )
+        
+        video_b = Video.objects.create(
+            title="Video B",
+            store=self.store_b,
+            uploaded_by=self.owner_b,
+            file="videos/b.mp4"
+        )
+        
+        self.client.force_authenticate(user=self.admin_a)
+        response = self.client.get('/api/videos/')
+        
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        video_ids = [v['id'] for v in response.data['results']]
+        
+        self.assertIn(video_a1.id, video_ids)
+        self.assertIn(video_a2.id, video_ids)
+        self.assertNotIn(video_b.id, video_ids)
+    
+    def test_admin_sees_all_brand_uploads(self):
+        """ADMIN sees uploads from all stores in their brand"""
+        from uploads.models import Upload
+        
+        upload_a1 = Upload.objects.create(
+            store=self.store_a,
+            mode='COACHING',
+            s3_key='uploads/a1.mp4',
+            status='COMPLETE'
+        )
+        
+        upload_a2 = Upload.objects.create(
+            store=self.store_a2,
+            mode='COACHING',
+            s3_key='uploads/a2.mp4',
+            status='COMPLETE'
+        )
+        
+        upload_b = Upload.objects.create(
+            store=self.store_b,
+            mode='COACHING',
+            s3_key='uploads/b.mp4',
+            status='COMPLETE'
+        )
+        
+        self.client.force_authenticate(user=self.admin_a)
+        response = self.client.get('/api/uploads/')
+        
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        upload_ids = [u['id'] for u in response.data['results']]
+        
+        self.assertIn(upload_a1.id, upload_ids)
+        self.assertIn(upload_a2.id, upload_ids)
+        self.assertNotIn(upload_b.id, upload_ids)
+
+
+class GMStoreLevelIsolationTests(TenantIsolationTestCase):
+    """Tests for GM isolation within same account (multi-store scenarios)"""
+    
+    def setUp(self):
+        super().setUp()
+        from inspections.models import Inspection
+        
+        # Create a second store in Account A
+        self.store_a2 = Store.objects.create(
+            name="Store A2",
+            code="STORE-A2",
+            account=self.account_a,
+            brand=self.brand_a,
+            address="999 Test Way",
+            city="Testopolis",
+            state="TP",
+            zip_code="33333",
+            timezone="America/Denver"
+        )
+        
+        # Create GM for Store A2
+        self.gm_a2 = User.objects.create_user(
+            username="gm_a2",
+            email="gm_a2@test.com",
+            password="password123",
+            role=User.Role.GM
+        )
+        self.gm_a2.account = self.account_a
+        self.gm_a2.store = self.store_a2
+        self.gm_a2.save()
+        
+        # Create inspections for both stores in Account A
+        self.inspection_a1 = Inspection.objects.create(
+            title="Inspection Store A1",
+            store=self.store_a,
+            created_by=self.gm_a,
+            mode="INSPECTION",
+            status="COMPLETED"
+        )
+        
+        self.inspection_a2 = Inspection.objects.create(
+            title="Inspection Store A2",
+            store=self.store_a2,
+            created_by=self.gm_a2,
+            mode="INSPECTION",
+            status="COMPLETED"
+        )
+        
+        self.client = APIClient()
+    
+    def test_gm_a1_cannot_see_store_a2_inspections(self):
+        """GM at Store A1 cannot see Store A2 inspections (same account)"""
+        self.client.force_authenticate(user=self.gm_a)
+        response = self.client.get('/api/inspections/')
+        
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        inspection_ids = [i['id'] for i in response.data['results']]
+        
+        # GM A should only see their own store
+        self.assertIn(self.inspection_a1.id, inspection_ids)
+        self.assertNotIn(self.inspection_a2.id, inspection_ids)
+    
+    def test_gm_a2_cannot_see_store_a1_inspections(self):
+        """GM at Store A2 cannot see Store A1 inspections (same account)"""
+        self.client.force_authenticate(user=self.gm_a2)
+        response = self.client.get('/api/inspections/')
+        
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        inspection_ids = [i['id'] for i in response.data['results']]
+        
+        # GM A2 should only see their own store
+        self.assertIn(self.inspection_a2.id, inspection_ids)
+        self.assertNotIn(self.inspection_a1.id, inspection_ids)
+    
+    def test_owner_sees_all_account_stores(self):
+        """OWNER sees inspections from all stores in their account"""
+        self.client.force_authenticate(user=self.owner_a)
+        response = self.client.get('/api/inspections/')
+        
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        inspection_ids = [i['id'] for i in response.data['results']]
+        
+        # Owner should see both stores
+        self.assertIn(self.inspection_a1.id, inspection_ids)
+        self.assertIn(self.inspection_a2.id, inspection_ids)
+    
+    def test_gm_a1_cannot_see_store_a2_videos(self):
+        """GM at Store A1 cannot see Store A2 videos (same account)"""
+        from videos.models import Video
+        
+        video_a1 = Video.objects.create(
+            title="Video A1",
+            store=self.store_a,
+            uploaded_by=self.gm_a,
+            file="videos/a1.mp4"
+        )
+        
+        video_a2 = Video.objects.create(
+            title="Video A2",
+            store=self.store_a2,
+            uploaded_by=self.gm_a2,
+            file="videos/a2.mp4"
+        )
+        
+        self.client.force_authenticate(user=self.gm_a)
+        response = self.client.get('/api/videos/')
+        
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        video_ids = [v['id'] for v in response.data['results']]
+        
+        self.assertIn(video_a1.id, video_ids)
+        self.assertNotIn(video_a2.id, video_ids)
+    
+    def test_gm_cannot_access_other_store_upload(self):
+        """GM cannot retrieve upload from another store in same account"""
+        from uploads.models import Upload
+        
+        upload_a2 = Upload.objects.create(
+            store=self.store_a2,
+            mode='COACHING',
+            s3_key='uploads/a2.mp4',
+            status='COMPLETE'
+        )
+        
+        self.client.force_authenticate(user=self.gm_a)
+        response = self.client.get(f'/api/uploads/{upload_a2.id}/')
+        
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+
+
+class WriteOperationTenantIsolationTests(TenantIsolationTestCase):
+    """Tests for write operations (create/update/delete) across ViewSets"""
+    
+    def setUp(self):
+        super().setUp()
+        from inspections.models import Inspection, Finding
+        from videos.models import Video
+        
+        # Create test data
+        self.video_a = Video.objects.create(
+            title="Video A",
+            store=self.store_a,
+            uploaded_by=self.owner_a,
+            file="videos/a.mp4"
+        )
+        
+        self.inspection_a = Inspection.objects.create(
+            title="Inspection A",
+            store=self.store_a,
+            created_by=self.owner_a,
+            mode="INSPECTION",
+            status="COMPLETED"
+        )
+        
+        self.finding_a = Finding.objects.create(
+            inspection=self.inspection_a,
+            category="CLEANLINESS",
+            severity="MEDIUM",
+            title="Finding A",
+            description="Test finding",
+            confidence=0.95
+        )
+        
+        self.client = APIClient()
+    
+    def test_cannot_create_video_for_other_tenant_store(self):
+        """User cannot create video for another tenant's store"""
+        self.client.force_authenticate(user=self.owner_a)
+        
+        response = self.client.post('/api/videos/', {
+            'title': 'Malicious Video',
+            'store': self.store_b.id,  # Wrong tenant!
+            'file': 'videos/malicious.mp4'
+        })
+        
+        # Should be rejected (either 403 or 400 depending on validation)
+        self.assertIn(response.status_code, [status.HTTP_400_BAD_REQUEST, status.HTTP_403_FORBIDDEN])
+    
+    def test_cannot_update_cross_tenant_inspection(self):
+        """User cannot update inspection from another tenant"""
+        from inspections.models import Inspection
+        
+        inspection_b = Inspection.objects.create(
+            title="Inspection B",
+            store=self.store_b,
+            created_by=self.owner_b,
+            mode="INSPECTION",
+            status="PENDING"
+        )
+        
+        self.client.force_authenticate(user=self.owner_a)
+        response = self.client.patch(
+            f'/api/inspections/{inspection_b.id}/',
+            {'status': 'COMPLETED'}
+        )
+        
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+        
+        # Verify it wasn't updated
+        inspection_b.refresh_from_db()
+        self.assertEqual(inspection_b.status, 'PENDING')
+    
+    def test_cannot_delete_cross_tenant_finding(self):
+        """User cannot delete finding from another tenant"""
+        from inspections.models import Inspection, Finding
+        
+        inspection_b = Inspection.objects.create(
+            title="Inspection B",
+            store=self.store_b,
+            created_by=self.owner_b,
+            mode="INSPECTION",
+            status="COMPLETED"
+        )
+        
+        finding_b = Finding.objects.create(
+            inspection=inspection_b,
+            category="SAFETY",
+            severity="HIGH",
+            title="Finding B",
+            description="Test finding B",
+            confidence=0.93
+        )
+        
+        self.client.force_authenticate(user=self.owner_a)
+        response = self.client.delete(f'/api/inspections/findings/{finding_b.id}/')
+        
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+        
+        # Verify it still exists
+        self.assertTrue(Finding.objects.filter(id=finding_b.id).exists())
+    
+    def test_cannot_update_cross_tenant_video(self):
+        """User cannot update video from another tenant"""
+        from videos.models import Video
+        
+        video_b = Video.objects.create(
+            title="Video B",
+            store=self.store_b,
+            uploaded_by=self.owner_b,
+            file="videos/b.mp4"
+        )
+        
+        self.client.force_authenticate(user=self.owner_a)
+        response = self.client.patch(
+            f'/api/videos/{video_b.id}/',
+            {'title': 'Hacked Title'}
+        )
+        
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+        
+        # Verify title wasn't changed
+        video_b.refresh_from_db()
+        self.assertEqual(video_b.title, 'Video B')
+    
+    def test_cannot_delete_cross_tenant_upload(self):
+        """User cannot delete upload from another tenant"""
+        from uploads.models import Upload
+        
+        upload_b = Upload.objects.create(
+            store=self.store_b,
+            mode='COACHING',
+            s3_key='uploads/b.mp4',
+            status='COMPLETE'
+        )
+        
+        self.client.force_authenticate(user=self.owner_a)
+        response = self.client.delete(f'/api/uploads/{upload_b.id}/')
+        
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+        
+        # Verify it still exists
+        self.assertTrue(Upload.objects.filter(id=upload_b.id).exists())
+    
+    def test_can_update_own_inspection(self):
+        """User CAN update their own inspection"""
+        self.client.force_authenticate(user=self.owner_a)
+        response = self.client.patch(
+            f'/api/inspections/{self.inspection_a.id}/',
+            {'status': 'PENDING'}
+        )
+        
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        
+        # Verify it was updated
+        self.inspection_a.refresh_from_db()
+        self.assertEqual(self.inspection_a.status, 'PENDING')
+    
+    def test_can_delete_own_finding(self):
+        """User CAN delete their own finding"""
+        self.client.force_authenticate(user=self.owner_a)
+        response = self.client.delete(f'/api/inspections/findings/{self.finding_a.id}/')
+        
+        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
+        
+        # Verify it was deleted
+        self.assertFalse(Finding.objects.filter(id=self.finding_a.id).exists())
