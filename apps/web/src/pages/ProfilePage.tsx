@@ -1,5 +1,6 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useMutation, useQueryClient } from 'react-query';
+import { useSearchParams } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { authAPI, storesAPI, brandsAPI } from '@/services/api';
 import type { Store, Brand } from '@/types';
@@ -20,7 +21,16 @@ import {
 const ProfilePage = () => {
   const { user, refetchUser, logout } = useAuth();
   const queryClient = useQueryClient();
+  const [searchParams] = useSearchParams();
   const [activeTab, setActiveTab] = useState<'profile' | 'password' | 'store' | 'privacy' | 'notifications' | 'help'>('profile');
+
+  // Check for tab query parameter on mount
+  useEffect(() => {
+    const tabParam = searchParams.get('tab');
+    if (tabParam && ['profile', 'password', 'store', 'privacy', 'notifications', 'help'].includes(tabParam)) {
+      setActiveTab(tabParam as any);
+    }
+  }, [searchParams]);
 
   // Profile form state
   const [profileData, setProfileData] = useState({

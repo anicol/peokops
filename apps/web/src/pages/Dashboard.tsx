@@ -8,6 +8,7 @@ import { useSmartNudges } from '@/hooks/useSmartNudges';
 import InspectorQueueWidget from '@/components/InspectorQueueWidget';
 import { SmartNudgeContainer } from '@/components/nudges/SmartNudgeNotification';
 import TrialStatusBanner from '@/components/TrialStatusBanner';
+import PasswordSetupBanner from '@/components/PasswordSetupBanner';
 import {
   Play,
   TrendingUp,
@@ -191,6 +192,8 @@ function TrialDashboard({ user, stats, dashboardStats, microCheckRuns, allRespon
       <TrialStatusBanner
         onUpgradeClick={() => navigate('/checkout')}
       />
+
+      <PasswordSetupBanner />
 
       <div className="grid lg:grid-cols-3 gap-4 sm:gap-6 lg:gap-8 mt-4 sm:mt-6 lg:mt-8">
         {/* Main Content */}

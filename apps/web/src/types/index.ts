@@ -53,6 +53,7 @@ export interface User {
   requested_demo?: boolean;
   demo_completed_at?: string;
   onboarding_completed_at?: string;
+  password_set_by_user_at?: string | null;
   hours_since_signup?: number;
   total_inspections?: number;
   accessible_stores_count?: number;

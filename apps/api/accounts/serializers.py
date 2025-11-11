@@ -29,10 +29,10 @@ class UserSerializer(serializers.ModelSerializer):
                  'role', 'store', 'store_name', 'brand_name', 'brand_id',
                  'account_id', 'account_name', 'phone',
                  'is_active', 'is_trial_user', 'trial_status', 'hours_since_signup',
-                 'total_inspections', 'accessible_stores_count', 'has_account_wide_access', 'has_seen_demo', 'demo_completed_at', 'onboarding_completed_at',
+                 'total_inspections', 'accessible_stores_count', 'has_account_wide_access', 'has_seen_demo', 'demo_completed_at', 'onboarding_completed_at', 'password_set_by_user_at',
                  'created_at', 'last_active_at', 'impersonation_context')
         read_only_fields = ('id', 'created_at', 'is_trial_user', 'trial_status', 'hours_since_signup',
-                           'total_inspections', 'accessible_stores_count', 'has_account_wide_access', 'last_active_at', 'onboarding_completed_at',
+                           'total_inspections', 'accessible_stores_count', 'has_account_wide_access', 'last_active_at', 'onboarding_completed_at', 'password_set_by_user_at',
                            'account_id', 'account_name', 'impersonation_context')
 
     def get_trial_status(self, obj):
@@ -126,6 +126,8 @@ class UserCreateSerializer(serializers.ModelSerializer):
         password = validated_data.pop('password')
         user = User.objects.create_user(**validated_data)
         user.set_password(password)
+        # Mark that this is an admin-assigned password, not user-set
+        user.password_set_by_user_at = None
         user.save()
 
         # Generate a magic link token for the new user
@@ -369,8 +371,11 @@ class PasswordChangeSerializer(serializers.Serializer):
 
     def save(self):
         """Update user password"""
+        from django.utils import timezone
         user = self.context['request'].user
         user.set_password(self.validated_data['new_password'])
+        # Mark that user has now set their own password
+        user.password_set_by_user_at = timezone.now()
         user.save()
         return user
 
