@@ -299,6 +299,23 @@ class UploadViewSet(ScopedQuerysetMixin, viewsets.ReadOnlyModelViewSet):
     tenant_object_paths = {'store': 'store_id'}
     tenant_unrestricted_roles = ['SUPER_ADMIN']
 
+    def get_tenant_filter(self, user):
+        """Override to support brand, account, and store level users"""
+        from core.tenancy.utils import tenant_ids, determine_scope
+        from django.db.models import Q
+
+        user_scope = determine_scope(user)
+        ids = tenant_ids(user)
+
+        if user_scope == 'store' and ids['store_id']:
+            return Q(store_id=ids['store_id'])
+        elif user_scope == 'account' and ids['account_id']:
+            return Q(store__account_id=ids['account_id'])
+        elif user_scope == 'brand' and ids['brand_id']:
+            return Q(store__brand_id=ids['brand_id'])
+
+        return Q(pk__in=[])
+
     def get_queryset(self):
         """Apply tenant filtering and optional mode filter"""
         queryset = super().get_queryset()
