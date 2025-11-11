@@ -98,22 +98,14 @@ class StoreListCreateView(generics.ListCreateAPIView):
     ordering = ['brand__name', 'name']
 
     def get_queryset(self):
-        """Filter stores based on role - SUPER_ADMIN/ADMIN sees all, others see only their brand"""
-        from accounts.models import User
+        """Filter stores based on role using centralized access control"""
         user = self.request.user
 
+        # Get accessible stores using centralized method
+        accessible_stores = user.get_accessible_stores()
+
         # Base queryset with Google location data pre-fetched (optimization for OneToOne relationship)
-        base_qs = Store.objects.select_related('google_location', 'brand')
-
-        # SUPER_ADMIN and ADMIN see all stores across all tenants
-        if user.role in [User.Role.SUPER_ADMIN, User.Role.ADMIN]:
-            return base_qs.filter(is_active=True)
-
-        # Other roles see stores in their brand
-        if user.store and user.store.brand:
-            return base_qs.filter(brand=user.store.brand, is_active=True)
-
-        return Store.objects.none()
+        return accessible_stores.select_related('google_location', 'brand')
 
     def get_serializer_class(self):
         if self.request.method == 'GET':
@@ -196,16 +188,6 @@ class StoreDetailView(generics.RetrieveUpdateDestroyAPIView):
     permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
-        """Filter stores based on role - SUPER_ADMIN/ADMIN sees all, others see only their brand"""
-        from accounts.models import User
+        """Filter stores based on role using centralized access control"""
         user = self.request.user
-
-        # SUPER_ADMIN and ADMIN see all stores across all tenants
-        if user.role in [User.Role.SUPER_ADMIN, User.Role.ADMIN]:
-            return Store.objects.all()
-
-        # Other roles see stores in their brand
-        if user.store and user.store.brand:
-            return Store.objects.filter(brand=user.store.brand)
-
-        return Store.objects.none()
+        return user.get_accessible_stores()

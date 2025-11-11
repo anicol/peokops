@@ -481,16 +481,58 @@ def send_micro_check_assignment(run_id, manager_id, delivery_method='SMS'):
 
 
 def _send_sms(phone_number, magic_link, run):
-    """Send SMS with magic link using AWS SNS or Twilio"""
-    # Placeholder - implement with your SMS provider
-    # Example with AWS SNS:
-    # import boto3
-    # sns = boto3.client('sns')
-    # message = f"Your daily PeakOps check is ready! Complete in 2 minutes: {magic_link}"
-    # sns.publish(PhoneNumber=phone_number, Message=message)
+    """
+    Send SMS with magic link using Twilio.
 
-    logger.info(f"SMS would be sent to {phone_number}: {magic_link}")
-    return True
+    Args:
+        phone_number: Phone number in E.164 format (e.g., +15551234567)
+        magic_link: The magic link URL for accessing the micro-check
+        run: MicroCheckRun instance for personalization
+
+    Returns:
+        bool: True if SMS sent successfully, False otherwise
+    """
+    from django.conf import settings
+
+    # Check if Twilio is configured
+    twilio_account_sid = getattr(settings, 'TWILIO_ACCOUNT_SID', None)
+    twilio_auth_token = getattr(settings, 'TWILIO_AUTH_TOKEN', None)
+    twilio_phone_number = getattr(settings, 'TWILIO_PHONE_NUMBER', None)
+
+    if not all([twilio_account_sid, twilio_auth_token, twilio_phone_number]):
+        logger.warning("Twilio credentials not configured. Skipping SMS send.")
+        return False
+
+    try:
+        from twilio.rest import Client
+
+        # Initialize Twilio client
+        client = Client(twilio_account_sid, twilio_auth_token)
+
+        # Get store name for personalization
+        store_name = run.store.name if run.store else "Your Store"
+
+        # Craft message
+        message_body = (
+            f"📋 {store_name} daily checks are ready!\n\n"
+            f"Complete 3 quick items (under 2 min):\n"
+            f"{magic_link}\n\n"
+            f"Expires in 24h."
+        )
+
+        # Send SMS
+        message = client.messages.create(
+            body=message_body,
+            from_=twilio_phone_number,
+            to=phone_number
+        )
+
+        logger.info(f"SMS sent successfully to {phone_number}. SID: {message.sid}")
+        return True
+
+    except Exception as e:
+        logger.error(f"Failed to send SMS to {phone_number}: {str(e)}")
+        return False
 
 
 def _send_email(email, magic_link, run):

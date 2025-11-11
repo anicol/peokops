@@ -15,6 +15,7 @@ class UserSerializer(serializers.ModelSerializer):
     hours_since_signup = serializers.ReadOnlyField()
     total_inspections = serializers.ReadOnlyField()
     accessible_stores_count = serializers.ReadOnlyField()
+    has_account_wide_access = serializers.SerializerMethodField()
     store_name = serializers.CharField(source='store.name', read_only=True)
     brand_name = serializers.CharField(source='store.brand.name', read_only=True)
     brand_id = serializers.IntegerField(source='store.brand.id', read_only=True)
@@ -28,15 +29,19 @@ class UserSerializer(serializers.ModelSerializer):
                  'role', 'store', 'store_name', 'brand_name', 'brand_id',
                  'account_id', 'account_name', 'phone',
                  'is_active', 'is_trial_user', 'trial_status', 'hours_since_signup',
-                 'total_inspections', 'accessible_stores_count', 'has_seen_demo', 'demo_completed_at', 'onboarding_completed_at',
+                 'total_inspections', 'accessible_stores_count', 'has_account_wide_access', 'has_seen_demo', 'demo_completed_at', 'onboarding_completed_at',
                  'created_at', 'last_active_at', 'impersonation_context')
         read_only_fields = ('id', 'created_at', 'is_trial_user', 'trial_status', 'hours_since_signup',
-                           'total_inspections', 'accessible_stores_count', 'last_active_at', 'onboarding_completed_at',
+                           'total_inspections', 'accessible_stores_count', 'has_account_wide_access', 'last_active_at', 'onboarding_completed_at',
                            'account_id', 'account_name', 'impersonation_context')
 
     def get_trial_status(self, obj):
         """Get trial status information"""
         return obj.get_trial_status()
+
+    def get_has_account_wide_access(self, obj):
+        """Check if user has account-wide access (OWNER with store=null)"""
+        return obj.role == User.Role.OWNER and obj.store is None
 
     def get_impersonation_context(self, obj):
         """Get impersonation context from request if available"""
@@ -83,6 +88,25 @@ class UserCreateSerializer(serializers.ModelSerializer):
     def validate(self, attrs):
         if attrs['password'] != attrs['password_confirm']:
             raise serializers.ValidationError("Passwords don't match")
+
+        # Validate store assignment based on role
+        role = attrs.get('role')
+        store = attrs.get('store')
+
+        # OWNER role should not have a store assignment (account-wide access)
+        if role == User.Role.OWNER and store is not None:
+            raise serializers.ValidationError({
+                'store': 'Account Owners should not be assigned to a specific store. Leave blank for account-wide access.'
+            })
+
+        # TRIAL_ADMIN can optionally have no store (account-wide access during trial)
+        # GM, INSPECTOR, EMPLOYEE roles must have a store
+        if role in [User.Role.GM, User.Role.INSPECTOR, User.Role.EMPLOYEE]:
+            if store is None:
+                raise serializers.ValidationError({
+                    'store': f'{role} role requires a store assignment.'
+                })
+
         return attrs
 
     def create(self, validated_data):
@@ -90,15 +114,19 @@ class UserCreateSerializer(serializers.ModelSerializer):
         from django.core.mail import send_mail
         from django.conf import settings
 
+        # Get the inviting user from the request context
+        request = self.context.get('request')
+        invited_by = request.user if request and request.user.is_authenticated else None
+
+        # Set the account from the inviting user (inherit tenant)
+        if invited_by and invited_by.account:
+            validated_data['account'] = invited_by.account
+
         validated_data.pop('password_confirm')
         password = validated_data.pop('password')
         user = User.objects.create_user(**validated_data)
         user.set_password(password)
         user.save()
-
-        # Get the inviting user from the request context
-        request = self.context.get('request')
-        invited_by = request.user if request and request.user.is_authenticated else None
 
         # Generate a magic link token for the new user
         refresh = RefreshToken.for_user(user)
@@ -240,9 +268,20 @@ class TrialSignupSerializer(serializers.Serializer):
         # Auto-create trial brand
         brand = Brand.create_trial_brand(user)
 
+        # Auto-create account for the brand
+        from .models import Account
+        account = Account.objects.create(
+            name=f"{brand.name} Account",
+            brand=brand,
+            owner=user,
+            company_name=brand.name,
+            is_active=True
+        )
+
         # Auto-create demo store
         store = Store.objects.create(
             brand=brand,
+            account=account,
             name="Demo Store",
             code=f"TRIAL-{user.id}",
             address="123 Demo Street",
@@ -252,8 +291,9 @@ class TrialSignupSerializer(serializers.Serializer):
             manager_email=user.email
         )
 
-        # Assign user to store
+        # Assign user to store and account
         user.store = store
+        user.account = account
         user.increment_trial_usage('store')  # Count the auto-created store
         user.save()
 

@@ -70,10 +70,8 @@ class InspectionListView(generics.ListAPIView):
 
     def get_queryset(self):
         user = self.request.user
-        if user.role in ['SUPER_ADMIN', 'ADMIN']:
-            return Inspection.objects.all()
-        else:
-            return Inspection.objects.filter(store=user.store)
+        accessible_stores = user.get_accessible_stores()
+        return Inspection.objects.filter(store__in=accessible_stores)
 
 
 class InspectionDetailView(generics.RetrieveUpdateAPIView):
@@ -83,10 +81,8 @@ class InspectionDetailView(generics.RetrieveUpdateAPIView):
 
     def get_queryset(self):
         user = self.request.user
-        if user.role in ['SUPER_ADMIN', 'ADMIN']:
-            return Inspection.objects.all()
-        else:
-            return Inspection.objects.filter(store=user.store)
+        accessible_stores = user.get_accessible_stores()
+        return Inspection.objects.filter(store__in=accessible_stores)
 
 
 class FindingViewSet(ScopedQuerysetMixin, viewsets.ModelViewSet):
@@ -141,13 +137,11 @@ class FindingListView(generics.ListAPIView):
     def get_queryset(self):
         inspection_id = self.kwargs['inspection_id']
         user = self.request.user
-
-        if user.role in ['SUPER_ADMIN', 'ADMIN']:
-            inspection_filter = {'inspection_id': inspection_id}
-        else:
-            inspection_filter = {'inspection_id': inspection_id, 'inspection__store': user.store}
-
-        return Finding.objects.filter(**inspection_filter)
+        accessible_stores = user.get_accessible_stores()
+        return Finding.objects.filter(
+            inspection_id=inspection_id,
+            inspection__store__in=accessible_stores
+        )
 
 
 class ActionItemViewSet(ScopedQuerysetMixin, ScopedCreateMixin, viewsets.ModelViewSet):
@@ -218,10 +212,8 @@ class ActionItemListCreateView(generics.ListCreateAPIView):
 
     def get_queryset(self):
         user = self.request.user
-        if user.role in ['SUPER_ADMIN', 'ADMIN']:
-            return ActionItem.objects.all()
-        else:
-            return ActionItem.objects.filter(inspection__store=user.store)
+        accessible_stores = user.get_accessible_stores()
+        return ActionItem.objects.filter(inspection__store__in=accessible_stores)
 
     def perform_create(self, serializer):
         # Auto-assign high priority items to GM if available
@@ -240,10 +232,8 @@ class ActionItemDetailView(generics.RetrieveUpdateAPIView):
 
     def get_queryset(self):
         user = self.request.user
-        if user.role in ['SUPER_ADMIN', 'ADMIN']:
-            return ActionItem.objects.all()
-        else:
-            return ActionItem.objects.filter(inspection__store=user.store)
+        accessible_stores = user.get_accessible_stores()
+        return ActionItem.objects.filter(inspection__store__in=accessible_stores)
 
     def get_serializer_class(self):
         if self.request.method == 'PATCH':

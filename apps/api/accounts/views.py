@@ -1173,3 +1173,112 @@ def system_stats_view(request):
         'total_stores': total_stores,
         'queue_pending': queue_pending,
     })
+
+
+@extend_schema(
+    request={
+        'application/json': {
+            'type': 'object',
+            'properties': {
+                'store_id': {
+                    'type': 'integer',
+                    'description': 'Store ID to assign (null to remove assignment for OWNER)',
+                    'nullable': True
+                }
+            }
+        }
+    },
+    responses={
+        200: UserSerializer,
+        400: {'description': 'Invalid store assignment for role'},
+        403: {'description': 'Permission denied'},
+        404: {'description': 'User or store not found'}
+    },
+    description="Assign or remove store association for a user"
+)
+@api_view(['PATCH'])
+@permission_classes([IsAuthenticated])
+def assign_store_view(request, pk):
+    """
+    Assign or remove store association for a user.
+
+    - OWNER role: Can have store=null for account-wide access
+    - GM/INSPECTOR/EMPLOYEE: Must have a store assigned
+    - ADMIN can manage users in their account
+    """
+    from brands.models import Store
+
+    # Get the user to update
+    try:
+        user_to_update = User.objects.get(pk=pk)
+    except User.DoesNotExist:
+        return Response({'detail': 'User not found'}, status=status.HTTP_404_NOT_FOUND)
+
+    current_user = request.user
+
+    # Permission check: Can only manage users in same account (or SUPER_ADMIN)
+    if current_user.role != User.Role.SUPER_ADMIN:
+        if not current_user.account or user_to_update.account != current_user.account:
+            return Response(
+                {'detail': 'You can only manage users in your account'},
+                status=status.HTTP_403_FORBIDDEN
+            )
+
+    # Get the store_id from request
+    store_id = request.data.get('store_id')
+
+    # Validate based on role
+    if user_to_update.role == User.Role.OWNER:
+        # OWNER should have null store for account-wide access
+        if store_id is not None:
+            return Response(
+                {'detail': 'Account Owners should not be assigned to a specific store. Use null for account-wide access.'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        user_to_update.store = None
+    elif user_to_update.role == User.Role.TRIAL_ADMIN:
+        # TRIAL_ADMIN can have null store (flexible during trial period)
+        if store_id is None:
+            user_to_update.store = None
+        else:
+            # Validate store exists and is in same account
+            try:
+                store = Store.objects.get(id=store_id)
+                if user_to_update.account and store.account != user_to_update.account:
+                    return Response(
+                        {'detail': 'Store must be in the same account as the user'},
+                        status=status.HTTP_400_BAD_REQUEST
+                    )
+                user_to_update.store = store
+            except Store.DoesNotExist:
+                return Response(
+                    {'detail': 'Store not found'},
+                    status=status.HTTP_404_NOT_FOUND
+                )
+    else:
+        # Other roles (GM, INSPECTOR, EMPLOYEE, ADMIN) must have a store
+        if store_id is None:
+            return Response(
+                {'detail': f'{user_to_update.get_role_display()} role requires a store assignment.'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        # Validate store exists and is in same account
+        try:
+            store = Store.objects.get(id=store_id)
+            if user_to_update.account and store.account != user_to_update.account:
+                return Response(
+                    {'detail': 'Store must be in the same account as the user'},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            user_to_update.store = store
+        except Store.DoesNotExist:
+            return Response(
+                {'detail': 'Store not found'},
+                status=status.HTTP_404_NOT_FOUND
+            )
+
+    user_to_update.save()
+
+    serializer = UserSerializer(user_to_update)
+    return Response(serializer.data)
