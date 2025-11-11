@@ -143,6 +143,16 @@ class StoreListCreateView(generics.ListCreateAPIView):
                 serializer.validated_data['account'] = self.request.user.account
                 logger.info(f"Auto-setting account to {self.request.user.account} from request user")
 
+        # Auto-set brand if not provided (use account's brand or user's store brand)
+        if not serializer.validated_data.get('brand'):
+            account = serializer.validated_data.get('account')
+            if account and account.brand:
+                serializer.validated_data['brand'] = account.brand
+                logger.info(f"Auto-setting brand to {account.brand} from account")
+            elif hasattr(self.request.user, 'store') and self.request.user.store and self.request.user.store.brand:
+                serializer.validated_data['brand'] = self.request.user.store.brand
+                logger.info(f"Auto-setting brand to {self.request.user.store.brand} from user's store")
+
         # Validate account matches brand if both are provided
         account = serializer.validated_data.get('account')
         brand = serializer.validated_data.get('brand')
