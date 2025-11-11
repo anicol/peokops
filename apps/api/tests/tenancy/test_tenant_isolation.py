@@ -1082,11 +1082,8 @@ class CorrectiveActionTenantIsolationTests(TenantIsolationTestCase):
             status='FAIL'
         )
 
-        self.action_a = CorrectiveAction.objects.create(
-            response=response_a,
-            status='OPEN',
-            created_from='MANUAL'
-        )
+        # CorrectiveAction is auto-created by MicroCheckResponse.save() for FAIL status
+        self.action_a = response_a.corrective_action
 
         self.run_b = MicroCheckRun.objects.create(
             store=self.store_b,
@@ -1125,11 +1122,8 @@ class CorrectiveActionTenantIsolationTests(TenantIsolationTestCase):
             status='FAIL'
         )
 
-        self.action_b = CorrectiveAction.objects.create(
-            response=response_b,
-            status='OPEN',
-            created_from='MANUAL'
-        )
+        # CorrectiveAction is auto-created by MicroCheckResponse.save() for FAIL status
+        self.action_b = response_b.corrective_action
         
         self.client = APIClient()
     
