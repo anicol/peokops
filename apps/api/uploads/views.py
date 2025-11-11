@@ -297,7 +297,7 @@ class UploadViewSet(ScopedQuerysetMixin, viewsets.ReadOnlyModelViewSet):
     tenant_scope = 'store'
     tenant_field_paths = {'store': 'store'}
     tenant_object_paths = {'store': 'store_id'}
-    tenant_unrestricted_roles = ['SUPER_ADMIN', 'ADMIN']
+    tenant_unrestricted_roles = ['SUPER_ADMIN']
 
     def get_queryset(self):
         """Apply tenant filtering and optional mode filter"""

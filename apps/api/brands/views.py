@@ -26,7 +26,7 @@ class BrandViewSet(ScopedQuerysetMixin, ScopedCreateMixin, viewsets.ModelViewSet
     # Tenant isolation configuration
     tenant_scope = 'brand'
     tenant_field_paths = {'brand': 'id'}
-    tenant_unrestricted_roles = ['SUPER_ADMIN', 'ADMIN']
+    tenant_unrestricted_roles = ['SUPER_ADMIN']
     tenant_object_paths = {'brand': 'id'}
     tenant_create_fields = {}  # Don't auto-assign brand when creating a brand
 

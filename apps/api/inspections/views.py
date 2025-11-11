@@ -32,7 +32,7 @@ class InspectionViewSet(ScopedQuerysetMixin, viewsets.ModelViewSet):
     # Tenant isolation configuration
     tenant_scope = 'store'
     tenant_field_paths = {'store': 'store'}
-    tenant_unrestricted_roles = ['SUPER_ADMIN', 'ADMIN']
+    tenant_unrestricted_roles = ['SUPER_ADMIN']
     tenant_object_paths = {'store': 'store_id'}
 
     def get_tenant_filter(self, user):
@@ -104,7 +104,7 @@ class FindingViewSet(ScopedQuerysetMixin, viewsets.ModelViewSet):
     # Tenant isolation configuration
     tenant_scope = 'store'
     tenant_field_paths = {'store': 'inspection__store'}
-    tenant_unrestricted_roles = ['SUPER_ADMIN', 'ADMIN']
+    tenant_unrestricted_roles = ['SUPER_ADMIN']
     tenant_object_paths = {'store': 'inspection.store_id'}
 
     def get_tenant_filter(self, user):
@@ -163,7 +163,7 @@ class ActionItemViewSet(ScopedQuerysetMixin, ScopedCreateMixin, viewsets.ModelVi
     # Tenant isolation configuration
     tenant_scope = 'store'
     tenant_field_paths = {'store': 'inspection__store'}
-    tenant_unrestricted_roles = ['SUPER_ADMIN', 'ADMIN']
+    tenant_unrestricted_roles = ['SUPER_ADMIN']
     tenant_object_paths = {'store': 'inspection.store_id'}
     tenant_create_fields = {}  # Don't auto-assign store (it comes from inspection)
 

@@ -616,7 +616,7 @@ class GoogleReviewsIntegrationViewSet(ScopedQuerysetMixin, viewsets.GenericViewS
     tenant_scope = 'account'
     tenant_field_paths = {'account': 'account'}
     tenant_object_paths = {'account': 'account_id'}
-    tenant_unrestricted_roles = ['SUPER_ADMIN', 'ADMIN']
+    tenant_unrestricted_roles = ['SUPER_ADMIN']
 
     def get_queryset(self):
         """Filter configurations by user's account with tenant filtering"""

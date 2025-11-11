@@ -287,7 +287,7 @@ class VideoViewSet(ScopedQuerysetMixin, ScopedCreateMixin, viewsets.ModelViewSet
     tenant_scope = 'store'
     tenant_field_paths = {'store': 'store'}
     tenant_object_paths = {'store': 'store_id'}
-    tenant_unrestricted_roles = ['SUPER_ADMIN', 'ADMIN']
+    tenant_unrestricted_roles = ['SUPER_ADMIN']
 
     def get_tenant_filter(self, user):
         """Override to support both store and account level users"""
@@ -434,7 +434,7 @@ class VideoFrameViewSet(ScopedQuerysetMixin, viewsets.ReadOnlyModelViewSet):
     tenant_scope = 'store'
     tenant_field_paths = {'store': 'video__store'}
     tenant_object_paths = {'store': 'video__store_id'}
-    tenant_unrestricted_roles = ['SUPER_ADMIN', 'ADMIN']
+    tenant_unrestricted_roles = ['SUPER_ADMIN']
 
     def get_tenant_filter(self, user):
         """Override to support both store and account level users"""

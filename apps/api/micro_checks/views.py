@@ -81,7 +81,7 @@ class MicroCheckTemplateViewSet(ScopedQuerysetMixin, ScopedCreateMixin, viewsets
         'account': 'account_id',
         'store': 'store_id'
     }
-    tenant_unrestricted_roles = ['SUPER_ADMIN', 'ADMIN']  # These roles see all templates
+    tenant_unrestricted_roles = ['SUPER_ADMIN']  # These roles see all templates
 
     def get_tenant_filter(self, user):
         """
@@ -1360,7 +1360,7 @@ class MicroCheckStreakViewSet(ScopedQuerysetMixin, viewsets.ReadOnlyModelViewSet
     tenant_scope = 'store'
     tenant_field_paths = {'store': 'store'}
     tenant_object_paths = {'store': 'store_id'}
-    tenant_unrestricted_roles = ['SUPER_ADMIN', 'ADMIN']
+    tenant_unrestricted_roles = ['SUPER_ADMIN']
 
     @extend_schema(
         summary="Get leaderboard for a store",
@@ -1400,7 +1400,7 @@ class StoreStreakViewSet(ScopedQuerysetMixin, viewsets.ReadOnlyModelViewSet):
     tenant_scope = 'store'
     tenant_field_paths = {'store': 'store'}
     tenant_object_paths = {'store': 'store_id'}
-    tenant_unrestricted_roles = ['SUPER_ADMIN', 'ADMIN']
+    tenant_unrestricted_roles = ['SUPER_ADMIN']
 
 
 class CorrectiveActionViewSet(ScopedQuerysetMixin, viewsets.ModelViewSet):
@@ -1580,7 +1580,7 @@ class CheckCoverageViewSet(ScopedQuerysetMixin, viewsets.ReadOnlyModelViewSet):
     tenant_scope = 'store'
     tenant_field_paths = {'store': 'store'}
     tenant_object_paths = {'store': 'store_id'}
-    tenant_unrestricted_roles = ['SUPER_ADMIN', 'ADMIN']
+    tenant_unrestricted_roles = ['SUPER_ADMIN']
 
     @extend_schema(
         summary="Get coverage summary by category",

@@ -758,19 +758,23 @@ class UploadTenantIsolationTests(TenantIsolationTestCase):
         # Create uploads for tenant A
         self.upload_a = Upload.objects.create(
             store=self.store_a,
+            created_by=self.owner_a,
             mode='COACHING',
             s3_key='uploads/store_a/video1.mp4',
             status='COMPLETE',
-            duration_s=120
+            duration_s=120,
+            original_filename='video1.mp4'
         )
-        
+
         # Create uploads for tenant B
         self.upload_b = Upload.objects.create(
             store=self.store_b,
+            created_by=self.owner_b,
             mode='ENTERPRISE',
             s3_key='uploads/store_b/video1.mp4',
             status='COMPLETE',
-            duration_s=150
+            duration_s=150,
+            original_filename='video1.mp4'
         )
         
         self.client = APIClient()
@@ -1278,26 +1282,32 @@ class AdminBrandLevelAccessTests(TenantIsolationTestCase):
     def test_admin_sees_all_brand_uploads(self):
         """ADMIN sees uploads from all stores in their brand"""
         from uploads.models import Upload
-        
+
         upload_a1 = Upload.objects.create(
             store=self.store_a,
+            created_by=self.owner_a,
             mode='COACHING',
             s3_key='uploads/a1.mp4',
-            status='COMPLETE'
+            status='COMPLETE',
+            original_filename='a1.mp4'
         )
-        
+
         upload_a2 = Upload.objects.create(
             store=self.store_a2,
+            created_by=self.owner_a,
             mode='COACHING',
             s3_key='uploads/a2.mp4',
-            status='COMPLETE'
+            status='COMPLETE',
+            original_filename='a2.mp4'
         )
-        
+
         upload_b = Upload.objects.create(
             store=self.store_b,
+            created_by=self.owner_b,
             mode='COACHING',
             s3_key='uploads/b.mp4',
-            status='COMPLETE'
+            status='COMPLETE',
+            original_filename='b.mp4'
         )
         
         self.client.force_authenticate(user=self.admin_a)
@@ -1427,12 +1437,14 @@ class GMStoreLevelIsolationTests(TenantIsolationTestCase):
     def test_gm_cannot_access_other_store_upload(self):
         """GM cannot retrieve upload from another store in same account"""
         from uploads.models import Upload
-        
+
         upload_a2 = Upload.objects.create(
             store=self.store_a2,
+            created_by=self.owner_a,
             mode='COACHING',
             s3_key='uploads/a2.mp4',
-            status='COMPLETE'
+            status='COMPLETE',
+            original_filename='a2.mp4'
         )
         
         self.client.force_authenticate(user=self.gm_a)
@@ -1568,12 +1580,14 @@ class WriteOperationTenantIsolationTests(TenantIsolationTestCase):
     def test_cannot_delete_cross_tenant_upload(self):
         """User cannot delete upload from another tenant"""
         from uploads.models import Upload
-        
+
         upload_b = Upload.objects.create(
             store=self.store_b,
+            created_by=self.owner_b,
             mode='COACHING',
             s3_key='uploads/b.mp4',
-            status='COMPLETE'
+            status='COMPLETE',
+            original_filename='b.mp4'
         )
         
         self.client.force_authenticate(user=self.owner_a)

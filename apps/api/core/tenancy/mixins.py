@@ -80,30 +80,55 @@ class ScopedCreateMixin:
     def perform_create(self, serializer):
         """Auto-assign tenant FKs and validate"""
         user = self.request.user
-        ids = tenant_ids(user)
-        
-        tenant_data = {}
-        for scope_level, field_name in self.tenant_create_fields.items():
-            if scope_level == 'account' and ids['account_id']:
-                # Import here to avoid circular dependency
-                from accounts.models import Account
-                tenant_data[field_name] = Account.objects.get(id=ids['account_id'])
-            elif scope_level == 'store' and ids['store_id']:
+
+        # Check for unrestricted roles
+        unrestricted_roles = getattr(self, 'tenant_unrestricted_roles', [])
+        is_unrestricted = user.role in unrestricted_roles if unrestricted_roles else False
+
+        if not is_unrestricted:
+            ids = tenant_ids(user)
+            from .utils import determine_scope
+            user_scope = determine_scope(user)
+
+            tenant_data = {}
+            for scope_level, field_name in self.tenant_create_fields.items():
+                if scope_level == 'account' and ids['account_id']:
+                    # Import here to avoid circular dependency
+                    from accounts.models import Account
+                    tenant_data[field_name] = Account.objects.get(id=ids['account_id'])
+                elif scope_level == 'store' and ids['store_id']:
+                    from brands.models import Store
+                    tenant_data[field_name] = Store.objects.get(id=ids['store_id'])
+                elif scope_level == 'brand' and ids['brand_id']:
+                    from brands.models import Brand
+                    tenant_data[field_name] = Brand.objects.get(id=ids['brand_id'])
+
+            validated_data = serializer.validated_data
+
+            # Validate provided tenant FKs match user's tenant
+            for scope_level, field_name in self.tenant_create_fields.items():
+                if field_name in validated_data:
+                    provided_obj = validated_data[field_name]
+                    provided_id = provided_obj.id if hasattr(provided_obj, 'id') else provided_obj
+                    expected_obj = tenant_data.get(field_name)
+                    expected_id = expected_obj.id if expected_obj and hasattr(expected_obj, 'id') else expected_obj
+
+                    if expected_id and provided_id != expected_id:
+                        raise PermissionDenied(f"Cannot create resource for another tenant's {scope_level}")
+
+            # Also validate store FK for account-level users
+            if user_scope == 'account' and 'store' in validated_data:
                 from brands.models import Store
-                tenant_data[field_name] = Store.objects.get(id=ids['store_id'])
-            elif scope_level == 'brand' and ids['brand_id']:
-                from brands.models import Brand
-                tenant_data[field_name] = Brand.objects.get(id=ids['brand_id'])
-        
-        validated_data = serializer.validated_data
-        for scope_level, field_name in self.tenant_create_fields.items():
-            if field_name in validated_data:
-                provided_obj = validated_data[field_name]
-                provided_id = provided_obj.id if hasattr(provided_obj, 'id') else provided_obj
-                expected_obj = tenant_data.get(field_name)
-                expected_id = expected_obj.id if expected_obj and hasattr(expected_obj, 'id') else expected_obj
-                
-                if expected_id and provided_id != expected_id:
-                    raise PermissionDenied(f"Cannot create resource for another tenant's {scope_level}")
-        
-        serializer.save(**tenant_data)
+                provided_store = validated_data['store']
+                store_id = provided_store.id if hasattr(provided_store, 'id') else provided_store
+                try:
+                    store = Store.objects.get(id=store_id)
+                    if store.account_id != ids['account_id']:
+                        raise PermissionDenied("Cannot create resource for another tenant's store")
+                except Store.DoesNotExist:
+                    raise PermissionDenied("Invalid store")
+
+            serializer.save(**tenant_data)
+        else:
+            # Unrestricted users don't need validation
+            serializer.save()
