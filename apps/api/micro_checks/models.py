@@ -538,7 +538,11 @@ class MicroCheckResponse(models.Model):
         # Auto-set local_completed_date
         if not self.local_completed_date:
             tz = pytz.timezone(self.run.store_timezone)
-            local_dt = self.completed_at.astimezone(tz) if self.completed_at.tzinfo else timezone.now().astimezone(tz)
+            # completed_at might be None on first save due to auto_now_add
+            if self.completed_at:
+                local_dt = self.completed_at.astimezone(tz) if self.completed_at.tzinfo else self.completed_at.replace(tzinfo=tz)
+            else:
+                local_dt = timezone.now().astimezone(tz)
             self.local_completed_date = local_dt.date()
 
         # Auto-calculate retention

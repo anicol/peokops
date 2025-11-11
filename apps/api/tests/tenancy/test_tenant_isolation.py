@@ -221,14 +221,16 @@ class TenantIsolationTestCase(TestCase):
             scheduled_for=timezone.now().date(),
             created_via='MANUAL',
             store_timezone=self.store_a.timezone,
-            created_by=self.owner_a
+            created_by=self.owner_a,
+            sequence=2  # Avoid unique constraint conflict with setUp
         )
         run_b = MicroCheckRun.objects.create(
             store=self.store_b,
             scheduled_for=timezone.now().date(),
             created_via='MANUAL',
             store_timezone=self.store_b.timezone,
-            created_by=self.owner_b
+            created_by=self.owner_b,
+            sequence=2  # Avoid unique constraint conflict with setUp
         )
         
         self.client.force_authenticate(user=self.gm_a)
@@ -247,7 +249,8 @@ class TenantIsolationTestCase(TestCase):
             scheduled_for=timezone.now().date(),
             created_via='MANUAL',
             store_timezone=self.store_b.timezone,
-            created_by=self.owner_b
+            created_by=self.owner_b,
+            sequence=2  # Avoid unique constraint conflict with setUp
         )
         
         self.client.force_authenticate(user=self.gm_a)
@@ -316,7 +319,8 @@ class TenantIsolationTestCase(TestCase):
             scheduled_for=timezone.now().date(),
             created_via='MANUAL',
             store_timezone=self.store_b.timezone,
-            created_by=self.owner_b
+            created_by=self.owner_b,
+            sequence=2  # Avoid unique constraint conflict with setUp
         )
         
         self.client.force_authenticate(user=self.gm_a)
