@@ -219,11 +219,15 @@ class TenantIsolationTestCase(TestCase):
         run_a = MicroCheckRun.objects.create(
             store=self.store_a,
             scheduled_for=timezone.now().date(),
+            created_via='MANUAL',
+            store_timezone=self.store_a.timezone,
             created_by=self.owner_a
         )
         run_b = MicroCheckRun.objects.create(
             store=self.store_b,
             scheduled_for=timezone.now().date(),
+            created_via='MANUAL',
+            store_timezone=self.store_b.timezone,
             created_by=self.owner_b
         )
         
@@ -241,6 +245,8 @@ class TenantIsolationTestCase(TestCase):
         run_b = MicroCheckRun.objects.create(
             store=self.store_b,
             scheduled_for=timezone.now().date(),
+            created_via='MANUAL',
+            store_timezone=self.store_b.timezone,
             created_by=self.owner_b
         )
         
@@ -308,6 +314,8 @@ class TenantIsolationTestCase(TestCase):
         run_b = MicroCheckRun.objects.create(
             store=self.store_b,
             scheduled_for=timezone.now().date(),
+            created_via='MANUAL',
+            store_timezone=self.store_b.timezone,
             created_by=self.owner_b
         )
         
@@ -901,11 +909,11 @@ class MicroCheckResponseTenantIsolationTests(TenantIsolationTestCase):
         # Create runs and responses for tenant A
         self.run_a = MicroCheckRun.objects.create(
             store=self.store_a,
-            template=self.template_a,
-            submitted_by=self.gm_a,
-            mode='COACHING'
+            scheduled_for=timezone.now().date(),
+            created_via='MANUAL',
+            store_timezone=self.store_a.timezone
         )
-        
+
         self.run_item_a = MicroCheckRunItem.objects.create(
             run=self.run_a,
             template=self.template_a,
@@ -913,21 +921,21 @@ class MicroCheckResponseTenantIsolationTests(TenantIsolationTestCase):
             category=self.template_a.category,
             severity=self.template_a.severity
         )
-        
+
         self.response_a = MicroCheckResponse.objects.create(
             run_item=self.run_item_a,
             template=self.template_a,
             status='PASS'
         )
-        
+
         # Create runs and responses for tenant B
         self.run_b = MicroCheckRun.objects.create(
             store=self.store_b,
-            template=self.template_b,
-            submitted_by=self.gm_b,
-            mode='COACHING'
+            scheduled_for=timezone.now().date(),
+            created_via='MANUAL',
+            store_timezone=self.store_b.timezone
         )
-        
+
         self.run_item_b = MicroCheckRunItem.objects.create(
             run=self.run_b,
             template=self.template_b,
@@ -992,11 +1000,11 @@ class CorrectiveActionTenantIsolationTests(TenantIsolationTestCase):
         # Create runs for both tenants
         self.run_a = MicroCheckRun.objects.create(
             store=self.store_a,
-            template=self.template_a,
-            submitted_by=self.gm_a,
-            mode='COACHING'
+            scheduled_for=timezone.now().date(),
+            created_via='MANUAL',
+            store_timezone=self.store_a.timezone
         )
-        
+
         self.run_item_a = MicroCheckRunItem.objects.create(
             run=self.run_a,
             template=self.template_a,
@@ -1004,7 +1012,7 @@ class CorrectiveActionTenantIsolationTests(TenantIsolationTestCase):
             category=self.template_a.category,
             severity=self.template_a.severity
         )
-        
+
         self.action_a = CorrectiveAction.objects.create(
             run_item=self.run_item_a,
             title='Fix issue A',
@@ -1012,14 +1020,14 @@ class CorrectiveActionTenantIsolationTests(TenantIsolationTestCase):
             status='OPEN',
             created_from='MANUAL'
         )
-        
+
         self.run_b = MicroCheckRun.objects.create(
             store=self.store_b,
-            template=self.template_b,
-            submitted_by=self.gm_b,
-            mode='COACHING'
+            scheduled_for=timezone.now().date(),
+            created_via='MANUAL',
+            store_timezone=self.store_b.timezone
         )
-        
+
         self.run_item_b = MicroCheckRunItem.objects.create(
             run=self.run_b,
             template=self.template_b,
@@ -1027,7 +1035,7 @@ class CorrectiveActionTenantIsolationTests(TenantIsolationTestCase):
             category=self.template_b.category,
             severity=self.template_b.severity
         )
-        
+
         self.action_b = CorrectiveAction.objects.create(
             run_item=self.run_item_b,
             title='Fix issue B',
