@@ -1397,52 +1397,24 @@ class MicroCheckResponseViewSet(ScopedQuerysetMixin, viewsets.ModelViewSet):
         return Response(serializer.data)
 
 
-class MicroCheckStreakViewSet(viewsets.ReadOnlyModelViewSet):
+class MicroCheckStreakViewSet(ScopedQuerysetMixin, viewsets.ReadOnlyModelViewSet):
     """
-    ViewSet for viewing streak information.
+    ViewSet for viewing streak information with tenant isolation.
 
     Read-only - streaks are calculated automatically by tasks.
+    Streaks are scoped to stores.
     """
     queryset = MicroCheckStreak.objects.select_related('store', 'user')
     serializer_class = MicroCheckStreakSerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, TenantObjectPermission]
     filterset_fields = ['store', 'user']
     ordering_fields = ['current_streak', 'longest_streak', 'last_completed_date']
     ordering = ['-current_streak']
 
-    def get_queryset(self):
-        """Filter streaks based on user's accessible stores"""
-        user = self.request.user
-
-        # Super admins see all
-        if user.role == 'SUPER_ADMIN':
-            return self.queryset
-
-        # Admins see all for their brand
-        if user.role == 'ADMIN':
-            if user.store:
-                return self.queryset.filter(store__brand=user.store.brand)
-            return self.queryset
-
-        # Owners see all for their brand
-        if user.role == 'OWNER':
-            if user.store:
-                return self.queryset.filter(store__brand=user.store.brand)
-            return self.queryset
-
-        # GMs see only their store's streaks
-        if user.role == 'GM':
-            if user.store:
-                return self.queryset.filter(store=user.store)
-            return self.queryset.none()
-
-        # Trial admins see all for their brand
-        if user.role == 'TRIAL_ADMIN':
-            if user.store:
-                return self.queryset.filter(store__brand=user.store.brand)
-            return self.queryset
-
-        return self.queryset.none()
+    tenant_scope = 'store'
+    tenant_field_paths = {'store': 'store'}
+    tenant_object_paths = {'store': 'store_id'}
+    tenant_unrestricted_roles = ['SUPER_ADMIN', 'ADMIN']
 
     @extend_schema(
         summary="Get leaderboard for a store",
@@ -1465,52 +1437,24 @@ class MicroCheckStreakViewSet(viewsets.ReadOnlyModelViewSet):
         return Response(serializer.data)
 
 
-class StoreStreakViewSet(viewsets.ReadOnlyModelViewSet):
+class StoreStreakViewSet(ScopedQuerysetMixin, viewsets.ReadOnlyModelViewSet):
     """
-    ViewSet for viewing store-level streak information.
+    ViewSet for viewing store-level streak information with tenant isolation.
 
     Read-only - streaks are calculated automatically by tasks.
+    Streaks are scoped to stores.
     """
     queryset = StoreStreak.objects.select_related('store')
     serializer_class = StoreStreakSerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, TenantObjectPermission]
     filterset_fields = ['store']
     ordering_fields = ['current_streak', 'longest_streak', 'last_completion_date']
     ordering = ['-current_streak']
 
-    def get_queryset(self):
-        """Filter store streaks based on user's accessible stores"""
-        user = self.request.user
-
-        # Super admins see all
-        if user.role == 'SUPER_ADMIN':
-            return self.queryset
-
-        # Admins see all for their brand
-        if user.role == 'ADMIN':
-            if user.store:
-                return self.queryset.filter(store__brand=user.store.brand)
-            return self.queryset
-
-        # Owners see all for their brand
-        if user.role == 'OWNER':
-            if user.store:
-                return self.queryset.filter(store__brand=user.store.brand)
-            return self.queryset
-
-        # GMs see only their store
-        if user.role == 'GM':
-            if user.store:
-                return self.queryset.filter(store=user.store)
-            return self.queryset.none()
-
-        # Trial admins see all for their brand
-        if user.role == 'TRIAL_ADMIN':
-            if user.store:
-                return self.queryset.filter(store__brand=user.store.brand)
-            return self.queryset
-
-        return self.queryset.none()
+    tenant_scope = 'store'
+    tenant_field_paths = {'store': 'store'}
+    tenant_object_paths = {'store': 'store_id'}
+    tenant_unrestricted_roles = ['SUPER_ADMIN', 'ADMIN']
 
 
 class CorrectiveActionViewSet(ScopedQuerysetMixin, viewsets.ModelViewSet):
@@ -1705,52 +1649,24 @@ class CorrectiveActionViewSet(ScopedQuerysetMixin, viewsets.ModelViewSet):
         return Response(serializer.data)
 
 
-class CheckCoverageViewSet(viewsets.ReadOnlyModelViewSet):
+class CheckCoverageViewSet(ScopedQuerysetMixin, viewsets.ReadOnlyModelViewSet):
     """
-    ViewSet for viewing check coverage statistics.
+    ViewSet for viewing check coverage statistics with tenant isolation.
 
     Read-only - coverage is tracked automatically.
+    Coverage is scoped to stores.
     """
     queryset = CheckCoverage.objects.select_related('store', 'template')
     serializer_class = CheckCoverageSerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, TenantObjectPermission]
     filterset_fields = ['store', 'category', 'template']
     ordering_fields = ['last_used_date', 'times_used', 'consecutive_passes', 'consecutive_fails']
     ordering = ['-last_used_date']
 
-    def get_queryset(self):
-        """Filter coverage based on user's accessible stores"""
-        user = self.request.user
-
-        # Super admins see all
-        if user.role == 'SUPER_ADMIN':
-            return self.queryset
-
-        # Admins see all for their brand
-        if user.role == 'ADMIN':
-            if user.store:
-                return self.queryset.filter(store__brand=user.store.brand)
-            return self.queryset
-
-        # Owners see all for their brand
-        if user.role == 'OWNER':
-            if user.store:
-                return self.queryset.filter(store__brand=user.store.brand)
-            return self.queryset
-
-        # GMs see only their store's coverage
-        if user.role == 'GM':
-            if user.store:
-                return self.queryset.filter(store=user.store)
-            return self.queryset.none()
-
-        # Trial admins see all for their brand
-        if user.role == 'TRIAL_ADMIN':
-            if user.store:
-                return self.queryset.filter(store__brand=user.store.brand)
-            return self.queryset
-
-        return self.queryset.none()
+    tenant_scope = 'store'
+    tenant_field_paths = {'store': 'store'}
+    tenant_object_paths = {'store': 'store_id'}
+    tenant_unrestricted_roles = ['SUPER_ADMIN', 'ADMIN']
 
     @extend_schema(
         summary="Get coverage summary by category",

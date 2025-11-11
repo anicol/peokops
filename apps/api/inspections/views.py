@@ -1,10 +1,12 @@
-from rest_framework import generics, status, filters
+from rest_framework import generics, status, filters, viewsets
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from django_filters.rest_framework import DjangoFilterBackend
 from django.utils import timezone
 from django.db import models
+from core.tenancy.mixins import ScopedQuerysetMixin, ScopedCreateMixin
+from core.tenancy.permissions import TenantObjectPermission
 from .models import Inspection, Finding, ActionItem
 from .serializers import (
     InspectionSerializer, InspectionListSerializer, FindingSerializer,
@@ -12,7 +14,35 @@ from .serializers import (
 )
 
 
+class InspectionViewSet(ScopedQuerysetMixin, viewsets.ModelViewSet):
+    """
+    ViewSet for managing inspections with tenant isolation.
+
+    Access Control:
+    - SUPER_ADMIN/ADMIN: Can see all inspections
+    - Others: Can only see inspections for their store
+    """
+    queryset = Inspection.objects.all()
+    permission_classes = [IsAuthenticated, TenantObjectPermission]
+    filter_backends = [DjangoFilterBackend, filters.OrderingFilter]
+    filterset_fields = ['mode', 'status', 'store']
+    ordering_fields = ['created_at', 'overall_score']
+    ordering = ['-created_at']
+
+    # Tenant isolation configuration
+    tenant_scope = 'store'
+    tenant_field_paths = {'store': 'store'}
+    tenant_unrestricted_roles = ['SUPER_ADMIN', 'ADMIN']
+    tenant_object_paths = {'store': 'store_id'}
+
+    def get_serializer_class(self):
+        if self.action == 'list':
+            return InspectionListSerializer
+        return InspectionSerializer
+
+
 class InspectionListView(generics.ListAPIView):
+    """Legacy view - prefer using InspectionViewSet"""
     serializer_class = InspectionListSerializer
     permission_classes = [IsAuthenticated]
     filter_backends = [DjangoFilterBackend, filters.OrderingFilter]
@@ -22,25 +52,50 @@ class InspectionListView(generics.ListAPIView):
 
     def get_queryset(self):
         user = self.request.user
-        if user.role == 'ADMIN':
+        if user.role in ['SUPER_ADMIN', 'ADMIN']:
             return Inspection.objects.all()
         else:
             return Inspection.objects.filter(store=user.store)
 
 
 class InspectionDetailView(generics.RetrieveUpdateAPIView):
+    """Legacy view - prefer using InspectionViewSet"""
     serializer_class = InspectionSerializer
     permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
         user = self.request.user
-        if user.role == 'ADMIN':
+        if user.role in ['SUPER_ADMIN', 'ADMIN']:
             return Inspection.objects.all()
         else:
             return Inspection.objects.filter(store=user.store)
 
 
+class FindingViewSet(ScopedQuerysetMixin, viewsets.ModelViewSet):
+    """
+    ViewSet for managing findings with tenant isolation.
+
+    Access Control:
+    - SUPER_ADMIN/ADMIN: Can see all findings
+    - Others: Can only see findings for their store's inspections
+    """
+    queryset = Finding.objects.all()
+    serializer_class = FindingSerializer
+    permission_classes = [IsAuthenticated, TenantObjectPermission]
+    filter_backends = [DjangoFilterBackend, filters.OrderingFilter]
+    filterset_fields = ['category', 'severity', 'is_resolved', 'inspection']
+    ordering_fields = ['confidence', 'created_at', 'severity']
+    ordering = ['-severity', '-confidence']
+
+    # Tenant isolation configuration
+    tenant_scope = 'store'
+    tenant_field_paths = {'store': 'inspection__store'}
+    tenant_unrestricted_roles = ['SUPER_ADMIN', 'ADMIN']
+    tenant_object_paths = {'store': 'inspection.store_id'}
+
+
 class FindingListView(generics.ListAPIView):
+    """Legacy view - prefer using FindingViewSet"""
     serializer_class = FindingSerializer
     permission_classes = [IsAuthenticated]
     filter_backends = [DjangoFilterBackend, filters.OrderingFilter]
@@ -52,7 +107,7 @@ class FindingListView(generics.ListAPIView):
         inspection_id = self.kwargs['inspection_id']
         user = self.request.user
 
-        if user.role == 'ADMIN':
+        if user.role in ['SUPER_ADMIN', 'ADMIN']:
             inspection_filter = {'inspection_id': inspection_id}
         else:
             inspection_filter = {'inspection_id': inspection_id, 'inspection__store': user.store}
@@ -60,7 +115,48 @@ class FindingListView(generics.ListAPIView):
         return Finding.objects.filter(**inspection_filter)
 
 
+class ActionItemViewSet(ScopedQuerysetMixin, ScopedCreateMixin, viewsets.ModelViewSet):
+    """
+    ViewSet for managing action items with tenant isolation.
+
+    Access Control:
+    - SUPER_ADMIN/ADMIN: Can see all action items
+    - Others: Can only see action items for their store's inspections
+    """
+    queryset = ActionItem.objects.all()
+    serializer_class = ActionItemSerializer
+    permission_classes = [IsAuthenticated, TenantObjectPermission]
+    filter_backends = [DjangoFilterBackend, filters.OrderingFilter]
+    filterset_fields = ['priority', 'status', 'assigned_to', 'inspection']
+    ordering_fields = ['due_date', 'created_at', 'priority']
+    ordering = ['-priority', 'due_date']
+
+    # Tenant isolation configuration
+    tenant_scope = 'store'
+    tenant_field_paths = {'store': 'inspection__store'}
+    tenant_unrestricted_roles = ['SUPER_ADMIN', 'ADMIN']
+    tenant_object_paths = {'store': 'inspection.store_id'}
+    tenant_create_fields = {}  # Don't auto-assign store (it comes from inspection)
+
+    def perform_create(self, serializer):
+        # Auto-assign high priority items to GM if available
+        if serializer.validated_data.get('priority') in ['HIGH', 'URGENT']:
+            inspection = serializer.validated_data.get('inspection')
+            if inspection and inspection.store:
+                gm = inspection.store.users.filter(role='GM').first()
+                if gm:
+                    serializer.validated_data['assigned_to'] = gm
+
+        serializer.save()
+
+    def get_serializer_class(self):
+        if self.action == 'partial_update':
+            return ActionItemUpdateSerializer
+        return ActionItemSerializer
+
+
 class ActionItemListCreateView(generics.ListCreateAPIView):
+    """Legacy view - prefer using ActionItemViewSet"""
     serializer_class = ActionItemSerializer
     permission_classes = [IsAuthenticated]
     filter_backends = [DjangoFilterBackend, filters.OrderingFilter]
@@ -70,7 +166,7 @@ class ActionItemListCreateView(generics.ListCreateAPIView):
 
     def get_queryset(self):
         user = self.request.user
-        if user.role == 'ADMIN':
+        if user.role in ['SUPER_ADMIN', 'ADMIN']:
             return ActionItem.objects.all()
         else:
             return ActionItem.objects.filter(inspection__store=user.store)
@@ -82,16 +178,17 @@ class ActionItemListCreateView(generics.ListCreateAPIView):
             gm = store.users.filter(role='GM').first() if store else None
             if gm:
                 serializer.validated_data['assigned_to'] = gm
-        
+
         serializer.save()
 
 
 class ActionItemDetailView(generics.RetrieveUpdateAPIView):
+    """Legacy view - prefer using ActionItemViewSet"""
     permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
         user = self.request.user
-        if user.role == 'ADMIN':
+        if user.role in ['SUPER_ADMIN', 'ADMIN']:
             return ActionItem.objects.all()
         else:
             return ActionItem.objects.filter(inspection__store=user.store)
