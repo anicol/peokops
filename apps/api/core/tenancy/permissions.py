@@ -33,6 +33,10 @@ class TenantObjectPermission(BasePermission):
         """Check if user has permission to access this object"""
         user = request.user
         
+        unrestricted_roles = getattr(view, 'tenant_unrestricted_roles', [])
+        if unrestricted_roles and user.role in unrestricted_roles:
+            return True
+        
         if user.role == 'SUPER_ADMIN':
             return True
         

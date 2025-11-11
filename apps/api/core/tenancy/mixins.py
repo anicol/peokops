@@ -20,6 +20,7 @@ class ScopedQuerysetMixin:
                 'account': 'account', 
                 'store': 'store'
             }
+            tenant_unrestricted_roles = []  # Optional: roles that bypass filtering
     """
     
     tenant_scope = 'auto'  # 'brand', 'account', 'store', or 'auto'
@@ -28,6 +29,23 @@ class ScopedQuerysetMixin:
         'account': 'account',
         'store': 'store'
     }
+    tenant_unrestricted_roles = []  # Roles that bypass tenant filtering
+    
+    def get_tenant_filter(self, user):
+        """
+        Build tenant filter Q object. Override this method for custom filtering logic.
+        
+        Args:
+            user: User making the request
+            
+        Returns:
+            Q object to filter queryset
+        """
+        return build_tenant_filter(
+            user=user,
+            model_scope=self.tenant_scope,
+            field_paths=self.tenant_field_paths
+        )
     
     def get_queryset(self):
         """Apply tenant filtering to queryset"""
@@ -37,11 +55,10 @@ class ScopedQuerysetMixin:
         if not user or not user.is_authenticated:
             return queryset.none()
         
-        tenant_filter = build_tenant_filter(
-            user=user,
-            model_scope=self.tenant_scope,
-            field_paths=self.tenant_field_paths
-        )
+        if self.tenant_unrestricted_roles and user.role in self.tenant_unrestricted_roles:
+            return queryset
+        
+        tenant_filter = self.get_tenant_filter(user)
         
         return queryset.filter(tenant_filter)
 
