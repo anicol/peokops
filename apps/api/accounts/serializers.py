@@ -666,7 +666,7 @@ class MicroCheckDeliveryConfigSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = MicroCheckDeliveryConfig
-        fields = ('id', 'account', 'send_to_recipients', 'cadence_mode',
+        fields = ('id', 'account', 'distribution_enabled', 'send_to_recipients', 'cadence_mode',
                  'min_day_gap', 'max_day_gap', 'randomize_recipients',
                  'recipient_percentage', 'last_sent_date', 'next_send_date',
                  'created_at', 'updated_at')
