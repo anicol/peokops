@@ -3,23 +3,6 @@
 from django.db import migrations, models
 
 
-def add_password_set_by_user_at_if_not_exists(apps, schema_editor):
-    """Add password_set_by_user_at field if it doesn't exist"""
-    from django.db import connection
-    with connection.cursor() as cursor:
-        cursor.execute("""
-            SELECT column_name
-            FROM information_schema.columns
-            WHERE table_name='users' AND column_name='password_set_by_user_at'
-        """)
-        if cursor.fetchone() is None:
-            # Field doesn't exist, add it
-            cursor.execute("""
-                ALTER TABLE users
-                ADD COLUMN password_set_by_user_at TIMESTAMP WITH TIME ZONE NULL
-            """)
-
-
 class Migration(migrations.Migration):
 
     dependencies = [
@@ -27,7 +10,11 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
-        migrations.RunPython(add_password_set_by_user_at_if_not_exists, migrations.RunPython.noop),
+        migrations.AddField(
+            model_name='user',
+            name='password_set_by_user_at',
+            field=models.DateTimeField(blank=True, help_text='When user first set their own password (vs admin-assigned)', null=True),
+        ),
         migrations.AlterField(
             model_name='user',
             name='role',
