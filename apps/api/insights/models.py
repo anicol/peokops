@@ -427,9 +427,33 @@ Respond in JSON format:
                     Finding.Severity.MEDIUM
                 )
 
+                # Determine template scope (store/account/brand level)
+                store = None
+                account = None
+                level = MicroCheckTemplate.TemplateLevel.BRAND
+
+                # If this review analysis is linked to a store (trial signup flow)
+                if self.store:
+                    store = self.store
+                    account = self.store.account
+                    level = MicroCheckTemplate.TemplateLevel.STORE
+                    logger.info(f"Creating STORE-level template for {store.name}")
+                # Otherwise check if this is a trial brand with a single store
+                elif hasattr(brand, 'is_trial') and brand.is_trial and brand.stores.count() == 1:
+                    store = brand.stores.first()
+                    account = store.account if store else None
+                    level = MicroCheckTemplate.TemplateLevel.STORE
+                    logger.info(f"Creating STORE-level template for trial brand's single store: {store.name if store else 'Unknown'}")
+                else:
+                    # Default to BRAND level for multi-store or non-trial brands
+                    logger.info(f"Creating BRAND-level template for {brand.name}")
+
                 # Create template
                 template = MicroCheckTemplate.objects.create(
                     brand=brand,
+                    account=account,
+                    store=store,
+                    level=level,
                     category=category,
                     severity=severity,
                     title=suggestion.get('title', 'Untitled Check'),
