@@ -128,6 +128,10 @@ def _should_create_run_for_store(store, local_date):
     except MicroCheckDeliveryConfig.DoesNotExist:
         return True  # Default to daily if no config
 
+    # Check if distribution is enabled
+    if not config.distribution_enabled:
+        return False
+
     # Handle cadence modes
     if config.cadence_mode == 'DAILY':
         return True

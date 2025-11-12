@@ -39,8 +39,8 @@ class EmployeeVoicePulseSerializer(serializers.ModelSerializer):
 
         user = request.user
 
-        # Check if user has proper role (OWNER or ENTERPRISE)
-        if user.role not in [User.Role.OWNER, User.Role.SUPER_ADMIN]:
+        # Check if user has proper role (OWNER, TRIAL_ADMIN, or SUPER_ADMIN)
+        if user.role not in [User.Role.OWNER, User.Role.TRIAL_ADMIN, User.Role.SUPER_ADMIN]:
             return False
 
         # Check if minimum respondents threshold is met
@@ -99,7 +99,7 @@ class EmployeeVoiceInvitationSerializer(serializers.ModelSerializer):
 class EmployeeVoiceResponseSerializer(serializers.ModelSerializer):
     """
     Survey response serializer with role-based comment filtering.
-    Comments are only visible to OWNER/SUPER_ADMIN when n ≥ 5.
+    Comments are only visible to OWNER/TRIAL_ADMIN/SUPER_ADMIN when n ≥ 5.
     """
     pulse_title = serializers.CharField(source='pulse.title', read_only=True)
     mood_display = serializers.CharField(source='get_mood_display', read_only=True)
@@ -109,7 +109,7 @@ class EmployeeVoiceResponseSerializer(serializers.ModelSerializer):
     def get_comment(self, obj):
         """
         Role-based comment filtering.
-        Only show comments to OWNER/SUPER_ADMIN and only when n ≥ 5.
+        Only show comments to OWNER/TRIAL_ADMIN/SUPER_ADMIN and only when n ≥ 5.
         """
         request = self.context.get('request')
         if not request or not request.user or not request.user.is_authenticated:
@@ -117,8 +117,8 @@ class EmployeeVoiceResponseSerializer(serializers.ModelSerializer):
 
         user = request.user
 
-        # Check role: Only OWNER and SUPER_ADMIN can see comments
-        if user.role not in [User.Role.OWNER, User.Role.SUPER_ADMIN]:
+        # Check role: Only OWNER, TRIAL_ADMIN, and SUPER_ADMIN can see comments
+        if user.role not in [User.Role.OWNER, User.Role.TRIAL_ADMIN, User.Role.SUPER_ADMIN]:
             return None
 
         # Check n ≥ 5 requirement for privacy

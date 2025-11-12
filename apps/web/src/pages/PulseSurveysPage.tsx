@@ -15,7 +15,8 @@ import {
   Trash2,
   Calendar,
   MessageSquare,
-  BarChart3
+  BarChart3,
+  HelpCircle
 } from 'lucide-react';
 import PulseConfigModal from '@/components/employee-voice/PulseConfigModal';
 import AutoFixConfigPanel from '@/components/employee-voice/AutoFixConfigPanel';
@@ -31,13 +32,14 @@ export default function PulseSurveysPage() {
   const [selectedPulse, setSelectedPulse] = useState<EmployeeVoicePulse | null>(null);
   const [isConfigModalOpen, setIsConfigModalOpen] = useState(false);
   const [isCreating, setIsCreating] = useState(false);
+  const [showQuestionsModal, setShowQuestionsModal] = useState(false);
 
-  // Fetch pulses for user's store
+  // Fetch pulses for user's account (includes account-wide and store-specific pulses)
   const { data: pulsesData, isLoading } = useQuery(
-    ['employee-voice-pulses', user?.store],
-    () => employeeVoiceAPI.getPulses(user!.store!),
+    ['employee-voice-pulses', user?.account_id],
+    () => employeeVoiceAPI.getPulses(),
     {
-      enabled: !!user?.store,
+      enabled: !!user,
     }
   );
 
@@ -89,8 +91,12 @@ export default function PulseSurveysPage() {
 
   const getStatusBadge = (pulse: EmployeeVoicePulse) => {
     if (pulse.status === 'LOCKED') {
+      const progress = pulse.unlock_progress || { current: 0, required: 5 };
       return (
-        <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-700">
+        <span
+          className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-700 cursor-help"
+          title={`Collecting responses. Will show results after ${progress.required} submissions (${progress.current}/${progress.required} so far)`}
+        >
           <Lock className="w-3 h-3 mr-1" />
           Locked
         </span>
@@ -262,29 +268,38 @@ export default function PulseSurveysPage() {
                   </div>
 
                   {/* Actions */}
-                  <div className="flex items-center space-x-2 pt-4 border-t border-gray-200">
+                  <div className="space-y-2 pt-4 border-t border-gray-200">
+                    <div className="flex items-center space-x-2">
+                      <button
+                        onClick={() => handleEditPulse(pulse)}
+                        className="flex-1 inline-flex items-center justify-center px-3 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50"
+                      >
+                        <Edit2 className="w-4 h-4 mr-1" />
+                        Edit
+                      </button>
+                      <button
+                        onClick={() => handleToggleActive(pulse)}
+                        className={`flex-1 inline-flex items-center justify-center px-3 py-2 border shadow-sm text-sm font-medium rounded-md ${
+                          pulse.is_active
+                            ? 'border-gray-300 text-gray-700 bg-white hover:bg-gray-50'
+                            : 'border-transparent text-white bg-green-600 hover:bg-green-700'
+                        }`}
+                      >
+                        {pulse.is_active ? 'Deactivate' : 'Activate'}
+                      </button>
+                      <button
+                        onClick={() => handleDeletePulse(pulse.id)}
+                        className="inline-flex items-center justify-center px-3 py-2 border border-red-300 shadow-sm text-sm font-medium rounded-md text-red-700 bg-white hover:bg-red-50"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
                     <button
-                      onClick={() => handleEditPulse(pulse)}
-                      className="flex-1 inline-flex items-center justify-center px-3 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50"
+                      onClick={() => setShowQuestionsModal(true)}
+                      className="w-full inline-flex items-center justify-center px-3 py-2 border border-blue-300 shadow-sm text-sm font-medium rounded-md text-blue-700 bg-blue-50 hover:bg-blue-100"
                     >
-                      <Edit2 className="w-4 h-4 mr-1" />
-                      Edit
-                    </button>
-                    <button
-                      onClick={() => handleToggleActive(pulse)}
-                      className={`flex-1 inline-flex items-center justify-center px-3 py-2 border shadow-sm text-sm font-medium rounded-md ${
-                        pulse.is_active
-                          ? 'border-gray-300 text-gray-700 bg-white hover:bg-gray-50'
-                          : 'border-transparent text-white bg-green-600 hover:bg-green-700'
-                      }`}
-                    >
-                      {pulse.is_active ? 'Deactivate' : 'Activate'}
-                    </button>
-                    <button
-                      onClick={() => handleDeletePulse(pulse.id)}
-                      className="inline-flex items-center justify-center px-3 py-2 border border-red-300 shadow-sm text-sm font-medium rounded-md text-red-700 bg-white hover:bg-red-50"
-                    >
-                      <Trash2 className="w-4 h-4" />
+                      <HelpCircle className="w-4 h-4 mr-1" />
+                      View Questions
                     </button>
                   </div>
                 </div>
@@ -324,6 +339,142 @@ export default function PulseSurveysPage() {
             setSelectedPulse(null);
           }}
         />
+      )}
+
+      {/* Questions Modal */}
+      {showQuestionsModal && (
+        <div className="fixed inset-0 z-50 overflow-y-auto">
+          <div className="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:block sm:p-0">
+            {/* Background overlay */}
+            <div
+              className="fixed inset-0 transition-opacity bg-gray-500 bg-opacity-75"
+              onClick={() => setShowQuestionsModal(false)}
+            />
+
+            {/* Modal panel */}
+            <div className="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-2xl sm:w-full">
+              {/* Header */}
+              <div className="bg-blue-600 px-6 py-4">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-lg font-semibold text-white flex items-center">
+                    <MessageSquare className="w-5 h-5 mr-2" />
+                    Survey Questions
+                  </h3>
+                  <button
+                    onClick={() => setShowQuestionsModal(false)}
+                    className="text-white hover:text-gray-200"
+                  >
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
+                </div>
+              </div>
+
+              {/* Content */}
+              <div className="bg-white px-6 py-6 space-y-6">
+                <p className="text-sm text-gray-600 mb-4">
+                  This ultra-lightweight survey takes employees less than 30 seconds to complete. Responses are anonymous and aggregated for privacy.
+                </p>
+
+                {/* Question 1: Mood */}
+                <div className="border-l-4 border-blue-500 pl-4">
+                  <h4 className="font-semibold text-gray-900 mb-2">1. How are you feeling today?</h4>
+                  <div className="flex items-center space-x-2 text-2xl">
+                    <span title="Exhausted">😫</span>
+                    <span title="Meh">😐</span>
+                    <span title="Good">🙂</span>
+                    <span title="Great">😄</span>
+                    <span title="On Fire">🔥</span>
+                  </div>
+                  <p className="text-xs text-gray-500 mt-2">5-point emoji slider to gauge team mood</p>
+                </div>
+
+                {/* Question 2: Confidence */}
+                <div className="border-l-4 border-green-500 pl-4">
+                  <h4 className="font-semibold text-gray-900 mb-2">2. Do you have what you need to do your job well today?</h4>
+                  <div className="space-y-1 text-sm">
+                    <div className="flex items-center">
+                      <span className="mr-2">❌</span>
+                      <span>No, we're short or disorganized</span>
+                    </div>
+                    <div className="flex items-center">
+                      <span className="mr-2">⚠️</span>
+                      <span>Mostly, a few things missing</span>
+                    </div>
+                    <div className="flex items-center">
+                      <span className="mr-2">✅</span>
+                      <span>Yes, I'm all set</span>
+                    </div>
+                  </div>
+                  <p className="text-xs text-gray-500 mt-2">Quick readiness check</p>
+                </div>
+
+                {/* Question 3: Bottlenecks */}
+                <div className="border-l-4 border-yellow-500 pl-4">
+                  <h4 className="font-semibold text-gray-900 mb-2">3. What's slowing the team down? (Optional, multi-select)</h4>
+                  <div className="space-y-1 text-sm">
+                    <div className="flex items-center">
+                      <span className="mr-2">🧹</span>
+                      <span>Cleanliness / Prep setup</span>
+                    </div>
+                    <div className="flex items-center">
+                      <span className="mr-2">🧍</span>
+                      <span>Staffing or scheduling</span>
+                    </div>
+                    <div className="flex items-center">
+                      <span className="mr-2">📦</span>
+                      <span>Supplies or inventory</span>
+                    </div>
+                    <div className="flex items-center">
+                      <span className="mr-2">⚙️</span>
+                      <span>Equipment or maintenance</span>
+                    </div>
+                    <div className="flex items-center">
+                      <span className="mr-2">📱</span>
+                      <span>Tech or systems</span>
+                    </div>
+                    <div className="flex items-center">
+                      <span className="mr-2">❓</span>
+                      <span>Other</span>
+                    </div>
+                  </div>
+                  <p className="text-xs text-gray-500 mt-2">Identifies operational bottlenecks</p>
+                </div>
+
+                {/* Question 4: Comment */}
+                <div className="border-l-4 border-purple-500 pl-4">
+                  <h4 className="font-semibold text-gray-900 mb-2">4. Anything we should fix or celebrate today? (Optional)</h4>
+                  <div className="bg-gray-100 rounded p-3 text-sm text-gray-600">
+                    80 character free-text comment
+                  </div>
+                  <p className="text-xs text-gray-500 mt-2">Anonymous feedback (only shown when n ≥ 5)</p>
+                </div>
+
+                {/* Privacy Notice */}
+                <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
+                  <h5 className="font-semibold text-gray-900 mb-2 text-sm">Privacy Protection</h5>
+                  <ul className="text-xs text-gray-600 space-y-1">
+                    <li>• All responses are anonymous</li>
+                    <li>• Results only shown after 5+ unique respondents</li>
+                    <li>• Comments are aggregated and cannot be traced to individuals</li>
+                    <li>• Takes less than 30 seconds to complete</li>
+                  </ul>
+                </div>
+              </div>
+
+              {/* Footer */}
+              <div className="bg-gray-50 px-6 py-4">
+                <button
+                  onClick={() => setShowQuestionsModal(false)}
+                  className="w-full inline-flex justify-center items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700"
+                >
+                  Close
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

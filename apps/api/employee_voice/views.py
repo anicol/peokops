@@ -38,9 +38,9 @@ class EmployeeVoicePulseViewSet(ScopedQuerysetMixin, ScopedCreateMixin, viewsets
     ViewSet for managing employee voice pulse surveys.
 
     Access Control:
-    - OWNER/SUPER_ADMIN: Full access (create, edit, delete, view insights)
+    - OWNER/TRIAL_ADMIN/SUPER_ADMIN: Full access (create, edit, delete, view insights)
     - ADMIN: View-only access
-    - GM/TRIAL_ADMIN: No access
+    - GM: No access
     - INSPECTOR: No access
     """
     queryset = EmployeeVoicePulse.objects.all()
@@ -75,14 +75,21 @@ class EmployeeVoicePulseViewSet(ScopedQuerysetMixin, ScopedCreateMixin, viewsets
         if user.role == User.Role.SUPER_ADMIN:
             return self.queryset.all()
 
-        # OWNER sees pulses for their account
-        if user.role == User.Role.OWNER:
+        # OWNER and TRIAL_ADMIN see pulses for their account (both store-specific and account-wide)
+        if user.role in [User.Role.OWNER, User.Role.TRIAL_ADMIN]:
             if user.account:
                 return self.queryset.filter(account=user.account)
             return self.queryset.none()
 
-        # Other roles see pulses for their accessible stores
+        # Other roles see:
+        # 1. Pulses for their accessible stores
+        # 2. Account-wide pulses (store=null) for their account
         accessible_stores = user.get_accessible_stores()
+        if user.account:
+            return self.queryset.filter(
+                Q(store__in=accessible_stores) |
+                Q(store__isnull=True, account=user.account)
+            )
         return self.queryset.filter(store__in=accessible_stores)
 
     def perform_create(self, serializer):
@@ -386,9 +393,9 @@ class EmployeeVoiceResponseViewSet(ScopedQuerysetMixin, viewsets.ReadOnlyModelVi
     Comments are role-gated via serializer.
 
     Access Control:
-    - OWNER/SUPER_ADMIN: Can view responses (comments filtered by n ≥ 5)
+    - OWNER/TRIAL_ADMIN/SUPER_ADMIN: Can view responses (comments filtered by n ≥ 5)
     - ADMIN: Cannot view individual responses
-    - GM/TRIAL_ADMIN: No access
+    - GM: No access
     """
     queryset = EmployeeVoiceResponse.objects.all()
     serializer_class = EmployeeVoiceResponseSerializer
@@ -411,16 +418,16 @@ class EmployeeVoiceResponseViewSet(ScopedQuerysetMixin, viewsets.ReadOnlyModelVi
         """Filter responses based on user role"""
         user = self.request.user
 
-        # Only OWNER and SUPER_ADMIN can view responses
-        if user.role not in [User.Role.OWNER, User.Role.SUPER_ADMIN]:
+        # Only OWNER, TRIAL_ADMIN, and SUPER_ADMIN can view responses
+        if user.role not in [User.Role.OWNER, User.Role.TRIAL_ADMIN, User.Role.SUPER_ADMIN]:
             return self.queryset.none()
 
         # SUPER_ADMIN sees all
         if user.role == User.Role.SUPER_ADMIN:
             return self.queryset.all()
 
-        # OWNER sees responses for their account
-        if user.role == User.Role.OWNER and user.account:
+        # OWNER and TRIAL_ADMIN see responses for their account
+        if user.role in [User.Role.OWNER, User.Role.TRIAL_ADMIN] and user.account:
             return self.queryset.filter(pulse__account=user.account)
 
         return self.queryset.none()
