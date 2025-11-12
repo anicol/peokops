@@ -32,12 +32,12 @@ export default function PulseSurveysPage() {
   const [isConfigModalOpen, setIsConfigModalOpen] = useState(false);
   const [isCreating, setIsCreating] = useState(false);
 
-  // Fetch pulses for user's store
+  // Fetch pulses for user's account (includes account-wide and store-specific pulses)
   const { data: pulsesData, isLoading } = useQuery(
-    ['employee-voice-pulses', user?.store],
-    () => employeeVoiceAPI.getPulses(user!.store!),
+    ['employee-voice-pulses', user?.account_id],
+    () => employeeVoiceAPI.getPulses(),
     {
-      enabled: !!user?.store,
+      enabled: !!user,
     }
   );
 

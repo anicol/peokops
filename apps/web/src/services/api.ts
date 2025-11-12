@@ -1065,10 +1065,9 @@ export const employeeVoiceAPI = {
   },
 
   // Get all pulses for a store
-  getPulses: async (storeId: number): Promise<EmployeeVoicePulse[]> => {
-    const response = await api.get('/employee-voice/pulses/', {
-      params: { store: storeId }
-    });
+  getPulses: async (storeId?: number): Promise<EmployeeVoicePulse[]> => {
+    const params = storeId ? { store: storeId } : {};
+    const response = await api.get('/employee-voice/pulses/', { params });
     // Handle paginated response
     return response.data.results || response.data;
   },
