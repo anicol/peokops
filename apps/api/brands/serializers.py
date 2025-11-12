@@ -21,10 +21,24 @@ class StoreSerializer(serializers.ModelSerializer):
     class Meta:
         model = Store
         fields = '__all__'
-        # Explicitly include google_location_data so it's accepted
+        # Make brand and account optional - they'll be auto-set from user context
         extra_kwargs = {
-            'google_location_data': {'required': False}
+            'google_location_data': {'required': False},
+            'brand': {'required': False, 'allow_null': True},
+            'account': {'required': False, 'allow_null': True}
         }
+
+    def validate_brand(self, value):
+        """Convert empty string to None for auto-setting in perform_create"""
+        if value == '' or value is None:
+            return None
+        return value
+
+    def validate_account(self, value):
+        """Convert empty string to None for auto-setting in perform_create"""
+        if value == '' or value is None:
+            return None
+        return value
 
 
 class StoreListSerializer(serializers.ModelSerializer):
