@@ -19,6 +19,7 @@ import type { Store } from '@/types';
 // Types
 interface DeliveryConfig {
   id: string;
+  distribution_enabled: boolean;
   send_to_recipients: 'MANAGERS_ONLY' | 'ALL_EMPLOYEES';
   cadence_mode: 'DAILY' | 'RANDOMIZED';
   min_day_gap: number;
@@ -109,6 +110,7 @@ export default function SchedulePage() {
   const queryClient = useQueryClient();
 
   // State
+  const [distributionEnabled, setDistributionEnabled] = useState(true);
   const [sendToRecipients, setSendToRecipients] = useState<'MANAGERS_ONLY' | 'ALL_EMPLOYEES'>('MANAGERS_ONLY');
   const [cadenceMode, setCadenceMode] = useState<'DAILY' | 'RANDOMIZED'>('DAILY');
   const [minDayGap, setMinDayGap] = useState(1);
@@ -122,6 +124,7 @@ export default function SchedulePage() {
     scheduleAPI.getDeliveryConfig,
     {
       onSuccess: (data) => {
+        setDistributionEnabled(data.distribution_enabled);
         setSendToRecipients(data.send_to_recipients);
         setCadenceMode(data.cadence_mode);
         setMinDayGap(data.min_day_gap);
@@ -181,6 +184,7 @@ export default function SchedulePage() {
 
   const handleSave = () => {
     updateMutation.mutate({
+      distribution_enabled: distributionEnabled,
       send_to_recipients: sendToRecipients,
       cadence_mode: cadenceMode,
       min_day_gap: minDayGap,
@@ -340,6 +344,36 @@ export default function SchedulePage() {
         </div>
 
         <div className="space-y-6">
+          {/* Distribution Toggle */}
+          <div className="flex items-center justify-between p-4 bg-gray-50 border border-gray-200 rounded-lg">
+            <div className="flex items-center space-x-3">
+              <div>
+                <h3 className="text-sm font-medium text-gray-900">Micro-Check Distribution</h3>
+                <p className="text-xs text-gray-500 mt-0.5">
+                  {distributionEnabled
+                    ? 'Distribution is currently active. Micro-checks will be sent according to your schedule.'
+                    : 'Distribution is currently paused. No micro-checks will be sent until you enable it.'}
+                </p>
+              </div>
+            </div>
+            <button
+              type="button"
+              role="switch"
+              aria-checked={distributionEnabled}
+              onClick={() => setDistributionEnabled(!distributionEnabled)}
+              className={`${
+                distributionEnabled ? 'bg-indigo-600' : 'bg-gray-200'
+              } relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-indigo-600 focus:ring-offset-2`}
+            >
+              <span
+                aria-hidden="true"
+                className={`${
+                  distributionEnabled ? 'translate-x-5' : 'translate-x-0'
+                } pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out`}
+              />
+            </button>
+          </div>
+
           {/* Recipients */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-3">

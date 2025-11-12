@@ -61,6 +61,12 @@ class MicroCheckDeliveryConfig(models.Model):
         help_text="Account this configuration belongs to"
     )
 
+    # Distribution control
+    distribution_enabled = models.BooleanField(
+        default=True,
+        help_text="Enable or disable micro-check distribution system-wide"
+    )
+
     # Recipient configuration
     send_to_recipients = models.CharField(
         max_length=20,
