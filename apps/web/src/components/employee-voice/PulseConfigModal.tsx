@@ -18,8 +18,9 @@ export default function PulseConfigModal({ pulse, isCreating, onClose, onSave }:
     description: '',
     shift_window: 'OPEN' as 'OPEN' | 'MID' | 'CLOSE',
     language: 'en' as 'en' | 'es' | 'fr',
+    delivery_frequency: 'MEDIUM' as 'LOW' | 'MEDIUM' | 'HIGH',
+    randomization_window_minutes: 60,
     consent_text: 'Your responses are anonymous and help improve team operations.',
-    auto_fix_flow_enabled: false,
     min_respondents_for_display: 5,
   });
 
@@ -32,8 +33,9 @@ export default function PulseConfigModal({ pulse, isCreating, onClose, onSave }:
         description: pulse.description,
         shift_window: pulse.shift_window as 'OPEN' | 'MID' | 'CLOSE',
         language: pulse.language as 'en' | 'es' | 'fr',
+        delivery_frequency: pulse.delivery_frequency,
+        randomization_window_minutes: pulse.randomization_window_minutes,
         consent_text: pulse.consent_text,
-        auto_fix_flow_enabled: pulse.auto_fix_flow_enabled,
         min_respondents_for_display: pulse.min_respondents_for_display,
       });
     }
@@ -200,7 +202,7 @@ export default function PulseConfigModal({ pulse, isCreating, onClose, onSave }:
                   <option value="CLOSE">🌙 Closing (End of shift)</option>
                 </select>
                 <p className="mt-1 text-xs text-gray-500">
-                  Invitations will be sent 1 hour into the selected shift window
+                  Defines the 2-hour window when surveys are sent (randomized per employee)
                 </p>
               </div>
 
@@ -221,6 +223,56 @@ export default function PulseConfigModal({ pulse, isCreating, onClose, onSave }:
                   <option value="es">Spanish</option>
                   <option value="fr">French</option>
                 </select>
+              </div>
+
+              {/* Delivery Frequency */}
+              <div>
+                <label htmlFor="delivery_frequency" className="block text-sm font-medium text-gray-700 mb-1">
+                  Delivery Frequency *
+                </label>
+                <select
+                  id="delivery_frequency"
+                  value={formData.delivery_frequency}
+                  onChange={(e) =>
+                    setFormData({
+                      ...formData,
+                      delivery_frequency: e.target.value as 'LOW' | 'MEDIUM' | 'HIGH',
+                    })
+                  }
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                >
+                  <option value="LOW">🔵 Low (1-2 times/week, ~25% daily)</option>
+                  <option value="MEDIUM">🟡 Medium (2-3 times/week, ~40% daily)</option>
+                  <option value="HIGH">🔴 High (3-4 times/week, ~55% daily)</option>
+                </select>
+                <p className="mt-1 text-xs text-gray-500">
+                  Each employee has a random chance to receive a survey each day. This prevents pencil-whipping and survey fatigue.
+                </p>
+              </div>
+
+              {/* Randomization Window */}
+              <div>
+                <label htmlFor="randomization_window" className="block text-sm font-medium text-gray-700 mb-1">
+                  Randomization Window (minutes)
+                </label>
+                <input
+                  type="number"
+                  id="randomization_window"
+                  value={formData.randomization_window_minutes}
+                  onChange={(e) =>
+                    setFormData({
+                      ...formData,
+                      randomization_window_minutes: parseInt(e.target.value) || 60,
+                    })
+                  }
+                  min="15"
+                  max="120"
+                  step="15"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                />
+                <p className="mt-1 text-xs text-gray-500">
+                  Surveys are sent at random times within the first {formData.randomization_window_minutes} minutes of the shift window. Increases unpredictability.
+                </p>
               </div>
 
               {/* Consent Text */}
@@ -269,29 +321,6 @@ export default function PulseConfigModal({ pulse, isCreating, onClose, onSave }:
                 <p className="mt-1 text-xs text-gray-500">
                   Privacy protection: insights require n ≥ 5 unique respondents
                 </p>
-              </div>
-
-              {/* Auto-Fix Flow */}
-              <div className="flex items-start">
-                <div className="flex items-center h-5">
-                  <input
-                    id="auto_fix"
-                    type="checkbox"
-                    checked={formData.auto_fix_flow_enabled}
-                    onChange={(e) =>
-                      setFormData({ ...formData, auto_fix_flow_enabled: e.target.checked })
-                    }
-                    className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-                  />
-                </div>
-                <div className="ml-3">
-                  <label htmlFor="auto_fix" className="font-medium text-sm text-gray-700">
-                    Enable Auto-Fix Flow
-                  </label>
-                  <p className="text-xs text-gray-500">
-                    Automatically create ActionItems when bottlenecks are mentioned ≥3× in 7 days
-                  </p>
-                </div>
               </div>
             </div>
 

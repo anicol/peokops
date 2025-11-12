@@ -8,12 +8,12 @@ import logging
 import hashlib
 import uuid
 import pytz
+import random
 
 from .models import (
     EmployeeVoicePulse,
     EmployeeVoiceInvitation,
     EmployeeVoiceResponse,
-    AutoFixFlowConfig,
     CrossVoiceCorrelation
 )
 from inspections.models import ActionItem, Finding
@@ -23,17 +23,22 @@ logger = logging.getLogger(__name__)
 
 
 @shared_task(queue='default')
-def send_pulse_invitations():
+def schedule_pulse_invitations():
     """
-    Scheduled task to send employee voice pulse invitations.
+    Scheduled task to create randomized pulse invitations for the day.
 
-    Runs every hour and checks if each pulse's shift window matches current time.
-    Creates invitations and sends SMS to eligible employees.
+    Runs once daily (early morning) and creates invitations with randomized
+    scheduled_send_at times based on:
+    - Delivery frequency (LOW/MEDIUM/HIGH) = probability of getting survey
+    - Randomization window = minutes within shift window to randomize
+    - Shift window = OPEN/MID/CLOSE defines the 2-hour window
 
-    Shift windows:
-    - OPEN: 6am-8am store local time
-    - MID: 12pm-2pm store local time
-    - CLOSE: 8pm-10pm store local time
+    Each employee has individual random schedule:
+    - Random day selection (per delivery_frequency %)
+    - Random time within first N minutes of shift window
+
+    Invitations are created with status=SCHEDULED and will be sent by
+    send_scheduled_invitations task when scheduled_send_at is reached.
     """
     from brands.models import Store
 
@@ -43,30 +48,27 @@ def send_pulse_invitations():
         status__in=[EmployeeVoicePulse.Status.ACTIVE, EmployeeVoicePulse.Status.LOCKED]
     ).select_related('store', 'account')
 
-    sent_count = 0
+    scheduled_count = 0
     skipped_count = 0
 
     for pulse in active_pulses:
         try:
             # Get store's current local time
             store = pulse.store
-            store_tz = pytz.timezone(store.timezone)
-            store_local_time = current_utc.astimezone(store_tz)
-
-            # Check if current hour matches the shift window
-            should_send = _is_shift_window_hour(pulse.shift_window, store_local_time)
-
-            if not should_send:
+            if not store:
                 continue
 
-            # Check if we already sent invitations today
+            store_tz = pytz.timezone(store.timezone)
+            store_local_time = current_utc.astimezone(store_tz)
             today_start = store_local_time.replace(hour=0, minute=0, second=0, microsecond=0)
-            already_sent = EmployeeVoiceInvitation.objects.filter(
+
+            # Check if we already scheduled invitations for today
+            already_scheduled = EmployeeVoiceInvitation.objects.filter(
                 pulse=pulse,
                 created_at__gte=today_start
             ).exists()
 
-            if already_sent:
+            if already_scheduled:
                 skipped_count += 1
                 continue
 
@@ -78,21 +80,93 @@ def send_pulse_invitations():
                     is_active=True
                 ).exclude(phone_number__isnull=True).exclude(phone_number='')
 
+                # Get delivery frequency probability
+                frequency_map = {
+                    EmployeeVoicePulse.DeliveryFrequency.LOW: 0.25,      # 25% chance
+                    EmployeeVoicePulse.DeliveryFrequency.MEDIUM: 0.40,   # 40% chance
+                    EmployeeVoicePulse.DeliveryFrequency.HIGH: 0.55,     # 55% chance
+                }
+                send_probability = frequency_map.get(
+                    pulse.delivery_frequency,
+                    0.40  # Default to MEDIUM
+                )
+
                 for employee in employees:
-                    invitation = _create_and_send_invitation(pulse, employee.phone_number)
-                    if invitation:
-                        sent_count += 1
+                    # Random day selection - each employee has random chance
+                    if random.random() > send_probability:
+                        continue  # Skip this employee today
+
+                    # Calculate randomized send time
+                    scheduled_time = _calculate_randomized_send_time(
+                        pulse,
+                        store_local_time,
+                        store_tz
+                    )
+
+                    if scheduled_time:
+                        invitation = _create_scheduled_invitation(
+                            pulse,
+                            employee.phone_number,
+                            scheduled_time
+                        )
+                        if invitation:
+                            scheduled_count += 1
 
             except ImportError:
                 logger.warning(f"7shifts integration not available for store {store.id}")
                 continue
 
         except Exception as e:
-            logger.error(f"Error sending invitations for pulse {pulse.id}: {str(e)}")
+            logger.error(f"Error scheduling invitations for pulse {pulse.id}: {str(e)}")
             continue
 
-    logger.info(f"Pulse invitations: {sent_count} sent, {skipped_count} skipped")
-    return {'sent': sent_count, 'skipped': skipped_count}
+    logger.info(f"Pulse invitations scheduled: {scheduled_count} created, {skipped_count} pulses skipped")
+    return {'scheduled': scheduled_count, 'skipped': skipped_count}
+
+
+@shared_task(queue='default')
+def send_scheduled_invitations():
+    """
+    Scheduled task to send pulse invitations that are ready.
+
+    Runs every hour and sends invitations where:
+    - status = SCHEDULED
+    - scheduled_send_at <= current time
+
+    Updates status to SENT after successful SMS delivery.
+    """
+    current_utc = timezone.now()
+
+    # Get invitations ready to send
+    ready_invitations = EmployeeVoiceInvitation.objects.filter(
+        status=EmployeeVoiceInvitation.Status.SCHEDULED,
+        scheduled_send_at__lte=current_utc,
+        expires_at__gt=current_utc
+    ).select_related('pulse', 'pulse__store')
+
+    sent_count = 0
+    failed_count = 0
+
+    for invitation in ready_invitations:
+        try:
+            # Send SMS via Twilio
+            success = _send_sms_invitation(invitation, invitation.recipient_phone)
+
+            if success:
+                invitation.status = EmployeeVoiceInvitation.Status.SENT
+                invitation.sent_at = timezone.now()
+                invitation.save(update_fields=['status', 'sent_at', 'updated_at'])
+                sent_count += 1
+            else:
+                failed_count += 1
+
+        except Exception as e:
+            logger.error(f"Error sending scheduled invitation {invitation.id}: {str(e)}")
+            failed_count += 1
+            continue
+
+    logger.info(f"Scheduled invitations sent: {sent_count} sent, {failed_count} failed")
+    return {'sent': sent_count, 'failed': failed_count}
 
 
 def _is_shift_window_hour(shift_window, store_local_time):
@@ -107,6 +181,85 @@ def _is_shift_window_hour(shift_window, store_local_time):
         return 20 <= hour < 22
 
     return False
+
+
+def _get_shift_window_start_hour(shift_window):
+    """Get the starting hour for a shift window"""
+    if shift_window == EmployeeVoicePulse.ShiftWindow.OPEN:
+        return 6
+    elif shift_window == EmployeeVoicePulse.ShiftWindow.MID:
+        return 12
+    elif shift_window == EmployeeVoicePulse.ShiftWindow.CLOSE:
+        return 20
+    return 12  # Default to MID
+
+
+def _calculate_randomized_send_time(pulse, store_local_time, store_tz):
+    """
+    Calculate a randomized send time for an invitation.
+
+    Returns a timezone-aware datetime within the first N minutes of the shift window,
+    where N = pulse.randomization_window_minutes.
+
+    Example: If shift is MID (12pm-2pm) and randomization_window = 60 minutes,
+    returns a random time between 12:00 PM and 1:00 PM.
+    """
+    try:
+        # Get shift window start hour
+        start_hour = _get_shift_window_start_hour(pulse.shift_window)
+
+        # Create datetime for start of shift window today
+        shift_start = store_local_time.replace(
+            hour=start_hour,
+            minute=0,
+            second=0,
+            microsecond=0
+        )
+
+        # Randomize within the specified window (default 60 minutes)
+        randomization_window = pulse.randomization_window_minutes or 60
+        random_minutes = random.randint(0, randomization_window - 1)
+
+        # Calculate scheduled time
+        scheduled_local = shift_start + timedelta(minutes=random_minutes)
+
+        # Convert to UTC for storage
+        scheduled_utc = scheduled_local.astimezone(pytz.UTC)
+
+        return scheduled_utc
+
+    except Exception as e:
+        logger.error(f"Error calculating randomized send time for pulse {pulse.id}: {str(e)}")
+        return None
+
+
+def _create_scheduled_invitation(pulse, phone_number, scheduled_send_at):
+    """Create a scheduled invitation (not sent immediately)"""
+    try:
+        # Generate secure token
+        token = hashlib.sha256(f"{uuid.uuid4()}{timezone.now()}".encode()).hexdigest()
+
+        # Create invitation with SCHEDULED status
+        invitation = EmployeeVoiceInvitation.objects.create(
+            pulse=pulse,
+            token=token,
+            delivery_method=EmployeeVoiceInvitation.DeliveryMethod.SMS,
+            recipient_phone=phone_number,
+            scheduled_send_at=scheduled_send_at,
+            status=EmployeeVoiceInvitation.Status.SCHEDULED,
+            expires_at=scheduled_send_at + timedelta(hours=24)
+        )
+
+        logger.debug(
+            f"Scheduled invitation {invitation.id} for {phone_number} "
+            f"at {scheduled_send_at.strftime('%Y-%m-%d %H:%M %Z')}"
+        )
+
+        return invitation
+
+    except Exception as e:
+        logger.error(f"Error creating scheduled invitation for pulse {pulse.id}: {str(e)}")
+        return None
 
 
 def _create_and_send_invitation(pulse, phone_number):
@@ -208,48 +361,6 @@ def check_pulse_unlock_status():
 
     logger.info(f"Unlock check: {unlocked_count} pulses unlocked")
     return {'unlocked': unlocked_count, 'checked': locked_pulses.count()}
-
-
-@shared_task(queue='default')
-def evaluate_auto_fix_flows():
-    """
-    Scheduled task to evaluate auto-fix flow configs and create ActionItems.
-
-    Checks if any bottleneck has crossed threshold (e.g., ≥3 mentions in 7 days).
-    Auto-creates ActionItem when threshold is met.
-    Runs daily at 4 AM UTC.
-    """
-    enabled_configs = AutoFixFlowConfig.objects.filter(
-        is_enabled=True,
-        pulse__is_active=True
-    ).select_related('pulse', 'pulse__store', 'pulse__account')
-
-    actions_created = 0
-
-    for config in enabled_configs:
-        try:
-            config.check_and_create_action_items()
-
-            # Check if any new correlations were created (which trigger actions)
-            new_correlations = CrossVoiceCorrelation.objects.filter(
-                pulse=config.pulse,
-                created_at__gte=timezone.now() - timedelta(hours=1),
-                action_item__isnull=False
-            )
-
-            actions_created += new_correlations.count()
-
-            if new_correlations.exists():
-                logger.info(
-                    f"Auto-fix: {new_correlations.count()} actions created for pulse {config.pulse.id}"
-                )
-
-        except Exception as e:
-            logger.error(f"Error evaluating auto-fix config {config.id}: {str(e)}")
-            continue
-
-    logger.info(f"Auto-fix evaluation: {actions_created} actions created")
-    return {'actions_created': actions_created, 'configs_checked': enabled_configs.count()}
 
 
 @shared_task(queue='default')

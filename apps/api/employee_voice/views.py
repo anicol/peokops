@@ -16,7 +16,6 @@ from .models import (
     EmployeeVoicePulse,
     EmployeeVoiceInvitation,
     EmployeeVoiceResponse,
-    AutoFixFlowConfig,
     CrossVoiceCorrelation
 )
 from .serializers import (
@@ -26,7 +25,6 @@ from .serializers import (
     EmployeeVoiceResponseSerializer,
     EmployeeVoiceResponseSubmitSerializer,
     EmployeeVoiceInsightsSerializer,
-    AutoFixFlowConfigSerializer,
     CrossVoiceCorrelationSerializer
 )
 from .utils import generate_anonymous_hash_from_request
@@ -329,14 +327,6 @@ def submit_survey_response(request):
     # Check if pulse should be unlocked
     pulse.check_unlock_status()
 
-    # Check auto-fix flow (if enabled)
-    if pulse.auto_fix_flow_enabled:
-        try:
-            auto_fix_config = pulse.auto_fix_config
-            auto_fix_config.check_and_create_action_items()
-        except AutoFixFlowConfig.DoesNotExist:
-            pass
-
     # Return created response
     response_serializer = EmployeeVoiceResponseSerializer(response, context={'request': request})
     return Response(response_serializer.data, status=status.HTTP_201_CREATED)
@@ -428,42 +418,6 @@ class EmployeeVoiceResponseViewSet(ScopedQuerysetMixin, viewsets.ReadOnlyModelVi
 
         # OWNER and TRIAL_ADMIN see responses for their account
         if user.role in [User.Role.OWNER, User.Role.TRIAL_ADMIN] and user.account:
-            return self.queryset.filter(pulse__account=user.account)
-
-        return self.queryset.none()
-
-
-class AutoFixFlowConfigViewSet(ScopedQuerysetMixin, ScopedCreateMixin, viewsets.ModelViewSet):
-    """
-    ViewSet for managing auto-fix flow configurations.
-
-    Access Control:
-    - OWNER/SUPER_ADMIN: Full access
-    - Others: No access
-    """
-    queryset = AutoFixFlowConfig.objects.all()
-    serializer_class = AutoFixFlowConfigSerializer
-    permission_classes = [IsAuthenticated, TenantObjectPermission]
-    filterset_fields = ['pulse', 'is_enabled']
-    
-    tenant_scope = 'account'
-    tenant_field_paths = {
-        'account': 'pulse__account',
-        'store': 'pulse__store'
-    }
-    tenant_object_paths = {
-        'account': 'pulse.account_id',
-        'store': 'pulse.store_id'
-    }
-
-    def get_queryset(self):
-        """Filter configs based on user role"""
-        user = self.request.user
-
-        if user.role == User.Role.SUPER_ADMIN:
-            return self.queryset.all()
-
-        if user.role == User.Role.OWNER and user.account:
             return self.queryset.filter(pulse__account=user.account)
 
         return self.queryset.none()
