@@ -75,14 +75,21 @@ class EmployeeVoicePulseViewSet(ScopedQuerysetMixin, ScopedCreateMixin, viewsets
         if user.role == User.Role.SUPER_ADMIN:
             return self.queryset.all()
 
-        # OWNER sees pulses for their account
+        # OWNER sees pulses for their account (both store-specific and account-wide)
         if user.role == User.Role.OWNER:
             if user.account:
                 return self.queryset.filter(account=user.account)
             return self.queryset.none()
 
-        # Other roles see pulses for their accessible stores
+        # Other roles see:
+        # 1. Pulses for their accessible stores
+        # 2. Account-wide pulses (store=null) for their account
         accessible_stores = user.get_accessible_stores()
+        if user.account:
+            return self.queryset.filter(
+                Q(store__in=accessible_stores) |
+                Q(store__isnull=True, account=user.account)
+            )
         return self.queryset.filter(store__in=accessible_stores)
 
     def perform_create(self, serializer):
