@@ -47,7 +47,7 @@ from accounts.models import Account, User
 owner = User.objects.create_user(
     username="balancegrille_owner",
     email="shannon@balancegrille.com",  # Replace with actual email
-    password="ChangeMe2025!",  # They'll reset on first login
+    password="",  # They'll reset on first login
     first_name="Shannon",  # Replace with actual name
     last_name="Owner",
     role=User.Role.OWNER,
