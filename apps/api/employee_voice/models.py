@@ -451,7 +451,7 @@ class CrossVoiceCorrelation(models.Model):
     def create_from_bottleneck(cls, pulse, bottleneck_type, mention_count):
         """
         Create a correlation record from bottleneck mentions.
-        Used by AutoFixFlowConfig to trigger corrective actions.
+        Used by correlation detection to identify patterns and recommend actions.
         """
         from datetime import timedelta
         from django.utils import timezone

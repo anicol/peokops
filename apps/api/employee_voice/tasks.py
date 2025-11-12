@@ -14,7 +14,6 @@ from .models import (
     EmployeeVoicePulse,
     EmployeeVoiceInvitation,
     EmployeeVoiceResponse,
-    AutoFixFlowConfig,
     CrossVoiceCorrelation
 )
 from inspections.models import ActionItem, Finding
@@ -362,48 +361,6 @@ def check_pulse_unlock_status():
 
     logger.info(f"Unlock check: {unlocked_count} pulses unlocked")
     return {'unlocked': unlocked_count, 'checked': locked_pulses.count()}
-
-
-@shared_task(queue='default')
-def evaluate_auto_fix_flows():
-    """
-    Scheduled task to evaluate auto-fix flow configs and create ActionItems.
-
-    Checks if any bottleneck has crossed threshold (e.g., ≥3 mentions in 7 days).
-    Auto-creates ActionItem when threshold is met.
-    Runs daily at 4 AM UTC.
-    """
-    enabled_configs = AutoFixFlowConfig.objects.filter(
-        is_enabled=True,
-        pulse__is_active=True
-    ).select_related('pulse', 'pulse__store', 'pulse__account')
-
-    actions_created = 0
-
-    for config in enabled_configs:
-        try:
-            config.check_and_create_action_items()
-
-            # Check if any new correlations were created (which trigger actions)
-            new_correlations = CrossVoiceCorrelation.objects.filter(
-                pulse=config.pulse,
-                created_at__gte=timezone.now() - timedelta(hours=1),
-                action_item__isnull=False
-            )
-
-            actions_created += new_correlations.count()
-
-            if new_correlations.exists():
-                logger.info(
-                    f"Auto-fix: {new_correlations.count()} actions created for pulse {config.pulse.id}"
-                )
-
-        except Exception as e:
-            logger.error(f"Error evaluating auto-fix config {config.id}: {str(e)}")
-            continue
-
-    logger.info(f"Auto-fix evaluation: {actions_created} actions created")
-    return {'actions_created': actions_created, 'configs_checked': enabled_configs.count()}
 
 
 @shared_task(queue='default')

@@ -3,7 +3,6 @@ from .models import (
     EmployeeVoicePulse,
     EmployeeVoiceInvitation,
     EmployeeVoiceResponse,
-    AutoFixFlowConfig,
     CrossVoiceCorrelation
 )
 
@@ -11,24 +10,21 @@ from .models import (
 @admin.register(EmployeeVoicePulse)
 class EmployeeVoicePulseAdmin(admin.ModelAdmin):
     list_display = ['title', 'store', 'status', 'shift_window', 'language', 'unlocked_at', 'is_active', 'created_at']
-    list_filter = ['status', 'shift_window', 'language', 'is_active', 'auto_fix_flow_enabled']
+    list_filter = ['status', 'shift_window', 'language', 'is_active', 'delivery_frequency']
     search_fields = ['title', 'description', 'store__name', 'account__name']
     readonly_fields = ['id', 'unlocked_at', 'created_at', 'updated_at']
     fieldsets = (
         ('Basic Information', {
             'fields': ('id', 'title', 'description', 'store', 'account')
         }),
-        ('Schedule', {
-            'fields': ('shift_window', 'language', 'send_time')
+        ('Schedule & Delivery', {
+            'fields': ('shift_window', 'language', 'send_time', 'delivery_frequency', 'randomization_window_minutes')
         }),
         ('Status', {
             'fields': ('status', 'unlocked_at', 'is_active')
         }),
         ('Privacy Settings', {
             'fields': ('min_respondents_for_display', 'consent_text')
-        }),
-        ('Features', {
-            'fields': ('auto_fix_flow_enabled',)
         }),
         ('Metadata', {
             'fields': ('created_at', 'updated_at', 'created_by'),
@@ -83,29 +79,6 @@ class EmployeeVoiceResponseAdmin(admin.ModelAdmin):
         """Limit anonymous_hash visibility"""
         qs = super().get_queryset(request)
         return qs
-
-
-@admin.register(AutoFixFlowConfig)
-class AutoFixFlowConfigAdmin(admin.ModelAdmin):
-    list_display = ['pulse', 'bottleneck_threshold', 'time_window_days', 'is_enabled', 'notify_on_creation']
-    list_filter = ['is_enabled', 'notify_on_creation']
-    search_fields = ['pulse__title']
-    readonly_fields = ['id', 'created_at', 'updated_at']
-    fieldsets = (
-        ('Configuration', {
-            'fields': ('id', 'pulse')
-        }),
-        ('Thresholds', {
-            'fields': ('bottleneck_threshold', 'time_window_days', 'bottleneck_to_category_map')
-        }),
-        ('Settings', {
-            'fields': ('is_enabled', 'notify_on_creation')
-        }),
-        ('Metadata', {
-            'fields': ('created_at', 'updated_at'),
-            'classes': ('collapse',)
-        }),
-    )
 
 
 @admin.register(CrossVoiceCorrelation)

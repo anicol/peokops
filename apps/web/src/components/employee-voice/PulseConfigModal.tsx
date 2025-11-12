@@ -21,7 +21,6 @@ export default function PulseConfigModal({ pulse, isCreating, onClose, onSave }:
     delivery_frequency: 'MEDIUM' as 'LOW' | 'MEDIUM' | 'HIGH',
     randomization_window_minutes: 60,
     consent_text: 'Your responses are anonymous and help improve team operations.',
-    auto_fix_flow_enabled: true,
     min_respondents_for_display: 5,
   });
 
@@ -37,7 +36,6 @@ export default function PulseConfigModal({ pulse, isCreating, onClose, onSave }:
         delivery_frequency: pulse.delivery_frequency,
         randomization_window_minutes: pulse.randomization_window_minutes,
         consent_text: pulse.consent_text,
-        auto_fix_flow_enabled: pulse.auto_fix_flow_enabled,
         min_respondents_for_display: pulse.min_respondents_for_display,
       });
     }
@@ -323,29 +321,6 @@ export default function PulseConfigModal({ pulse, isCreating, onClose, onSave }:
                 <p className="mt-1 text-xs text-gray-500">
                   Privacy protection: insights require n ≥ 5 unique respondents
                 </p>
-              </div>
-
-              {/* Auto-Fix Flow */}
-              <div className="flex items-start">
-                <div className="flex items-center h-5">
-                  <input
-                    id="auto_fix"
-                    type="checkbox"
-                    checked={formData.auto_fix_flow_enabled}
-                    onChange={(e) =>
-                      setFormData({ ...formData, auto_fix_flow_enabled: e.target.checked })
-                    }
-                    className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-                  />
-                </div>
-                <div className="ml-3">
-                  <label htmlFor="auto_fix" className="font-medium text-sm text-gray-700">
-                    Enable Auto-Fix Flow
-                  </label>
-                  <p className="text-xs text-gray-500">
-                    Automatically create ActionItems when bottlenecks are mentioned ≥3× in 7 days
-                  </p>
-                </div>
               </div>
             </div>
 

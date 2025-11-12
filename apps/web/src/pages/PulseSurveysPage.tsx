@@ -5,7 +5,6 @@ import { employeeVoiceAPI, type EmployeeVoicePulse } from '@/services/api';
 import {
   Activity,
   Plus,
-  Settings,
   TrendingUp,
   Users,
   Send,
@@ -19,11 +18,10 @@ import {
   HelpCircle
 } from 'lucide-react';
 import PulseConfigModal from '@/components/employee-voice/PulseConfigModal';
-import AutoFixConfigPanel from '@/components/employee-voice/AutoFixConfigPanel';
 import InvitationHistorySection from '@/components/employee-voice/InvitationHistorySection';
 import PulseAnalyticsSection from '@/components/employee-voice/PulseAnalyticsSection';
 
-type ViewMode = 'pulses' | 'invitations' | 'analytics' | 'autofix';
+type ViewMode = 'pulses' | 'invitations' | 'analytics';
 
 export default function PulseSurveysPage() {
   const { user } = useAuth();
@@ -192,17 +190,6 @@ export default function PulseSurveysPage() {
               <BarChart3 className="w-4 h-4 mr-2" />
               Analytics
             </button>
-            <button
-              onClick={() => setViewMode('autofix')}
-              className={`${
-                viewMode === 'autofix'
-                  ? 'border-blue-500 text-blue-600'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-              } whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm flex items-center`}
-            >
-              <Settings className="w-4 h-4 mr-2" />
-              Auto-Fix
-            </button>
           </nav>
         </div>
       </div>
@@ -259,12 +246,6 @@ export default function PulseSurveysPage() {
                       <Users className="w-4 h-4 mr-2" />
                       Language: {pulse.language.toUpperCase()}
                     </div>
-                    {pulse.auto_fix_flow_enabled && (
-                      <div className="flex items-center text-sm text-blue-600">
-                        <Settings className="w-4 h-4 mr-2" />
-                        Auto-fix enabled
-                      </div>
-                    )}
                   </div>
 
                   {/* Actions */}
@@ -317,11 +298,6 @@ export default function PulseSurveysPage() {
       {/* Analytics View */}
       {viewMode === 'analytics' && (
         <PulseAnalyticsSection storeId={user?.store || 0} pulses={pulses || []} />
-      )}
-
-      {/* Auto-Fix View */}
-      {viewMode === 'autofix' && (
-        <AutoFixConfigPanel storeId={user?.store || 0} pulses={pulses || []} />
       )}
 
       {/* Config Modal */}

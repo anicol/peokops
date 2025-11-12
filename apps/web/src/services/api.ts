@@ -958,7 +958,6 @@ export interface EmployeeVoicePulse {
   status: string;
   status_display: string;
   is_active: boolean;
-  auto_fix_flow_enabled: boolean;
   min_respondents_for_display: number;
   store: number;
   account: number;
@@ -981,7 +980,6 @@ export interface CreatePulseRequest {
   delivery_frequency?: 'LOW' | 'MEDIUM' | 'HIGH';
   randomization_window_minutes?: number;
   consent_text?: string;
-  auto_fix_flow_enabled?: boolean;
   min_respondents_for_display?: number;
 }
 
@@ -994,7 +992,6 @@ export interface UpdatePulseRequest {
   randomization_window_minutes?: number;
   consent_text?: string;
   is_active?: boolean;
-  auto_fix_flow_enabled?: boolean;
   min_respondents_for_display?: number;
 }
 
@@ -1016,19 +1013,6 @@ export interface EmployeeVoiceInvitation {
   expires_at: string;
   created_at: string;
   updated_at?: string;
-}
-
-export interface AutoFixFlowConfig {
-  id: string;
-  pulse: string;
-  bottleneck_type: string;
-  check_category: string;
-  threshold_mentions: number;
-  threshold_days: number;
-  action_item_template: string;
-  is_active: boolean;
-  created_at: string;
-  updated_at: string;
 }
 
 export interface ValidateMagicLinkResponse {
@@ -1129,31 +1113,6 @@ export const employeeVoiceAPI = {
     });
     // Handle paginated response
     return response.data.results || response.data;
-  },
-
-  // Get auto-fix configs for a pulse
-  getAutoFixConfigs: async (pulseId?: string): Promise<AutoFixFlowConfig[]> => {
-    const params = pulseId ? { pulse: pulseId } : {};
-    const response = await api.get('/employee-voice/auto-fix-configs/', { params });
-    // Handle paginated response
-    return response.data.results || response.data;
-  },
-
-  // Create auto-fix config
-  createAutoFixConfig: async (data: Partial<AutoFixFlowConfig>): Promise<AutoFixFlowConfig> => {
-    const response = await api.post('/employee-voice/auto-fix-configs/', data);
-    return response.data;
-  },
-
-  // Update auto-fix config
-  updateAutoFixConfig: async (configId: string, data: Partial<AutoFixFlowConfig>): Promise<AutoFixFlowConfig> => {
-    const response = await api.patch(`/employee-voice/auto-fix-configs/${configId}/`, data);
-    return response.data;
-  },
-
-  // Delete auto-fix config
-  deleteAutoFixConfig: async (configId: string): Promise<void> => {
-    await api.delete(`/employee-voice/auto-fix-configs/${configId}/`);
   },
 
   // Get correlations
