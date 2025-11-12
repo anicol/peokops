@@ -34,7 +34,9 @@ class EmployeeVoicePulse(models.Model):
         'brands.Store',
         on_delete=models.CASCADE,
         related_name='employee_voice_pulses',
-        help_text="Store this pulse belongs to"
+        null=True,
+        blank=True,
+        help_text="Store this pulse belongs to (null = account-wide pulse)"
     )
     account = models.ForeignKey(
         'accounts.Account',

@@ -95,10 +95,10 @@ export default function PulseConfigModal({ pulse, isCreating, onClose, onSave }:
     }
 
     if (isCreating) {
-      // Add store and account from user when creating
+      // Add account from user when creating (pulse is account-wide, not store-specific)
       const createData = {
         ...formData,
-        store: user!.store!,
+        store: null,  // Null = account-wide pulse
         account: user!.account_id!,
       };
       await createMutation.mutateAsync(createData as any);
