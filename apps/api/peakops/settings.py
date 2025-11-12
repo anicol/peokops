@@ -304,10 +304,16 @@ CELERY_BEAT_SCHEDULE = {
         'schedule': crontab(day_of_week=0, hour=3, minute=0),  # Sundays at 3 AM
         'options': {'queue': 'ml'}
     },
-    # Employee Voice - Hourly pulse invitation sending (checks shift windows)
-    'send-pulse-invitations': {
-        'task': 'employee_voice.tasks.send_pulse_invitations',
-        'schedule': crontab(minute=10),  # Run at :10 past every hour
+    # Employee Voice - Daily invitation scheduling with randomization (runs early morning)
+    'schedule-pulse-invitations': {
+        'task': 'employee_voice.tasks.schedule_pulse_invitations',
+        'schedule': crontab(hour=2, minute=0),  # 2:00 AM UTC daily - creates randomized invitations
+        'options': {'queue': 'default'}
+    },
+    # Employee Voice - Hourly sending of scheduled invitations
+    'send-scheduled-invitations': {
+        'task': 'employee_voice.tasks.send_scheduled_invitations',
+        'schedule': crontab(minute=10),  # Run at :10 past every hour - sends ready invitations
         'options': {'queue': 'default'}
     },
     # Employee Voice - Daily unlock status check at 3 AM UTC

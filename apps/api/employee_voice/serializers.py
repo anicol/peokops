@@ -6,7 +6,6 @@ from .models import (
     EmployeeVoicePulse,
     EmployeeVoiceInvitation,
     EmployeeVoiceResponse,
-    AutoFixFlowConfig,
     CrossVoiceCorrelation
 )
 
@@ -21,6 +20,7 @@ class EmployeeVoicePulseSerializer(serializers.ModelSerializer):
     status_display = serializers.CharField(source='get_status_display', read_only=True)
     shift_window_display = serializers.CharField(source='get_shift_window_display', read_only=True)
     language_display = serializers.CharField(source='get_language_display', read_only=True)
+    delivery_frequency_display = serializers.CharField(source='get_delivery_frequency_display', read_only=True)
     store_name = serializers.CharField(source='store.name', read_only=True)
     account_name = serializers.CharField(source='account.name', read_only=True)
     created_by_name = serializers.CharField(source='created_by.get_full_name', read_only=True, allow_null=True)
@@ -58,9 +58,10 @@ class EmployeeVoicePulseSerializer(serializers.ModelSerializer):
             'id', 'store', 'store_name', 'account', 'account_name',
             'title', 'description',
             'shift_window', 'shift_window_display', 'language', 'language_display', 'send_time',
+            'delivery_frequency', 'delivery_frequency_display', 'randomization_window_minutes',
             'status', 'status_display', 'unlocked_at', 'unlock_progress',
             'min_respondents_for_display', 'consent_text',
-            'auto_fix_flow_enabled', 'can_view_insights',
+            'can_view_insights',
             'is_active', 'created_at', 'created_by', 'created_by_name', 'updated_at'
         ]
         read_only_fields = ['id', 'status', 'unlocked_at', 'created_at', 'created_by', 'updated_at']
@@ -87,10 +88,10 @@ class EmployeeVoiceInvitationSerializer(serializers.ModelSerializer):
             'token', 'delivery_method', 'delivery_method_display',
             'recipient_phone', 'recipient_email',
             'status', 'status_display', 'is_valid',
-            'sent_at', 'opened_at', 'completed_at', 'expires_at',
+            'scheduled_send_at', 'sent_at', 'opened_at', 'completed_at', 'expires_at',
             'created_at', 'updated_at'
         ]
-        read_only_fields = ['id', 'status', 'sent_at', 'opened_at', 'completed_at', 'created_at', 'updated_at']
+        read_only_fields = ['id', 'status', 'scheduled_send_at', 'sent_at', 'opened_at', 'completed_at', 'created_at', 'updated_at']
         extra_kwargs = {
             'token': {'write_only': True}  # Don't expose token in responses
         }
@@ -259,22 +260,6 @@ class EmployeeVoiceInsightsSerializer(serializers.Serializer):
     )
 
 
-class AutoFixFlowConfigSerializer(serializers.ModelSerializer):
-    """Auto-fix flow configuration serializer"""
-    pulse_title = serializers.CharField(source='pulse.title', read_only=True)
-
-    class Meta:
-        model = AutoFixFlowConfig
-        fields = [
-            'id', 'pulse', 'pulse_title',
-            'bottleneck_threshold', 'time_window_days',
-            'bottleneck_to_category_map',
-            'is_enabled', 'notify_on_creation',
-            'created_at', 'updated_at'
-        ]
-        read_only_fields = ['id', 'created_at', 'updated_at']
-
-
 class CrossVoiceCorrelationSerializer(serializers.ModelSerializer):
     """Cross-voice correlation serializer with smart recommendations"""
     pulse_title = serializers.CharField(source='pulse.title', read_only=True)
@@ -314,10 +299,9 @@ class CrossVoiceCorrelationSerializer(serializers.ModelSerializer):
 
 class EmployeeVoicePulseDetailSerializer(EmployeeVoicePulseSerializer):
     """
-    Extended pulse serializer with auto-fix config and recent correlations.
+    Extended pulse serializer with recent correlations.
     Used for detail views.
     """
-    auto_fix_config = AutoFixFlowConfigSerializer(read_only=True, allow_null=True)
     recent_correlations = serializers.SerializerMethodField()
 
     def get_recent_correlations(self, obj):
@@ -330,6 +314,5 @@ class EmployeeVoicePulseDetailSerializer(EmployeeVoicePulseSerializer):
 
     class Meta(EmployeeVoicePulseSerializer.Meta):
         fields = EmployeeVoicePulseSerializer.Meta.fields + [
-            'auto_fix_config',
             'recent_correlations'
         ]

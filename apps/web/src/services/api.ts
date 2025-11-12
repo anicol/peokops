@@ -951,6 +951,9 @@ export interface EmployeeVoicePulse {
   shift_window_display: string;
   language: string;
   language_display: string;
+  delivery_frequency: 'LOW' | 'MEDIUM' | 'HIGH';
+  delivery_frequency_display: string;
+  randomization_window_minutes: number;
   consent_text: string;
   status: string;
   status_display: string;
@@ -975,6 +978,8 @@ export interface CreatePulseRequest {
   description: string;
   shift_window: 'OPEN' | 'MID' | 'CLOSE';
   language: 'en' | 'es' | 'fr';
+  delivery_frequency?: 'LOW' | 'MEDIUM' | 'HIGH';
+  randomization_window_minutes?: number;
   consent_text?: string;
   auto_fix_flow_enabled?: boolean;
   min_respondents_for_display?: number;
@@ -985,6 +990,8 @@ export interface UpdatePulseRequest {
   description?: string;
   shift_window?: 'OPEN' | 'MID' | 'CLOSE';
   language?: 'en' | 'es' | 'fr';
+  delivery_frequency?: 'LOW' | 'MEDIUM' | 'HIGH';
+  randomization_window_minutes?: number;
   consent_text?: string;
   is_active?: boolean;
   auto_fix_flow_enabled?: boolean;
