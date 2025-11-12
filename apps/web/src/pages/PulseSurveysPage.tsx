@@ -89,8 +89,12 @@ export default function PulseSurveysPage() {
 
   const getStatusBadge = (pulse: EmployeeVoicePulse) => {
     if (pulse.status === 'LOCKED') {
+      const progress = pulse.unlock_progress || { current: 0, required: 5 };
       return (
-        <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-700">
+        <span
+          className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-700 cursor-help"
+          title={`Collecting responses. Will show results after ${progress.required} submissions (${progress.current}/${progress.required} so far)`}
+        >
           <Lock className="w-3 h-3 mr-1" />
           Locked
         </span>
