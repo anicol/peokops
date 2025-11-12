@@ -368,7 +368,7 @@ for manager_data in managers_data:
     manager = User.objects.create_user(
         username=f"gm_{manager_data['store'].code.lower()}",
         email=manager_data["email"],
-        password="ChangeMe2025!",
+        password="",  # Will be set via password reset link
         first_name=manager_data["name"].split()[0],
         last_name=manager_data["name"].split()[1] if len(manager_data["name"].split()) > 1 else "",
         role=User.Role.GM,
@@ -498,8 +498,7 @@ Your BalanceGrille pilot account is now set up and ready to go!
 LOGIN CREDENTIALS:
 - URL: https://app.peakops.com
 - Email: shannon@balancegrille.com (replace with actual)
-- Temporary Password: ChangeMe2025!
-- Please reset your password on first login
+- Password will be sent via password reset link
 
 WHAT'S CONFIGURED:
 ✓ 4 stores added (Downtown, Back Bay, Cambridge, Brookline)
