@@ -166,6 +166,9 @@ class User(AbstractUser):
     # Onboarding tracking
     onboarding_completed_at = models.DateTimeField(null=True, blank=True, help_text="When user completed onboarding flow")
 
+    # Password tracking
+    password_set_by_user_at = models.DateTimeField(null=True, blank=True, help_text="When user first set their own password (vs admin-assigned)")
+
     # Micro-check scheduling (per-employee randomization)
     micro_check_last_sent_date = models.DateField(null=True, blank=True, help_text="Last date this employee received a micro-check")
     micro_check_next_send_date = models.DateField(null=True, blank=True, help_text="Next scheduled date for this employee's micro-check")
