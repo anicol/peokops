@@ -316,7 +316,7 @@ export default function SchedulePage() {
     <div className="space-y-6">
       {/* Header */}
       <div>
-        <h1 className="text-2xl font-bold text-gray-900">Micro-Check Schedule</h1>
+        <h1 className="text-2xl font-bold text-gray-900">Micro Check Config</h1>
         <p className="text-gray-600 mt-1">Configure when and how micro-checks are delivered</p>
       </div>
 
