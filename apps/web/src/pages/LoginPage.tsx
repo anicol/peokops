@@ -52,7 +52,11 @@ const Login = () => {
             // Token is a valid JWT access token - store it and redirect
             localStorage.setItem('access_token', token);
             // Note: No refresh token available from invitation links, user will need to login again when it expires
-            window.location.href = '/';
+
+            // Wait a bit to ensure localStorage is written before redirect
+            setTimeout(() => {
+              window.location.href = '/';
+            }, 100);
             return null;
           } else {
             // Not a JWT token, try magic link verification
@@ -76,8 +80,10 @@ const Login = () => {
           localStorage.setItem('access_token', data.access);
           localStorage.setItem('refresh_token', data.refresh);
 
-          // Trigger a page reload to ensure auth state updates
-          window.location.href = '/';
+          // Wait a bit to ensure localStorage is written before redirect
+          setTimeout(() => {
+            window.location.href = '/';
+          }, 100);
         })
         .catch(err => {
           console.error('Magic link login failed:', err);
