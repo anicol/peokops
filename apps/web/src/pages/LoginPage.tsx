@@ -54,9 +54,10 @@ const Login = () => {
             // Note: No refresh token available from invitation links, user will need to login again when it expires
 
             // Wait a bit to ensure localStorage is written before redirect
+            // Longer delay for mobile browsers which have slower localStorage writes
             setTimeout(() => {
               window.location.href = '/';
-            }, 100);
+            }, 250);
             return null;
           } else {
             // Not a JWT token, try magic link verification
@@ -81,9 +82,10 @@ const Login = () => {
           localStorage.setItem('refresh_token', data.refresh);
 
           // Wait a bit to ensure localStorage is written before redirect
+          // Longer delay for mobile browsers which have slower localStorage writes
           setTimeout(() => {
             window.location.href = '/';
-          }, 100);
+          }, 250);
         })
         .catch(err => {
           console.error('Magic link login failed:', err);
