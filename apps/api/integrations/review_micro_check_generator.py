@@ -96,9 +96,18 @@ class ReviewMicroCheckGenerator:
 
         for pattern in patterns:
             try:
+                # Try to determine store from reviews for this pattern
+                store = None
+                if 'review_ids' in pattern and pattern['review_ids']:
+                    # Get store from first review's location
+                    first_review = reviews.filter(id__in=pattern['review_ids']).first()
+                    if first_review and hasattr(first_review, 'location') and first_review.location:
+                        store = first_review.location.store
+
                 check = self._create_micro_check(
                     account=config.account,
-                    pattern=pattern
+                    pattern=pattern,
+                    store=store
                 )
                 if check:
                     generated_count += 1
@@ -167,13 +176,14 @@ class ReviewMicroCheckGenerator:
 
         return patterns
 
-    def _create_micro_check(self, account, pattern):
+    def _create_micro_check(self, account, pattern, store=None):
         """
         Create a micro-check template from a review pattern.
 
         Args:
             account: Account object
             pattern: Pattern dictionary
+            store: Store object (optional, for store-level templates)
 
         Returns:
             MicroCheckTemplate object or None
@@ -209,9 +219,32 @@ Verify that staff are aware of this feedback and have taken corrective action.""
             logger.info(f"Similar check already exists: {existing.title}")
             return None
 
+        # Determine template scope (store/account/brand level)
+        level = MicroCheckTemplate.TemplateLevel.BRAND
+        template_account = None
+        template_store = None
+
+        if store:
+            # Create at STORE level if we have a store
+            template_store = store
+            template_account = store.account
+            level = MicroCheckTemplate.TemplateLevel.STORE
+            logger.info(f"Creating STORE-level template for {store.name}")
+        elif account:
+            # Create at ACCOUNT level if we only have account
+            template_account = account
+            level = MicroCheckTemplate.TemplateLevel.ACCOUNT
+            logger.info(f"Creating ACCOUNT-level template for {account.name}")
+        else:
+            # Default to BRAND level
+            logger.info(f"Creating BRAND-level template for {account.brand.name}")
+
         # Create the micro-check template
         check = MicroCheckTemplate.objects.create(
             brand=account.brand,
+            account=template_account,
+            store=template_store,
+            level=level,
             category=category,
             severity=pattern['severity'],
             title=title,
