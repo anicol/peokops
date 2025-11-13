@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from 'react-query';
 import { useAuth } from '@/hooks/useAuth';
-import { employeeVoiceAPI, type EmployeeVoicePulse, storesAPI, type Store } from '@/services/api';
+import { employeeVoiceAPI, type EmployeeVoicePulse, storesAPI } from '@/services/api';
+import type { Store } from '@/types';
 import {
   Activity,
   Lock,
@@ -39,7 +40,7 @@ export default function PulseSurveysPage() {
 
   // Fetch stores for the account (for filter dropdown)
   const { data: stores } = useQuery<Store[]>(
-    ['stores', user?.account],
+    ['stores', user?.account_id],
     () => storesAPI.getStores(),
     {
       enabled: !!user,
