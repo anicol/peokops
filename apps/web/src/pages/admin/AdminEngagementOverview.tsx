@@ -1,7 +1,9 @@
+import { useState } from 'react';
 import { useQuery } from 'react-query';
 import { Link } from 'react-router-dom';
 import { adminAnalyticsAPI } from '@/services/api';
 import { KPICard } from '@/components/admin/KPICard';
+import { UserActivityTab } from '@/components/admin/UserActivityTab';
 import {
   BarChart,
   Bar,
@@ -28,9 +30,13 @@ import {
   TrendingUp,
   Mail,
   Eye,
+  MousePointerClick,
 } from 'lucide-react';
 
+type TabType = 'micro-checks' | 'reviews' | 'user-activity';
+
 export function AdminEngagementOverview() {
+  const [activeTab, setActiveTab] = useState<TabType>('micro-checks');
   const { data: overview, isLoading } = useQuery({
     queryKey: ['admin-analytics', 'overview'],
     queryFn: adminAnalyticsAPI.getOverview,
@@ -70,12 +76,70 @@ export function AdminEngagementOverview() {
             Engagement Overview
           </h1>
           <p className="text-sm text-gray-600 mt-1">
-            Track customer engagement with micro-checks across all stores
+            Track customer engagement and activity across all features
           </p>
         </div>
 
-        {/* KPI Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 lg:gap-6 mb-6">
+        {/* Tab Navigation */}
+        <div className="mb-6">
+          <div className="border-b border-gray-200">
+            <nav className="-mb-px flex space-x-8" aria-label="Tabs">
+              <button
+                onClick={() => setActiveTab('micro-checks')}
+                className={`
+                  flex items-center gap-2 py-4 px-1 border-b-2 font-medium text-sm
+                  ${
+                    activeTab === 'micro-checks'
+                      ? 'border-indigo-500 text-indigo-600'
+                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                  }
+                `}
+              >
+                <CheckCircle className="w-5 h-5" />
+                Micro-Checks
+              </button>
+
+              <button
+                onClick={() => setActiveTab('reviews')}
+                className={`
+                  flex items-center gap-2 py-4 px-1 border-b-2 font-medium text-sm
+                  ${
+                    activeTab === 'reviews'
+                      ? 'border-indigo-500 text-indigo-600'
+                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                  }
+                `}
+              >
+                <Star className="w-5 h-5" />
+                Google Reviews
+              </button>
+
+              <button
+                onClick={() => setActiveTab('user-activity')}
+                className={`
+                  flex items-center gap-2 py-4 px-1 border-b-2 font-medium text-sm
+                  ${
+                    activeTab === 'user-activity'
+                      ? 'border-indigo-500 text-indigo-600'
+                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                  }
+                `}
+              >
+                <MousePointerClick className="w-5 h-5" />
+                User Activity
+              </button>
+            </nav>
+          </div>
+        </div>
+
+        {/* User Activity Tab */}
+        {activeTab === 'user-activity' && <UserActivityTab />}
+
+        {/* Micro-Checks Tab */}
+        {activeTab === 'micro-checks' && (
+          <>
+            {/* KPI Grid */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 lg:gap-6 mb-6">
           <KPICard
             title="Active Stores (Today)"
             value={`${overview.active_stores.today.percentage}%`}
@@ -211,8 +275,102 @@ export function AdminEngagementOverview() {
           )}
         </div>
 
-        {/* Google Reviews Analysis Section */}
-        {reviewAnalytics && (
+            {/* Stores Table */}
+            {storesList && storesList.length > 0 && (
+              <div className="bg-white rounded-lg border border-gray-200 overflow-hidden mt-6">
+                <div className="p-4 sm:p-6 border-b border-gray-200">
+                  <h2 className="text-lg font-semibold text-gray-900 flex items-center">
+                    <Store className="w-5 h-5 mr-2" />
+                    Store Performance
+                  </h2>
+                  <p className="text-sm text-gray-600 mt-1">
+                    Click any store to view detailed analytics
+                  </p>
+                </div>
+
+                <div className="overflow-x-auto">
+                  <table className="min-w-full divide-y divide-gray-200">
+                    <thead className="bg-gray-50">
+                      <tr>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                          Store
+                        </th>
+                        <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase">
+                          Status
+                        </th>
+                        <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">
+                          Streak
+                        </th>
+                        <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">
+                          Completion Rate (7d)
+                        </th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                          Last Activity
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody className="bg-white divide-y divide-gray-200">
+                      {storesList.map((store: any) => (
+                        <tr
+                          key={store.id}
+                          className="hover:bg-gray-50 cursor-pointer"
+                          onClick={() => window.location.href = `/admin/stores/${store.id}`}
+                        >
+                          <td className="px-4 py-3">
+                            <Link
+                              to={`/admin/stores/${store.id}`}
+                              className="text-sm font-medium text-indigo-600 hover:text-indigo-900"
+                            >
+                              {store.name}
+                            </Link>
+                            <p className="text-xs text-gray-500">{store.region}</p>
+                          </td>
+                          <td className="px-4 py-3 text-center">
+                            <span
+                              className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${
+                                store.status === 'active'
+                                  ? 'bg-green-100 text-green-800'
+                                  : store.status === 'sporadic'
+                                  ? 'bg-yellow-100 text-yellow-800'
+                                  : 'bg-red-100 text-red-800'
+                              }`}
+                            >
+                              {store.status === 'active' ? '🟢 Active' : store.status === 'sporadic' ? '🟡 Sporadic' : '🔴 Inactive'}
+                            </span>
+                          </td>
+                          <td className="px-4 py-3 text-right">
+                            <div className="flex items-center justify-end">
+                              <Flame className="w-4 h-4 mr-1 text-orange-500" />
+                              <span className="text-sm font-medium text-gray-900">
+                                {store.current_streak}
+                              </span>
+                            </div>
+                          </td>
+                          <td className="px-4 py-3 text-right">
+                            <span className="text-sm text-gray-900">
+                              {store.completion_rate_7d}%
+                            </span>
+                            <p className="text-xs text-gray-500">
+                              {store.completed_runs_7d}/{store.total_runs_7d}
+                            </p>
+                          </td>
+                          <td className="px-4 py-3 text-sm text-gray-600">
+                            {store.last_completion_date
+                              ? new Date(store.last_completion_date).toLocaleDateString()
+                              : 'Never'}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
+          </>
+        )}
+
+        {/* Google Reviews Tab */}
+        {activeTab === 'reviews' && reviewAnalytics && (
           <div className="mt-6 space-y-6">
             <div className="flex items-center justify-between">
               <h2 className="text-xl font-bold text-gray-900 flex items-center">
@@ -433,98 +591,6 @@ export function AdminEngagementOverview() {
                   </tbody>
                 </table>
               </div>
-            </div>
-          </div>
-        )}
-
-        {/* Stores Table */}
-        {storesList && storesList.length > 0 && (
-          <div className="bg-white rounded-lg border border-gray-200 overflow-hidden mt-6">
-            <div className="p-4 sm:p-6 border-b border-gray-200">
-              <h2 className="text-lg font-semibold text-gray-900 flex items-center">
-                <Store className="w-5 h-5 mr-2" />
-                Store Performance
-              </h2>
-              <p className="text-sm text-gray-600 mt-1">
-                Click any store to view detailed analytics
-              </p>
-            </div>
-
-            <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gray-50">
-                  <tr>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                      Store
-                    </th>
-                    <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase">
-                      Status
-                    </th>
-                    <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">
-                      Streak
-                    </th>
-                    <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">
-                      Completion Rate (7d)
-                    </th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                      Last Activity
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
-                  {storesList.map((store: any) => (
-                    <tr
-                      key={store.id}
-                      className="hover:bg-gray-50 cursor-pointer"
-                      onClick={() => window.location.href = `/admin/stores/${store.id}`}
-                    >
-                      <td className="px-4 py-3">
-                        <Link
-                          to={`/admin/stores/${store.id}`}
-                          className="text-sm font-medium text-indigo-600 hover:text-indigo-900"
-                        >
-                          {store.name}
-                        </Link>
-                        <p className="text-xs text-gray-500">{store.region}</p>
-                      </td>
-                      <td className="px-4 py-3 text-center">
-                        <span
-                          className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${
-                            store.status === 'active'
-                              ? 'bg-green-100 text-green-800'
-                              : store.status === 'sporadic'
-                              ? 'bg-yellow-100 text-yellow-800'
-                              : 'bg-red-100 text-red-800'
-                          }`}
-                        >
-                          {store.status === 'active' ? '🟢 Active' : store.status === 'sporadic' ? '🟡 Sporadic' : '🔴 Inactive'}
-                        </span>
-                      </td>
-                      <td className="px-4 py-3 text-right">
-                        <div className="flex items-center justify-end">
-                          <Flame className="w-4 h-4 mr-1 text-orange-500" />
-                          <span className="text-sm font-medium text-gray-900">
-                            {store.current_streak}
-                          </span>
-                        </div>
-                      </td>
-                      <td className="px-4 py-3 text-right">
-                        <span className="text-sm text-gray-900">
-                          {store.completion_rate_7d}%
-                        </span>
-                        <p className="text-xs text-gray-500">
-                          {store.completed_runs_7d}/{store.total_runs_7d}
-                        </p>
-                      </td>
-                      <td className="px-4 py-3 text-sm text-gray-600">
-                        {store.last_completion_date
-                          ? new Date(store.last_completion_date).toLocaleDateString()
-                          : 'Never'}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
             </div>
           </div>
         )}
