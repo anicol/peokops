@@ -160,56 +160,6 @@ export default function DistributionTab({ pulseId }: DistributionTabProps) {
         )}
       </div>
 
-      {/* Employee Eligibility */}
-      <div className="bg-white rounded-lg border border-gray-200 p-6">
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="text-lg font-semibold text-gray-900">Employee Eligibility</h3>
-          <div className="text-3xl font-bold text-blue-600">
-            {eligibility?.total_eligible || 0}
-          </div>
-        </div>
-
-        <p className="text-sm text-gray-500 mb-4">
-          Employees from 7shifts with phone numbers
-        </p>
-
-        {/* Eligibility Criteria */}
-        <div className="space-y-2 mb-4 pb-4 border-b border-gray-200">
-          <div className="flex items-center gap-2 text-sm">
-            <CheckCircle className="w-4 h-4 text-green-500" />
-            <span>Active in 7shifts</span>
-          </div>
-          <div className="flex items-center gap-2 text-sm">
-            <CheckCircle className="w-4 h-4 text-green-500" />
-            <span>Has phone number</span>
-          </div>
-          <div className="flex items-center gap-2 text-sm">
-            <CheckCircle className="w-4 h-4 text-green-500" />
-            <span>Assigned to this account</span>
-          </div>
-        </div>
-
-        {/* Sample Employee List */}
-        {eligibility?.employees && eligibility.employees.length > 0 && (
-          <div>
-            <h4 className="text-sm font-medium text-gray-700 mb-2">Sample Employees</h4>
-            <div className="space-y-2">
-              {eligibility.employees.slice(0, 5).map((emp: any) => (
-                <div key={emp.id} className="flex items-center justify-between text-sm py-2 border-b border-gray-100 last:border-0">
-                  <div>
-                    <span className="font-medium">{emp.first_name} {emp.last_name}</span>
-                    <span className="text-gray-500 ml-2">{emp.phone}</span>
-                  </div>
-                  <div className="text-xs text-gray-400">
-                    {emp.roles?.join(', ') || 'Employee'}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-      </div>
-
       {/* Distribution Timeline (Last 7 Days) */}
       <div className="bg-white rounded-lg border border-gray-200 p-6">
         <h3 className="text-lg font-semibold text-gray-900 mb-4">Distribution Timeline (Last 7 Days)</h3>
@@ -298,6 +248,56 @@ export default function DistributionTab({ pulseId }: DistributionTabProps) {
             <p className="text-xs text-gray-400 mt-1">
               Data will appear after invitations are sent
             </p>
+          </div>
+        )}
+      </div>
+
+      {/* Employee Eligibility */}
+      <div className="bg-white rounded-lg border border-gray-200 p-6">
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-lg font-semibold text-gray-900">Employee Eligibility</h3>
+          <div className="text-3xl font-bold text-blue-600">
+            {eligibility?.total_eligible || 0}
+          </div>
+        </div>
+
+        <p className="text-sm text-gray-500 mb-4">
+          Employees from 7shifts with phone numbers
+        </p>
+
+        {/* Eligibility Criteria */}
+        <div className="space-y-2 mb-4 pb-4 border-b border-gray-200">
+          <div className="flex items-center gap-2 text-sm">
+            <CheckCircle className="w-4 h-4 text-green-500" />
+            <span>Active in 7shifts</span>
+          </div>
+          <div className="flex items-center gap-2 text-sm">
+            <CheckCircle className="w-4 h-4 text-green-500" />
+            <span>Has phone number</span>
+          </div>
+          <div className="flex items-center gap-2 text-sm">
+            <CheckCircle className="w-4 h-4 text-green-500" />
+            <span>Assigned to this account</span>
+          </div>
+        </div>
+
+        {/* Sample Employee List */}
+        {eligibility?.employees && eligibility.employees.length > 0 && (
+          <div>
+            <h4 className="text-sm font-medium text-gray-700 mb-2">Sample Employees</h4>
+            <div className="space-y-2">
+              {eligibility.employees.slice(0, 5).map((emp: any) => (
+                <div key={emp.id} className="flex items-center justify-between text-sm py-2 border-b border-gray-100 last:border-0">
+                  <div>
+                    <span className="font-medium">{emp.first_name} {emp.last_name}</span>
+                    <span className="text-gray-500 ml-2">{emp.phone}</span>
+                  </div>
+                  <div className="text-xs text-gray-400">
+                    {emp.roles?.join(', ') || 'Employee'}
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
         )}
       </div>
