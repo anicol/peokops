@@ -152,6 +152,15 @@ export default function PulseSurveysPage() {
                 <HelpCircle className="w-4 h-4 mr-1" />
                 View Questions
               </button>
+
+              {/* Preview Survey Button */}
+              <button
+                onClick={() => window.open('/survey/preview', '_blank')}
+                className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-purple-50 text-purple-700 border-2 border-purple-200 hover:bg-purple-100"
+              >
+                <Activity className="w-4 h-4 mr-1" />
+                Preview Survey
+              </button>
             </div>
           </div>
         </div>

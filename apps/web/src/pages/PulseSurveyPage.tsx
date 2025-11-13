@@ -9,6 +9,7 @@ type CarouselStep = 'welcome' | 'mood' | 'confidence' | 'bottlenecks' | 'comment
 
 export default function PulseSurveyPage() {
   const { token } = useParams<{ token: string }>();
+  const isPreview = token === 'preview';
 
   // Loading state
   const [loadingState, setLoadingState] = useState<LoadingState>('loading');
@@ -25,8 +26,20 @@ export default function PulseSurveyPage() {
   const [bottlenecks, setBottlenecks] = useState<string[]>([]);
   const [comment, setComment] = useState('');
 
-  // Validate magic link on mount
+  // Validate magic link on mount (or use preview mode)
   useEffect(() => {
+    if (isPreview) {
+      // Preview mode - use mock data
+      setPulse({
+        id: 'preview',
+        title: 'Daily Team Pulse',
+        description: 'Quick Check In',
+        consent_text: 'Your responses are anonymous and help improve team operations. Data is aggregated for privacy.',
+      } as EmployeeVoicePulse);
+      setLoadingState('ready');
+      return;
+    }
+
     if (!token) {
       setError('Invalid survey link');
       setLoadingState('error');
@@ -49,7 +62,7 @@ export default function PulseSurveyPage() {
     };
 
     validateToken();
-  }, [token]);
+  }, [token, isPreview]);
 
   // Mood options - Updated emojis
   const moodOptions = [
@@ -119,6 +132,15 @@ export default function PulseSurveyPage() {
     }
 
     setSubmitting(true);
+
+    // Skip API call in preview mode
+    if (isPreview) {
+      setTimeout(() => {
+        setCurrentStep('success');
+        setSubmitting(false);
+      }, 500);
+      return;
+    }
 
     try {
       const deviceFingerprint = getDeviceFingerprintString();
