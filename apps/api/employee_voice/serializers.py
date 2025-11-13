@@ -21,6 +21,7 @@ class EmployeeVoicePulseSerializer(serializers.ModelSerializer):
     shift_window_display = serializers.CharField(source='get_shift_window_display', read_only=True)
     language_display = serializers.CharField(source='get_language_display', read_only=True)
     delivery_frequency_display = serializers.CharField(source='get_delivery_frequency_display', read_only=True)
+    pause_reason_display = serializers.CharField(source='get_pause_reason_display', read_only=True, allow_null=True)
     store_name = serializers.CharField(source='store.name', read_only=True)
     account_name = serializers.CharField(source='account.name', read_only=True)
     created_by_name = serializers.CharField(source='created_by.get_full_name', read_only=True, allow_null=True)
@@ -61,10 +62,11 @@ class EmployeeVoicePulseSerializer(serializers.ModelSerializer):
             'delivery_frequency', 'delivery_frequency_display', 'randomization_window_minutes',
             'status', 'status_display', 'unlocked_at', 'unlock_progress',
             'min_respondents_for_display', 'consent_text',
+            'pause_reason', 'pause_reason_display', 'pause_notes', 'paused_at',
             'can_view_insights',
             'is_active', 'created_at', 'created_by', 'created_by_name', 'updated_at'
         ]
-        read_only_fields = ['id', 'status', 'unlocked_at', 'created_at', 'created_by', 'updated_at']
+        read_only_fields = ['id', 'status', 'unlocked_at', 'paused_at', 'created_at', 'created_by', 'updated_at']
 
 
 class EmployeeVoiceInvitationSerializer(serializers.ModelSerializer):
@@ -76,10 +78,38 @@ class EmployeeVoiceInvitationSerializer(serializers.ModelSerializer):
     delivery_method_display = serializers.CharField(source='get_delivery_method_display', read_only=True)
     status_display = serializers.CharField(source='get_status_display', read_only=True)
     is_valid = serializers.SerializerMethodField()
+    employee_name = serializers.SerializerMethodField()
+    employee_role = serializers.SerializerMethodField()
 
     def get_is_valid(self, obj):
         """Check if magic link is still valid"""
         return obj.is_valid()
+
+    def get_employee_name(self, obj):
+        """Get employee name from 7shifts by matching phone number"""
+        if not obj.recipient_phone:
+            return None
+        try:
+            from integrations.models import SevenShiftsEmployee
+            employee = SevenShiftsEmployee.objects.filter(phone=obj.recipient_phone).first()
+            if employee:
+                return f"{employee.first_name} {employee.last_name}"
+        except:
+            pass
+        return None
+
+    def get_employee_role(self, obj):
+        """Get employee role from 7shifts by matching phone number"""
+        if not obj.recipient_phone:
+            return None
+        try:
+            from integrations.models import SevenShiftsEmployee
+            employee = SevenShiftsEmployee.objects.filter(phone=obj.recipient_phone).first()
+            if employee and employee.roles:
+                return employee.roles[0] if employee.roles else None
+        except:
+            pass
+        return None
 
     class Meta:
         model = EmployeeVoiceInvitation
@@ -87,6 +117,7 @@ class EmployeeVoiceInvitationSerializer(serializers.ModelSerializer):
             'id', 'pulse', 'pulse_title',
             'token', 'delivery_method', 'delivery_method_display',
             'recipient_phone', 'recipient_email',
+            'employee_name', 'employee_role',
             'status', 'status_display', 'is_valid',
             'scheduled_send_at', 'sent_at', 'opened_at', 'completed_at', 'expires_at',
             'created_at', 'updated_at'
@@ -232,11 +263,13 @@ class EmployeeVoiceInsightsSerializer(serializers.Serializer):
     # Mood metrics
     avg_mood = serializers.FloatField()
     mood_distribution = serializers.DictField()
+    mood_trend = serializers.FloatField(required=False, allow_null=True, help_text="Week-over-week change in mood score")
 
     # Confidence metrics
     confidence_high_pct = serializers.FloatField()
     confidence_medium_pct = serializers.FloatField()
     confidence_low_pct = serializers.FloatField()
+    confidence_trend = serializers.FloatField(required=False, allow_null=True, help_text="Week-over-week change in high confidence %")
 
     # Top bottlenecks (sorted by frequency)
     top_bottlenecks = serializers.ListField(
@@ -246,10 +279,10 @@ class EmployeeVoiceInsightsSerializer(serializers.Serializer):
 
     # Comments (only if n ≥ 5 and user is OWNER/SUPER_ADMIN)
     comments = serializers.ListField(
-        child=serializers.CharField(),
+        child=serializers.DictField(),
         required=False,
         allow_null=True,
-        help_text="Recent comments (role-gated)"
+        help_text="Recent comments with timestamps (role-gated)"
     )
 
     # Cross-voice correlations

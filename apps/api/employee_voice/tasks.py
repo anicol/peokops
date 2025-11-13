@@ -78,7 +78,7 @@ def schedule_pulse_invitations():
                 employees = SevenShiftsEmployee.objects.filter(
                     store=store,
                     is_active=True
-                ).exclude(phone_number__isnull=True).exclude(phone_number='')
+                ).exclude(phone__isnull=True).exclude(phone='')
 
                 # Get delivery frequency probability
                 frequency_map = {
@@ -106,7 +106,7 @@ def schedule_pulse_invitations():
                     if scheduled_time:
                         invitation = _create_scheduled_invitation(
                             pulse,
-                            employee.phone_number,
+                            employee.phone,
                             scheduled_time
                         )
                         if invitation:

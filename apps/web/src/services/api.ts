@@ -959,6 +959,10 @@ export interface EmployeeVoicePulse {
   status_display: string;
   is_active: boolean;
   min_respondents_for_display: number;
+  pause_reason?: string;
+  pause_reason_display?: string;
+  pause_notes?: string;
+  paused_at?: string;
   store: number;
   account: number;
   created_at: string;
@@ -992,6 +996,8 @@ export interface UpdatePulseRequest {
   randomization_window_minutes?: number;
   consent_text?: string;
   is_active?: boolean;
+  pause_reason?: string;
+  pause_notes?: string;
   min_respondents_for_display?: number;
 }
 
@@ -1001,6 +1007,8 @@ export interface EmployeeVoiceInvitation {
   pulse_title?: string;
   recipient_phone?: string;
   recipient_email?: string;
+  employee_name?: string;
+  employee_role?: string;
   token: string;
   delivery_method?: string;
   delivery_method_display?: string;
@@ -1055,6 +1063,12 @@ export const employeeVoiceAPI = {
     return response.data;
   },
 
+  // Get or create single account pulse (for single-pulse interface)
+  getOrCreatePulse: async (): Promise<EmployeeVoicePulse> => {
+    const response = await api.get('/employee-voice/pulses/get-or-create/');
+    return response.data;
+  },
+
   // Get all pulses for a store
   getPulses: async (storeId?: number): Promise<EmployeeVoicePulse[]> => {
     const params = storeId ? { store: storeId } : {};
@@ -1081,14 +1095,35 @@ export const employeeVoiceAPI = {
     return response.data;
   },
 
+  // Pause pulse with reason
+  pausePulse: async (pulseId: string, reason: string, notes?: string): Promise<EmployeeVoicePulse> => {
+    const response = await api.patch(`/employee-voice/pulses/${pulseId}/`, {
+      is_active: false,
+      pause_reason: reason,
+      pause_notes: notes || '',
+    });
+    return response.data;
+  },
+
+  // Resume pulse (clear pause)
+  resumePulse: async (pulseId: string): Promise<EmployeeVoicePulse> => {
+    const response = await api.patch(`/employee-voice/pulses/${pulseId}/`, {
+      is_active: true,
+      pause_reason: null,
+      pause_notes: null,
+    });
+    return response.data;
+  },
+
   // Delete pulse
   deletePulse: async (pulseId: string): Promise<void> => {
     await api.delete(`/employee-voice/pulses/${pulseId}/`);
   },
 
   // Get pulse insights
-  getPulseInsights: async (pulseId: string): Promise<any> => {
-    const response = await api.get(`/employee-voice/pulses/${pulseId}/insights/`);
+  getPulseInsights: async (pulseId: string, storeId?: string): Promise<any> => {
+    const params = storeId && storeId !== 'all' ? { store_id: storeId } : {};
+    const response = await api.get(`/employee-voice/pulses/${pulseId}/insights/`, { params });
     return response.data;
   },
 
@@ -1121,6 +1156,31 @@ export const employeeVoiceAPI = {
     const response = await api.get('/employee-voice/correlations/', { params });
     // Handle paginated response
     return response.data.results || response.data;
+  },
+
+  // Get upcoming scheduled invitations
+  getScheduledInvitations: async (pulseId?: string): Promise<EmployeeVoiceInvitation[]> => {
+    const params = pulseId ? { pulse: pulseId } : {};
+    const response = await api.get('/employee-voice/invitations/scheduled/', { params });
+    return response.data;
+  },
+
+  // Get eligible employees for a pulse
+  getEligibleEmployees: async (pulseId: string): Promise<any> => {
+    const response = await api.get(`/employee-voice/pulses/${pulseId}/eligible-employees/`);
+    return response.data;
+  },
+
+  // Get distribution preview
+  getDistributionPreview: async (pulseId: string): Promise<any> => {
+    const response = await api.get(`/employee-voice/pulses/${pulseId}/distribution-preview/`);
+    return response.data;
+  },
+
+  // Get distribution statistics
+  getDistributionStats: async (pulseId: string): Promise<any> => {
+    const response = await api.get(`/employee-voice/pulses/${pulseId}/distribution-stats/`);
+    return response.data;
   },
 };
 

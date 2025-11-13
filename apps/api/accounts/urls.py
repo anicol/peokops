@@ -3,12 +3,14 @@ from rest_framework.routers import DefaultRouter
 from rest_framework_simplejwt.views import TokenRefreshView
 from . import views
 from . import onboarding_views
+from . import admin_views
 
 # Create router for viewsets
 router = DefaultRouter()
 router.register(r'nudges', views.NudgeViewSet, basename='nudge')
 router.register(r'behavior', views.BehaviorTrackingViewSet, basename='behavior')
 router.register(r'admin/users', views.AdminUserViewSet, basename='admin-users')
+router.register(r'admin/user-activity', admin_views.UserActivityAnalyticsViewSet, basename='admin-user-activity')
 
 urlpatterns = [
     path('login/', views.login_view, name='login'),

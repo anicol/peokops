@@ -414,27 +414,75 @@ class UserBehaviorEvent(models.Model):
         DEMO_STARTED = 'DEMO_STARTED', 'Demo Started'
         DEMO_COMPLETED = 'DEMO_COMPLETED', 'Demo Completed'
         DEMO_SKIPPED = 'DEMO_SKIPPED', 'Demo Skipped'
-        
-        # Upload events  
+
+        # Upload events
         UPLOAD_INITIATED = 'UPLOAD_INITIATED', 'Upload Initiated'
         UPLOAD_COMPLETED = 'UPLOAD_COMPLETED', 'Upload Completed'
         UPLOAD_FAILED = 'UPLOAD_FAILED', 'Upload Failed'
-        
+
         # Engagement events
         LOGIN = 'LOGIN', 'User Login'
         DASHBOARD_VIEW = 'DASHBOARD_VIEW', 'Dashboard Viewed'
         VIDEO_VIEW = 'VIDEO_VIEW', 'Video Viewed'
         INSPECTION_VIEW = 'INSPECTION_VIEW', 'Inspection Viewed'
-        
+
         # Conversion events
         TRIAL_EXTENDED = 'TRIAL_EXTENDED', 'Trial Extended'
         UPGRADE_CLICKED = 'UPGRADE_CLICKED', 'Upgrade Button Clicked'
         BILLING_VIEW = 'BILLING_VIEW', 'Billing Page Viewed'
-        
+
         # Churn risk events
         INACTIVITY_7_DAYS = 'INACTIVITY_7_DAYS', '7 Days Inactive'
         TRIAL_EXPIRY_WARNING = 'TRIAL_EXPIRY_WARNING', 'Trial Expiry Warning Shown'
         SESSION_TIMEOUT = 'SESSION_TIMEOUT', 'Session Timed Out'
+
+        # Navigation events
+        PAGE_VIEW = 'PAGE_VIEW', 'Page Viewed'
+        FEATURE_ACCESSED = 'FEATURE_ACCESSED', 'Feature Accessed'
+        TAB_SWITCHED = 'TAB_SWITCHED', 'Tab Switched'
+        STORE_SWITCHED = 'STORE_SWITCHED', 'Store Switched'
+
+        # Micro-Check events
+        CHECK_CREATED = 'CHECK_CREATED', 'Check Created'
+        CHECK_STARTED = 'CHECK_STARTED', 'Check Started'
+        CHECK_COMPLETED = 'CHECK_COMPLETED', 'Check Completed'
+        CHECK_SKIPPED = 'CHECK_SKIPPED', 'Check Skipped'
+        CORRECTIVE_ACTION_CREATED = 'CORRECTIVE_ACTION_CREATED', 'Corrective Action Created'
+        CORRECTIVE_ACTION_RESOLVED = 'CORRECTIVE_ACTION_RESOLVED', 'Corrective Action Resolved'
+
+        # Employee Voice events
+        PULSE_CREATED = 'PULSE_CREATED', 'Pulse Survey Created'
+        PULSE_CONFIGURED = 'PULSE_CONFIGURED', 'Pulse Survey Configured'
+        PULSE_PAUSED = 'PULSE_PAUSED', 'Pulse Survey Paused'
+        PULSE_RESUMED = 'PULSE_RESUMED', 'Pulse Survey Resumed'
+        INVITATION_SENT = 'INVITATION_SENT', 'Survey Invitation Sent'
+        RESPONSE_VIEWED = 'RESPONSE_VIEWED', 'Survey Response Viewed'
+        PULSE_ANALYTICS_VIEWED = 'PULSE_ANALYTICS_VIEWED', 'Pulse Analytics Viewed'
+
+        # Template events
+        TEMPLATE_VIEWED = 'TEMPLATE_VIEWED', 'Template Viewed'
+        TEMPLATE_SELECTED = 'TEMPLATE_SELECTED', 'Template Selected'
+        TEMPLATE_CUSTOMIZED = 'TEMPLATE_CUSTOMIZED', 'Template Customized'
+        AI_GENERATION_USED = 'AI_GENERATION_USED', 'AI Generation Used'
+        TEMPLATE_CREATED = 'TEMPLATE_CREATED', 'Custom Template Created'
+
+        # Analytics events
+        INSIGHTS_VIEWED = 'INSIGHTS_VIEWED', 'Insights Page Viewed'
+        REPORT_FILTERED = 'REPORT_FILTERED', 'Report Filtered'
+        DASHBOARD_ACCESSED = 'DASHBOARD_ACCESSED', 'Dashboard Accessed'
+        EXPORT_CLICKED = 'EXPORT_CLICKED', 'Export Clicked'
+        SEARCH_PERFORMED = 'SEARCH_PERFORMED', 'Search Performed'
+
+        # Media events
+        PHOTO_UPLOADED = 'PHOTO_UPLOADED', 'Photo Uploaded'
+        VIDEO_UPLOADED = 'VIDEO_UPLOADED', 'Video Uploaded'
+        MEDIA_VIEWED = 'MEDIA_VIEWED', 'Media Viewed'
+
+        # Settings events
+        SETTINGS_VIEWED = 'SETTINGS_VIEWED', 'Settings Viewed'
+        SETTINGS_UPDATED = 'SETTINGS_UPDATED', 'Settings Updated'
+        USER_INVITED = 'USER_INVITED', 'User Invited'
+        INTEGRATION_CONFIGURED = 'INTEGRATION_CONFIGURED', 'Integration Configured'
 
     user = models.ForeignKey('User', on_delete=models.CASCADE, related_name='behavior_events')
     event_type = models.CharField(max_length=50, choices=EventType.choices)
