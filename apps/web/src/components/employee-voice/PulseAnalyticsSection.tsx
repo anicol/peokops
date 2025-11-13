@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { useQuery } from 'react-query';
 import { employeeVoiceAPI, type EmployeeVoicePulse } from '@/services/api';
-import { BarChart3, TrendingUp, Users, MessageSquare, Loader2 } from 'lucide-react';
+import { BarChart3, TrendingUp, Users, MessageSquare, Loader2, Calendar, Clock } from 'lucide-react';
+import { format, formatDistanceToNow } from 'date-fns';
 
 interface PulseAnalyticsSectionProps {
   storeId: number;
@@ -12,6 +13,7 @@ export default function PulseAnalyticsSection({ storeId, pulses }: PulseAnalytic
   const [selectedPulseId, setSelectedPulseId] = useState<string>(
     pulses.length > 0 ? pulses[0].id : ''
   );
+  const [showCommentsModal, setShowCommentsModal] = useState(false);
 
   // Get responses for selected pulse
   const { data: responses, isLoading: responsesLoading } = useQuery(
@@ -46,9 +48,11 @@ export default function PulseAnalyticsSection({ storeId, pulses }: PulseAnalytic
   // Use insights data from backend (already aggregated)
   const totalResponses = insights?.total_responses || 0;
   const avgMood = insights?.avg_mood || 0;
+  const moodTrend = insights?.mood_trend;
   const confidenceHighPct = insights?.confidence_high_pct || 0;
   const confidenceMediumPct = insights?.confidence_medium_pct || 0;
   const confidenceLowPct = insights?.confidence_low_pct || 0;
+  const confidenceTrend = insights?.confidence_trend;
   const topBottlenecks = insights?.top_bottlenecks || [];
   const commentsCount = insights?.comments?.length || 0;
 
@@ -97,9 +101,19 @@ export default function PulseAnalyticsSection({ storeId, pulses }: PulseAnalytic
               <p className="text-2xl font-bold text-gray-900 mt-1">
                 {avgMood.toFixed(1)}/5
               </p>
-              <p className="text-xs text-gray-500 mt-1">
-                {avgMood >= 4 ? '😊 Great' : avgMood >= 3 ? '🙂 Good' : avgMood >= 2 ? '😐 Neutral' : '😕 Needs attention'}
-              </p>
+              <div className="flex items-center justify-between mt-1">
+                <p className="text-xs text-gray-500">
+                  {avgMood >= 4 ? '😊 Great' : avgMood >= 3 ? '🙂 Good' : avgMood >= 2 ? '😐 Neutral' : '😕 Needs attention'}
+                </p>
+                {moodTrend !== null && moodTrend !== undefined && (
+                  <div className={`flex items-center text-xs font-medium ${
+                    moodTrend > 0 ? 'text-green-600' : moodTrend < 0 ? 'text-red-600' : 'text-gray-500'
+                  }`}>
+                    {moodTrend > 0 ? '↑' : moodTrend < 0 ? '↓' : '→'}
+                    <span className="ml-1">{Math.abs(moodTrend).toFixed(1)} vs last week</span>
+                  </div>
+                )}
+              </div>
             </div>
 
             <div className="bg-white rounded-lg border border-gray-200 p-4">
@@ -110,12 +124,25 @@ export default function PulseAnalyticsSection({ storeId, pulses }: PulseAnalytic
               <p className="text-2xl font-bold text-gray-900 mt-1">
                 {Math.round(confidenceHighPct)}%
               </p>
-              <p className="text-xs text-gray-500 mt-1">
-                {totalResponses > 0 ? `${totalResponses} total responses` : 'No data'}
-              </p>
+              <div className="flex items-center justify-between mt-1">
+                <p className="text-xs text-gray-500">
+                  {totalResponses > 0 ? `${totalResponses} total responses` : 'No data'}
+                </p>
+                {confidenceTrend !== null && confidenceTrend !== undefined && (
+                  <div className={`flex items-center text-xs font-medium ${
+                    confidenceTrend > 0 ? 'text-green-600' : confidenceTrend < 0 ? 'text-red-600' : 'text-gray-500'
+                  }`}>
+                    {confidenceTrend > 0 ? '↑' : confidenceTrend < 0 ? '↓' : '→'}
+                    <span className="ml-1">{Math.abs(confidenceTrend).toFixed(1)}% vs last week</span>
+                  </div>
+                )}
+              </div>
             </div>
 
-            <div className="bg-white rounded-lg border border-gray-200 p-4">
+            <div
+              className="bg-white rounded-lg border border-gray-200 p-4 cursor-pointer hover:border-blue-300 hover:shadow-md transition-all"
+              onClick={() => commentsCount > 0 && setShowCommentsModal(true)}
+            >
               <div className="flex items-center justify-between">
                 <p className="text-sm text-gray-500">Comments</p>
                 <MessageSquare className="w-4 h-4 text-gray-400" />
@@ -128,6 +155,11 @@ export default function PulseAnalyticsSection({ storeId, pulses }: PulseAnalytic
                   ? `${Math.round((commentsCount / totalResponses) * 100)}% with feedback`
                   : 'No data'}
               </p>
+              {commentsCount > 0 && (
+                <p className="text-xs text-blue-600 font-medium mt-2">
+                  Click to view all →
+                </p>
+              )}
             </div>
           </div>
 
@@ -212,6 +244,124 @@ export default function PulseAnalyticsSection({ storeId, pulses }: PulseAnalytic
             )}
           </div>
         </>
+      )}
+
+      {/* Comments Modal */}
+      {showCommentsModal && (
+        <div className="fixed inset-0 z-50 overflow-y-auto">
+          <div className="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:block sm:p-0">
+            {/* Background overlay */}
+            <div
+              className="fixed inset-0 transition-opacity bg-gray-500 bg-opacity-75"
+              onClick={() => setShowCommentsModal(false)}
+            />
+
+            {/* Modal panel */}
+            <div className="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-3xl sm:w-full">
+              {/* Header */}
+              <div className="bg-blue-600 px-6 py-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <MessageSquare className="w-6 h-6 text-white" />
+                    <div>
+                      <h3 className="text-lg font-semibold text-white">
+                        Employee Comments
+                      </h3>
+                      <p className="text-sm text-blue-100">
+                        {commentsCount} {commentsCount === 1 ? 'comment' : 'comments'} from anonymous responses
+                      </p>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => setShowCommentsModal(false)}
+                    className="text-white hover:text-gray-200"
+                  >
+                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
+                </div>
+              </div>
+
+              {/* Content */}
+              <div className="bg-white px-6 py-6 max-h-96 overflow-y-auto">
+                {insights?.comments && insights.comments.length > 0 ? (
+                  <div className="space-y-4">
+                    {insights.comments.map((comment: any, idx: number) => {
+                      // Handle both string format (old) and object format (new)
+                      let commentText = '';
+                      let completedAt = null;
+
+                      if (typeof comment === 'string') {
+                        // Old format: plain string
+                        commentText = comment;
+                      } else if (typeof comment === 'object' && comment !== null) {
+                        // New format: object with text and completed_at
+                        commentText = comment.text || '';
+                        if (comment.completed_at) {
+                          try {
+                            completedAt = new Date(comment.completed_at);
+                          } catch (e) {
+                            console.error('Invalid date:', comment.completed_at);
+                          }
+                        }
+                      }
+
+                      return (
+                        <div
+                          key={idx}
+                          className="p-4 bg-gray-50 rounded-lg border border-gray-200"
+                        >
+                          <div className="flex items-start gap-3">
+                            <MessageSquare className="w-5 h-5 text-gray-400 flex-shrink-0 mt-1" />
+                            <div className="flex-1">
+                              <div className="flex items-center justify-between mb-2">
+                                <span className="text-xs text-gray-500">Anonymous Employee</span>
+                                {completedAt && !isNaN(completedAt.getTime()) && (
+                                  <div className="flex items-center gap-3 text-xs text-gray-500">
+                                    <div className="flex items-center gap-1">
+                                      <Clock className="w-3 h-3" />
+                                      <span>{formatDistanceToNow(completedAt, { addSuffix: true })}</span>
+                                    </div>
+                                    <div className="flex items-center gap-1">
+                                      <Calendar className="w-3 h-3" />
+                                      <span>{format(completedAt, 'MMM d, yyyy h:mm a')}</span>
+                                    </div>
+                                  </div>
+                                )}
+                              </div>
+                              <p className="text-sm text-gray-900">{commentText}</p>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <div className="text-center py-8 text-gray-500">
+                    <MessageSquare className="w-12 h-12 mx-auto mb-2 text-gray-300" />
+                    <p className="text-sm">No comments yet</p>
+                  </div>
+                )}
+              </div>
+
+              {/* Footer */}
+              <div className="bg-gray-50 px-6 py-4 border-t border-gray-200">
+                <div className="flex items-center justify-between">
+                  <p className="text-xs text-gray-500">
+                    Comments are anonymous and only shown when n ≥ 5 respondents
+                  </p>
+                  <button
+                    onClick={() => setShowCommentsModal(false)}
+                    className="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-md hover:bg-blue-700"
+                  >
+                    Close
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

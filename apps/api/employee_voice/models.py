@@ -32,6 +32,14 @@ class EmployeeVoicePulse(models.Model):
         MEDIUM = 'MEDIUM', 'Medium (2-3 times/week, ~40% daily chance)'
         HIGH = 'HIGH', 'High (3-4 times/week, ~50-60% daily chance)'
 
+    class PauseReason(models.TextChoices):
+        HOLIDAY = 'HOLIDAY', 'Holiday/Seasonal Break'
+        UNDER_REVIEW = 'UNDER_REVIEW', 'Under Review'
+        LOW_PARTICIPATION = 'LOW_PARTICIPATION', 'Low Participation'
+        RESTRUCTURING = 'RESTRUCTURING', 'Team Restructuring'
+        MIGRATED = 'MIGRATED', 'Migrated to single pulse'
+        OTHER = 'OTHER', 'Other'
+
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
 
     # Multi-tenant relationships
@@ -105,6 +113,25 @@ class EmployeeVoicePulse(models.Model):
     consent_text = models.TextField(
         default="Anonymous, aggregated. Used to improve daily operations.",
         help_text="Consent copy shown to employees"
+    )
+
+    # Pause tracking
+    pause_reason = models.CharField(
+        max_length=50,
+        choices=PauseReason.choices,
+        null=True,
+        blank=True,
+        help_text="Reason for pausing the pulse survey"
+    )
+    pause_notes = models.TextField(
+        null=True,
+        blank=True,
+        help_text="Additional context for pause"
+    )
+    paused_at = models.DateTimeField(
+        null=True,
+        blank=True,
+        help_text="Timestamp when pulse was paused"
     )
 
     # Metadata
