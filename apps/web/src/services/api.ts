@@ -1121,8 +1121,9 @@ export const employeeVoiceAPI = {
   },
 
   // Get pulse insights
-  getPulseInsights: async (pulseId: string): Promise<any> => {
-    const response = await api.get(`/employee-voice/pulses/${pulseId}/insights/`);
+  getPulseInsights: async (pulseId: string, storeId?: string): Promise<any> => {
+    const params = storeId && storeId !== 'all' ? { store_id: storeId } : {};
+    const response = await api.get(`/employee-voice/pulses/${pulseId}/insights/`, { params });
     return response.data;
   },
 

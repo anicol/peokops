@@ -158,6 +158,7 @@ class EmployeeVoicePulseViewSet(ScopedQuerysetMixin, ScopedCreateMixin, viewsets
         """
         Get aggregated insights for this pulse.
         Enforces n ≥ 5 privacy protection and role-based access.
+        Supports optional store_id filter for multi-store accounts.
         """
         pulse = self.get_object()
         user = request.user
@@ -169,6 +170,9 @@ class EmployeeVoicePulseViewSet(ScopedQuerysetMixin, ScopedCreateMixin, viewsets
                 status=status.HTTP_403_FORBIDDEN
             )
 
+        # Get optional store filter
+        store_id = request.query_params.get('store_id')
+
         # Calculate metrics for current week (last 7 days) as primary data
         now = timezone.now()
         one_week_ago = now - timedelta(days=7)
@@ -178,6 +182,24 @@ class EmployeeVoicePulseViewSet(ScopedQuerysetMixin, ScopedCreateMixin, viewsets
             pulse=pulse,
             completed_at__gte=one_week_ago
         )
+
+        # Filter by store if specified
+        if store_id and store_id != 'all':
+            # Filter to responses from invitations sent to employees at this store
+            from integrations.models import SevenShiftsEmployee
+
+            # Get employee IDs at this store
+            store_employee_ids = SevenShiftsEmployee.objects.filter(
+                account=pulse.account,
+                store_id=store_id
+            ).values_list('id', flat=True)
+
+            # Filter responses to those from invitations linked to these employees
+            responses = responses.filter(
+                invitation__recipient_phone__in=SevenShiftsEmployee.objects.filter(
+                    id__in=store_employee_ids
+                ).values_list('phone', flat=True)
+            )
 
         total_responses = responses.count()
         unique_respondents = responses.values('anonymous_hash').distinct().count()
@@ -211,6 +233,20 @@ class EmployeeVoicePulseViewSet(ScopedQuerysetMixin, ScopedCreateMixin, viewsets
             completed_at__gte=two_weeks_ago,
             completed_at__lt=one_week_ago
         )
+
+        # Apply same store filter to previous week if specified
+        if store_id and store_id != 'all':
+            from integrations.models import SevenShiftsEmployee
+            store_employee_ids = SevenShiftsEmployee.objects.filter(
+                account=pulse.account,
+                store_id=store_id
+            ).values_list('id', flat=True)
+
+            previous_week_responses = previous_week_responses.filter(
+                invitation__recipient_phone__in=SevenShiftsEmployee.objects.filter(
+                    id__in=store_employee_ids
+                ).values_list('phone', flat=True)
+            )
 
         # Current week metrics
         current_week_mood = current_week_responses.aggregate(avg_mood=Avg('mood'))['avg_mood'] or 0
@@ -266,8 +302,8 @@ class EmployeeVoicePulseViewSet(ScopedQuerysetMixin, ScopedCreateMixin, viewsets
             for bottleneck_type, count in bottleneck_counter.most_common(5)
         ]
 
-        # Get recent comments with timestamps (role-gated, already filtered by serializer)
-        recent_comments = responses.exclude(comment='').order_by('-completed_at')[:10]
+        # Get all comments for the week with timestamps (role-gated, already filtered by serializer)
+        recent_comments = responses.exclude(comment='').order_by('-completed_at')
         comments = [
             {
                 'text': r.comment,

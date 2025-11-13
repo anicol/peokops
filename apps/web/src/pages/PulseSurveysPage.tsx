@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from 'react-query';
 import { useAuth } from '@/hooks/useAuth';
-import { employeeVoiceAPI, type EmployeeVoicePulse } from '@/services/api';
+import { employeeVoiceAPI, type EmployeeVoicePulse, storesAPI, type Store } from '@/services/api';
 import {
   Activity,
   Lock,
@@ -10,7 +10,8 @@ import {
   HelpCircle,
   Play,
   Pause,
-  Calendar
+  Calendar,
+  Building2
 } from 'lucide-react';
 import PulseConfigSection from '@/components/employee-voice/PulseConfigSection';
 import PausePulseDialog from '@/components/employee-voice/PausePulseDialog';
@@ -25,11 +26,21 @@ export default function PulseSurveysPage() {
   const [viewMode, setViewMode] = useState<ViewMode>('analytics');
   const [showPauseDialog, setShowPauseDialog] = useState(false);
   const [showQuestionsModal, setShowQuestionsModal] = useState(false);
+  const [selectedStoreId, setSelectedStoreId] = useState<string>('all');
 
   // Fetch or create the single pulse for the account
   const { data: pulse, isLoading } = useQuery(
     ['employee-voice-pulse'],
     () => employeeVoiceAPI.getOrCreatePulse(),
+    {
+      enabled: !!user,
+    }
+  );
+
+  // Fetch stores for the account (for filter dropdown)
+  const { data: stores } = useQuery<Store[]>(
+    ['stores', user?.account],
+    () => storesAPI.getStores(),
     {
       enabled: !!user,
     }
@@ -109,9 +120,9 @@ export default function PulseSurveysPage() {
   }
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <div className="max-w-7xl mx-auto px-1 sm:px-4 md:px-6 lg:px-8 py-2 sm:py-8">
       {/* Header */}
-      <div className="mb-8">
+      <div className="mb-4 sm:mb-8">
         <div className="flex items-start justify-between">
           <div className="flex-1">
             <h1 className="text-2xl font-bold text-gray-900">{pulse.title}</h1>
@@ -171,37 +182,58 @@ export default function PulseSurveysPage() {
         <PulseConfigSection pulse={pulse} defaultExpanded={false} />
       </div>
 
-      {/* Tabs Navigation */}
+      {/* Tabs Navigation + Store Filter */}
       <div className="border-b border-gray-200 mb-6">
-        <nav className="-mb-px flex space-x-8">
-          <button
-            onClick={() => setViewMode('analytics')}
-            className={`${
-              viewMode === 'analytics'
-                ? 'border-blue-500 text-blue-600'
-                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-            } whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm flex items-center`}
-          >
-            <BarChart3 className="w-4 h-4 mr-2" />
-            Analytics
-          </button>
-          <button
-            onClick={() => setViewMode('distribution')}
-            className={`${
-              viewMode === 'distribution'
-                ? 'border-blue-500 text-blue-600'
-                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-            } whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm flex items-center`}
-          >
-            <Calendar className="w-4 h-4 mr-2" />
-            Distribution
-          </button>
-        </nav>
+        <div className="flex items-center justify-between">
+          <nav className="-mb-px flex space-x-8">
+            <button
+              onClick={() => setViewMode('analytics')}
+              className={`${
+                viewMode === 'analytics'
+                  ? 'border-blue-500 text-blue-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+              } whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm flex items-center`}
+            >
+              <BarChart3 className="w-4 h-4 mr-2" />
+              Analytics
+            </button>
+            <button
+              onClick={() => setViewMode('distribution')}
+              className={`${
+                viewMode === 'distribution'
+                  ? 'border-blue-500 text-blue-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+              } whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm flex items-center`}
+            >
+              <Calendar className="w-4 h-4 mr-2" />
+              Distribution
+            </button>
+          </nav>
+
+          {/* Store Filter - only show in analytics view */}
+          {viewMode === 'analytics' && stores && stores.length > 0 && (
+            <div className="flex items-center gap-2 mb-px">
+              <Building2 className="w-4 h-4 text-gray-500" />
+              <select
+                value={selectedStoreId}
+                onChange={(e) => setSelectedStoreId(e.target.value)}
+                className="text-sm border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500"
+              >
+                <option value="all">All Stores</option>
+                {stores.map((store) => (
+                  <option key={store.id} value={store.id}>
+                    {store.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Tab Content */}
       {viewMode === 'analytics' && (
-        <PulseAnalyticsSection storeId={user?.store || 0} pulses={[pulse]} />
+        <PulseAnalyticsSection storeId={user?.store || 0} pulses={[pulse]} selectedStoreId={selectedStoreId} />
       )}
 
       {viewMode === 'distribution' && (

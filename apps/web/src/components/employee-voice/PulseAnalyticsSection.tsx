@@ -7,9 +7,10 @@ import { format, formatDistanceToNow } from 'date-fns';
 interface PulseAnalyticsSectionProps {
   storeId: number;
   pulses: EmployeeVoicePulse[];
+  selectedStoreId?: string;
 }
 
-export default function PulseAnalyticsSection({ storeId, pulses }: PulseAnalyticsSectionProps) {
+export default function PulseAnalyticsSection({ storeId, pulses, selectedStoreId }: PulseAnalyticsSectionProps) {
   const [selectedPulseId, setSelectedPulseId] = useState<string>(
     pulses.length > 0 ? pulses[0].id : ''
   );
@@ -24,10 +25,10 @@ export default function PulseAnalyticsSection({ storeId, pulses }: PulseAnalytic
     }
   );
 
-  // Get insights for selected pulse
+  // Get insights for selected pulse with store filter
   const { data: insights, isLoading: insightsLoading } = useQuery(
-    ['employee-voice-insights', selectedPulseId],
-    () => employeeVoiceAPI.getPulseInsights(selectedPulseId),
+    ['employee-voice-insights', selectedPulseId, selectedStoreId],
+    () => employeeVoiceAPI.getPulseInsights(selectedPulseId, selectedStoreId),
     {
       enabled: !!selectedPulseId,
     }
@@ -84,8 +85,8 @@ export default function PulseAnalyticsSection({ storeId, pulses }: PulseAnalytic
       ) : (
         <>
           {/* Stats Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-            <div className="bg-white rounded-lg border border-gray-200 p-4">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-2 sm:gap-4 mb-4 sm:mb-6">
+            <div className="bg-white rounded-lg border border-gray-200 p-3 sm:p-4">
               <div className="flex items-center justify-between">
                 <p className="text-sm text-gray-500">Total Responses</p>
                 <Users className="w-4 h-4 text-gray-400" />
@@ -93,7 +94,7 @@ export default function PulseAnalyticsSection({ storeId, pulses }: PulseAnalytic
               <p className="text-2xl font-bold text-gray-900 mt-1">{totalResponses}</p>
             </div>
 
-            <div className="bg-white rounded-lg border border-gray-200 p-4">
+            <div className="bg-white rounded-lg border border-gray-200 p-3 sm:p-4">
               <div className="flex items-center justify-between">
                 <p className="text-sm text-gray-500">Average Mood</p>
                 <TrendingUp className="w-4 h-4 text-gray-400" />
@@ -116,7 +117,7 @@ export default function PulseAnalyticsSection({ storeId, pulses }: PulseAnalytic
               </div>
             </div>
 
-            <div className="bg-white rounded-lg border border-gray-200 p-4">
+            <div className="bg-white rounded-lg border border-gray-200 p-3 sm:p-4">
               <div className="flex items-center justify-between">
                 <p className="text-sm text-gray-500">High Confidence</p>
                 <BarChart3 className="w-4 h-4 text-gray-400" />
@@ -140,7 +141,7 @@ export default function PulseAnalyticsSection({ storeId, pulses }: PulseAnalytic
             </div>
 
             <div
-              className="bg-white rounded-lg border border-gray-200 p-4 cursor-pointer hover:border-blue-300 hover:shadow-md transition-all"
+              className="bg-white rounded-lg border border-gray-200 p-3 sm:p-4 cursor-pointer hover:border-blue-300 hover:shadow-md transition-all"
               onClick={() => commentsCount > 0 && setShowCommentsModal(true)}
             >
               <div className="flex items-center justify-between">
@@ -164,7 +165,7 @@ export default function PulseAnalyticsSection({ storeId, pulses }: PulseAnalytic
           </div>
 
           {/* Confidence Distribution */}
-          <div className="bg-white rounded-lg border border-gray-200 p-6 mb-6">
+          <div className="bg-white rounded-lg border border-gray-200 p-3 sm:p-6 mb-4 sm:mb-6">
             <h3 className="text-lg font-semibold text-gray-900 mb-4">Confidence Distribution</h3>
             {totalResponses === 0 ? (
               <p className="text-sm text-gray-500 text-center py-8">No responses yet</p>
@@ -200,7 +201,7 @@ export default function PulseAnalyticsSection({ storeId, pulses }: PulseAnalytic
           </div>
 
           {/* Top Bottlenecks */}
-          <div className="bg-white rounded-lg border border-gray-200 p-6">
+          <div className="bg-white rounded-lg border border-gray-200 p-3 sm:p-6">
             <h3 className="text-lg font-semibold text-gray-900 mb-4">Top Bottlenecks</h3>
             {topBottlenecks.length === 0 ? (
               <p className="text-sm text-gray-500 text-center py-8">
@@ -249,7 +250,7 @@ export default function PulseAnalyticsSection({ storeId, pulses }: PulseAnalytic
       {/* Comments Modal */}
       {showCommentsModal && (
         <div className="fixed inset-0 z-50 overflow-y-auto">
-          <div className="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:block sm:p-0">
+          <div className="flex items-center justify-center min-h-screen px-4 py-8">
             {/* Background overlay */}
             <div
               className="fixed inset-0 transition-opacity bg-gray-500 bg-opacity-75"
@@ -257,9 +258,9 @@ export default function PulseAnalyticsSection({ storeId, pulses }: PulseAnalytic
             />
 
             {/* Modal panel */}
-            <div className="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-3xl sm:w-full">
+            <div className="relative bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all max-w-3xl w-full max-h-[85vh] flex flex-col">
               {/* Header */}
-              <div className="bg-blue-600 px-6 py-4">
+              <div className="bg-blue-600 px-6 py-4 flex-shrink-0">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
                     <MessageSquare className="w-6 h-6 text-white" />
@@ -284,7 +285,7 @@ export default function PulseAnalyticsSection({ storeId, pulses }: PulseAnalytic
               </div>
 
               {/* Content */}
-              <div className="bg-white px-6 py-6 max-h-96 overflow-y-auto">
+              <div className="bg-white px-6 py-6 flex-1 overflow-y-auto">
                 {insights?.comments && insights.comments.length > 0 ? (
                   <div className="space-y-4">
                     {insights.comments.map((comment: any, idx: number) => {
