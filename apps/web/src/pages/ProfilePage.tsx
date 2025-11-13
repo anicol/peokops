@@ -276,7 +276,7 @@ const ProfilePage = () => {
               {/* Password Tab */}
               {activeTab === 'password' && (
                 <div className="p-6">
-                  <h2 className="text-xl font-semibold text-gray-900 mb-6">Change Password</h2>
+                  <h2 className="text-xl font-semibold text-gray-900 mb-6">Set New Password</h2>
 
                   {passwordError && (
                     <div className="rounded-md bg-red-50 p-4 flex items-center mb-6">
@@ -293,19 +293,6 @@ const ProfilePage = () => {
                   )}
 
                   <form onSubmit={handlePasswordSubmit} className="space-y-6">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Current Password
-                      </label>
-                      <input
-                        type="password"
-                        value={passwordData.current_password}
-                        onChange={(e) => setPasswordData({ ...passwordData, current_password: e.target.value })}
-                        required
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
-                      />
-                    </div>
-
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">
                         New Password
@@ -341,7 +328,7 @@ const ProfilePage = () => {
                         className="inline-flex items-center px-6 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
                       >
                         <Key className="w-4 h-4 mr-2" />
-                        {passwordSaving ? 'Changing...' : 'Change Password'}
+                        {passwordSaving ? 'Setting...' : 'Set Password'}
                       </button>
                     </div>
                   </form>

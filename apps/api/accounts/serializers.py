@@ -352,15 +352,16 @@ class ProfileUpdateSerializer(serializers.ModelSerializer):
 
 class PasswordChangeSerializer(serializers.Serializer):
     """Serializer for changing user password"""
-    current_password = serializers.CharField(required=True, write_only=True)
+    current_password = serializers.CharField(required=False, write_only=True, allow_blank=True)
     new_password = serializers.CharField(required=True, write_only=True, min_length=8)
     new_password_confirm = serializers.CharField(required=True, write_only=True)
 
     def validate_current_password(self, value):
-        """Verify current password is correct"""
-        user = self.context['request'].user
-        if not user.check_password(value):
-            raise serializers.ValidationError("Current password is incorrect.")
+        """Verify current password is correct (if provided)"""
+        if value:  # Only validate if provided
+            user = self.context['request'].user
+            if not user.check_password(value):
+                raise serializers.ValidationError("Current password is incorrect.")
         return value
 
     def validate(self, attrs):

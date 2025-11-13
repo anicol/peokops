@@ -40,6 +40,17 @@ export default function InsightsPage() {
     }
   }, [user?.store, stores, selectedStoreId]);
 
+  // Fetch insights data
+  const { data: insights, isLoading, error } = useQuery(
+    ['insights', storeId],
+    () => insightsAPI.getSummary(storeId!),
+    {
+      enabled: !!storeId,
+      refetchInterval: 30000, // Refresh every 30 seconds
+      staleTime: 10000, // Consider data stale after 10 seconds
+    }
+  );
+
   // Track insights page view when data loads
   useEffect(() => {
     if (insights && storeId) {
@@ -51,17 +62,6 @@ export default function InsightsPage() {
       });
     }
   }, [insights, storeId, trackInsightsViewed]);
-
-  // Fetch insights data
-  const { data: insights, isLoading, error } = useQuery(
-    ['insights', storeId],
-    () => insightsAPI.getSummary(storeId!),
-    {
-      enabled: !!storeId,
-      refetchInterval: 30000, // Refresh every 30 seconds
-      staleTime: 10000, // Consider data stale after 10 seconds
-    }
-  );
 
   if (isLoading) {
     return (
