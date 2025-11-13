@@ -6,7 +6,6 @@ import {
   Activity,
   Lock,
   Unlock,
-  Send,
   BarChart3,
   HelpCircle,
   Play,
@@ -15,11 +14,10 @@ import {
 } from 'lucide-react';
 import PulseConfigSection from '@/components/employee-voice/PulseConfigSection';
 import PausePulseDialog from '@/components/employee-voice/PausePulseDialog';
-import InvitationHistorySection from '@/components/employee-voice/InvitationHistorySection';
 import PulseAnalyticsSection from '@/components/employee-voice/PulseAnalyticsSection';
 import DistributionTab from '@/components/employee-voice/DistributionTab';
 
-type ViewMode = 'analytics' | 'invitations' | 'distribution';
+type ViewMode = 'analytics' | 'distribution';
 
 export default function PulseSurveysPage() {
   const { user } = useAuth();
@@ -189,17 +187,6 @@ export default function PulseSurveysPage() {
             <Calendar className="w-4 h-4 mr-2" />
             Distribution
           </button>
-          <button
-            onClick={() => setViewMode('invitations')}
-            className={`${
-              viewMode === 'invitations'
-                ? 'border-blue-500 text-blue-600'
-                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-            } whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm flex items-center`}
-          >
-            <Send className="w-4 h-4 mr-2" />
-            Invitations
-          </button>
         </nav>
       </div>
 
@@ -210,10 +197,6 @@ export default function PulseSurveysPage() {
 
       {viewMode === 'distribution' && (
         <DistributionTab pulseId={pulse.id} />
-      )}
-
-      {viewMode === 'invitations' && (
-        <InvitationHistorySection storeId={user?.store || 0} />
       )}
 
       {/* Pause Dialog */}
