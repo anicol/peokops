@@ -66,11 +66,11 @@ export default function PulseSurveyPage() {
 
   // Mood options - Updated emojis
   const moodOptions = [
-    { value: 1, emoji: '😫', label: 'Exhausted' },
-    { value: 2, emoji: '😐', label: 'Meh' },
-    { value: 3, emoji: '🙂', label: 'Good' },
-    { value: 4, emoji: '😄', label: 'Great' },
-    { value: 5, emoji: '🔥', label: 'On Fire' },
+    { value: 1, emoji: '😫', label: 'Tired' },
+    { value: 2, emoji: '😐', label: 'Off' },
+    { value: 3, emoji: '🙂', label: 'Okay' },
+    { value: 4, emoji: '😄', label: 'Good' },
+    { value: 5, emoji: '🔥', label: 'Fired Up' },
   ];
 
   // Confidence options - Updated to 3-level scale
@@ -255,21 +255,21 @@ export default function PulseSurveyPage() {
               <h2 className="text-xl sm:text-2xl font-bold text-gray-900 mb-4 sm:mb-6 text-center">
                 How's your shift feeling today?
               </h2>
-              <div className="flex justify-between gap-1 sm:gap-3">
+              <div className="flex justify-center gap-2 sm:gap-3">
                 {moodOptions.map((option) => (
                   <button
                     key={option.value}
                     onClick={() => handleMoodSelect(option.value)}
                     className={`
-                      flex-1 flex flex-col items-center justify-center p-2 sm:p-4 rounded-lg sm:rounded-xl border-2 transition-all transform hover:scale-110
+                      w-16 h-20 sm:w-24 sm:h-28 flex flex-col items-center justify-center p-2 sm:p-4 rounded-lg sm:rounded-xl border-2 transition-all transform hover:scale-110
                       ${mood === option.value
                         ? 'border-blue-600 bg-blue-50 scale-110'
                         : 'border-gray-200 hover:border-blue-300'
                       }
                     `}
                   >
-                    <span className="text-3xl sm:text-5xl mb-1 sm:mb-2">{option.emoji}</span>
-                    <span className="text-[10px] sm:text-xs text-gray-600 font-medium">{option.label}</span>
+                    <span className="text-3xl sm:text-5xl mb-1">{option.emoji}</span>
+                    <span className="text-[10px] sm:text-xs text-gray-600 font-medium text-center leading-tight">{option.label}</span>
                   </button>
                 ))}
               </div>
