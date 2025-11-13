@@ -811,6 +811,49 @@ export const adminAnalyticsAPI = {
   },
 };
 
+// User Activity Analytics API (SUPER_ADMIN only)
+export const userActivityAPI = {
+  // Get user activity overview (DAU/WAU/MAU, feature adoption)
+  getOverview: async (days: number = 30) => {
+    const response = await api.get('/auth/admin/user-activity/overview/', {
+      params: { days },
+    });
+    return response.data;
+  },
+
+  // Get activity timeline (hourly or daily aggregation)
+  getTimeline: async (days: number = 7, granularity: 'hour' | 'day' = 'hour') => {
+    const response = await api.get('/auth/admin/user-activity/timeline/', {
+      params: { days, granularity },
+    });
+    return response.data;
+  },
+
+  // Get feature usage breakdown
+  getByFeature: async (days: number = 30) => {
+    const response = await api.get('/auth/admin/user-activity/by-feature/', {
+      params: { days },
+    });
+    return response.data;
+  },
+
+  // Get recent activity feed
+  getRecent: async (limit: number = 100, eventType?: string) => {
+    const response = await api.get('/auth/admin/user-activity/recent/', {
+      params: { limit, event_type: eventType },
+    });
+    return response.data;
+  },
+
+  // Get activity for specific account
+  getAccountActivity: async (accountId: number, days: number = 30) => {
+    const response = await api.get('/auth/admin/user-activity/account-activity/', {
+      params: { account_id: accountId, days },
+    });
+    return response.data;
+  },
+};
+
 // Billing API
 export const billingAPI = {
   // Get all subscription plans

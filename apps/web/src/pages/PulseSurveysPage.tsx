@@ -1,6 +1,7 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from 'react-query';
 import { useAuth } from '@/hooks/useAuth';
+import { useBehaviorTracking } from '@/hooks/useBehaviorTracking';
 import { employeeVoiceAPI, type EmployeeVoicePulse, storesAPI } from '@/services/api';
 import type { Store } from '@/types';
 import {
@@ -24,6 +25,7 @@ type ViewMode = 'analytics' | 'distribution';
 export default function PulseSurveysPage() {
   const { user } = useAuth();
   const queryClient = useQueryClient();
+  const { trackPulseAnalyticsViewed, trackTabSwitched } = useBehaviorTracking();
   const [viewMode, setViewMode] = useState<ViewMode>('analytics');
   const [showPauseDialog, setShowPauseDialog] = useState(false);
   const [showQuestionsModal, setShowQuestionsModal] = useState(false);
@@ -82,6 +84,16 @@ export default function PulseSurveysPage() {
   const handlePauseConfirm = (reason: string, notes: string) => {
     pauseMutation.mutate({ reason, notes });
   };
+
+  // Track pulse analytics views
+  useEffect(() => {
+    if (pulse && viewMode === 'analytics') {
+      trackPulseAnalyticsViewed(pulse.id.toString(), {
+        status: pulse.status,
+        is_active: pulse.is_active,
+      });
+    }
+  }, [pulse, viewMode, trackPulseAnalyticsViewed]);
 
   const getStatusBadge = (pulse: EmployeeVoicePulse) => {
     if (pulse.status === 'LOCKED') {
@@ -188,7 +200,10 @@ export default function PulseSurveysPage() {
         <div className="flex items-center justify-between">
           <nav className="-mb-px flex space-x-8">
             <button
-              onClick={() => setViewMode('analytics')}
+              onClick={() => {
+                trackTabSwitched('analytics', { page: 'pulse_surveys' });
+                setViewMode('analytics');
+              }}
               className={`${
                 viewMode === 'analytics'
                   ? 'border-blue-500 text-blue-600'
@@ -199,7 +214,10 @@ export default function PulseSurveysPage() {
               Analytics
             </button>
             <button
-              onClick={() => setViewMode('distribution')}
+              onClick={() => {
+                trackTabSwitched('distribution', { page: 'pulse_surveys' });
+                setViewMode('distribution');
+              }}
               className={`${
                 viewMode === 'distribution'
                   ? 'border-blue-500 text-blue-600'
