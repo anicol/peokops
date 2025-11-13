@@ -219,6 +219,15 @@ export default function PulseSurveyPage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-blue-50 flex items-center justify-center px-4 py-8">
       <div className="max-w-lg w-full">
+        {/* Preview Mode Banner */}
+        {isPreview && (
+          <div className="mb-4 bg-purple-100 border-2 border-purple-300 rounded-lg px-4 py-3 text-center">
+            <p className="text-sm font-medium text-purple-900">
+              👁️ Preview Mode - This is how employees will see the survey
+            </p>
+          </div>
+        )}
+
         {/* Progress Dots (hide on welcome and success) */}
         {currentStep !== 'welcome' && currentStep !== 'success' && getProgressDots()}
 
