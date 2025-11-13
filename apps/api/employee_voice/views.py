@@ -169,36 +169,48 @@ class EmployeeVoicePulseViewSet(ScopedQuerysetMixin, ScopedCreateMixin, viewsets
                 status=status.HTTP_403_FORBIDDEN
             )
 
-        # Calculate metrics for last 30 days
-        thirty_days_ago = timezone.now() - timedelta(days=30)
+        # Calculate metrics for current week (last 7 days) as primary data
+        now = timezone.now()
+        one_week_ago = now - timedelta(days=7)
+
+        # Get current week responses
         responses = EmployeeVoiceResponse.objects.filter(
             pulse=pulse,
-            completed_at__gte=thirty_days_ago
+            completed_at__gte=one_week_ago
         )
 
         total_responses = responses.count()
         unique_respondents = responses.values('anonymous_hash').distinct().count()
 
-        # Check n ≥ 5 requirement
-        if unique_respondents < pulse.min_respondents_for_display:
+        # Check n ≥ 5 requirement (check last 30 days for unlock, but display current week)
+        thirty_days_ago = now - timedelta(days=30)
+        all_recent_responses = EmployeeVoiceResponse.objects.filter(
+            pulse=pulse,
+            completed_at__gte=thirty_days_ago
+        )
+        total_unique_respondents = all_recent_responses.values('anonymous_hash').distinct().count()
+
+        if total_unique_respondents < pulse.min_respondents_for_display:
             return Response({
                 'pulse_id': pulse.id,
                 'pulse_title': pulse.title,
                 'can_display': False,
-                'unique_respondents': unique_respondents,
+                'unique_respondents': total_unique_respondents,
                 'required_respondents': pulse.min_respondents_for_display,
-                'message': f"Insights will unlock after {pulse.min_respondents_for_display - unique_respondents} more unique team members participate."
+                'message': f"Insights will unlock after {pulse.min_respondents_for_display - total_unique_respondents} more unique team members participate."
             }, status=status.HTTP_200_OK)
 
         # Calculate week-over-week trends
-        now = timezone.now()
-        one_week_ago = now - timedelta(days=7)
         two_weeks_ago = now - timedelta(days=14)
 
-        # Current week responses (last 7 days)
-        current_week_responses = responses.filter(completed_at__gte=one_week_ago)
+        # Current week responses (already filtered above)
+        current_week_responses = responses
         # Previous week responses (8-14 days ago)
-        previous_week_responses = responses.filter(completed_at__gte=two_weeks_ago, completed_at__lt=one_week_ago)
+        previous_week_responses = EmployeeVoiceResponse.objects.filter(
+            pulse=pulse,
+            completed_at__gte=two_weeks_ago,
+            completed_at__lt=one_week_ago
+        )
 
         # Current week metrics
         current_week_mood = current_week_responses.aggregate(avg_mood=Avg('mood'))['avg_mood'] or 0
@@ -279,7 +291,7 @@ class EmployeeVoicePulseViewSet(ScopedQuerysetMixin, ScopedCreateMixin, viewsets
         insights_data = {
             'pulse_id': pulse.id,
             'pulse_title': pulse.title,
-            'time_window': 'Last 30 days',
+            'time_window': 'Last 7 days',
             'total_responses': total_responses,
             'unique_respondents': unique_respondents,
             'can_display': True,
