@@ -2,6 +2,7 @@ import { useQuery } from 'react-query';
 import { useNavigate } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/hooks/useAuth';
+import { useBehaviorTracking } from '@/hooks/useBehaviorTracking';
 import { insightsAPI, storesAPI } from '@/services/api';
 import { InsightsSummaryStrip } from '@/components/insights/InsightsSummaryStrip';
 import { CustomerVoiceSection } from '@/components/insights/CustomerVoiceSection';
@@ -13,6 +14,7 @@ import { Loader2, Store as StoreIcon } from 'lucide-react';
 export default function InsightsPage() {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const { trackInsightsViewed, trackStoreSwitch } = useBehaviorTracking();
 
   const isTrialUser = user?.is_trial_user || false;
 
@@ -37,6 +39,18 @@ export default function InsightsPage() {
       setSelectedStoreId(stores[0].id);
     }
   }, [user?.store, stores, selectedStoreId]);
+
+  // Track insights page view when data loads
+  useEffect(() => {
+    if (insights && storeId) {
+      trackInsightsViewed({
+        store_id: storeId,
+        has_customer_voice: !!insights.voices.customer_voice,
+        has_employee_voice: !!insights.voices.employee_voice,
+        has_operational_voice: !!insights.voices.operational_voice,
+      });
+    }
+  }, [insights, storeId, trackInsightsViewed]);
 
   // Fetch insights data
   const { data: insights, isLoading, error } = useQuery(
@@ -91,7 +105,11 @@ export default function InsightsPage() {
               <select
                 id="store-select"
                 value={selectedStoreId || ''}
-                onChange={(e) => setSelectedStoreId(Number(e.target.value))}
+                onChange={(e) => {
+                  const newStoreId = Number(e.target.value);
+                  trackStoreSwitch(newStoreId, { page: 'insights' });
+                  setSelectedStoreId(newStoreId);
+                }}
                 className="flex-1 rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
               >
                 {stores.map((store) => (
