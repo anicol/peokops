@@ -223,7 +223,7 @@ class SevenShiftsClient:
     def list_shifts(self, start_date: Optional[datetime] = None, end_date: Optional[datetime] = None,
                     location_id: Optional[str] = None,
                     user_id: Optional[str] = None,
-                    limit: int = 100) -> List[Dict[str, Any]]:
+                    limit: int = 250) -> List[Dict[str, Any]]:
         """
         List ALL shifts within a date range with pagination support.
 
@@ -232,7 +232,7 @@ class SevenShiftsClient:
             end_date: End of date range (inclusive) - optional, fetches all if not provided
             location_id: Filter by location (optional)
             user_id: Filter by user (optional)
-            limit: Number of results per page (1-500, default 100 for balanced performance)
+            limit: Number of results per page (1-500, default 250 for optimal performance)
 
         Returns:
             List of ALL shift dictionaries (handles pagination automatically)
@@ -244,9 +244,12 @@ class SevenShiftsClient:
             'limit': min(max(limit, 1), 500)  # Clamp between 1-500
         }
 
-        # Note: 7shifts API has issues with date filtering, so we fetch all shifts
-        # and filter client-side. This appears to be an API limitation.
-        # When start/end params are provided, the API returns empty results.
+        # Use correct 7shifts API date filtering format
+        # Per 7shifts API documentation: use start[gte] and start[lte] for date range filtering
+        if start_date:
+            params['start[gte]'] = start_date.strftime('%Y-%m-%dT00:00:00Z')
+        if end_date:
+            params['start[lte]'] = end_date.strftime('%Y-%m-%dT23:59:59Z')
 
         if location_id:
             params['location_id'] = location_id
@@ -271,7 +274,7 @@ class SevenShiftsClient:
 
             # Check for next page cursor
             meta = response.get('meta', {})
-            cursor = meta.get('next')
+            cursor = meta.get('cursor', {}).get('next') if isinstance(meta.get('cursor'), dict) else meta.get('next')
 
             if not cursor:  # No more pages
                 break
@@ -279,22 +282,6 @@ class SevenShiftsClient:
             page += 1
 
         logger.info(f"7shifts list_shifts: Completed fetching {len(all_shifts)} total shifts across {page} page(s)")
-
-        # Filter client-side if date range provided
-        if start_date or end_date:
-            filtered_shifts = []
-            for shift in all_shifts:
-                shift_start = datetime.fromisoformat(shift['start'].replace('Z', '+00:00'))
-
-                if start_date and shift_start < start_date:
-                    continue
-                if end_date and shift_start > end_date:
-                    continue
-
-                filtered_shifts.append(shift)
-
-            logger.info(f"7shifts list_shifts: Filtered to {len(filtered_shifts)} shifts within date range")
-            return filtered_shifts
 
         return all_shifts
 
