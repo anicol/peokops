@@ -14,7 +14,8 @@ from employee_voice.tasks import (
     _analyze_bottleneck_correlations,
     _analyze_confidence_correlations
 )
-from micro_checks.models import MicroCheckTemplate, MicroCheckRun, MicroCheckResponse, MicroCheckRunItem
+from micro_checks.models import MicroCheckTemplate, MicroCheckRun, MicroCheckResponse, MicroCheckRunItem, MicroCheckAssignment
+import hashlib
 
 
 class BottleneckCorrelationTests(TestCase):
@@ -63,7 +64,7 @@ class BottleneckCorrelationTests(TestCase):
     def test_bottleneck_correlation_with_jsonfield_array(self):
         """Test that bottleneck correlation correctly handles JSONField array"""
         time_window_start = timezone.now() - timedelta(days=7)
-        
+
         for i in range(5):
             EmployeeVoiceResponse.objects.create(
                 pulse=self.pulse,
@@ -73,59 +74,76 @@ class BottleneckCorrelationTests(TestCase):
                 bottlenecks=['EQUIPMENT', 'STAFFING'],
                 completed_at=timezone.now()
             )
-        
+
         run = MicroCheckRun.objects.create(
             store=self.store,
             scheduled_for=timezone.now().date(),
             created_via='MANUAL',
             store_timezone=self.store.timezone
         )
-        
-        run_item = MicroCheckRunItem.objects.create(
+
+        # Create assignment for the responses
+        assignment = MicroCheckAssignment.objects.create(
             run=run,
-            template=self.template,
-            order=1,
-            template_version=self.template.version,
-            title_snapshot=self.template.title,
-            success_criteria_snapshot=self.template.success_criteria,
-            category_snapshot=self.template.category,
-            severity_snapshot=self.template.severity
+            store=self.store,
+            sent_to=self.user,
+            access_token_hash=hashlib.sha256(b'test_token').hexdigest(),
+            token_expires_at=timezone.now() + timedelta(days=7)
         )
-        
-        for i in range(4):
+
+        # Create 5 templates (4 FAIL + 1 PASS) to comply with unique_together constraint
+        templates = []
+        for i in range(5):
+            template = MicroCheckTemplate.objects.create(
+                brand=self.brand,
+                title=f"Equipment Check {i}",
+                category="EQUIPMENT",
+                success_criteria="Equipment working",
+                created_by=self.user
+            )
+            templates.append(template)
+
+            run_item = MicroCheckRunItem.objects.create(
+                run=run,
+                template=template,
+                order=i + 1,
+                template_version=template.version,
+                title_snapshot=template.title,
+                success_criteria_snapshot=template.success_criteria,
+                category_snapshot=template.category,
+                severity_snapshot=template.severity
+            )
+
+            # Create one response per template (4 FAIL + 1 PASS)
             MicroCheckResponse.objects.create(
                 run_item=run_item,
+                run=run,
+                assignment=assignment,
+                template=template,
                 store=self.store,
-                status='FAIL',
+                category=template.category,
+                severity_snapshot=template.severity,
+                status='FAIL' if i < 4 else 'PASS',
                 completed_at=timezone.now(),
                 completed_by=self.user,
                 local_completed_date=timezone.now().date()
             )
-        
-        MicroCheckResponse.objects.create(
-            run_item=run_item,
-            store=self.store,
-            status='PASS',
-            completed_at=timezone.now(),
-            completed_by=self.user,
-            local_completed_date=timezone.now().date()
-        )
-        
+
         responses = EmployeeVoiceResponse.objects.filter(pulse=self.pulse)
-        
+
         correlations_created = _analyze_bottleneck_correlations(
             self.pulse,
             responses,
             time_window_start
         )
-        
+
         self.assertGreater(correlations_created, 0)
-        
+
         correlation = CrossVoiceCorrelation.objects.filter(
             pulse=self.pulse,
             bottleneck_type='EQUIPMENT'
         ).first()
-        
+
         self.assertIsNotNone(correlation)
         self.assertEqual(correlation.check_category, 'EQUIPMENT')
         self.assertEqual(correlation.check_fail_rate, 80.0)
@@ -201,7 +219,7 @@ class ConfidenceCorrelationTests(TestCase):
     def test_confidence_correlation_with_integer_field(self):
         """Test that confidence correlation correctly uses IntegerField values"""
         time_window_start = timezone.now() - timedelta(days=7)
-        
+
         for i in range(7):
             EmployeeVoiceResponse.objects.create(
                 pulse=self.pulse,
@@ -211,7 +229,7 @@ class ConfidenceCorrelationTests(TestCase):
                 bottlenecks=[],
                 completed_at=timezone.now()
             )
-        
+
         for i in range(7, 10):
             EmployeeVoiceResponse.objects.create(
                 pulse=self.pulse,
@@ -221,60 +239,76 @@ class ConfidenceCorrelationTests(TestCase):
                 bottlenecks=[],
                 completed_at=timezone.now()
             )
-        
+
         run = MicroCheckRun.objects.create(
             store=self.store,
             scheduled_for=timezone.now().date(),
             created_via='MANUAL',
             store_timezone=self.store.timezone
         )
-        
-        run_item = MicroCheckRunItem.objects.create(
+
+        # Create assignment for the responses
+        assignment = MicroCheckAssignment.objects.create(
             run=run,
-            template=self.template,
-            order=1,
-            template_version=self.template.version,
-            title_snapshot=self.template.title,
-            success_criteria_snapshot=self.template.success_criteria,
-            category_snapshot=self.template.category,
-            severity_snapshot=self.template.severity
+            store=self.store,
+            sent_to=self.user,
+            access_token_hash=hashlib.sha256(b'test_token_2').hexdigest(),
+            token_expires_at=timezone.now() + timedelta(days=7)
         )
-        
-        for i in range(4):
+
+        # Create 10 templates (4 FAIL + 6 PASS) to comply with unique_together constraint
+        templates = []
+        for i in range(10):
+            template = MicroCheckTemplate.objects.create(
+                brand=self.brand,
+                title=f"Training Check {i}",
+                category="TRAINING",
+                success_criteria="Training complete",
+                created_by=self.user
+            )
+            templates.append(template)
+
+            run_item = MicroCheckRunItem.objects.create(
+                run=run,
+                template=template,
+                order=i + 1,
+                template_version=template.version,
+                title_snapshot=template.title,
+                success_criteria_snapshot=template.success_criteria,
+                category_snapshot=template.category,
+                severity_snapshot=template.severity
+            )
+
+            # Create one response per template (4 FAIL + 6 PASS)
             MicroCheckResponse.objects.create(
                 run_item=run_item,
+                run=run,
+                assignment=assignment,
+                template=template,
                 store=self.store,
-                status='FAIL',
+                category=template.category,
+                severity_snapshot=template.severity,
+                status='FAIL' if i < 4 else 'PASS',
                 completed_at=timezone.now(),
                 completed_by=self.user,
                 local_completed_date=timezone.now().date()
             )
-        
-        for i in range(6):
-            MicroCheckResponse.objects.create(
-                run_item=run_item,
-                store=self.store,
-                status='PASS',
-                completed_at=timezone.now(),
-                completed_by=self.user,
-                local_completed_date=timezone.now().date()
-            )
-        
+
         responses = EmployeeVoiceResponse.objects.filter(pulse=self.pulse)
-        
+
         correlations_created = _analyze_confidence_correlations(
             self.pulse,
             responses,
             time_window_start
         )
-        
+
         self.assertGreater(correlations_created, 0)
-        
+
         correlation = CrossVoiceCorrelation.objects.filter(
             pulse=self.pulse,
             correlation_type=CrossVoiceCorrelation.CorrelationType.CONFIDENCE_TO_CHECK_FAIL
         ).first()
-        
+
         self.assertIsNotNone(correlation)
         self.assertEqual(correlation.check_category, 'TRAINING')
 
