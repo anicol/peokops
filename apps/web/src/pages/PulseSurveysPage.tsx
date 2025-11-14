@@ -73,8 +73,8 @@ export default function PulseSurveysPage() {
 
   const handleToggleActive = () => {
     // Don't allow toggling if pulse is under review
-    if (pulse?.status === 'UNDER_REVIEW') {
-      alert('Cannot activate pulse while it is under review. Please change the status first.');
+    if (!pulse?.is_active && pulse?.pause_reason === 'UNDER_REVIEW') {
+      alert('Cannot activate pulse while it is under review. Please change the pause reason first.');
       return;
     }
 
@@ -154,16 +154,16 @@ export default function PulseSurveysPage() {
               {/* Active Toggle */}
               <button
                 onClick={handleToggleActive}
-                disabled={pauseMutation.isLoading || resumeMutation.isLoading || pulse.status === 'UNDER_REVIEW'}
+                disabled={pauseMutation.isLoading || resumeMutation.isLoading || (!pulse.is_active && pulse.pause_reason === 'UNDER_REVIEW')}
                 className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium border-2 transition-colors ${
-                  pulse.status === 'UNDER_REVIEW'
+                  !pulse.is_active && pulse.pause_reason === 'UNDER_REVIEW'
                     ? 'bg-orange-50 text-orange-700 border-orange-200 cursor-not-allowed'
                     : pulse.is_active
                     ? 'bg-green-50 text-green-700 border-green-200 hover:bg-green-100'
                     : 'bg-yellow-50 text-yellow-700 border-yellow-200 hover:bg-yellow-100'
                 } disabled:opacity-50 disabled:cursor-not-allowed`}
               >
-                {pulse.status === 'UNDER_REVIEW' ? (
+                {!pulse.is_active && pulse.pause_reason === 'UNDER_REVIEW' ? (
                   <>
                     <Lock className="w-4 h-4 mr-1" />
                     Under Review
