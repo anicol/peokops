@@ -53,13 +53,25 @@ def schedule_pulse_invitations():
 
     for pulse in active_pulses:
         try:
-            # Get store's current local time
-            store = pulse.store
-            if not store:
-                continue
+            # Handle both store-specific and account-wide pulses
+            if pulse.store:
+                # Store-specific pulse
+                store = pulse.store
+                store_tz = pytz.timezone(store.timezone)
+                store_local_time = current_utc.astimezone(store_tz)
+            else:
+                # Account-wide pulse - use UTC or first store's timezone
+                # For account-wide pulses, we'll use America/New_York as default
+                try:
+                    first_store = Store.objects.filter(account=pulse.account).first()
+                    if first_store:
+                        store_tz = pytz.timezone(first_store.timezone)
+                    else:
+                        store_tz = pytz.timezone('America/New_York')
+                except Exception:
+                    store_tz = pytz.timezone('America/New_York')
+                store_local_time = current_utc.astimezone(store_tz)
 
-            store_tz = pytz.timezone(store.timezone)
-            store_local_time = current_utc.astimezone(store_tz)
             today_start = store_local_time.replace(hour=0, minute=0, second=0, microsecond=0)
 
             # Check if we already scheduled invitations for today
@@ -72,13 +84,23 @@ def schedule_pulse_invitations():
                 skipped_count += 1
                 continue
 
-            # Get employees for this store from 7shifts integration
+            # Get employees from 7shifts integration
             try:
                 from integrations.models import SevenShiftsEmployee
-                employees = SevenShiftsEmployee.objects.filter(
-                    store=store,
-                    is_active=True
-                ).exclude(phone__isnull=True).exclude(phone='')
+
+                # For account-wide pulses, get all employees in the account
+                # For store-specific pulses, get employees for that store
+                if pulse.store:
+                    employees = SevenShiftsEmployee.objects.filter(
+                        store=pulse.store,
+                        is_active=True
+                    ).exclude(phone__isnull=True).exclude(phone='')
+                else:
+                    # Account-wide: get all employees in the account
+                    employees = SevenShiftsEmployee.objects.filter(
+                        account=pulse.account,
+                        is_active=True
+                    ).exclude(phone__isnull=True).exclude(phone='')
 
                 # Get delivery frequency probability
                 frequency_map = {
@@ -113,7 +135,8 @@ def schedule_pulse_invitations():
                             scheduled_count += 1
 
             except ImportError:
-                logger.warning(f"7shifts integration not available for store {store.id}")
+                location_desc = f"store {pulse.store.id}" if pulse.store else f"account {pulse.account.id}"
+                logger.warning(f"7shifts integration not available for {location_desc}")
                 continue
 
         except Exception as e:
