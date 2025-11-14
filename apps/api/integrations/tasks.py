@@ -498,6 +498,9 @@ def process_google_reviews_for_location(location, max_reviews=300, source='scrap
 
     if not reviews_data or not reviews_data.get('reviews'):
         logger.warning(f"No reviews found for {location.google_location_name}")
+        # Still update synced_at to indicate we tried
+        location.synced_at = timezone.now()
+        location.save(update_fields=['synced_at'])
         return {
             'success': True,
             'reviews_created': 0,
@@ -510,13 +513,14 @@ def process_google_reviews_for_location(location, max_reviews=300, source='scrap
     rating = business_info.get('rating')
     total_reviews = business_info.get('total_reviews', 0)
 
-    # Update GoogleLocation with rating and review count
+    # Update GoogleLocation with rating, review count, and sync timestamp
     if rating:
         location.average_rating = float(rating)
     location.total_review_count = total_reviews
-    location.save(update_fields=['average_rating', 'total_review_count'])
+    location.synced_at = timezone.now()
+    location.save(update_fields=['average_rating', 'total_review_count', 'synced_at'])
 
-    logger.info(f"Updated location rating: {rating}, total: {total_reviews}")
+    logger.info(f"Updated location rating: {rating}, total: {total_reviews}, synced_at: {location.synced_at}")
 
     # Create GoogleReview records
     reviews_created = 0

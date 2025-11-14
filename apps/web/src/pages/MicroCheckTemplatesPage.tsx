@@ -29,12 +29,14 @@ import {
   Bug,
 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
+import { useBehaviorTracking } from '@/hooks/useBehaviorTracking';
 import { microCheckAPI } from '@/services/api';
 import type { MicroCheckTemplate, MicroCheckCategory, MicroCheckSeverity } from '@/types/microCheck';
 import AITemplateWizard from '@/components/AITemplateWizard';
 
 const MicroCheckTemplatesPage = () => {
   const { user } = useAuth();
+  const { trackTemplateViewed, trackTemplateSelected, trackAIGenerationUsed } = useBehaviorTracking();
   const [activeTab, setActiveTab] = useState<'starters' | 'my-templates'>('my-templates');
   const [templates, setTemplates] = useState<MicroCheckTemplate[]>([]);
   const [loading, setLoading] = useState(true);
@@ -212,6 +214,11 @@ const MicroCheckTemplatesPage = () => {
   };
 
   const handleEditTemplate = (template: MicroCheckTemplate) => {
+    trackTemplateViewed(template.id.toString(), {
+      action: 'edit',
+      category: template.category,
+      title: template.title,
+    });
     setModalMode('edit');
     setSelectedTemplate(template);
     setFormData({
@@ -250,6 +257,11 @@ const MicroCheckTemplatesPage = () => {
 
   const handleDuplicateTemplate = async (template: MicroCheckTemplate) => {
     try {
+      trackTemplateSelected(template.id.toString(), {
+        action: 'duplicate',
+        category: template.category,
+        title: template.title,
+      });
       await microCheckAPI.duplicateTemplate(template.id, `${template.title} (My Copy)`);
       // Switch to "My Templates" tab and refresh
       setActiveTab('my-templates');
@@ -515,7 +527,10 @@ const MicroCheckTemplatesPage = () => {
               {activeTab === 'my-templates' && (
                 <>
                   <button
-                    onClick={() => setShowAIWizard(true)}
+                    onClick={() => {
+                      trackAIGenerationUsed({ page: 'templates', action: 'open_wizard' });
+                      setShowAIWizard(true);
+                    }}
                     className="px-4 py-2 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-lg hover:from-purple-700 hover:to-pink-700 transition-colors font-medium flex items-center"
                   >
                     <Sparkles className="w-5 h-5 mr-2" />

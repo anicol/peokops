@@ -595,7 +595,7 @@ function UserFormModal({ user, stores, currentUserRole, onClose }: UserFormModal
     }
   };
 
-  const availableRoles = currentUserRole === 'OWNER'
+  const availableRoles = (currentUserRole === 'OWNER' || currentUserRole === 'TRIAL_ADMIN')
     ? [
         { value: 'OWNER', label: 'Owner' },
         { value: 'GM', label: 'Manager' },

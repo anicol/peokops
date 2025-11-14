@@ -29,10 +29,10 @@ class UserSerializer(serializers.ModelSerializer):
                  'role', 'store', 'store_name', 'brand_name', 'brand_id',
                  'account_id', 'account_name', 'phone',
                  'is_active', 'is_trial_user', 'trial_status', 'hours_since_signup',
-                 'total_inspections', 'accessible_stores_count', 'has_account_wide_access', 'has_seen_demo', 'demo_completed_at', 'onboarding_completed_at',
+                 'total_inspections', 'accessible_stores_count', 'has_account_wide_access', 'has_seen_demo', 'demo_completed_at', 'onboarding_completed_at', 'password_set_by_user_at',
                  'created_at', 'last_active_at', 'impersonation_context')
         read_only_fields = ('id', 'created_at', 'is_trial_user', 'trial_status', 'hours_since_signup',
-                           'total_inspections', 'accessible_stores_count', 'has_account_wide_access', 'last_active_at', 'onboarding_completed_at',
+                           'total_inspections', 'accessible_stores_count', 'has_account_wide_access', 'last_active_at', 'onboarding_completed_at', 'password_set_by_user_at',
                            'account_id', 'account_name', 'impersonation_context')
 
     def get_trial_status(self, obj):
@@ -126,6 +126,8 @@ class UserCreateSerializer(serializers.ModelSerializer):
         password = validated_data.pop('password')
         user = User.objects.create_user(**validated_data)
         user.set_password(password)
+        # Mark that this is an admin-assigned password, not user-set
+        user.password_set_by_user_at = None
         user.save()
 
         # Generate a magic link token for the new user
@@ -350,15 +352,16 @@ class ProfileUpdateSerializer(serializers.ModelSerializer):
 
 class PasswordChangeSerializer(serializers.Serializer):
     """Serializer for changing user password"""
-    current_password = serializers.CharField(required=True, write_only=True)
+    current_password = serializers.CharField(required=False, write_only=True, allow_blank=True)
     new_password = serializers.CharField(required=True, write_only=True, min_length=8)
     new_password_confirm = serializers.CharField(required=True, write_only=True)
 
     def validate_current_password(self, value):
-        """Verify current password is correct"""
-        user = self.context['request'].user
-        if not user.check_password(value):
-            raise serializers.ValidationError("Current password is incorrect.")
+        """Verify current password is correct (if provided)"""
+        if value:  # Only validate if provided
+            user = self.context['request'].user
+            if not user.check_password(value):
+                raise serializers.ValidationError("Current password is incorrect.")
         return value
 
     def validate(self, attrs):
@@ -369,8 +372,11 @@ class PasswordChangeSerializer(serializers.Serializer):
 
     def save(self):
         """Update user password"""
+        from django.utils import timezone
         user = self.context['request'].user
         user.set_password(self.validated_data['new_password'])
+        # Mark that user has now set their own password
+        user.password_set_by_user_at = timezone.now()
         user.save()
         return user
 
@@ -661,7 +667,7 @@ class MicroCheckDeliveryConfigSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = MicroCheckDeliveryConfig
-        fields = ('id', 'account', 'send_to_recipients', 'cadence_mode',
+        fields = ('id', 'account', 'distribution_enabled', 'send_to_recipients', 'cadence_mode',
                  'min_day_gap', 'max_day_gap', 'randomize_recipients',
                  'recipient_percentage', 'last_sent_date', 'next_send_date',
                  'created_at', 'updated_at')

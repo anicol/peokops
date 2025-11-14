@@ -6,7 +6,6 @@ from .models import (
     EmployeeVoicePulse,
     EmployeeVoiceInvitation,
     EmployeeVoiceResponse,
-    AutoFixFlowConfig,
     CrossVoiceCorrelation
 )
 
@@ -21,6 +20,8 @@ class EmployeeVoicePulseSerializer(serializers.ModelSerializer):
     status_display = serializers.CharField(source='get_status_display', read_only=True)
     shift_window_display = serializers.CharField(source='get_shift_window_display', read_only=True)
     language_display = serializers.CharField(source='get_language_display', read_only=True)
+    delivery_frequency_display = serializers.CharField(source='get_delivery_frequency_display', read_only=True)
+    pause_reason_display = serializers.CharField(source='get_pause_reason_display', read_only=True, allow_null=True)
     store_name = serializers.CharField(source='store.name', read_only=True)
     account_name = serializers.CharField(source='account.name', read_only=True)
     created_by_name = serializers.CharField(source='created_by.get_full_name', read_only=True, allow_null=True)
@@ -39,8 +40,8 @@ class EmployeeVoicePulseSerializer(serializers.ModelSerializer):
 
         user = request.user
 
-        # Check if user has proper role (OWNER or ENTERPRISE)
-        if user.role not in [User.Role.OWNER, User.Role.SUPER_ADMIN]:
+        # Check if user has proper role (OWNER, TRIAL_ADMIN, or SUPER_ADMIN)
+        if user.role not in [User.Role.OWNER, User.Role.TRIAL_ADMIN, User.Role.SUPER_ADMIN]:
             return False
 
         # Check if minimum respondents threshold is met
@@ -58,12 +59,14 @@ class EmployeeVoicePulseSerializer(serializers.ModelSerializer):
             'id', 'store', 'store_name', 'account', 'account_name',
             'title', 'description',
             'shift_window', 'shift_window_display', 'language', 'language_display', 'send_time',
+            'delivery_frequency', 'delivery_frequency_display', 'randomization_window_minutes',
             'status', 'status_display', 'unlocked_at', 'unlock_progress',
             'min_respondents_for_display', 'consent_text',
-            'auto_fix_flow_enabled', 'can_view_insights',
+            'pause_reason', 'pause_reason_display', 'pause_notes', 'paused_at',
+            'can_view_insights',
             'is_active', 'created_at', 'created_by', 'created_by_name', 'updated_at'
         ]
-        read_only_fields = ['id', 'status', 'unlocked_at', 'created_at', 'created_by', 'updated_at']
+        read_only_fields = ['id', 'status', 'unlocked_at', 'paused_at', 'created_at', 'created_by', 'updated_at']
 
 
 class EmployeeVoiceInvitationSerializer(serializers.ModelSerializer):
@@ -75,10 +78,38 @@ class EmployeeVoiceInvitationSerializer(serializers.ModelSerializer):
     delivery_method_display = serializers.CharField(source='get_delivery_method_display', read_only=True)
     status_display = serializers.CharField(source='get_status_display', read_only=True)
     is_valid = serializers.SerializerMethodField()
+    employee_name = serializers.SerializerMethodField()
+    employee_role = serializers.SerializerMethodField()
 
     def get_is_valid(self, obj):
         """Check if magic link is still valid"""
         return obj.is_valid()
+
+    def get_employee_name(self, obj):
+        """Get employee name from 7shifts by matching phone number"""
+        if not obj.recipient_phone:
+            return None
+        try:
+            from integrations.models import SevenShiftsEmployee
+            employee = SevenShiftsEmployee.objects.filter(phone=obj.recipient_phone).first()
+            if employee:
+                return f"{employee.first_name} {employee.last_name}"
+        except:
+            pass
+        return None
+
+    def get_employee_role(self, obj):
+        """Get employee role from 7shifts by matching phone number"""
+        if not obj.recipient_phone:
+            return None
+        try:
+            from integrations.models import SevenShiftsEmployee
+            employee = SevenShiftsEmployee.objects.filter(phone=obj.recipient_phone).first()
+            if employee and employee.roles:
+                return employee.roles[0] if employee.roles else None
+        except:
+            pass
+        return None
 
     class Meta:
         model = EmployeeVoiceInvitation
@@ -86,11 +117,12 @@ class EmployeeVoiceInvitationSerializer(serializers.ModelSerializer):
             'id', 'pulse', 'pulse_title',
             'token', 'delivery_method', 'delivery_method_display',
             'recipient_phone', 'recipient_email',
+            'employee_name', 'employee_role',
             'status', 'status_display', 'is_valid',
-            'sent_at', 'opened_at', 'completed_at', 'expires_at',
+            'scheduled_send_at', 'sent_at', 'opened_at', 'completed_at', 'expires_at',
             'created_at', 'updated_at'
         ]
-        read_only_fields = ['id', 'status', 'sent_at', 'opened_at', 'completed_at', 'created_at', 'updated_at']
+        read_only_fields = ['id', 'status', 'scheduled_send_at', 'sent_at', 'opened_at', 'completed_at', 'created_at', 'updated_at']
         extra_kwargs = {
             'token': {'write_only': True}  # Don't expose token in responses
         }
@@ -99,7 +131,7 @@ class EmployeeVoiceInvitationSerializer(serializers.ModelSerializer):
 class EmployeeVoiceResponseSerializer(serializers.ModelSerializer):
     """
     Survey response serializer with role-based comment filtering.
-    Comments are only visible to OWNER/SUPER_ADMIN when n ≥ 5.
+    Comments are only visible to OWNER/TRIAL_ADMIN/SUPER_ADMIN when n ≥ 5.
     """
     pulse_title = serializers.CharField(source='pulse.title', read_only=True)
     mood_display = serializers.CharField(source='get_mood_display', read_only=True)
@@ -109,7 +141,7 @@ class EmployeeVoiceResponseSerializer(serializers.ModelSerializer):
     def get_comment(self, obj):
         """
         Role-based comment filtering.
-        Only show comments to OWNER/SUPER_ADMIN and only when n ≥ 5.
+        Only show comments to OWNER/TRIAL_ADMIN/SUPER_ADMIN and only when n ≥ 5.
         """
         request = self.context.get('request')
         if not request or not request.user or not request.user.is_authenticated:
@@ -117,8 +149,8 @@ class EmployeeVoiceResponseSerializer(serializers.ModelSerializer):
 
         user = request.user
 
-        # Check role: Only OWNER and SUPER_ADMIN can see comments
-        if user.role not in [User.Role.OWNER, User.Role.SUPER_ADMIN]:
+        # Check role: Only OWNER, TRIAL_ADMIN, and SUPER_ADMIN can see comments
+        if user.role not in [User.Role.OWNER, User.Role.TRIAL_ADMIN, User.Role.SUPER_ADMIN]:
             return None
 
         # Check n ≥ 5 requirement for privacy
@@ -231,11 +263,13 @@ class EmployeeVoiceInsightsSerializer(serializers.Serializer):
     # Mood metrics
     avg_mood = serializers.FloatField()
     mood_distribution = serializers.DictField()
+    mood_trend = serializers.FloatField(required=False, allow_null=True, help_text="Week-over-week change in mood score")
 
     # Confidence metrics
     confidence_high_pct = serializers.FloatField()
     confidence_medium_pct = serializers.FloatField()
     confidence_low_pct = serializers.FloatField()
+    confidence_trend = serializers.FloatField(required=False, allow_null=True, help_text="Week-over-week change in high confidence %")
 
     # Top bottlenecks (sorted by frequency)
     top_bottlenecks = serializers.ListField(
@@ -245,10 +279,10 @@ class EmployeeVoiceInsightsSerializer(serializers.Serializer):
 
     # Comments (only if n ≥ 5 and user is OWNER/SUPER_ADMIN)
     comments = serializers.ListField(
-        child=serializers.CharField(),
+        child=serializers.DictField(),
         required=False,
         allow_null=True,
-        help_text="Recent comments (role-gated)"
+        help_text="Recent comments with timestamps (role-gated)"
     )
 
     # Cross-voice correlations
@@ -257,22 +291,6 @@ class EmployeeVoiceInsightsSerializer(serializers.Serializer):
         required=False,
         help_text="Active correlations with micro-check failures"
     )
-
-
-class AutoFixFlowConfigSerializer(serializers.ModelSerializer):
-    """Auto-fix flow configuration serializer"""
-    pulse_title = serializers.CharField(source='pulse.title', read_only=True)
-
-    class Meta:
-        model = AutoFixFlowConfig
-        fields = [
-            'id', 'pulse', 'pulse_title',
-            'bottleneck_threshold', 'time_window_days',
-            'bottleneck_to_category_map',
-            'is_enabled', 'notify_on_creation',
-            'created_at', 'updated_at'
-        ]
-        read_only_fields = ['id', 'created_at', 'updated_at']
 
 
 class CrossVoiceCorrelationSerializer(serializers.ModelSerializer):
@@ -314,10 +332,9 @@ class CrossVoiceCorrelationSerializer(serializers.ModelSerializer):
 
 class EmployeeVoicePulseDetailSerializer(EmployeeVoicePulseSerializer):
     """
-    Extended pulse serializer with auto-fix config and recent correlations.
+    Extended pulse serializer with recent correlations.
     Used for detail views.
     """
-    auto_fix_config = AutoFixFlowConfigSerializer(read_only=True, allow_null=True)
     recent_correlations = serializers.SerializerMethodField()
 
     def get_recent_correlations(self, obj):
@@ -330,6 +347,5 @@ class EmployeeVoicePulseDetailSerializer(EmployeeVoicePulseSerializer):
 
     class Meta(EmployeeVoicePulseSerializer.Meta):
         fields = EmployeeVoicePulseSerializer.Meta.fields + [
-            'auto_fix_config',
             'recent_correlations'
         ]

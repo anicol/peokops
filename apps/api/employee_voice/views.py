@@ -16,7 +16,6 @@ from .models import (
     EmployeeVoicePulse,
     EmployeeVoiceInvitation,
     EmployeeVoiceResponse,
-    AutoFixFlowConfig,
     CrossVoiceCorrelation
 )
 from .serializers import (
@@ -26,7 +25,6 @@ from .serializers import (
     EmployeeVoiceResponseSerializer,
     EmployeeVoiceResponseSubmitSerializer,
     EmployeeVoiceInsightsSerializer,
-    AutoFixFlowConfigSerializer,
     CrossVoiceCorrelationSerializer
 )
 from .utils import generate_anonymous_hash_from_request
@@ -38,9 +36,9 @@ class EmployeeVoicePulseViewSet(ScopedQuerysetMixin, ScopedCreateMixin, viewsets
     ViewSet for managing employee voice pulse surveys.
 
     Access Control:
-    - OWNER/SUPER_ADMIN: Full access (create, edit, delete, view insights)
+    - OWNER/TRIAL_ADMIN/SUPER_ADMIN: Full access (create, edit, delete, view insights)
     - ADMIN: View-only access
-    - GM/TRIAL_ADMIN: No access
+    - GM: No access
     - INSPECTOR: No access
     """
     queryset = EmployeeVoicePulse.objects.all()
@@ -75,19 +73,76 @@ class EmployeeVoicePulseViewSet(ScopedQuerysetMixin, ScopedCreateMixin, viewsets
         if user.role == User.Role.SUPER_ADMIN:
             return self.queryset.all()
 
-        # OWNER sees pulses for their account
-        if user.role == User.Role.OWNER:
+        # OWNER and TRIAL_ADMIN see pulses for their account (both store-specific and account-wide)
+        if user.role in [User.Role.OWNER, User.Role.TRIAL_ADMIN]:
             if user.account:
                 return self.queryset.filter(account=user.account)
             return self.queryset.none()
 
-        # Other roles see pulses for their accessible stores
+        # Other roles see:
+        # 1. Pulses for their accessible stores
+        # 2. Account-wide pulses (store=null) for their account
         accessible_stores = user.get_accessible_stores()
+        if user.account:
+            return self.queryset.filter(
+                Q(store__in=accessible_stores) |
+                Q(store__isnull=True, account=user.account)
+            )
         return self.queryset.filter(store__in=accessible_stores)
 
     def perform_create(self, serializer):
         """Set created_by on pulse creation"""
         serializer.save(created_by=self.request.user)
+
+    @extend_schema(
+        summary="Get or create account pulse",
+        description="Returns the single pulse for the user's account, creating one with defaults if it doesn't exist. "
+                    "This endpoint supports the single-pulse interface design.",
+        responses={
+            200: EmployeeVoicePulseSerializer,
+        }
+    )
+    @action(detail=False, methods=['get'], url_path='get-or-create')
+    def get_or_create(self, request):
+        """
+        Get or create the single pulse for the user's account.
+        Auto-creates with sensible defaults if none exists.
+        """
+        user = request.user
+
+        # Get user's account
+        if not user.account:
+            return Response(
+                {'error': 'User must be associated with an account.'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        # Try to get existing active pulse for account (account-wide, not store-specific)
+        pulse = EmployeeVoicePulse.objects.filter(
+            account=user.account,
+            store__isnull=True,  # Account-wide pulse
+            is_active=True
+        ).first()
+
+        # Create if doesn't exist
+        if not pulse:
+            pulse = EmployeeVoicePulse.objects.create(
+                account=user.account,
+                store=None,  # Account-wide
+                title="Team Pulse Survey",
+                description="Quick anonymous survey to help improve daily operations.",
+                shift_window=EmployeeVoicePulse.ShiftWindow.CLOSE,
+                language=EmployeeVoicePulse.Language.EN,
+                delivery_frequency=EmployeeVoicePulse.DeliveryFrequency.MEDIUM,
+                randomization_window_minutes=60,
+                min_respondents_for_display=5,
+                consent_text="Anonymous, aggregated. Used to improve daily operations.",
+                created_by=user,
+                is_active=True
+            )
+
+        serializer = self.get_serializer(pulse)
+        return Response(serializer.data)
 
     @extend_schema(
         summary="Get aggregated insights for a pulse",
@@ -103,6 +158,7 @@ class EmployeeVoicePulseViewSet(ScopedQuerysetMixin, ScopedCreateMixin, viewsets
         """
         Get aggregated insights for this pulse.
         Enforces n ≥ 5 privacy protection and role-based access.
+        Supports optional store_id filter for multi-store accounts.
         """
         pulse = self.get_object()
         user = request.user
@@ -114,26 +170,99 @@ class EmployeeVoicePulseViewSet(ScopedQuerysetMixin, ScopedCreateMixin, viewsets
                 status=status.HTTP_403_FORBIDDEN
             )
 
-        # Calculate metrics for last 30 days
-        thirty_days_ago = timezone.now() - timedelta(days=30)
+        # Get optional store filter
+        store_id = request.query_params.get('store_id')
+
+        # Calculate metrics for current week (last 7 days) as primary data
+        now = timezone.now()
+        one_week_ago = now - timedelta(days=7)
+
+        # Get current week responses
         responses = EmployeeVoiceResponse.objects.filter(
             pulse=pulse,
-            completed_at__gte=thirty_days_ago
+            completed_at__gte=one_week_ago
         )
+
+        # Filter by store if specified
+        if store_id and store_id != 'all':
+            # Filter to responses from invitations sent to employees at this store
+            from integrations.models import SevenShiftsEmployee
+
+            # Get employee IDs at this store
+            store_employee_ids = SevenShiftsEmployee.objects.filter(
+                account=pulse.account,
+                store_id=store_id
+            ).values_list('id', flat=True)
+
+            # Filter responses to those from invitations linked to these employees
+            responses = responses.filter(
+                invitation__recipient_phone__in=SevenShiftsEmployee.objects.filter(
+                    id__in=store_employee_ids
+                ).values_list('phone', flat=True)
+            )
 
         total_responses = responses.count()
         unique_respondents = responses.values('anonymous_hash').distinct().count()
 
-        # Check n ≥ 5 requirement
-        if unique_respondents < pulse.min_respondents_for_display:
+        # Check n ≥ 5 requirement (check last 30 days for unlock, but display current week)
+        thirty_days_ago = now - timedelta(days=30)
+        all_recent_responses = EmployeeVoiceResponse.objects.filter(
+            pulse=pulse,
+            completed_at__gte=thirty_days_ago
+        )
+        total_unique_respondents = all_recent_responses.values('anonymous_hash').distinct().count()
+
+        if total_unique_respondents < pulse.min_respondents_for_display:
             return Response({
                 'pulse_id': pulse.id,
                 'pulse_title': pulse.title,
                 'can_display': False,
-                'unique_respondents': unique_respondents,
+                'unique_respondents': total_unique_respondents,
                 'required_respondents': pulse.min_respondents_for_display,
-                'message': f"Insights will unlock after {pulse.min_respondents_for_display - unique_respondents} more unique team members participate."
+                'message': f"Insights will unlock after {pulse.min_respondents_for_display - total_unique_respondents} more unique team members participate."
             }, status=status.HTTP_200_OK)
+
+        # Calculate week-over-week trends
+        two_weeks_ago = now - timedelta(days=14)
+
+        # Current week responses (already filtered above)
+        current_week_responses = responses
+        # Previous week responses (8-14 days ago)
+        previous_week_responses = EmployeeVoiceResponse.objects.filter(
+            pulse=pulse,
+            completed_at__gte=two_weeks_ago,
+            completed_at__lt=one_week_ago
+        )
+
+        # Apply same store filter to previous week if specified
+        if store_id and store_id != 'all':
+            from integrations.models import SevenShiftsEmployee
+            store_employee_ids = SevenShiftsEmployee.objects.filter(
+                account=pulse.account,
+                store_id=store_id
+            ).values_list('id', flat=True)
+
+            previous_week_responses = previous_week_responses.filter(
+                invitation__recipient_phone__in=SevenShiftsEmployee.objects.filter(
+                    id__in=store_employee_ids
+                ).values_list('phone', flat=True)
+            )
+
+        # Current week metrics
+        current_week_mood = current_week_responses.aggregate(avg_mood=Avg('mood'))['avg_mood'] or 0
+        current_week_confidence_high = current_week_responses.filter(confidence=3).count()
+        current_week_total = current_week_responses.count()
+        current_week_confidence_pct = (current_week_confidence_high / current_week_total * 100) if current_week_total > 0 else 0
+
+        # Previous week metrics
+        previous_week_mood = previous_week_responses.aggregate(avg_mood=Avg('mood'))['avg_mood'] or 0
+        previous_week_confidence_high = previous_week_responses.filter(confidence=3).count()
+        previous_week_total = previous_week_responses.count()
+        previous_week_confidence_pct = (previous_week_confidence_high / previous_week_total * 100) if previous_week_total > 0 else 0
+
+        # Calculate trends (difference from previous week)
+        mood_trend = round(current_week_mood - previous_week_mood, 2) if previous_week_mood > 0 else None
+        confidence_trend = round(current_week_confidence_pct - previous_week_confidence_pct, 1) if previous_week_total > 0 else None
 
         # Calculate mood metrics
         mood_stats = responses.aggregate(avg_mood=Avg('mood'))
@@ -173,9 +302,15 @@ class EmployeeVoicePulseViewSet(ScopedQuerysetMixin, ScopedCreateMixin, viewsets
             for bottleneck_type, count in bottleneck_counter.most_common(5)
         ]
 
-        # Get recent comments (role-gated, already filtered by serializer)
-        recent_comments = responses.exclude(comment='').order_by('-completed_at')[:10]
-        comments = [r.comment for r in recent_comments if r.comment]
+        # Get all comments for the week with timestamps (role-gated, already filtered by serializer)
+        recent_comments = responses.exclude(comment='').order_by('-completed_at')
+        comments = [
+            {
+                'text': r.comment,
+                'completed_at': r.completed_at.isoformat() if r.completed_at else None
+            }
+            for r in recent_comments if r.comment
+        ]
 
         # Get active correlations
         correlations = CrossVoiceCorrelation.objects.filter(
@@ -192,16 +327,18 @@ class EmployeeVoicePulseViewSet(ScopedQuerysetMixin, ScopedCreateMixin, viewsets
         insights_data = {
             'pulse_id': pulse.id,
             'pulse_title': pulse.title,
-            'time_window': 'Last 30 days',
+            'time_window': 'Last 7 days',
             'total_responses': total_responses,
             'unique_respondents': unique_respondents,
             'can_display': True,
             'engagement_score': round(engagement_score, 1),
             'avg_mood': round(mood_stats['avg_mood'], 2) if mood_stats['avg_mood'] else 0,
             'mood_distribution': mood_distribution,
+            'mood_trend': mood_trend,
             'confidence_high_pct': round(confidence_high_pct, 1),
             'confidence_medium_pct': round(confidence_medium_pct, 1),
             'confidence_low_pct': round(confidence_low_pct, 1),
+            'confidence_trend': confidence_trend,
             'top_bottlenecks': top_bottlenecks,
             'comments': comments if comments else None,
             'correlations': correlation_data
@@ -225,6 +362,151 @@ class EmployeeVoicePulseViewSet(ScopedQuerysetMixin, ScopedCreateMixin, viewsets
         pulse.check_unlock_status()
         serializer = self.get_serializer(pulse)
         return Response(serializer.data)
+
+    @extend_schema(
+        summary="Get eligible employees for this pulse",
+        description="Returns list of eligible employees from 7shifts who can receive survey invitations",
+        responses={200: dict}
+    )
+    @action(detail=True, methods=['get'], url_path='eligible-employees')
+    def eligible_employees(self, request, pk=None):
+        """
+        Get eligible employees for this pulse from 7shifts integration.
+        Returns total count and sample of employees.
+        """
+        pulse = self.get_object()
+
+        from integrations.models import SevenShiftsEmployee
+
+        # Get eligible employees (active with phone numbers)
+        employees = SevenShiftsEmployee.objects.filter(
+            account=pulse.account,
+            is_active=True
+        ).exclude(phone__isnull=True).exclude(phone='')
+
+        # If pulse is store-specific, filter by store
+        if pulse.store:
+            employees = employees.filter(store=pulse.store)
+
+        total_eligible = employees.count()
+
+        # Get sample of employees (first 20) with masked phone numbers
+        sample_employees = [
+            {
+                'id': str(emp.id),
+                'first_name': emp.first_name,
+                'last_name': emp.last_name,
+                'phone': emp.phone[:7] + '***' if emp.phone and len(emp.phone) > 7 else emp.phone,
+                'roles': emp.roles or [],
+            }
+            for emp in employees[:20]
+        ]
+
+        return Response({
+            'total_eligible': total_eligible,
+            'employees': sample_employees
+        })
+
+    @extend_schema(
+        summary="Preview distribution settings",
+        description="Shows expected distribution stats based on current pulse settings",
+        responses={200: dict}
+    )
+    @action(detail=True, methods=['get'], url_path='distribution-preview')
+    def distribution_preview(self, request, pk=None):
+        """
+        Preview how distribution will work based on current settings.
+        Shows expected sends per day based on frequency.
+        """
+        pulse = self.get_object()
+
+        from integrations.models import SevenShiftsEmployee
+
+        # Get eligible employee count
+        employees = SevenShiftsEmployee.objects.filter(
+            account=pulse.account,
+            is_active=True
+        ).exclude(phone__isnull=True).exclude(phone='')
+
+        if pulse.store:
+            employees = employees.filter(store=pulse.store)
+
+        total_employees = employees.count()
+
+        # Calculate expected sends based on frequency
+        frequency_map = {
+            'LOW': 0.25,
+            'MEDIUM': 0.40,
+            'HIGH': 0.55,
+        }
+        send_probability = frequency_map.get(pulse.delivery_frequency, 0.40)
+        expected_sends = int(total_employees * send_probability)
+
+        # Get today's scheduled count
+        today_start = timezone.now().replace(hour=0, minute=0, second=0, microsecond=0)
+        today_scheduled = EmployeeVoiceInvitation.objects.filter(
+            pulse=pulse,
+            created_at__gte=today_start
+        ).count()
+
+        return Response({
+            'total_eligible_employees': total_employees,
+            'delivery_frequency': pulse.delivery_frequency,
+            'send_probability_pct': int(send_probability * 100),
+            'expected_daily_sends': expected_sends,
+            'today_scheduled_count': today_scheduled,
+            'randomization_window_minutes': pulse.randomization_window_minutes,
+            'shift_window': pulse.shift_window,
+            'shift_window_display': pulse.get_shift_window_display(),
+        })
+
+    @extend_schema(
+        summary="Get distribution statistics",
+        description="Returns distribution stats for the last 7 days",
+        responses={200: dict}
+    )
+    @action(detail=True, methods=['get'], url_path='distribution-stats')
+    def distribution_stats(self, request, pk=None):
+        """
+        Get distribution statistics for last 7 days.
+        Shows daily breakdown of scheduled/sent/opened/completed.
+        """
+        pulse = self.get_object()
+
+        seven_days_ago = timezone.now() - timedelta(days=7)
+
+        invitations = EmployeeVoiceInvitation.objects.filter(
+            pulse=pulse,
+            created_at__gte=seven_days_ago
+        )
+
+        # Group by date
+        from django.db.models.functions import TruncDate
+        daily_stats = invitations.annotate(
+            date=TruncDate('created_at')
+        ).values('date').annotate(
+            scheduled=Count('id', filter=Q(status=EmployeeVoiceInvitation.Status.SCHEDULED)),
+            sent=Count('id', filter=Q(status=EmployeeVoiceInvitation.Status.SENT)),
+            opened=Count('id', filter=Q(status=EmployeeVoiceInvitation.Status.OPENED)),
+            completed=Count('id', filter=Q(status=EmployeeVoiceInvitation.Status.COMPLETED))
+        ).order_by('-date')
+
+        # Calculate response rate
+        total_sent = invitations.filter(status__in=[
+            EmployeeVoiceInvitation.Status.SENT,
+            EmployeeVoiceInvitation.Status.OPENED,
+            EmployeeVoiceInvitation.Status.COMPLETED
+        ]).count()
+        total_completed = invitations.filter(status=EmployeeVoiceInvitation.Status.COMPLETED).count()
+        avg_response_rate = round((total_completed / total_sent * 100) if total_sent > 0 else 0, 1)
+
+        return Response({
+            'daily_stats': list(daily_stats),
+            'total_scheduled_7d': invitations.filter(status=EmployeeVoiceInvitation.Status.SCHEDULED).count(),
+            'total_sent_7d': total_sent,
+            'total_completed_7d': total_completed,
+            'avg_response_rate_7d': avg_response_rate,
+        })
 
 
 @extend_schema(
@@ -322,14 +604,6 @@ def submit_survey_response(request):
     # Check if pulse should be unlocked
     pulse.check_unlock_status()
 
-    # Check auto-fix flow (if enabled)
-    if pulse.auto_fix_flow_enabled:
-        try:
-            auto_fix_config = pulse.auto_fix_config
-            auto_fix_config.check_and_create_action_items()
-        except AutoFixFlowConfig.DoesNotExist:
-            pass
-
     # Return created response
     response_serializer = EmployeeVoiceResponseSerializer(response, context={'request': request})
     return Response(response_serializer.data, status=status.HTTP_201_CREATED)
@@ -375,9 +649,46 @@ class EmployeeVoiceInvitationViewSet(ScopedQuerysetMixin, viewsets.ReadOnlyModel
                 return self.queryset.filter(pulse__account=user.account)
             return self.queryset.none()
 
-        # Other roles see invitations for their accessible stores
+        # Other roles see invitations for their accessible stores + account-wide pulses
         accessible_stores = user.get_accessible_stores()
+        if user.account:
+            return self.queryset.filter(
+                Q(pulse__store__in=accessible_stores) |
+                Q(pulse__store__isnull=True, pulse__account=user.account)
+            )
         return self.queryset.filter(pulse__store__in=accessible_stores)
+
+    @extend_schema(
+        summary="Get upcoming scheduled invitations",
+        description="Returns invitations that are scheduled but not yet sent",
+        responses={200: EmployeeVoiceInvitationSerializer(many=True)}
+    )
+    @action(detail=False, methods=['get'], url_path='scheduled')
+    def scheduled(self, request):
+        """
+        Get upcoming scheduled invitations.
+        Filters for SCHEDULED status and future send times.
+        """
+        pulse_id = request.query_params.get('pulse')
+
+        # Get base queryset (already filtered by user permissions)
+        queryset = self.get_queryset()
+
+        # Filter for scheduled invitations with future send times
+        queryset = queryset.filter(
+            status=EmployeeVoiceInvitation.Status.SCHEDULED,
+            scheduled_send_at__gte=timezone.now()
+        )
+
+        # Filter by pulse if specified
+        if pulse_id:
+            queryset = queryset.filter(pulse_id=pulse_id)
+
+        # Order by scheduled send time
+        queryset = queryset.order_by('scheduled_send_at')
+
+        serializer = self.get_serializer(queryset, many=True)
+        return Response(serializer.data)
 
 
 class EmployeeVoiceResponseViewSet(ScopedQuerysetMixin, viewsets.ReadOnlyModelViewSet):
@@ -386,9 +697,9 @@ class EmployeeVoiceResponseViewSet(ScopedQuerysetMixin, viewsets.ReadOnlyModelVi
     Comments are role-gated via serializer.
 
     Access Control:
-    - OWNER/SUPER_ADMIN: Can view responses (comments filtered by n ≥ 5)
+    - OWNER/TRIAL_ADMIN/SUPER_ADMIN: Can view responses (comments filtered by n ≥ 5)
     - ADMIN: Cannot view individual responses
-    - GM/TRIAL_ADMIN: No access
+    - GM: No access
     """
     queryset = EmployeeVoiceResponse.objects.all()
     serializer_class = EmployeeVoiceResponseSerializer
@@ -411,52 +722,16 @@ class EmployeeVoiceResponseViewSet(ScopedQuerysetMixin, viewsets.ReadOnlyModelVi
         """Filter responses based on user role"""
         user = self.request.user
 
-        # Only OWNER and SUPER_ADMIN can view responses
-        if user.role not in [User.Role.OWNER, User.Role.SUPER_ADMIN]:
+        # Only OWNER, TRIAL_ADMIN, and SUPER_ADMIN can view responses
+        if user.role not in [User.Role.OWNER, User.Role.TRIAL_ADMIN, User.Role.SUPER_ADMIN]:
             return self.queryset.none()
 
         # SUPER_ADMIN sees all
         if user.role == User.Role.SUPER_ADMIN:
             return self.queryset.all()
 
-        # OWNER sees responses for their account
-        if user.role == User.Role.OWNER and user.account:
-            return self.queryset.filter(pulse__account=user.account)
-
-        return self.queryset.none()
-
-
-class AutoFixFlowConfigViewSet(ScopedQuerysetMixin, ScopedCreateMixin, viewsets.ModelViewSet):
-    """
-    ViewSet for managing auto-fix flow configurations.
-
-    Access Control:
-    - OWNER/SUPER_ADMIN: Full access
-    - Others: No access
-    """
-    queryset = AutoFixFlowConfig.objects.all()
-    serializer_class = AutoFixFlowConfigSerializer
-    permission_classes = [IsAuthenticated, TenantObjectPermission]
-    filterset_fields = ['pulse', 'is_enabled']
-    
-    tenant_scope = 'account'
-    tenant_field_paths = {
-        'account': 'pulse__account',
-        'store': 'pulse__store'
-    }
-    tenant_object_paths = {
-        'account': 'pulse.account_id',
-        'store': 'pulse.store_id'
-    }
-
-    def get_queryset(self):
-        """Filter configs based on user role"""
-        user = self.request.user
-
-        if user.role == User.Role.SUPER_ADMIN:
-            return self.queryset.all()
-
-        if user.role == User.Role.OWNER and user.account:
+        # OWNER and TRIAL_ADMIN see responses for their account
+        if user.role in [User.Role.OWNER, User.Role.TRIAL_ADMIN] and user.account:
             return self.queryset.filter(pulse__account=user.account)
 
         return self.queryset.none()

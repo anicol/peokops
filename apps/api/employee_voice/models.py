@@ -27,6 +27,19 @@ class EmployeeVoicePulse(models.Model):
         PAUSED = 'PAUSED', 'Paused'
         LOCKED = 'LOCKED', 'Locked (Awaiting Unlock)'
 
+    class DeliveryFrequency(models.TextChoices):
+        LOW = 'LOW', 'Low (1-2 times/week, ~20-30% daily chance)'
+        MEDIUM = 'MEDIUM', 'Medium (2-3 times/week, ~40% daily chance)'
+        HIGH = 'HIGH', 'High (3-4 times/week, ~50-60% daily chance)'
+
+    class PauseReason(models.TextChoices):
+        HOLIDAY = 'HOLIDAY', 'Holiday/Seasonal Break'
+        UNDER_REVIEW = 'UNDER_REVIEW', 'Under Review'
+        LOW_PARTICIPATION = 'LOW_PARTICIPATION', 'Low Participation'
+        RESTRUCTURING = 'RESTRUCTURING', 'Team Restructuring'
+        MIGRATED = 'MIGRATED', 'Migrated to single pulse'
+        OTHER = 'OTHER', 'Other'
+
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
 
     # Multi-tenant relationships
@@ -34,7 +47,9 @@ class EmployeeVoicePulse(models.Model):
         'brands.Store',
         on_delete=models.CASCADE,
         related_name='employee_voice_pulses',
-        help_text="Store this pulse belongs to"
+        null=True,
+        blank=True,
+        help_text="Store this pulse belongs to (null = account-wide pulse)"
     )
     account = models.ForeignKey(
         'accounts.Account',
@@ -69,6 +84,18 @@ class EmployeeVoicePulse(models.Model):
         help_text="Specific time to send (optional, uses shift_window if not set)"
     )
 
+    # Randomization settings (to prevent pencil-whipping)
+    delivery_frequency = models.CharField(
+        max_length=10,
+        choices=DeliveryFrequency.choices,
+        default=DeliveryFrequency.MEDIUM,
+        help_text="How often employees receive surveys (randomized per employee)"
+    )
+    randomization_window_minutes = models.IntegerField(
+        default=60,
+        help_text="Window size in minutes for randomizing send times within shift (e.g., 30-60 min)"
+    )
+
     # Unlocking logic
     status = models.CharField(
         max_length=20,
@@ -88,10 +115,23 @@ class EmployeeVoicePulse(models.Model):
         help_text="Consent copy shown to employees"
     )
 
-    # Feature flags
-    auto_fix_flow_enabled = models.BooleanField(
-        default=False,
-        help_text="Auto-create ActionItem when bottleneck mentioned ≥3× in 7 days"
+    # Pause tracking
+    pause_reason = models.CharField(
+        max_length=50,
+        choices=PauseReason.choices,
+        null=True,
+        blank=True,
+        help_text="Reason for pausing the pulse survey"
+    )
+    pause_notes = models.TextField(
+        null=True,
+        blank=True,
+        help_text="Additional context for pause"
+    )
+    paused_at = models.DateTimeField(
+        null=True,
+        blank=True,
+        help_text="Timestamp when pulse was paused"
     )
 
     # Metadata
@@ -167,6 +207,7 @@ class EmployeeVoiceInvitation(models.Model):
 
     class Status(models.TextChoices):
         PENDING = 'PENDING', 'Pending'
+        SCHEDULED = 'SCHEDULED', 'Scheduled'
         SENT = 'SENT', 'Sent'
         OPENED = 'OPENED', 'Opened'
         COMPLETED = 'COMPLETED', 'Completed'
@@ -202,6 +243,11 @@ class EmployeeVoiceInvitation(models.Model):
         choices=Status.choices,
         default=Status.PENDING
     )
+    scheduled_send_at = models.DateTimeField(
+        null=True,
+        blank=True,
+        help_text="Randomized time to send this invitation (for staggered delivery)"
+    )
     sent_at = models.DateTimeField(null=True, blank=True)
     opened_at = models.DateTimeField(null=True, blank=True)
     completed_at = models.DateTimeField(null=True, blank=True)
@@ -217,6 +263,7 @@ class EmployeeVoiceInvitation(models.Model):
             models.Index(fields=['token']),
             models.Index(fields=['pulse', 'status']),
             models.Index(fields=['expires_at', 'status']),
+            models.Index(fields=['scheduled_send_at', 'status']),
         ]
         ordering = ['-created_at']
 
@@ -226,7 +273,7 @@ class EmployeeVoiceInvitation(models.Model):
     def is_valid(self):
         """Check if magic link is still valid"""
         return (
-            self.status in [self.Status.PENDING, self.Status.SENT, self.Status.OPENED]
+            self.status in [self.Status.PENDING, self.Status.SCHEDULED, self.Status.SENT, self.Status.OPENED]
             and self.expires_at > timezone.now()
         )
 
@@ -331,102 +378,6 @@ class EmployeeVoiceResponse(models.Model):
         return f"Response {self.id} - {self.pulse.title} (Mood: {self.get_mood_display()})"
 
 
-class AutoFixFlowConfig(models.Model):
-    """
-    Configuration for automatic action item creation.
-    When a bottleneck is mentioned ≥3× in 7 days, auto-create ActionItem.
-    """
-
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    pulse = models.OneToOneField(
-        EmployeeVoicePulse,
-        on_delete=models.CASCADE,
-        related_name='auto_fix_config'
-    )
-
-    # Trigger thresholds
-    bottleneck_threshold = models.IntegerField(
-        default=3,
-        help_text="Number of times bottleneck must be mentioned to trigger"
-    )
-    time_window_days = models.IntegerField(
-        default=7,
-        help_text="Time window for counting bottleneck mentions"
-    )
-
-    # Target mapping (bottleneck → corrective action category)
-    bottleneck_to_category_map = models.JSONField(
-        default=dict,
-        help_text="Maps bottleneck types to micro-check categories for corrective actions"
-    )
-
-    # Feature flags
-    is_enabled = models.BooleanField(default=True)
-    notify_on_creation = models.BooleanField(
-        default=True,
-        help_text="Send notification when ActionItem is auto-created"
-    )
-
-    # Auditing
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
-
-    class Meta:
-        db_table = 'employee_voice_auto_fix_configs'
-
-    def __str__(self):
-        return f"AutoFix Config for {self.pulse.title}"
-
-    def check_and_create_action_items(self):
-        """
-        Check if any bottleneck has crossed the threshold and create ActionItem.
-        Called by Celery task after each response submission.
-        """
-        if not self.is_enabled:
-            return
-
-        from datetime import timedelta
-        from django.utils import timezone
-        from inspections.models import ActionItem
-
-        time_window_start = timezone.now() - timedelta(days=self.time_window_days)
-
-        # Count bottleneck mentions in time window
-        bottleneck_counts = {}
-        responses = EmployeeVoiceResponse.objects.filter(
-            pulse=self.pulse,
-            completed_at__gte=time_window_start
-        )
-
-        # Count bottlenecks from JSONField array
-        for response in responses:
-            if response.bottlenecks and isinstance(response.bottlenecks, list):
-                for bottleneck in response.bottlenecks:
-                    bottleneck_counts[bottleneck] = bottleneck_counts.get(bottleneck, 0) + 1
-
-        # Create ActionItem for bottlenecks that cross threshold
-        for bottleneck, count in bottleneck_counts.items():
-            if count >= self.bottleneck_threshold:
-                # Check if we already created an action for this bottleneck recently
-                recent_correlation = CrossVoiceCorrelation.objects.filter(
-                    pulse=self.pulse,
-                    bottleneck_type=bottleneck,
-                    created_at__gte=time_window_start,
-                    action_item__isnull=False
-                ).exists()
-
-                if not recent_correlation:
-                    # Create the action item
-                    category = self.bottleneck_to_category_map.get(bottleneck)
-                    if category:
-                        # Create correlation record that will trigger ActionItem creation
-                        CrossVoiceCorrelation.create_from_bottleneck(
-                            pulse=self.pulse,
-                            bottleneck_type=bottleneck,
-                            mention_count=count
-                        )
-
-
 class CrossVoiceCorrelation(models.Model):
     """
     Links employee voice pulse trends with micro-check failures.
@@ -527,7 +478,7 @@ class CrossVoiceCorrelation(models.Model):
     def create_from_bottleneck(cls, pulse, bottleneck_type, mention_count):
         """
         Create a correlation record from bottleneck mentions.
-        Used by AutoFixFlowConfig to trigger corrective actions.
+        Used by correlation detection to identify patterns and recommend actions.
         """
         from datetime import timedelta
         from django.utils import timezone

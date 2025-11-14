@@ -9,6 +9,7 @@ type CarouselStep = 'welcome' | 'mood' | 'confidence' | 'bottlenecks' | 'comment
 
 export default function PulseSurveyPage() {
   const { token } = useParams<{ token: string }>();
+  const isPreview = token === 'preview';
 
   // Loading state
   const [loadingState, setLoadingState] = useState<LoadingState>('loading');
@@ -25,8 +26,20 @@ export default function PulseSurveyPage() {
   const [bottlenecks, setBottlenecks] = useState<string[]>([]);
   const [comment, setComment] = useState('');
 
-  // Validate magic link on mount
+  // Validate magic link on mount (or use preview mode)
   useEffect(() => {
+    if (isPreview) {
+      // Preview mode - use mock data
+      setPulse({
+        id: 'preview',
+        title: 'Daily Team Pulse',
+        description: 'Quick Check In',
+        consent_text: 'Your responses are anonymous and help improve team operations. Data is aggregated for privacy.',
+      } as EmployeeVoicePulse);
+      setLoadingState('ready');
+      return;
+    }
+
     if (!token) {
       setError('Invalid survey link');
       setLoadingState('error');
@@ -49,15 +62,15 @@ export default function PulseSurveyPage() {
     };
 
     validateToken();
-  }, [token]);
+  }, [token, isPreview]);
 
   // Mood options - Updated emojis
   const moodOptions = [
-    { value: 1, emoji: '😫', label: 'Exhausted' },
-    { value: 2, emoji: '😐', label: 'Meh' },
-    { value: 3, emoji: '🙂', label: 'Good' },
-    { value: 4, emoji: '😄', label: 'Great' },
-    { value: 5, emoji: '🔥', label: 'On Fire' },
+    { value: 1, emoji: '😫', label: 'Tired' },
+    { value: 2, emoji: '😐', label: 'Off' },
+    { value: 3, emoji: '🙂', label: 'Okay' },
+    { value: 4, emoji: '😄', label: 'Good' },
+    { value: 5, emoji: '🔥', label: 'Fired Up' },
   ];
 
   // Confidence options - Updated to 3-level scale
@@ -119,6 +132,15 @@ export default function PulseSurveyPage() {
     }
 
     setSubmitting(true);
+
+    // Skip API call in preview mode
+    if (isPreview) {
+      setTimeout(() => {
+        setCurrentStep('success');
+        setSubmitting(false);
+      }, 500);
+      return;
+    }
 
     try {
       const deviceFingerprint = getDeviceFingerprintString();
@@ -197,6 +219,15 @@ export default function PulseSurveyPage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-blue-50 flex items-center justify-center px-4 py-8">
       <div className="max-w-lg w-full">
+        {/* Preview Mode Banner */}
+        {isPreview && (
+          <div className="mb-4 bg-purple-100 border-2 border-purple-300 rounded-lg px-4 py-3 text-center">
+            <p className="text-sm font-medium text-purple-900">
+              👁️ Preview Mode - This is how employees will see the survey
+            </p>
+          </div>
+        )}
+
         {/* Progress Dots (hide on welcome and success) */}
         {currentStep !== 'welcome' && currentStep !== 'success' && getProgressDots()}
 
@@ -224,21 +255,21 @@ export default function PulseSurveyPage() {
               <h2 className="text-xl sm:text-2xl font-bold text-gray-900 mb-4 sm:mb-6 text-center">
                 How's your shift feeling today?
               </h2>
-              <div className="flex justify-between gap-1 sm:gap-3">
+              <div className="flex justify-center gap-2 sm:gap-3">
                 {moodOptions.map((option) => (
                   <button
                     key={option.value}
                     onClick={() => handleMoodSelect(option.value)}
                     className={`
-                      flex-1 flex flex-col items-center justify-center p-2 sm:p-4 rounded-lg sm:rounded-xl border-2 transition-all transform hover:scale-110
+                      w-16 h-20 sm:w-24 sm:h-28 flex flex-col items-center justify-center p-2 sm:p-4 rounded-lg sm:rounded-xl border-2 transition-all transform hover:scale-110
                       ${mood === option.value
                         ? 'border-blue-600 bg-blue-50 scale-110'
                         : 'border-gray-200 hover:border-blue-300'
                       }
                     `}
                   >
-                    <span className="text-3xl sm:text-5xl mb-1 sm:mb-2">{option.emoji}</span>
-                    <span className="text-[10px] sm:text-xs text-gray-600 font-medium">{option.label}</span>
+                    <span className="text-3xl sm:text-5xl mb-1">{option.emoji}</span>
+                    <span className="text-[10px] sm:text-xs text-gray-600 font-medium text-center leading-tight">{option.label}</span>
                   </button>
                 ))}
               </div>

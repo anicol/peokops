@@ -811,6 +811,49 @@ export const adminAnalyticsAPI = {
   },
 };
 
+// User Activity Analytics API (SUPER_ADMIN only)
+export const userActivityAPI = {
+  // Get user activity overview (DAU/WAU/MAU, feature adoption)
+  getOverview: async (days: number = 30) => {
+    const response = await api.get('/auth/admin/user-activity/overview/', {
+      params: { days },
+    });
+    return response.data;
+  },
+
+  // Get activity timeline (hourly or daily aggregation)
+  getTimeline: async (days: number = 7, granularity: 'hour' | 'day' = 'hour') => {
+    const response = await api.get('/auth/admin/user-activity/timeline/', {
+      params: { days, granularity },
+    });
+    return response.data;
+  },
+
+  // Get feature usage breakdown
+  getByFeature: async (days: number = 30) => {
+    const response = await api.get('/auth/admin/user-activity/by-feature/', {
+      params: { days },
+    });
+    return response.data;
+  },
+
+  // Get recent activity feed
+  getRecent: async (limit: number = 100, eventType?: string) => {
+    const response = await api.get('/auth/admin/user-activity/recent/', {
+      params: { limit, event_type: eventType },
+    });
+    return response.data;
+  },
+
+  // Get activity for specific account
+  getAccountActivity: async (accountId: number, days: number = 30) => {
+    const response = await api.get('/auth/admin/user-activity/account-activity/', {
+      params: { account_id: accountId, days },
+    });
+    return response.data;
+  },
+};
+
 // Billing API
 export const billingAPI = {
   // Get all subscription plans
@@ -951,12 +994,18 @@ export interface EmployeeVoicePulse {
   shift_window_display: string;
   language: string;
   language_display: string;
+  delivery_frequency: 'LOW' | 'MEDIUM' | 'HIGH';
+  delivery_frequency_display: string;
+  randomization_window_minutes: number;
   consent_text: string;
   status: string;
   status_display: string;
   is_active: boolean;
-  auto_fix_flow_enabled: boolean;
   min_respondents_for_display: number;
+  pause_reason?: string;
+  pause_reason_display?: string;
+  pause_notes?: string;
+  paused_at?: string;
   store: number;
   account: number;
   created_at: string;
@@ -975,8 +1024,9 @@ export interface CreatePulseRequest {
   description: string;
   shift_window: 'OPEN' | 'MID' | 'CLOSE';
   language: 'en' | 'es' | 'fr';
+  delivery_frequency?: 'LOW' | 'MEDIUM' | 'HIGH';
+  randomization_window_minutes?: number;
   consent_text?: string;
-  auto_fix_flow_enabled?: boolean;
   min_respondents_for_display?: number;
 }
 
@@ -985,9 +1035,12 @@ export interface UpdatePulseRequest {
   description?: string;
   shift_window?: 'OPEN' | 'MID' | 'CLOSE';
   language?: 'en' | 'es' | 'fr';
+  delivery_frequency?: 'LOW' | 'MEDIUM' | 'HIGH';
+  randomization_window_minutes?: number;
   consent_text?: string;
   is_active?: boolean;
-  auto_fix_flow_enabled?: boolean;
+  pause_reason?: string;
+  pause_notes?: string;
   min_respondents_for_display?: number;
 }
 
@@ -997,6 +1050,8 @@ export interface EmployeeVoiceInvitation {
   pulse_title?: string;
   recipient_phone?: string;
   recipient_email?: string;
+  employee_name?: string;
+  employee_role?: string;
   token: string;
   delivery_method?: string;
   delivery_method_display?: string;
@@ -1009,19 +1064,6 @@ export interface EmployeeVoiceInvitation {
   expires_at: string;
   created_at: string;
   updated_at?: string;
-}
-
-export interface AutoFixFlowConfig {
-  id: string;
-  pulse: string;
-  bottleneck_type: string;
-  check_category: string;
-  threshold_mentions: number;
-  threshold_days: number;
-  action_item_template: string;
-  is_active: boolean;
-  created_at: string;
-  updated_at: string;
 }
 
 export interface ValidateMagicLinkResponse {
@@ -1064,11 +1106,16 @@ export const employeeVoiceAPI = {
     return response.data;
   },
 
+  // Get or create single account pulse (for single-pulse interface)
+  getOrCreatePulse: async (): Promise<EmployeeVoicePulse> => {
+    const response = await api.get('/employee-voice/pulses/get-or-create/');
+    return response.data;
+  },
+
   // Get all pulses for a store
-  getPulses: async (storeId: number): Promise<EmployeeVoicePulse[]> => {
-    const response = await api.get('/employee-voice/pulses/', {
-      params: { store: storeId }
-    });
+  getPulses: async (storeId?: number): Promise<EmployeeVoicePulse[]> => {
+    const params = storeId ? { store: storeId } : {};
+    const response = await api.get('/employee-voice/pulses/', { params });
     // Handle paginated response
     return response.data.results || response.data;
   },
@@ -1091,14 +1138,35 @@ export const employeeVoiceAPI = {
     return response.data;
   },
 
+  // Pause pulse with reason
+  pausePulse: async (pulseId: string, reason: string, notes?: string): Promise<EmployeeVoicePulse> => {
+    const response = await api.patch(`/employee-voice/pulses/${pulseId}/`, {
+      is_active: false,
+      pause_reason: reason,
+      pause_notes: notes || '',
+    });
+    return response.data;
+  },
+
+  // Resume pulse (clear pause)
+  resumePulse: async (pulseId: string): Promise<EmployeeVoicePulse> => {
+    const response = await api.patch(`/employee-voice/pulses/${pulseId}/`, {
+      is_active: true,
+      pause_reason: null,
+      pause_notes: null,
+    });
+    return response.data;
+  },
+
   // Delete pulse
   deletePulse: async (pulseId: string): Promise<void> => {
     await api.delete(`/employee-voice/pulses/${pulseId}/`);
   },
 
   // Get pulse insights
-  getPulseInsights: async (pulseId: string): Promise<any> => {
-    const response = await api.get(`/employee-voice/pulses/${pulseId}/insights/`);
+  getPulseInsights: async (pulseId: string, storeId?: string): Promise<any> => {
+    const params = storeId && storeId !== 'all' ? { store_id: storeId } : {};
+    const response = await api.get(`/employee-voice/pulses/${pulseId}/insights/`, { params });
     return response.data;
   },
 
@@ -1125,37 +1193,37 @@ export const employeeVoiceAPI = {
     return response.data.results || response.data;
   },
 
-  // Get auto-fix configs for a pulse
-  getAutoFixConfigs: async (pulseId?: string): Promise<AutoFixFlowConfig[]> => {
-    const params = pulseId ? { pulse: pulseId } : {};
-    const response = await api.get('/employee-voice/auto-fix-configs/', { params });
-    // Handle paginated response
-    return response.data.results || response.data;
-  },
-
-  // Create auto-fix config
-  createAutoFixConfig: async (data: Partial<AutoFixFlowConfig>): Promise<AutoFixFlowConfig> => {
-    const response = await api.post('/employee-voice/auto-fix-configs/', data);
-    return response.data;
-  },
-
-  // Update auto-fix config
-  updateAutoFixConfig: async (configId: string, data: Partial<AutoFixFlowConfig>): Promise<AutoFixFlowConfig> => {
-    const response = await api.patch(`/employee-voice/auto-fix-configs/${configId}/`, data);
-    return response.data;
-  },
-
-  // Delete auto-fix config
-  deleteAutoFixConfig: async (configId: string): Promise<void> => {
-    await api.delete(`/employee-voice/auto-fix-configs/${configId}/`);
-  },
-
   // Get correlations
   getCorrelations: async (pulseId?: string): Promise<any[]> => {
     const params = pulseId ? { pulse: pulseId } : {};
     const response = await api.get('/employee-voice/correlations/', { params });
     // Handle paginated response
     return response.data.results || response.data;
+  },
+
+  // Get upcoming scheduled invitations
+  getScheduledInvitations: async (pulseId?: string): Promise<EmployeeVoiceInvitation[]> => {
+    const params = pulseId ? { pulse: pulseId } : {};
+    const response = await api.get('/employee-voice/invitations/scheduled/', { params });
+    return response.data;
+  },
+
+  // Get eligible employees for a pulse
+  getEligibleEmployees: async (pulseId: string): Promise<any> => {
+    const response = await api.get(`/employee-voice/pulses/${pulseId}/eligible-employees/`);
+    return response.data;
+  },
+
+  // Get distribution preview
+  getDistributionPreview: async (pulseId: string): Promise<any> => {
+    const response = await api.get(`/employee-voice/pulses/${pulseId}/distribution-preview/`);
+    return response.data;
+  },
+
+  // Get distribution statistics
+  getDistributionStats: async (pulseId: string): Promise<any> => {
+    const response = await api.get(`/employee-voice/pulses/${pulseId}/distribution-stats/`);
+    return response.data;
   },
 };
 

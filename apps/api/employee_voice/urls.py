@@ -7,7 +7,6 @@ router = DefaultRouter()
 router.register(r'pulses', views.EmployeeVoicePulseViewSet, basename='employeevoicepulse')
 router.register(r'invitations', views.EmployeeVoiceInvitationViewSet, basename='employeevoiceinvitation')
 router.register(r'responses', views.EmployeeVoiceResponseViewSet, basename='employeevoiceresponse')
-router.register(r'auto-fix-configs', views.AutoFixFlowConfigViewSet, basename='autofixflowconfig')
 router.register(r'correlations', views.CrossVoiceCorrelationViewSet, basename='crossvoicecorrelation')
 
 urlpatterns = [
