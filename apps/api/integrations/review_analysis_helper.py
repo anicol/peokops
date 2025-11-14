@@ -52,6 +52,9 @@ def analyze_google_review(review, bedrock_service: Optional[BedrockRecommendatio
         processing_time_ms = int((datetime.now() - start_time).total_seconds() * 1000)
 
         # Create or update analysis
+        # Map suggested_category to categories list for database compatibility
+        categories = [analysis_result['suggested_category']] if analysis_result['suggested_category'] else []
+
         GoogleReviewAnalysis.objects.update_or_create(
             review=review,
             defaults={
@@ -59,6 +62,7 @@ def analyze_google_review(review, bedrock_service: Optional[BedrockRecommendatio
                 'sentiment_score': analysis_result['sentiment_score'],
                 'actionable_issues': analysis_result['actionable_issues'],
                 'suggested_category': analysis_result['suggested_category'],
+                'categories': categories,  # Add required categories field
                 'confidence': analysis_result.get('confidence', 0.5),
                 'model_used': 'claude-3-haiku' if bedrock_service.enabled else 'fallback',
                 'processing_time_ms': processing_time_ms

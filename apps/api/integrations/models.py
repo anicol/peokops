@@ -452,6 +452,10 @@ class GoogleReviewAnalysis(models.Model):
         blank=True,
         help_text="Suggested micro-check category (e.g., 'cleanliness', 'service')"
     )
+    categories = models.JSONField(
+        default=list,
+        help_text="High-level categories for this review (e.g., ['Food Quality', 'Service'])"
+    )
 
     # AI model info
     model_used = models.CharField(max_length=100, help_text="AI model that performed analysis")
