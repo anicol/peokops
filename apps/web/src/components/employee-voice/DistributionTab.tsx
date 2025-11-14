@@ -1,13 +1,17 @@
-import { useQuery } from 'react-query';
+import { useQuery, useMutation, useQueryClient } from 'react-query';
 import { employeeVoiceAPI } from '@/services/api';
-import { Clock, Users, CheckCircle, TrendingUp, Calendar } from 'lucide-react';
+import { Clock, Users, CheckCircle, TrendingUp, Calendar, RefreshCw } from 'lucide-react';
 import { format } from 'date-fns';
+import { useState } from 'react';
 
 interface DistributionTabProps {
   pulseId: string;
 }
 
 export default function DistributionTab({ pulseId }: DistributionTabProps) {
+  const queryClient = useQueryClient();
+  const [showSuccess, setShowSuccess] = useState(false);
+
   // Fetch all distribution data
   const { data: preview } = useQuery(
     ['distribution-preview', pulseId],
@@ -30,6 +34,24 @@ export default function DistributionTab({ pulseId }: DistributionTabProps) {
     () => employeeVoiceAPI.getDistributionStats(pulseId)
   );
 
+  // Trigger distribution mutation
+  const triggerMutation = useMutation(
+    () => employeeVoiceAPI.triggerDistribution(pulseId),
+    {
+      onSuccess: () => {
+        // Invalidate all distribution-related queries to refetch
+        queryClient.invalidateQueries(['distribution-preview', pulseId]);
+        queryClient.invalidateQueries(['scheduled-invitations', pulseId]);
+        queryClient.invalidateQueries(['eligible-employees', pulseId]);
+        queryClient.invalidateQueries(['distribution-stats', pulseId]);
+
+        // Show success message
+        setShowSuccess(true);
+        setTimeout(() => setShowSuccess(false), 3000);
+      },
+    }
+  );
+
   // Group scheduled invitations by hour
   const groupedScheduled = scheduled?.reduce((acc: any, inv: any) => {
     const time = format(new Date(inv.scheduled_send_at), 'MMM d, ha');
@@ -40,6 +62,35 @@ export default function DistributionTab({ pulseId }: DistributionTabProps) {
 
   return (
     <div className="space-y-6">
+      {/* Refresh Distribution Button */}
+      <div className="flex items-center justify-between">
+        <div>
+          <p className="text-sm text-gray-600">
+            Trigger distribution scheduling to update invitations for newly loaded employees
+          </p>
+        </div>
+        <button
+          onClick={() => triggerMutation.mutate()}
+          disabled={triggerMutation.isLoading}
+          className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          <RefreshCw className={`w-4 h-4 mr-2 ${triggerMutation.isLoading ? 'animate-spin' : ''}`} />
+          {triggerMutation.isLoading ? 'Refreshing...' : 'Refresh Distribution'}
+        </button>
+      </div>
+
+      {/* Success Message */}
+      {showSuccess && (
+        <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+          <div className="flex items-center">
+            <CheckCircle className="w-5 h-5 text-green-600 mr-2" />
+            <p className="text-sm text-green-800">
+              Distribution scheduling triggered successfully! Invitations will be updated shortly.
+            </p>
+          </div>
+        </div>
+      )}
+
       {/* Distribution Settings Card */}
       <div className="bg-white rounded-lg border border-gray-200 p-6">
         <h3 className="text-lg font-semibold text-gray-900 mb-4">Distribution Settings</h3>

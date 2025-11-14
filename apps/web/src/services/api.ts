@@ -1225,6 +1225,12 @@ export const employeeVoiceAPI = {
     const response = await api.get(`/employee-voice/pulses/${pulseId}/distribution-stats/`);
     return response.data;
   },
+
+  // Trigger distribution scheduling
+  triggerDistribution: async (pulseId: string): Promise<any> => {
+    const response = await api.post(`/employee-voice/pulses/${pulseId}/trigger-distribution/`);
+    return response.data;
+  },
 };
 
 // Google Reviews API

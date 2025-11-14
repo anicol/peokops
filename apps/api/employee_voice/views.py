@@ -508,6 +508,35 @@ class EmployeeVoicePulseViewSet(ScopedQuerysetMixin, ScopedCreateMixin, viewsets
             'avg_response_rate_7d': avg_response_rate,
         })
 
+    @extend_schema(
+        summary="Trigger distribution scheduling",
+        description="Manually triggers the distribution scheduling task for this pulse. "
+                    "This will schedule invitations for eligible employees based on the pulse configuration.",
+        request=None,
+        responses={
+            200: OpenApiResponse(description="Distribution scheduling triggered successfully"),
+            403: OpenApiResponse(description="Forbidden - user must be owner or admin"),
+        }
+    )
+    @action(detail=True, methods=['post'], url_path='trigger-distribution')
+    def trigger_distribution(self, request, pk=None):
+        """
+        Manually trigger distribution scheduling for this pulse.
+        Calls the schedule_pulse_invitations Celery task.
+        """
+        from .tasks import schedule_pulse_invitations
+
+        pulse = self.get_object()
+
+        # Trigger the scheduling task
+        task = schedule_pulse_invitations.delay()
+
+        return Response({
+            'message': 'Distribution scheduling triggered successfully',
+            'task_id': task.id,
+            'pulse_id': str(pulse.id)
+        }, status=status.HTTP_200_OK)
+
 
 @extend_schema(
     summary="Validate magic link token",
