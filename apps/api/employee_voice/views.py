@@ -117,11 +117,11 @@ class EmployeeVoicePulseViewSet(ScopedQuerysetMixin, ScopedCreateMixin, viewsets
                 status=status.HTTP_400_BAD_REQUEST
             )
 
-        # Try to get existing active pulse for account (account-wide, not store-specific)
+        # Try to get existing pulse for account (account-wide, not store-specific)
+        # Note: We get the pulse regardless of is_active status
         pulse = EmployeeVoicePulse.objects.filter(
             account=user.account,
             store__isnull=True,  # Account-wide pulse
-            is_active=True
         ).first()
 
         # Create if doesn't exist

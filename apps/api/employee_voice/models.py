@@ -152,6 +152,14 @@ class EmployeeVoicePulse(models.Model):
             models.Index(fields=['account', 'status']),
             models.Index(fields=['status', 'unlocked_at']),
         ]
+        constraints = [
+            models.UniqueConstraint(
+                fields=['account'],
+                condition=models.Q(store__isnull=True),
+                name='unique_account_pulse',
+                violation_error_message='An account can only have one account-wide pulse survey.'
+            ),
+        ]
         ordering = ['-created_at']
 
     def __str__(self):

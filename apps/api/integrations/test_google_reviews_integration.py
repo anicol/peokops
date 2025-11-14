@@ -104,15 +104,13 @@ class GoogleReviewsIntegrationTest(TestCase):
             rating=review.rating
         )
 
-        # Create analysis
-        analysis = GoogleReviewAnalysis.objects.create(
+        # Create analysis using reusable helper
+        from integrations.review_analysis_helper import create_or_update_analysis
+        analysis = create_or_update_analysis(
             review=review,
-            topics=result['topics'],
-            sentiment_score=result['sentiment_score'],
-            actionable_issues=result['actionable_issues'],
-            suggested_category=result['suggested_category'],
+            analysis_result=result,
             model_used='bedrock' if bedrock_service.enabled else 'fallback',
-            confidence=result.get('confidence', 0.5)
+            processing_time_ms=0
         )
 
         # Assertions
@@ -142,14 +140,19 @@ class GoogleReviewsIntegrationTest(TestCase):
                 analyzed_at=timezone.now()
             )
 
-            GoogleReviewAnalysis.objects.create(
+            # Use reusable helper
+            from integrations.review_analysis_helper import create_or_update_analysis
+            create_or_update_analysis(
                 review=review,
-                topics=['cleanliness'],
-                sentiment_score=-0.6,
-                actionable_issues=[issue_text],
-                suggested_category='cleanliness',
+                analysis_result={
+                    'topics': ['cleanliness'],
+                    'sentiment_score': -0.6,
+                    'actionable_issues': [issue_text],
+                    'suggested_category': 'cleanliness',
+                    'confidence': 0.9
+                },
                 model_used='test',
-                confidence=0.9
+                processing_time_ms=0
             )
 
         # Test pattern detection
@@ -186,14 +189,19 @@ class GoogleReviewsIntegrationTest(TestCase):
                 analyzed_at=timezone.now()
             )
 
-            GoogleReviewAnalysis.objects.create(
+            # Use reusable helper
+            from integrations.review_analysis_helper import create_or_update_analysis
+            create_or_update_analysis(
                 review=review,
-                topics=['cleanliness'],
-                sentiment_score=-0.7,
-                actionable_issues=[issue_text],
-                suggested_category='cleanliness',
+                analysis_result={
+                    'topics': ['cleanliness'],
+                    'sentiment_score': -0.7,
+                    'actionable_issues': [issue_text],
+                    'suggested_category': 'cleanliness',
+                    'confidence': 0.9
+                },
                 model_used='test',
-                confidence=0.9
+                processing_time_ms=0
             )
 
         # Generate micro-checks
@@ -239,14 +247,19 @@ class GoogleReviewsIntegrationTest(TestCase):
                 analyzed_at=timezone.now()
             )
 
-            GoogleReviewAnalysis.objects.create(
+            # Use reusable helper
+            from integrations.review_analysis_helper import create_or_update_analysis
+            create_or_update_analysis(
                 review=review,
-                topics=['cleanliness', 'safety'],
-                sentiment_score=-0.5,
-                actionable_issues=[issue_text],
-                suggested_category='cleanliness',
+                analysis_result={
+                    'topics': ['cleanliness', 'safety'],
+                    'sentiment_score': -0.5,
+                    'actionable_issues': [issue_text],
+                    'suggested_category': 'cleanliness',
+                    'confidence': 0.8
+                },
                 model_used='test',
-                confidence=0.8
+                processing_time_ms=0
             )
 
         # Generate first time
