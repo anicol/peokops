@@ -608,6 +608,25 @@ def process_google_reviews_for_location(location, max_reviews=300, source='scrap
 
     logger.info(f"Created {reviews_created} GoogleReview records for {location.google_location_name}")
 
+    # Create or update ReviewAnalysis for this store
+    if location.store:
+        from insights.models import ReviewAnalysis
+        try:
+            total_reviews_for_store = GoogleReview.objects.filter(location=location).count()
+
+            analysis, created = ReviewAnalysis.objects.update_or_create(
+                store=location.store,
+                defaults={
+                    'place_id': location.place_id or '',
+                    'reviews_analyzed': total_reviews_for_store,
+                    'status': ReviewAnalysis.Status.COMPLETED,
+                }
+            )
+            action = "Created" if created else "Updated"
+            logger.info(f"{action} ReviewAnalysis for store {location.store.name} with {total_reviews_for_store} reviews")
+        except Exception as e:
+            logger.error(f"Failed to create/update ReviewAnalysis: {str(e)}")
+
     # Generate micro-check recommendations
     try:
         analyzer = AnalysisCommand()
