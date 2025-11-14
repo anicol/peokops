@@ -374,6 +374,79 @@ class EmployeeVoicePulseViewSet(ScopedQuerysetMixin, ScopedCreateMixin, viewsets
         return Response(serializer.data)
 
     @extend_schema(
+        summary="Get AI-generated summary of employee comments",
+        description="Uses AI to analyze and summarize employee feedback, providing key themes, sentiment, and action items.",
+        responses={200: dict}
+    )
+    @action(detail=True, methods=['get'], url_path='ai-summary')
+    def ai_summary(self, request, pk=None):
+        """
+        Generate an AI-powered summary of employee comments for this pulse.
+        Supports optional days parameter (7 or 30, defaults to 7).
+        """
+        pulse = self.get_object()
+        user = request.user
+
+        # Get optional days parameter
+        days_param = request.query_params.get('days', '7')
+
+        # Validate days parameter
+        try:
+            days = int(days_param)
+            if days not in [7, 30]:
+                days = 7
+        except (ValueError, TypeError):
+            days = 7
+
+        # Get comments for the time period
+        now = timezone.now()
+        time_ago = now - timedelta(days=days)
+
+        responses = EmployeeVoiceResponse.objects.filter(
+            pulse=pulse,
+            completed_at__gte=time_ago
+        ).exclude(comment='')
+
+        # Get store filter if specified
+        store_id = request.query_params.get('store_id')
+        if store_id and store_id != 'all':
+            from integrations.models import SevenShiftsEmployee
+            store_employee_ids = SevenShiftsEmployee.objects.filter(
+                account=pulse.account,
+                store_id=store_id
+            ).values_list('id', flat=True)
+
+            responses = responses.filter(
+                invitation__recipient_phone__in=SevenShiftsEmployee.objects.filter(
+                    id__in=store_employee_ids
+                ).values_list('phone', flat=True)
+            )
+
+        # Extract comment texts
+        comments = [r.comment for r in responses if r.comment]
+
+        # Check n ≥ 5 requirement
+        if len(comments) < pulse.min_respondents_for_display:
+            return Response({
+                'can_display': False,
+                'message': f"AI summary will be available after {pulse.min_respondents_for_display - len(comments)} more comments are submitted.",
+                'comment_count': len(comments),
+                'required_count': pulse.min_respondents_for_display
+            }, status=status.HTTP_200_OK)
+
+        # Generate AI summary
+        from .ai_summary_service import get_ai_summary_service
+        ai_service = get_ai_summary_service()
+        summary_data = ai_service.summarize_comments(pulse.id, comments, days)
+
+        return Response({
+            'can_display': True,
+            'comment_count': len(comments),
+            'time_window': f'Last {days} days',
+            **summary_data
+        })
+
+    @extend_schema(
         summary="Get eligible employees for this pulse",
         description="Returns list of eligible employees from 7shifts who can receive survey invitations",
         responses={200: dict}

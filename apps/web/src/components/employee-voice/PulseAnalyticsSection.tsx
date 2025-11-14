@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useQuery } from 'react-query';
 import { employeeVoiceAPI, type EmployeeVoicePulse } from '@/services/api';
-import { BarChart3, TrendingUp, Users, MessageSquare, Loader2, Calendar, Clock, Send } from 'lucide-react';
+import { BarChart3, TrendingUp, Users, MessageSquare, Loader2, Calendar, Clock, Send, Sparkles, Lightbulb, CheckCircle2 } from 'lucide-react';
 import { format, formatDistanceToNow } from 'date-fns';
 
 interface PulseAnalyticsSectionProps {
@@ -39,6 +39,15 @@ export default function PulseAnalyticsSection({ storeId, pulses, selectedStoreId
   const { data: stats, isLoading: statsLoading } = useQuery(
     ['distribution-stats', selectedPulseId, timePeriod],
     () => employeeVoiceAPI.getDistributionStats(selectedPulseId, timePeriod),
+    {
+      enabled: !!selectedPulseId,
+    }
+  );
+
+  // Get AI summary of comments with time period
+  const { data: aiSummary, isLoading: aiSummaryLoading } = useQuery(
+    ['ai-summary', selectedPulseId, selectedStoreId, timePeriod],
+    () => employeeVoiceAPI.getAISummary(selectedPulseId, selectedStoreId, timePeriod),
     {
       enabled: !!selectedPulseId,
     }
@@ -346,6 +355,85 @@ export default function PulseAnalyticsSection({ storeId, pulses, selectedStoreId
               </div>
             )}
           </div>
+
+          {/* AI Summary Widget */}
+          {aiSummary?.can_display && (
+            <div className="bg-gradient-to-br from-purple-50 to-indigo-50 rounded-lg border-2 border-purple-200 p-6 mt-6">
+              <div className="flex items-center mb-4">
+                <div className="bg-purple-600 rounded-lg p-2 mr-3">
+                  <Sparkles className="w-5 h-5 text-white" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-900">AI Insights</h3>
+                  <p className="text-xs text-gray-600">
+                    Based on {aiSummary.comment_count} {aiSummary.comment_count === 1 ? 'comment' : 'comments'}
+                  </p>
+                </div>
+                <div className={`ml-auto px-3 py-1 rounded-full text-xs font-medium ${
+                  aiSummary.sentiment === 'positive' ? 'bg-green-100 text-green-800' :
+                  aiSummary.sentiment === 'negative' ? 'bg-red-100 text-red-800' :
+                  'bg-gray-100 text-gray-800'
+                }`}>
+                  {aiSummary.sentiment === 'positive' ? '😊 Positive' :
+                   aiSummary.sentiment === 'negative' ? '😕 Needs Attention' :
+                   '😐 Neutral'}
+                </div>
+              </div>
+
+              {/* Summary */}
+              <div className="bg-white rounded-lg p-4 mb-4">
+                <p className="text-sm text-gray-800 leading-relaxed">
+                  {aiSummary.summary}
+                </p>
+              </div>
+
+              {/* Key Themes */}
+              {aiSummary.key_themes && aiSummary.key_themes.length > 0 && (
+                <div className="mb-4">
+                  <h4 className="text-sm font-semibold text-gray-700 mb-2 flex items-center">
+                    <MessageSquare className="w-4 h-4 mr-2 text-purple-600" />
+                    Key Themes
+                  </h4>
+                  <div className="flex flex-wrap gap-2">
+                    {aiSummary.key_themes.map((theme: string, idx: number) => (
+                      <span
+                        key={idx}
+                        className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-purple-100 text-purple-800"
+                      >
+                        {theme}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Action Items */}
+              {aiSummary.action_items && aiSummary.action_items.length > 0 && (
+                <div>
+                  <h4 className="text-sm font-semibold text-gray-700 mb-2 flex items-center">
+                    <Lightbulb className="w-4 h-4 mr-2 text-amber-600" />
+                    Suggested Actions
+                  </h4>
+                  <div className="space-y-2">
+                    {aiSummary.action_items.map((action: string, idx: number) => (
+                      <div key={idx} className="flex items-start bg-white rounded-lg p-3">
+                        <CheckCircle2 className="w-4 h-4 text-green-600 mt-0.5 mr-2 flex-shrink-0" />
+                        <p className="text-sm text-gray-700">{action}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Privacy Notice for AI Summary */}
+          {aiSummary && !aiSummary.can_display && aiSummary.message && (
+            <div className="bg-gray-50 rounded-lg border border-gray-200 p-4 mt-6 text-center">
+              <Sparkles className="w-8 h-8 text-gray-400 mx-auto mb-2" />
+              <p className="text-sm text-gray-600">{aiSummary.message}</p>
+            </div>
+          )}
         </>
       )}
 

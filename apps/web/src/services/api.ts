@@ -1233,6 +1233,19 @@ export const employeeVoiceAPI = {
     return response.data;
   },
 
+  // Get AI summary of employee comments
+  getAISummary: async (pulseId: string, storeId?: string, days?: string): Promise<any> => {
+    const params: any = {};
+    if (storeId && storeId !== 'all') {
+      params.store_id = storeId;
+    }
+    if (days) {
+      params.days = days;
+    }
+    const response = await api.get(`/employee-voice/pulses/${pulseId}/ai-summary/`, { params });
+    return response.data;
+  },
+
   // Trigger distribution scheduling
   triggerDistribution: async (pulseId: string): Promise<any> => {
     const response = await api.post(`/employee-voice/pulses/${pulseId}/trigger-distribution/`);
