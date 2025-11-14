@@ -9,12 +9,10 @@ Usage:
     python manage.py reanalyze_google_reviews --store-code STRXX123 --batch-size 50
 """
 
-import time
 from django.core.management.base import BaseCommand, CommandError
-from django.utils import timezone
-from django.db.models import Count, Avg
 from brands.models import Store
-from integrations.models import GoogleLocation, GoogleReview, GoogleReviewAnalysis
+from integrations.models import GoogleLocation, GoogleReview
+from integrations.review_analysis_helper import analyze_google_review
 from ai_services.bedrock_service import BedrockRecommendationService
 import logging
 
@@ -103,42 +101,20 @@ class Command(BaseCommand):
         sentiment_scores = []
 
         for i, review in enumerate(reviews, 1):
-            try:
-                if options['verbose']:
-                    self.stdout.write(f'\n[{i}/{total_reviews}] Analyzing review {review.google_review_id[:16]}...')
-                    self.stdout.write(f'  Rating: {review.rating}/5')
-                    self.stdout.write(f'  Text: {review.review_text[:100]}...' if len(review.review_text) > 100 else f'  Text: {review.review_text}')
+            if options['verbose']:
+                self.stdout.write(f'\n[{i}/{total_reviews}] Analyzing review {review.google_review_id[:16]}...')
+                self.stdout.write(f'  Rating: {review.rating}/5')
+                self.stdout.write(f'  Text: {review.review_text[:100]}...' if len(review.review_text) > 100 else f'  Text: {review.review_text}')
 
-                # Analyze the review
-                start_time = time.time()
-                analysis_result = bedrock_service.analyze_review(
-                    review_text=review.review_text,
-                    rating=review.rating
-                )
-                processing_time_ms = int((time.time() - start_time) * 1000)
-                total_time += processing_time_ms
+            # Use the reusable helper function
+            result = analyze_google_review(review, bedrock_service)
 
-                # Create or update analysis
-                GoogleReviewAnalysis.objects.update_or_create(
-                    review=review,
-                    defaults={
-                        'topics': analysis_result['topics'],
-                        'sentiment_score': analysis_result['sentiment_score'],
-                        'actionable_issues': analysis_result['actionable_issues'],
-                        'suggested_category': analysis_result['suggested_category'],
-                        'confidence': analysis_result.get('confidence', 0.5),
-                        'model_used': 'claude-3-haiku' if bedrock_service.enabled else 'fallback',
-                        'processing_time_ms': processing_time_ms
-                    }
-                )
-
-                # Mark review as analyzed
-                review.needs_analysis = False
-                review.analyzed_at = timezone.now()
-                review.save(update_fields=['needs_analysis', 'analyzed_at'])
+            if result['success']:
+                analyzed_count += 1
+                total_time += result['processing_time_ms']
 
                 # Track statistics
-                analyzed_count += 1
+                analysis_result = result['analysis_result']
                 sentiment_scores.append(analysis_result['sentiment_score'])
 
                 # Aggregate topics
@@ -149,18 +125,16 @@ class Command(BaseCommand):
                     self.stdout.write(self.style.SUCCESS(
                         f'  ✓ Analyzed - Sentiment: {analysis_result["sentiment_score"]:.2f}, '
                         f'Topics: {", ".join(analysis_result["topics"][:3])}, '
-                        f'Time: {processing_time_ms}ms'
+                        f'Time: {result["processing_time_ms"]}ms'
                     ))
                 else:
                     # Show progress indicator
                     if i % 10 == 0:
                         self.stdout.write(f'Progress: {i}/{total_reviews} reviews analyzed...', ending='\r')
-
-            except Exception as e:
+            else:
                 failed_count += 1
-                logger.error(f'Failed to analyze review {review.google_review_id}: {str(e)}')
                 if options['verbose']:
-                    self.stdout.write(self.style.ERROR(f'  ✗ Failed: {str(e)}'))
+                    self.stdout.write(self.style.ERROR(f'  ✗ Failed: {result["error"]}'))
 
         # Print summary
         self.stdout.write('\n')

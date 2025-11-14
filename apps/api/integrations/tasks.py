@@ -283,10 +283,10 @@ def analyze_pending_reviews(batch_size: int = 50):
     Args:
         batch_size: Number of reviews to analyze per run (default: 50)
     """
-    from .models import GoogleReview, GoogleReviewAnalysis, GoogleReviewsConfig
+    from .models import GoogleReview, GoogleReviewsConfig
+    from .review_analysis_helper import analyze_google_review
     from ai_services.bedrock_service import BedrockRecommendationService
     from django.utils import timezone
-    from datetime import datetime
 
     logger.info(f"Starting AI analysis for pending reviews (batch size: {batch_size})")
 
@@ -320,43 +320,13 @@ def analyze_pending_reviews(batch_size: int = 50):
             logger.warning(f"No config found for account {review.account.name}, skipping review {review.id}")
             continue
 
-        try:
-            start_time = datetime.now()
+        # Use the reusable helper function
+        result = analyze_google_review(review, bedrock_service)
 
-            # Analyze the review
-            analysis_result = bedrock_service.analyze_review(
-                review_text=review.review_text,
-                rating=review.rating
-            )
-
-            # Calculate processing time
-            processing_time_ms = int((datetime.now() - start_time).total_seconds() * 1000)
-
-            # Create or update analysis
-            GoogleReviewAnalysis.objects.update_or_create(
-                review=review,
-                defaults={
-                    'topics': analysis_result['topics'],
-                    'sentiment_score': analysis_result['sentiment_score'],
-                    'actionable_issues': analysis_result['actionable_issues'],
-                    'suggested_category': analysis_result['suggested_category'],
-                    'confidence': analysis_result.get('confidence', 0.5),
-                    'model_used': 'claude-3-haiku' if bedrock_service.enabled else 'fallback',
-                    'processing_time_ms': processing_time_ms
-                }
-            )
-
-            # Mark review as analyzed
-            review.needs_analysis = False
-            review.analyzed_at = timezone.now()
-            review.save(update_fields=['needs_analysis', 'analyzed_at'])
-
+        if result['success']:
             analyzed_count += 1
-            logger.info(f"Analyzed review {review.id}: {analysis_result['suggested_category']}")
-
-        except Exception as e:
+        else:
             failed_count += 1
-            logger.error(f"Failed to analyze review {review.id}: {str(e)}")
 
     logger.info(f"Review analysis completed. Analyzed: {analyzed_count}, Failed: {failed_count}")
 
