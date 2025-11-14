@@ -1,16 +1,14 @@
 import { useState, useEffect } from 'react';
 import { useMutation, useQueryClient } from 'react-query';
 import { employeeVoiceAPI, type EmployeeVoicePulse, type UpdatePulseRequest } from '@/services/api';
-import { Save, Loader2, ChevronDown, ChevronRight, CheckCircle } from 'lucide-react';
+import { Save, Loader2, CheckCircle } from 'lucide-react';
 
 interface PulseConfigSectionProps {
   pulse: EmployeeVoicePulse;
-  defaultExpanded?: boolean;
 }
 
-export default function PulseConfigSection({ pulse, defaultExpanded = false }: PulseConfigSectionProps) {
+export default function PulseConfigSection({ pulse }: PulseConfigSectionProps) {
   const queryClient = useQueryClient();
-  const [isExpanded, setIsExpanded] = useState(defaultExpanded);
   const [showSuccess, setShowSuccess] = useState(false);
   const [formData, setFormData] = useState({
     title: pulse.title,
@@ -88,28 +86,7 @@ export default function PulseConfigSection({ pulse, defaultExpanded = false }: P
 
   return (
     <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
-      {/* Header */}
-      <button
-        type="button"
-        onClick={() => setIsExpanded(!isExpanded)}
-        className="w-full px-6 py-4 flex items-center justify-between hover:bg-gray-50 transition-colors"
-      >
-        <div className="flex items-center">
-          {isExpanded ? (
-            <ChevronDown className="w-5 h-5 text-gray-500 mr-2" />
-          ) : (
-            <ChevronRight className="w-5 h-5 text-gray-500 mr-2" />
-          )}
-          <h3 className="text-lg font-semibold text-gray-900">Configuration</h3>
-        </div>
-        <span className="text-sm text-gray-500">
-          {isExpanded ? 'Click to collapse' : 'Click to expand settings'}
-        </span>
-      </button>
-
-      {/* Collapsible Content */}
-      {isExpanded && (
-        <form onSubmit={handleSubmit} className="border-t border-gray-200">
+      <form onSubmit={handleSubmit}>
           {/* Success Message */}
           {showSuccess && (
             <div className="mx-6 mt-4 bg-green-50 border border-green-200 rounded-lg p-4">
@@ -312,7 +289,6 @@ export default function PulseConfigSection({ pulse, defaultExpanded = false }: P
             </button>
           </div>
         </form>
-      )}
     </div>
   );
 }

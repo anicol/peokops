@@ -217,13 +217,86 @@ export default function PulseAnalyticsSection({ storeId, pulses, selectedStoreId
 
           {/* Insight Summary */}
           {insightSummary && (
-            <div className="mb-6 bg-blue-50 border-l-4 border-blue-500 p-3 rounded-r-md">
+            <div className="mb-4 bg-blue-50 border-l-4 border-blue-500 p-3 rounded-r-md">
               <p className="text-sm text-blue-900 font-medium">{insightSummary}</p>
             </div>
           )}
 
+          {/* AI Summary Widget - Moved to top after insight bar */}
+          {aiSummary?.can_display && (
+            <div className="bg-gradient-to-br from-purple-50 to-indigo-50 rounded-lg border-2 border-purple-200 p-4 mb-4">
+              <div className="flex items-center mb-3">
+                <div className="bg-purple-600 rounded-lg p-2 mr-3">
+                  <Sparkles className="w-5 h-5 text-white" />
+                </div>
+                <div>
+                  <h3 className="text-base font-semibold text-gray-900">AI Insights</h3>
+                  <p className="text-xs text-gray-600">
+                    Based on {aiSummary.comment_count} {aiSummary.comment_count === 1 ? 'comment' : 'comments'}
+                  </p>
+                </div>
+                <div className={`ml-auto px-2 py-1 rounded-full text-xs font-medium ${
+                  aiSummary.sentiment === 'positive' ? 'bg-green-100 text-green-800' :
+                  aiSummary.sentiment === 'negative' ? 'bg-red-100 text-red-800' :
+                  'bg-gray-100 text-gray-800'
+                }`}>
+                  {aiSummary.sentiment === 'positive' ? '😊 Positive' :
+                   aiSummary.sentiment === 'negative' ? '😕 Needs Attention' :
+                   '😐 Neutral'}
+                </div>
+              </div>
+
+              {/* Summary */}
+              <div className="bg-white rounded-lg p-3 mb-3">
+                <p className="text-sm text-gray-800 leading-relaxed">
+                  {aiSummary.summary}
+                </p>
+              </div>
+
+              {/* Key Themes */}
+              {aiSummary.key_themes && aiSummary.key_themes.length > 0 && (
+                <div className="mb-3">
+                  <h4 className="text-xs font-semibold text-gray-700 mb-2">Key Themes</h4>
+                  <div className="flex flex-wrap gap-2">
+                    {aiSummary.key_themes.map((theme: string, idx: number) => (
+                      <span
+                        key={idx}
+                        className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-purple-100 text-purple-800"
+                      >
+                        {theme}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Action Items */}
+              {aiSummary.action_items && aiSummary.action_items.length > 0 && (
+                <div>
+                  <h4 className="text-xs font-semibold text-gray-700 mb-2">Suggested Actions</h4>
+                  <div className="space-y-2">
+                    {aiSummary.action_items.map((action: string, idx: number) => (
+                      <div key={idx} className="flex items-start bg-white rounded-lg p-2">
+                        <span className="text-xs mr-2 flex-shrink-0">•</span>
+                        <p className="text-xs text-gray-700">{action}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Privacy Notice for AI Summary */}
+          {aiSummary && !aiSummary.can_display && aiSummary.message && (
+            <div className="bg-gray-50 rounded-lg border border-gray-200 p-3 mb-4 text-center">
+              <Sparkles className="w-6 h-6 text-gray-400 mx-auto mb-2" />
+              <p className="text-xs text-gray-600">{aiSummary.message}</p>
+            </div>
+          )}
+
           {/* Activity Section */}
-          <div className="bg-white rounded-lg border border-gray-200 p-4 mb-6">
+          <div className="bg-white rounded-lg border border-gray-200 p-4 mb-4">
             <h3 className="text-sm font-semibold text-gray-900 mb-1">{timePeriod}-Day Activity</h3>
             <p className="text-xs text-gray-600 mb-3">Shows how engaged your team was {timePeriod === '7' ? 'this week' : 'this month'}.</p>
             <div className="grid grid-cols-3 gap-4">
@@ -261,7 +334,7 @@ export default function PulseAnalyticsSection({ storeId, pulses, selectedStoreId
           </div>
 
           {/* Confidence Distribution */}
-          <div className="bg-white rounded-lg border border-gray-200 p-3 sm:p-6 mb-4 sm:mb-6">
+          <div className="bg-white rounded-lg border border-gray-200 p-3 sm:p-6 mb-4">
             <h3 className="text-lg font-semibold text-gray-900 mb-4">Confidence Distribution</h3>
             {totalResponses === 0 ? (
               <p className="text-sm text-gray-500 text-center py-8">No responses yet</p>
@@ -355,85 +428,6 @@ export default function PulseAnalyticsSection({ storeId, pulses, selectedStoreId
               </div>
             )}
           </div>
-
-          {/* AI Summary Widget */}
-          {aiSummary?.can_display && (
-            <div className="bg-gradient-to-br from-purple-50 to-indigo-50 rounded-lg border-2 border-purple-200 p-6 mt-6">
-              <div className="flex items-center mb-4">
-                <div className="bg-purple-600 rounded-lg p-2 mr-3">
-                  <Sparkles className="w-5 h-5 text-white" />
-                </div>
-                <div>
-                  <h3 className="text-lg font-semibold text-gray-900">AI Insights</h3>
-                  <p className="text-xs text-gray-600">
-                    Based on {aiSummary.comment_count} {aiSummary.comment_count === 1 ? 'comment' : 'comments'}
-                  </p>
-                </div>
-                <div className={`ml-auto px-3 py-1 rounded-full text-xs font-medium ${
-                  aiSummary.sentiment === 'positive' ? 'bg-green-100 text-green-800' :
-                  aiSummary.sentiment === 'negative' ? 'bg-red-100 text-red-800' :
-                  'bg-gray-100 text-gray-800'
-                }`}>
-                  {aiSummary.sentiment === 'positive' ? '😊 Positive' :
-                   aiSummary.sentiment === 'negative' ? '😕 Needs Attention' :
-                   '😐 Neutral'}
-                </div>
-              </div>
-
-              {/* Summary */}
-              <div className="bg-white rounded-lg p-4 mb-4">
-                <p className="text-sm text-gray-800 leading-relaxed">
-                  {aiSummary.summary}
-                </p>
-              </div>
-
-              {/* Key Themes */}
-              {aiSummary.key_themes && aiSummary.key_themes.length > 0 && (
-                <div className="mb-4">
-                  <h4 className="text-sm font-semibold text-gray-700 mb-2 flex items-center">
-                    <MessageSquare className="w-4 h-4 mr-2 text-purple-600" />
-                    Key Themes
-                  </h4>
-                  <div className="flex flex-wrap gap-2">
-                    {aiSummary.key_themes.map((theme: string, idx: number) => (
-                      <span
-                        key={idx}
-                        className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-purple-100 text-purple-800"
-                      >
-                        {theme}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* Action Items */}
-              {aiSummary.action_items && aiSummary.action_items.length > 0 && (
-                <div>
-                  <h4 className="text-sm font-semibold text-gray-700 mb-2 flex items-center">
-                    <Lightbulb className="w-4 h-4 mr-2 text-amber-600" />
-                    Suggested Actions
-                  </h4>
-                  <div className="space-y-2">
-                    {aiSummary.action_items.map((action: string, idx: number) => (
-                      <div key={idx} className="flex items-start bg-white rounded-lg p-3">
-                        <CheckCircle2 className="w-4 h-4 text-green-600 mt-0.5 mr-2 flex-shrink-0" />
-                        <p className="text-sm text-gray-700">{action}</p>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* Privacy Notice for AI Summary */}
-          {aiSummary && !aiSummary.can_display && aiSummary.message && (
-            <div className="bg-gray-50 rounded-lg border border-gray-200 p-4 mt-6 text-center">
-              <Sparkles className="w-8 h-8 text-gray-400 mx-auto mb-2" />
-              <p className="text-sm text-gray-600">{aiSummary.message}</p>
-            </div>
-          )}
         </>
       )}
 

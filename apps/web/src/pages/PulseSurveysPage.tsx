@@ -13,14 +13,15 @@ import {
   Play,
   Pause,
   Calendar,
-  Building2
+  Building2,
+  Settings
 } from 'lucide-react';
 import PulseConfigSection from '@/components/employee-voice/PulseConfigSection';
 import PausePulseDialog from '@/components/employee-voice/PausePulseDialog';
 import PulseAnalyticsSection from '@/components/employee-voice/PulseAnalyticsSection';
 import DistributionTab from '@/components/employee-voice/DistributionTab';
 
-type ViewMode = 'analytics' | 'distribution';
+type ViewMode = 'analytics' | 'distribution' | 'configuration';
 
 export default function PulseSurveysPage() {
   const { user } = useAuth();
@@ -203,11 +204,6 @@ export default function PulseSurveysPage() {
         </div>
       </div>
 
-      {/* Configuration Section */}
-      <div className="mb-6">
-        <PulseConfigSection pulse={pulse} defaultExpanded={false} />
-      </div>
-
       {/* Tabs Navigation + Store Filter */}
       <div className="border-b border-gray-200 mb-6">
         <div className="flex items-center justify-between">
@@ -240,6 +236,20 @@ export default function PulseSurveysPage() {
               <Calendar className="w-4 h-4 mr-2" />
               Distribution
             </button>
+            <button
+              onClick={() => {
+                trackTabSwitched('configuration', { page: 'pulse_surveys' });
+                setViewMode('configuration');
+              }}
+              className={`${
+                viewMode === 'configuration'
+                  ? 'border-blue-500 text-blue-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+              } whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm flex items-center`}
+            >
+              <Settings className="w-4 h-4 mr-2" />
+              Configuration
+            </button>
           </nav>
 
           {/* Store Filter - only show in analytics view */}
@@ -270,6 +280,10 @@ export default function PulseSurveysPage() {
 
       {viewMode === 'distribution' && (
         <DistributionTab pulseId={pulse.id} isActive={pulse.is_active} />
+      )}
+
+      {viewMode === 'configuration' && (
+        <PulseConfigSection pulse={pulse} />
       )}
 
       {/* Pause Dialog */}
