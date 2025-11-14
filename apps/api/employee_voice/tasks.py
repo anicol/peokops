@@ -224,6 +224,8 @@ def _calculate_randomized_send_time(pulse, store_local_time, store_tz):
     Returns a timezone-aware datetime within the first N minutes of the shift window,
     where N = pulse.randomization_window_minutes.
 
+    If the shift window for today has already passed, schedules for tomorrow.
+
     Example: If shift is MID (12pm-2pm) and randomization_window = 60 minutes,
     returns a random time between 12:00 PM and 1:00 PM.
     """
@@ -245,6 +247,10 @@ def _calculate_randomized_send_time(pulse, store_local_time, store_tz):
 
         # Calculate scheduled time
         scheduled_local = shift_start + timedelta(minutes=random_minutes)
+
+        # If the scheduled time is in the past, schedule for tomorrow
+        if scheduled_local <= store_local_time:
+            scheduled_local = scheduled_local + timedelta(days=1)
 
         # Convert to UTC for storage
         scheduled_utc = scheduled_local.astimezone(pytz.UTC)
