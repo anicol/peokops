@@ -67,6 +67,44 @@ export default function PulseAnalyticsSection({ storeId, pulses, selectedStoreId
   const topBottlenecks = insights?.top_bottlenecks || [];
   const commentsCount = insights?.comments?.length || 0;
 
+  // Generate insight summary based on trends
+  const generateInsightSummary = () => {
+    if (moodTrend === null || moodTrend === undefined || confidenceTrend === null || confidenceTrend === undefined) {
+      return null;
+    }
+
+    const moodChange = Math.abs(moodTrend) > 0.1
+      ? (moodTrend > 0 ? 'improved' : 'declined')
+      : 'held steady';
+
+    const confidenceChange = Math.abs(confidenceTrend) > 2
+      ? (confidenceTrend > 0 ? 'increased' : 'decreased')
+      : 'held steady';
+
+    const responseChange = stats?.total_sent_7d && stats?.total_completed_7d
+      ? (stats.total_completed_7d / stats.total_sent_7d >= 0.5 ? '' : 'but response volume dipped')
+      : '';
+
+    // Build the insight sentence
+    if (moodChange === 'held steady' && confidenceChange === 'held steady') {
+      return 'Metrics remain stable compared to the previous period.';
+    } else if (moodChange !== 'held steady' && confidenceChange !== 'held steady') {
+      if (moodChange === 'improved' && confidenceChange === 'increased') {
+        return 'Team mood and confidence both improved.';
+      } else if (moodChange === 'declined' && confidenceChange === 'decreased') {
+        return 'Team mood and confidence both declined.';
+      } else {
+        return `Mood ${moodChange} while confidence ${confidenceChange}.`;
+      }
+    } else if (moodChange !== 'held steady') {
+      return `Mood ${moodChange} ${responseChange}${confidenceChange !== 'held steady' ? ` while confidence ${confidenceChange}` : ''}.`;
+    } else {
+      return `Confidence ${confidenceChange} while mood held steady.`;
+    }
+  };
+
+  const insightSummary = generateInsightSummary();
+
   return (
     <div>
       {/* Time Period Selector */}
@@ -168,6 +206,13 @@ export default function PulseAnalyticsSection({ storeId, pulses, selectedStoreId
             </div>
           </div>
 
+          {/* Insight Summary */}
+          {insightSummary && (
+            <div className="mb-6 bg-blue-50 border-l-4 border-blue-500 p-3 rounded-r-md">
+              <p className="text-sm text-blue-900 font-medium">{insightSummary}</p>
+            </div>
+          )}
+
           {/* Activity Section */}
           <div className="bg-white rounded-lg border border-gray-200 p-4 mb-6">
             <h3 className="text-sm font-semibold text-gray-900 mb-1">{timePeriod}-Day Activity</h3>
@@ -181,7 +226,7 @@ export default function PulseAnalyticsSection({ storeId, pulses, selectedStoreId
                 <p className="text-xl font-bold text-blue-600">
                   {stats?.total_sent_7d || 0}
                 </p>
-                <p className="text-xs text-gray-500 mt-1">Number of surveys delivered in the last {timePeriod} days.</p>
+                <p className="text-xs text-gray-500 mt-1">Number of surveys delivered.</p>
               </div>
               <div>
                 <div className="flex items-center gap-2 mb-1">
@@ -191,7 +236,7 @@ export default function PulseAnalyticsSection({ storeId, pulses, selectedStoreId
                 <p className="text-xl font-bold text-green-600">
                   {stats?.total_completed_7d || 0}
                 </p>
-                <p className="text-xs text-gray-500 mt-1">Total completed surveys.</p>
+                <p className="text-xs text-gray-500 mt-1">Completed surveys.</p>
               </div>
               <div>
                 <div className="flex items-center gap-2 mb-1">
@@ -244,7 +289,8 @@ export default function PulseAnalyticsSection({ storeId, pulses, selectedStoreId
 
           {/* Top Bottlenecks */}
           <div className="bg-white rounded-lg border border-gray-200 p-3 sm:p-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Top Bottlenecks</h3>
+            <h3 className="text-lg font-semibold text-gray-900 mb-1">Top Bottlenecks</h3>
+            <p className="text-xs text-gray-600 mb-4">This shows what your team mentioned most often.</p>
             {topBottlenecks.length === 0 ? (
               <p className="text-sm text-gray-500 text-center py-8">
                 No bottlenecks reported yet
@@ -262,21 +308,35 @@ export default function PulseAnalyticsSection({ storeId, pulses, selectedStoreId
                     'GUEST_VOLUME': '🍴',
                   };
 
+                  const isTopBottleneck = idx === 0;
+
                   return (
                     <div
                       key={bottleneck.type}
-                      className="flex items-center justify-between p-3 bg-gray-50 rounded-md"
+                      className={`flex items-center justify-between p-3 rounded-md ${
+                        isTopBottleneck
+                          ? 'bg-orange-50 border-l-4 border-orange-500'
+                          : 'bg-gray-50'
+                      }`}
                     >
                       <div className="flex items-center space-x-3">
-                        <span className="text-lg font-bold text-gray-400">#{idx + 1}</span>
+                        <span className={`text-lg font-bold ${isTopBottleneck ? 'text-orange-600' : 'text-gray-400'}`}>
+                          #{idx + 1}
+                        </span>
                         <span className="text-xl">{icons[bottleneck.type] || '📌'}</span>
-                        <span className="text-sm font-medium text-gray-900">
+                        <span className={`text-sm font-medium ${isTopBottleneck ? 'text-orange-900' : 'text-gray-900'}`}>
                           {bottleneck.type.replace(/_/g, ' ').toLowerCase().replace(/\b\w/g, (l: string) => l.toUpperCase())}
                         </span>
                       </div>
                       <div className="flex items-center space-x-3">
-                        <span className="text-sm text-gray-500">{Math.round(bottleneck.percentage)}%</span>
-                        <span className="text-sm font-semibold text-gray-700 bg-gray-200 px-2 py-1 rounded">
+                        <span className={`text-sm ${isTopBottleneck ? 'text-orange-700 font-medium' : 'text-gray-500'}`}>
+                          {Math.round(bottleneck.percentage)}%
+                        </span>
+                        <span className={`text-sm font-semibold px-2 py-1 rounded ${
+                          isTopBottleneck
+                            ? 'text-orange-900 bg-orange-200'
+                            : 'text-gray-700 bg-gray-200'
+                        }`}>
                           {bottleneck.count} mentions
                         </span>
                       </div>
