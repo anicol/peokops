@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useQuery } from 'react-query';
 import { employeeVoiceAPI, type EmployeeVoicePulse } from '@/services/api';
-import { BarChart3, TrendingUp, Users, MessageSquare, Loader2, Calendar, Clock } from 'lucide-react';
+import { BarChart3, TrendingUp, Users, MessageSquare, Loader2, Calendar, Clock, Send } from 'lucide-react';
 import { format, formatDistanceToNow } from 'date-fns';
 
 interface PulseAnalyticsSectionProps {
@@ -15,6 +15,7 @@ export default function PulseAnalyticsSection({ storeId, pulses, selectedStoreId
     pulses.length > 0 ? pulses[0].id : ''
   );
   const [showCommentsModal, setShowCommentsModal] = useState(false);
+  const [timePeriod, setTimePeriod] = useState<'7' | '30'>('7');
 
   // Get responses for selected pulse
   const { data: responses, isLoading: responsesLoading } = useQuery(
@@ -25,16 +26,25 @@ export default function PulseAnalyticsSection({ storeId, pulses, selectedStoreId
     }
   );
 
-  // Get insights for selected pulse with store filter
+  // Get insights for selected pulse with store filter and time period
   const { data: insights, isLoading: insightsLoading } = useQuery(
-    ['employee-voice-insights', selectedPulseId, selectedStoreId],
-    () => employeeVoiceAPI.getPulseInsights(selectedPulseId, selectedStoreId),
+    ['employee-voice-insights', selectedPulseId, selectedStoreId, timePeriod],
+    () => employeeVoiceAPI.getPulseInsights(selectedPulseId, selectedStoreId, timePeriod),
     {
       enabled: !!selectedPulseId,
     }
   );
 
-  const isLoading = responsesLoading || insightsLoading;
+  // Get distribution stats for activity section with time period
+  const { data: stats, isLoading: statsLoading } = useQuery(
+    ['distribution-stats', selectedPulseId, timePeriod],
+    () => employeeVoiceAPI.getDistributionStats(selectedPulseId, timePeriod),
+    {
+      enabled: !!selectedPulseId,
+    }
+  );
+
+  const isLoading = responsesLoading || insightsLoading || statsLoading;
 
   if (pulses.length === 0) {
     return (
@@ -59,22 +69,16 @@ export default function PulseAnalyticsSection({ storeId, pulses, selectedStoreId
 
   return (
     <div>
-      {/* Pulse Selector */}
-      <div className="mb-6">
-        <label htmlFor="pulse-select" className="block text-sm font-medium text-gray-700 mb-2">
-          Select Pulse
-        </label>
+      {/* Time Period Selector */}
+      <div className="mb-6 flex items-center justify-between">
+        <h3 className="text-sm font-medium text-gray-700">Time Period</h3>
         <select
-          id="pulse-select"
-          value={selectedPulseId}
-          onChange={(e) => setSelectedPulseId(e.target.value)}
-          className="w-full max-w-md px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          value={timePeriod}
+          onChange={(e) => setTimePeriod(e.target.value as '7' | '30')}
+          className="px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
         >
-          {pulses.map((pulse) => (
-            <option key={pulse.id} value={pulse.id}>
-              {pulse.title}
-            </option>
-          ))}
+          <option value="7">Last 7 Days</option>
+          <option value="30">Last 30 Days</option>
         </select>
       </div>
 
@@ -161,6 +165,44 @@ export default function PulseAnalyticsSection({ storeId, pulses, selectedStoreId
                   Click to view all →
                 </p>
               )}
+            </div>
+          </div>
+
+          {/* Activity Section */}
+          <div className="bg-white rounded-lg border border-gray-200 p-4 mb-6">
+            <h3 className="text-sm font-semibold text-gray-900 mb-1">{timePeriod}-Day Activity</h3>
+            <p className="text-xs text-gray-600 mb-3">Shows how engaged your team was {timePeriod === '7' ? 'this week' : 'this month'}.</p>
+            <div className="grid grid-cols-3 gap-4">
+              <div>
+                <div className="flex items-center gap-2 mb-1">
+                  <Send className="w-4 h-4 text-blue-600" />
+                  <p className="text-xs text-gray-500">Invites Sent</p>
+                </div>
+                <p className="text-xl font-bold text-blue-600">
+                  {stats?.total_sent_7d || 0}
+                </p>
+                <p className="text-xs text-gray-500 mt-1">Number of surveys delivered in the last {timePeriod} days.</p>
+              </div>
+              <div>
+                <div className="flex items-center gap-2 mb-1">
+                  <BarChart3 className="w-4 h-4 text-green-600" />
+                  <p className="text-xs text-gray-500">Responses</p>
+                </div>
+                <p className="text-xl font-bold text-green-600">
+                  {stats?.total_completed_7d || 0}
+                </p>
+                <p className="text-xs text-gray-500 mt-1">Total completed surveys.</p>
+              </div>
+              <div>
+                <div className="flex items-center gap-2 mb-1">
+                  <TrendingUp className="w-4 h-4 text-purple-600" />
+                  <p className="text-xs text-gray-500">Response Rate</p>
+                </div>
+                <p className="text-xl font-bold text-purple-600">
+                  {stats?.avg_response_rate_7d || 0}%
+                </p>
+                <p className="text-xs text-gray-500 mt-1">Responses divided by total invites.</p>
+              </div>
             </div>
           </div>
 

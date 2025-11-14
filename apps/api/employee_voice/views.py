@@ -159,6 +159,7 @@ class EmployeeVoicePulseViewSet(ScopedQuerysetMixin, ScopedCreateMixin, viewsets
         Get aggregated insights for this pulse.
         Enforces n ≥ 5 privacy protection and role-based access.
         Supports optional store_id filter for multi-store accounts.
+        Supports optional days parameter (7 or 30, defaults to 7).
         """
         pulse = self.get_object()
         user = request.user
@@ -170,17 +171,26 @@ class EmployeeVoicePulseViewSet(ScopedQuerysetMixin, ScopedCreateMixin, viewsets
                 status=status.HTTP_403_FORBIDDEN
             )
 
-        # Get optional store filter
+        # Get optional store filter and days parameter
         store_id = request.query_params.get('store_id')
+        days_param = request.query_params.get('days', '7')
 
-        # Calculate metrics for current week (last 7 days) as primary data
+        # Validate days parameter
+        try:
+            days = int(days_param)
+            if days not in [7, 30]:
+                days = 7
+        except (ValueError, TypeError):
+            days = 7
+
+        # Calculate metrics for specified time period
         now = timezone.now()
-        one_week_ago = now - timedelta(days=7)
+        time_ago = now - timedelta(days=days)
 
-        # Get current week responses
+        # Get current period responses
         responses = EmployeeVoiceResponse.objects.filter(
             pulse=pulse,
-            completed_at__gte=one_week_ago
+            completed_at__gte=time_ago
         )
 
         # Filter by store if specified
@@ -222,19 +232,19 @@ class EmployeeVoicePulseViewSet(ScopedQuerysetMixin, ScopedCreateMixin, viewsets
                 'message': f"Insights will unlock after {pulse.min_respondents_for_display - total_unique_respondents} more unique team members participate."
             }, status=status.HTTP_200_OK)
 
-        # Calculate week-over-week trends
-        two_weeks_ago = now - timedelta(days=14)
+        # Calculate period-over-period trends
+        previous_period_ago = now - timedelta(days=days * 2)
 
-        # Current week responses (already filtered above)
-        current_week_responses = responses
-        # Previous week responses (8-14 days ago)
-        previous_week_responses = EmployeeVoiceResponse.objects.filter(
+        # Current period responses (already filtered above)
+        current_period_responses = responses
+        # Previous period responses (previous N days)
+        previous_period_responses = EmployeeVoiceResponse.objects.filter(
             pulse=pulse,
-            completed_at__gte=two_weeks_ago,
-            completed_at__lt=one_week_ago
+            completed_at__gte=previous_period_ago,
+            completed_at__lt=time_ago
         )
 
-        # Apply same store filter to previous week if specified
+        # Apply same store filter to previous period if specified
         if store_id and store_id != 'all':
             from integrations.models import SevenShiftsEmployee
             store_employee_ids = SevenShiftsEmployee.objects.filter(
@@ -242,27 +252,27 @@ class EmployeeVoicePulseViewSet(ScopedQuerysetMixin, ScopedCreateMixin, viewsets
                 store_id=store_id
             ).values_list('id', flat=True)
 
-            previous_week_responses = previous_week_responses.filter(
+            previous_period_responses = previous_period_responses.filter(
                 invitation__recipient_phone__in=SevenShiftsEmployee.objects.filter(
                     id__in=store_employee_ids
                 ).values_list('phone', flat=True)
             )
 
-        # Current week metrics
-        current_week_mood = current_week_responses.aggregate(avg_mood=Avg('mood'))['avg_mood'] or 0
-        current_week_confidence_high = current_week_responses.filter(confidence=3).count()
-        current_week_total = current_week_responses.count()
-        current_week_confidence_pct = (current_week_confidence_high / current_week_total * 100) if current_week_total > 0 else 0
+        # Current period metrics
+        current_period_mood = current_period_responses.aggregate(avg_mood=Avg('mood'))['avg_mood'] or 0
+        current_period_confidence_high = current_period_responses.filter(confidence=3).count()
+        current_period_total = current_period_responses.count()
+        current_period_confidence_pct = (current_period_confidence_high / current_period_total * 100) if current_period_total > 0 else 0
 
-        # Previous week metrics
-        previous_week_mood = previous_week_responses.aggregate(avg_mood=Avg('mood'))['avg_mood'] or 0
-        previous_week_confidence_high = previous_week_responses.filter(confidence=3).count()
-        previous_week_total = previous_week_responses.count()
-        previous_week_confidence_pct = (previous_week_confidence_high / previous_week_total * 100) if previous_week_total > 0 else 0
+        # Previous period metrics
+        previous_period_mood = previous_period_responses.aggregate(avg_mood=Avg('mood'))['avg_mood'] or 0
+        previous_period_confidence_high = previous_period_responses.filter(confidence=3).count()
+        previous_period_total = previous_period_responses.count()
+        previous_period_confidence_pct = (previous_period_confidence_high / previous_period_total * 100) if previous_period_total > 0 else 0
 
-        # Calculate trends (difference from previous week)
-        mood_trend = round(current_week_mood - previous_week_mood, 2) if previous_week_mood > 0 else None
-        confidence_trend = round(current_week_confidence_pct - previous_week_confidence_pct, 1) if previous_week_total > 0 else None
+        # Calculate trends (difference from previous period)
+        mood_trend = round(current_period_mood - previous_period_mood, 2) if previous_period_mood > 0 else None
+        confidence_trend = round(current_period_confidence_pct - previous_period_confidence_pct, 1) if previous_period_total > 0 else None
 
         # Calculate mood metrics
         mood_stats = responses.aggregate(avg_mood=Avg('mood'))
@@ -327,7 +337,7 @@ class EmployeeVoicePulseViewSet(ScopedQuerysetMixin, ScopedCreateMixin, viewsets
         insights_data = {
             'pulse_id': pulse.id,
             'pulse_title': pulse.title,
-            'time_window': 'Last 7 days',
+            'time_window': f'Last {days} days',
             'total_responses': total_responses,
             'unique_respondents': unique_respondents,
             'can_display': True,
@@ -433,7 +443,7 @@ class EmployeeVoicePulseViewSet(ScopedQuerysetMixin, ScopedCreateMixin, viewsets
             employees = employees.filter(store=pulse.store)
 
         total_employees = employees.count()
-        employee_list = list(employees.values('id', 'first_name', 'last_name', 'phone'))
+        employee_list = list(employees.values('id', 'first_name', 'last_name', 'phone', 'roles'))
 
         # Calculate expected sends based on frequency
         frequency_map = {
@@ -462,9 +472,12 @@ class EmployeeVoicePulseViewSet(ScopedQuerysetMixin, ScopedCreateMixin, viewsets
             # Simulate random selection
             for emp in employee_list:
                 if random.random() < send_probability:
+                    # Get first role or 'Team Member' as default
+                    role = emp['roles'][0] if emp['roles'] and len(emp['roles']) > 0 else 'Team Member'
                     selected_employees.append({
                         'name': f"{emp['first_name']} {emp['last_name']}",
-                        'phone': emp['phone'][-4:]  # Last 4 digits for privacy
+                        'phone': emp['phone'][-4:],  # Last 4 digits for privacy
+                        'role': role
                     })
 
             simulation.append({
@@ -494,16 +507,27 @@ class EmployeeVoicePulseViewSet(ScopedQuerysetMixin, ScopedCreateMixin, viewsets
     @action(detail=True, methods=['get'], url_path='distribution-stats')
     def distribution_stats(self, request, pk=None):
         """
-        Get distribution statistics for last 7 days.
+        Get distribution statistics for specified time period (7 or 30 days).
         Shows daily breakdown of scheduled/sent/opened/completed.
         """
         pulse = self.get_object()
 
-        seven_days_ago = timezone.now() - timedelta(days=7)
+        # Get optional days parameter
+        days_param = request.query_params.get('days', '7')
+
+        # Validate days parameter
+        try:
+            days = int(days_param)
+            if days not in [7, 30]:
+                days = 7
+        except (ValueError, TypeError):
+            days = 7
+
+        time_ago = timezone.now() - timedelta(days=days)
 
         invitations = EmployeeVoiceInvitation.objects.filter(
             pulse=pulse,
-            created_at__gte=seven_days_ago
+            created_at__gte=time_ago
         )
 
         # Group by date

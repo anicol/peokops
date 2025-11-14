@@ -1164,8 +1164,14 @@ export const employeeVoiceAPI = {
   },
 
   // Get pulse insights
-  getPulseInsights: async (pulseId: string, storeId?: string): Promise<any> => {
-    const params = storeId && storeId !== 'all' ? { store_id: storeId } : {};
+  getPulseInsights: async (pulseId: string, storeId?: string, days?: string): Promise<any> => {
+    const params: any = {};
+    if (storeId && storeId !== 'all') {
+      params.store_id = storeId;
+    }
+    if (days) {
+      params.days = days;
+    }
     const response = await api.get(`/employee-voice/pulses/${pulseId}/insights/`, { params });
     return response.data;
   },
@@ -1221,8 +1227,9 @@ export const employeeVoiceAPI = {
   },
 
   // Get distribution statistics
-  getDistributionStats: async (pulseId: string): Promise<any> => {
-    const response = await api.get(`/employee-voice/pulses/${pulseId}/distribution-stats/`);
+  getDistributionStats: async (pulseId: string, days?: string): Promise<any> => {
+    const params = days ? { days } : {};
+    const response = await api.get(`/employee-voice/pulses/${pulseId}/distribution-stats/`, { params });
     return response.data;
   },
 
