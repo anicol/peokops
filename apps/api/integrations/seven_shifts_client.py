@@ -120,14 +120,14 @@ class SevenShiftsClient:
 
     def list_users(self, location_id: Optional[str] = None,
                    active_only: bool = True,
-                   limit: int = 500) -> List[Dict[str, Any]]:
+                   limit: int = 100) -> List[Dict[str, Any]]:
         """
         List ALL users (employees) from 7shifts with pagination support.
 
         Args:
             location_id: Filter by specific location (optional)
             active_only: Only return active employees
-            limit: Number of results per page (1-500, default 500 for efficiency)
+            limit: Number of results per page (1-500, default 100 for balanced performance)
 
         Returns:
             List of ALL user dictionaries (handles pagination automatically)
@@ -223,7 +223,7 @@ class SevenShiftsClient:
     def list_shifts(self, start_date: Optional[datetime] = None, end_date: Optional[datetime] = None,
                     location_id: Optional[str] = None,
                     user_id: Optional[str] = None,
-                    limit: int = 500) -> List[Dict[str, Any]]:
+                    limit: int = 100) -> List[Dict[str, Any]]:
         """
         List ALL shifts within a date range with pagination support.
 
@@ -232,7 +232,7 @@ class SevenShiftsClient:
             end_date: End of date range (inclusive) - optional, fetches all if not provided
             location_id: Filter by location (optional)
             user_id: Filter by user (optional)
-            limit: Number of results per page (1-500, default 500 for efficiency)
+            limit: Number of results per page (1-500, default 100 for balanced performance)
 
         Returns:
             List of ALL shift dictionaries (handles pagination automatically)
