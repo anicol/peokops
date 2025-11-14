@@ -13,6 +13,50 @@ from ai_services.bedrock_service import BedrockRecommendationService
 logger = logging.getLogger(__name__)
 
 
+def create_or_update_analysis(review, analysis_result: Dict[str, Any],
+                               model_used: str, processing_time_ms: int) -> 'GoogleReviewAnalysis':
+    """
+    Create or update a GoogleReviewAnalysis record from AI analysis results.
+
+    This is a reusable helper to ensure consistent database record creation
+    across all code that analyzes reviews (tasks, management commands, tests, etc.)
+
+    Args:
+        review: GoogleReview instance
+        analysis_result: Dict from BedrockService.analyze_review() containing:
+            - topics: list of topics
+            - sentiment_score: float
+            - actionable_issues: list of issues
+            - suggested_category: str
+            - confidence: float (optional)
+        model_used: Name of AI model used (e.g., 'claude-3-haiku', 'fallback', 'test')
+        processing_time_ms: Time taken to analyze in milliseconds
+
+    Returns:
+        GoogleReviewAnalysis instance
+    """
+    from .models import GoogleReviewAnalysis
+
+    # Map suggested_category to categories list for database compatibility
+    categories = [analysis_result['suggested_category']] if analysis_result.get('suggested_category') else []
+
+    analysis, created = GoogleReviewAnalysis.objects.update_or_create(
+        review=review,
+        defaults={
+            'topics': analysis_result.get('topics', []),
+            'sentiment_score': analysis_result.get('sentiment_score', 0.0),
+            'actionable_issues': analysis_result.get('actionable_issues', []),
+            'suggested_category': analysis_result.get('suggested_category', ''),
+            'categories': categories,
+            'confidence': analysis_result.get('confidence', 0.5),
+            'model_used': model_used,
+            'processing_time_ms': processing_time_ms
+        }
+    )
+
+    return analysis
+
+
 def analyze_google_review(review, bedrock_service: Optional[BedrockRecommendationService] = None) -> Dict[str, Any]:
     """
     Analyze a single Google review using AI and update the database.
@@ -34,8 +78,6 @@ def analyze_google_review(review, bedrock_service: Optional[BedrockRecommendatio
         - Creates or updates GoogleReviewAnalysis record
         - Updates review.needs_analysis and review.analyzed_at fields
     """
-    from .models import GoogleReviewAnalysis
-
     if bedrock_service is None:
         bedrock_service = BedrockRecommendationService()
 
@@ -51,22 +93,13 @@ def analyze_google_review(review, bedrock_service: Optional[BedrockRecommendatio
         # Calculate processing time
         processing_time_ms = int((datetime.now() - start_time).total_seconds() * 1000)
 
-        # Create or update analysis
-        # Map suggested_category to categories list for database compatibility
-        categories = [analysis_result['suggested_category']] if analysis_result['suggested_category'] else []
-
-        GoogleReviewAnalysis.objects.update_or_create(
+        # Create or update analysis using reusable helper
+        model_used = 'claude-3-haiku' if bedrock_service.enabled else 'fallback'
+        create_or_update_analysis(
             review=review,
-            defaults={
-                'topics': analysis_result['topics'],
-                'sentiment_score': analysis_result['sentiment_score'],
-                'actionable_issues': analysis_result['actionable_issues'],
-                'suggested_category': analysis_result['suggested_category'],
-                'categories': categories,  # Add required categories field
-                'confidence': analysis_result.get('confidence', 0.5),
-                'model_used': 'claude-3-haiku' if bedrock_service.enabled else 'fallback',
-                'processing_time_ms': processing_time_ms
-            }
+            analysis_result=analysis_result,
+            model_used=model_used,
+            processing_time_ms=processing_time_ms
         )
 
         # Mark review as analyzed
