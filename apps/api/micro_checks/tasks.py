@@ -467,8 +467,6 @@ def send_micro_check_assignment(run_id, manager_id, delivery_method='SMS'):
         success = _send_sms(manager.phone_number, magic_link, run)
     elif delivery_method == 'EMAIL':
         success = _send_email(manager.email, magic_link, run)
-    elif delivery_method == 'WHATSAPP':
-        success = _send_whatsapp(manager.phone_number, magic_link, run)
     else:
         logger.error(f"Unknown delivery method: {delivery_method}")
         return {'success': False, 'error': 'Unknown delivery method'}
@@ -570,13 +568,6 @@ def _send_email(email, magic_link, run):
     except Exception as e:
         logger.error(f"Email send failed: {str(e)}")
         return False
-
-
-def _send_whatsapp(phone_number, magic_link, run):
-    """Send WhatsApp message with magic link using Twilio"""
-    # Placeholder - implement with Twilio WhatsApp API
-    logger.info(f"WhatsApp would be sent to {phone_number}: {magic_link}")
-    return True
 
 
 @shared_task(queue='default', bind=True)

@@ -418,14 +418,14 @@ def _analyze_bottleneck_correlations(pulse, responses, time_window_start):
     """Analyze bottleneck trends vs check failures"""
     correlations_created = 0
 
-    # Count bottleneck mentions
-    bottleneck_counts = responses.exclude(
-        Q(bottleneck__isnull=True) | Q(bottleneck='NONE')
-    ).values('bottleneck').annotate(count=Count('bottleneck'))
+    # Count bottleneck mentions from JSONField array
+    bottleneck_counts = {}
+    for response in responses:
+        if response.bottlenecks and isinstance(response.bottlenecks, list):
+            for bottleneck in response.bottlenecks:
+                bottleneck_counts[bottleneck] = bottleneck_counts.get(bottleneck, 0) + 1
 
-    for item in bottleneck_counts:
-        bottleneck_type = item['bottleneck']
-        mention_count = item['count']
+    for bottleneck_type, mention_count in bottleneck_counts.items():
 
         # Map bottleneck to check category
         category_map = {
@@ -563,7 +563,8 @@ def _analyze_confidence_correlations(pulse, responses, time_window_start):
 
     # Calculate confidence stats
     total = responses.count()
-    low_confidence = responses.filter(confidence='LOW').count()
+    from employee_voice.models import EmployeeVoiceResponse
+    low_confidence = responses.filter(confidence=EmployeeVoiceResponse.Confidence.NO).count()
     low_confidence_pct = (low_confidence / total * 100) if total > 0 else 0
 
     if low_confidence_pct < 30:  # Only trigger if >30% low confidence
