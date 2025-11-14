@@ -154,6 +154,70 @@ export default function DistributionTab({ pulseId, isActive = true }: Distributi
         </div>
       </div>
 
+      {/* 7-Day Distribution Preview */}
+      {preview?.seven_day_simulation && preview.seven_day_simulation.length > 0 && (
+        <div className="bg-gradient-to-br from-blue-50 to-purple-50 rounded-lg border-2 border-blue-200 p-6">
+          <div className="flex items-center justify-between mb-4">
+            <div>
+              <h3 className="text-lg font-semibold text-gray-900 flex items-center">
+                <Calendar className="w-5 h-5 mr-2 text-blue-600" />
+                7-Day Distribution Preview
+              </h3>
+              <p className="text-sm text-gray-600 mt-1">
+                Simulated preview of how surveys will be distributed over the next 7 days
+              </p>
+            </div>
+          </div>
+
+          <div className="space-y-3">
+            {preview.seven_day_simulation.map((day: any, idx: number) => (
+              <div
+                key={day.date}
+                className="bg-white rounded-lg p-4 border border-gray-200 hover:border-blue-300 transition-all"
+              >
+                <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center gap-3">
+                    <div className="text-sm font-semibold text-gray-700">
+                      {idx === 0 ? 'Today' : idx === 1 ? 'Tomorrow' : day.day_name}
+                    </div>
+                    <div className="text-xs text-gray-500">{day.date}</div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="text-lg font-bold text-blue-600">{day.expected_sends}</div>
+                    <div className="text-xs text-gray-500">employees</div>
+                  </div>
+                </div>
+
+                {day.sample_employees && day.sample_employees.length > 0 && (
+                  <div className="flex items-center gap-2 flex-wrap mt-2">
+                    {day.sample_employees.map((emp: any, empIdx: number) => (
+                      <span
+                        key={empIdx}
+                        className="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-blue-100 text-blue-700"
+                      >
+                        {emp.name} <span className="ml-1 text-blue-500">•••{emp.phone}</span>
+                      </span>
+                    ))}
+                    {day.expected_sends > day.sample_employees.length && (
+                      <span className="text-xs text-gray-500">
+                        +{day.expected_sends - day.sample_employees.length} more
+                      </span>
+                    )}
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+
+          <div className="mt-4 p-3 bg-blue-100 rounded-lg">
+            <p className="text-xs text-blue-800">
+              <strong>Note:</strong> This is a simulated preview based on your current settings ({preview.delivery_frequency} frequency = {preview.send_probability_pct}% chance per employee daily).
+              Actual distribution uses true randomization, so the exact employees selected will vary.
+            </p>
+          </div>
+        </div>
+      )}
+
       {/* Upcoming Scheduled Invitations */}
       <div className="bg-white rounded-lg border border-gray-200 p-6">
         <div className="flex items-center justify-between mb-6">

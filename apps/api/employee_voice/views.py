@@ -416,13 +416,14 @@ class EmployeeVoicePulseViewSet(ScopedQuerysetMixin, ScopedCreateMixin, viewsets
     def distribution_preview(self, request, pk=None):
         """
         Preview how distribution will work based on current settings.
-        Shows expected sends per day based on frequency.
+        Shows expected sends per day based on frequency, plus a 7-day simulation.
         """
         pulse = self.get_object()
 
         from integrations.models import SevenShiftsEmployee
+        import random
 
-        # Get eligible employee count
+        # Get eligible employees
         employees = SevenShiftsEmployee.objects.filter(
             account=pulse.account,
             is_active=True
@@ -432,6 +433,7 @@ class EmployeeVoicePulseViewSet(ScopedQuerysetMixin, ScopedCreateMixin, viewsets
             employees = employees.filter(store=pulse.store)
 
         total_employees = employees.count()
+        employee_list = list(employees.values('id', 'first_name', 'last_name', 'phone'))
 
         # Calculate expected sends based on frequency
         frequency_map = {
@@ -449,6 +451,29 @@ class EmployeeVoicePulseViewSet(ScopedQuerysetMixin, ScopedCreateMixin, viewsets
             created_at__gte=today_start
         ).count()
 
+        # Generate 7-day forward simulation
+        # This shows users what the distribution pattern will look like
+        simulation = []
+        random.seed(42)  # Consistent seed for preview (not actual scheduling)
+        for day_offset in range(7):
+            day_date = timezone.now().date() + timedelta(days=day_offset)
+            selected_employees = []
+
+            # Simulate random selection
+            for emp in employee_list:
+                if random.random() < send_probability:
+                    selected_employees.append({
+                        'name': f"{emp['first_name']} {emp['last_name']}",
+                        'phone': emp['phone'][-4:]  # Last 4 digits for privacy
+                    })
+
+            simulation.append({
+                'date': day_date.isoformat(),
+                'day_name': day_date.strftime('%A'),
+                'expected_sends': len(selected_employees),
+                'sample_employees': selected_employees[:5]  # Show up to 5 as sample
+            })
+
         return Response({
             'total_eligible_employees': total_employees,
             'delivery_frequency': pulse.delivery_frequency,
@@ -458,6 +483,7 @@ class EmployeeVoicePulseViewSet(ScopedQuerysetMixin, ScopedCreateMixin, viewsets
             'randomization_window_minutes': pulse.randomization_window_minutes,
             'shift_window': pulse.shift_window,
             'shift_window_display': pulse.get_shift_window_display(),
+            'seven_day_simulation': simulation,
         })
 
     @extend_schema(
