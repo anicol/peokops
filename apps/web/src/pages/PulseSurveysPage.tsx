@@ -55,8 +55,12 @@ export default function PulseSurveysPage() {
       employeeVoiceAPI.pausePulse(pulse!.id, reason, notes),
     {
       onSuccess: () => {
+        console.log('Pause successful, invalidating queries');
         queryClient.invalidateQueries(['employee-voice-pulse']);
         setShowPauseDialog(false);
+      },
+      onError: (error) => {
+        console.error('Pause failed:', error);
       },
     }
   );
@@ -66,17 +70,24 @@ export default function PulseSurveysPage() {
     () => employeeVoiceAPI.resumePulse(pulse!.id),
     {
       onSuccess: () => {
+        console.log('Resume successful, invalidating queries');
         queryClient.invalidateQueries(['employee-voice-pulse']);
+      },
+      onError: (error) => {
+        console.error('Resume failed:', error);
       },
     }
   );
 
   const handleToggleActive = () => {
+    console.log('Toggle clicked, pulse.is_active:', pulse?.is_active);
     if (pulse?.is_active) {
       // Pausing - use "OTHER" as default reason for simple toggle
+      console.log('Pausing pulse with reason: OTHER');
       pauseMutation.mutate({ reason: 'OTHER', notes: 'Paused via toggle' });
     } else {
       // Resuming
+      console.log('Resuming pulse');
       resumeMutation.mutate();
     }
   };
