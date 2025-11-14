@@ -72,17 +72,11 @@ export default function PulseSurveysPage() {
   );
 
   const handleToggleActive = () => {
-    // Don't allow toggling if pulse is under review
-    if (!pulse?.is_active && pulse?.pause_reason === 'UNDER_REVIEW') {
-      alert('Cannot activate pulse while it is under review. Please change the pause reason first.');
-      return;
-    }
-
     if (pulse?.is_active) {
-      // Pausing - show dialog for reason
-      setShowPauseDialog(true);
+      // Pausing - use "OTHER" as default reason for simple toggle
+      pauseMutation.mutate({ reason: 'OTHER', notes: 'Paused via toggle' });
     } else {
-      // Resuming - no dialog needed
+      // Resuming
       resumeMutation.mutate();
     }
   };
@@ -147,39 +141,9 @@ export default function PulseSurveysPage() {
             <h1 className="text-2xl font-bold text-gray-900">{pulse.title}</h1>
             <p className="mt-1 text-sm text-gray-600">{pulse.description}</p>
 
-            {/* Status Row */}
+            {/* Status Badge */}
             <div className="mt-4 flex items-center flex-wrap gap-3">
               {getStatusBadge(pulse)}
-
-              {/* Active Toggle */}
-              <button
-                onClick={handleToggleActive}
-                disabled={pauseMutation.isLoading || resumeMutation.isLoading || (!pulse.is_active && pulse.pause_reason === 'UNDER_REVIEW')}
-                className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium border-2 transition-colors ${
-                  !pulse.is_active && pulse.pause_reason === 'UNDER_REVIEW'
-                    ? 'bg-orange-50 text-orange-700 border-orange-200 cursor-not-allowed'
-                    : pulse.is_active
-                    ? 'bg-green-50 text-green-700 border-green-200 hover:bg-green-100'
-                    : 'bg-yellow-50 text-yellow-700 border-yellow-200 hover:bg-yellow-100'
-                } disabled:opacity-50 disabled:cursor-not-allowed`}
-              >
-                {!pulse.is_active && pulse.pause_reason === 'UNDER_REVIEW' ? (
-                  <>
-                    <Lock className="w-4 h-4 mr-1" />
-                    Under Review
-                  </>
-                ) : pulse.is_active ? (
-                  <>
-                    <Play className="w-4 h-4 mr-1" />
-                    Active
-                  </>
-                ) : (
-                  <>
-                    <Pause className="w-4 h-4 mr-1" />
-                    Paused {pulse.pause_reason_display && `(${pulse.pause_reason_display})`}
-                  </>
-                )}
-              </button>
 
               {/* View Questions Button */}
               <button
@@ -199,6 +163,31 @@ export default function PulseSurveysPage() {
                 Preview Survey
               </button>
             </div>
+          </div>
+
+          {/* Active/Inactive Toggle - Top Right */}
+          <div className="ml-4 flex-shrink-0">
+            <button
+              onClick={handleToggleActive}
+              disabled={pauseMutation.isLoading || resumeMutation.isLoading}
+              className={`inline-flex items-center px-4 py-2 rounded-lg text-sm font-semibold border-2 transition-all ${
+                pulse.is_active
+                  ? 'bg-green-50 text-green-700 border-green-300 hover:bg-green-100 hover:border-green-400'
+                  : 'bg-gray-50 text-gray-700 border-gray-300 hover:bg-gray-100 hover:border-gray-400'
+              } disabled:opacity-50 disabled:cursor-not-allowed`}
+            >
+              {pulse.is_active ? (
+                <>
+                  <Play className="w-5 h-5 mr-2" />
+                  Active
+                </>
+              ) : (
+                <>
+                  <Pause className="w-5 h-5 mr-2" />
+                  Inactive
+                </>
+              )}
+            </button>
           </div>
         </div>
       </div>
