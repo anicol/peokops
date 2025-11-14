@@ -226,14 +226,23 @@ export default function PulseSurveysPage() {
               {pulses.map((pulse) => (
                 <div
                   key={pulse.id}
-                  className="bg-white rounded-lg border border-gray-200 p-6 hover:shadow-md transition-shadow"
+                  className={`bg-white rounded-lg border p-6 hover:shadow-md transition-shadow ${
+                    !pulse.is_active ? 'border-gray-300 opacity-60' : 'border-gray-200'
+                  }`}
                 >
                   {/* Header */}
                   <div className="flex items-start justify-between mb-4">
                     <div className="flex-1">
-                      <h3 className="text-lg font-semibold text-gray-900 mb-1">
-                        {pulse.title}
-                      </h3>
+                      <div className="flex items-center gap-2 mb-1">
+                        <h3 className="text-lg font-semibold text-gray-900">
+                          {pulse.title}
+                        </h3>
+                        {!pulse.is_active && (
+                          <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-600">
+                            Paused
+                          </span>
+                        )}
+                      </div>
                       {getStatusBadge(pulse)}
                     </div>
                   </div>
