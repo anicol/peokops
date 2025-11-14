@@ -328,6 +328,24 @@ CELERY_BEAT_SCHEDULE = {
         'schedule': crontab(hour=5, minute=0),  # 5:00 AM UTC daily
         'options': {'queue': 'default'}
     },
+    # Google Reviews - Nightly review sync at 1 AM UTC
+    'sync-google-reviews-nightly': {
+        'task': 'integrations.sync_all_google_reviews',
+        'schedule': crontab(hour=1, minute=0),  # 1:00 AM UTC daily
+        'options': {'queue': 'default'}
+    },
+    # Google Reviews - AI analysis every 4 hours
+    'analyze-pending-reviews': {
+        'task': 'integrations.analyze_pending_reviews',
+        'schedule': crontab(minute=0, hour='*/4'),  # Every 4 hours
+        'options': {'queue': 'default'}
+    },
+    # Google Reviews - Generate micro-checks from reviews weekly (Mondays at 6 AM)
+    'generate-checks-from-reviews': {
+        'task': 'integrations.generate_micro_checks_from_reviews',
+        'schedule': crontab(day_of_week=1, hour=6, minute=0),  # Mondays at 6 AM
+        'options': {'queue': 'default'}
+    },
 }
 
 AWS_ACCESS_KEY_ID = config('AWS_ACCESS_KEY_ID', default='')
