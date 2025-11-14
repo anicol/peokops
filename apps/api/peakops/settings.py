@@ -334,10 +334,10 @@ CELERY_BEAT_SCHEDULE = {
         'schedule': crontab(hour=1, minute=0),  # 1:00 AM UTC daily
         'options': {'queue': 'default'}
     },
-    # Google Reviews - AI analysis every 4 hours
+    # Google Reviews - AI analysis runs right after nightly sync (1:15 AM UTC)
     'analyze-pending-reviews': {
         'task': 'integrations.analyze_pending_reviews',
-        'schedule': crontab(minute=0, hour='*/4'),  # Every 4 hours
+        'schedule': crontab(hour=1, minute=15),  # 1:15 AM UTC daily, 15 min after sync
         'options': {'queue': 'default'}
     },
     # Google Reviews - Generate micro-checks from reviews weekly (Mondays at 6 AM)
