@@ -269,7 +269,7 @@ export default function PulseSurveysPage() {
       )}
 
       {viewMode === 'distribution' && (
-        <DistributionTab pulseId={pulse.id} />
+        <DistributionTab pulseId={pulse.id} isActive={pulse.is_active} />
       )}
 
       {/* Pause Dialog */}

@@ -1,14 +1,15 @@
 import { useQuery, useMutation, useQueryClient } from 'react-query';
 import { employeeVoiceAPI } from '@/services/api';
-import { Clock, Users, CheckCircle, TrendingUp, Calendar, RefreshCw } from 'lucide-react';
+import { Clock, Users, CheckCircle, TrendingUp, Calendar, RefreshCw, AlertCircle } from 'lucide-react';
 import { format } from 'date-fns';
 import { useState } from 'react';
 
 interface DistributionTabProps {
   pulseId: string;
+  isActive?: boolean;
 }
 
-export default function DistributionTab({ pulseId }: DistributionTabProps) {
+export default function DistributionTab({ pulseId, isActive = true }: DistributionTabProps) {
   const queryClient = useQueryClient();
   const [showSuccess, setShowSuccess] = useState(false);
 
@@ -62,6 +63,24 @@ export default function DistributionTab({ pulseId }: DistributionTabProps) {
 
   return (
     <div className="space-y-6">
+      {/* Inactive Pulse Warning */}
+      {!isActive && (
+        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+          <div className="flex items-center">
+            <AlertCircle className="w-5 h-5 text-yellow-600 mr-2" />
+            <div>
+              <p className="text-sm font-medium text-yellow-800">
+                Pulse Survey is Inactive
+              </p>
+              <p className="text-xs text-yellow-700 mt-1">
+                Distribution scheduling will not create invitations while the survey is inactive.
+                Activate the survey using the toggle at the top of the page.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Refresh Distribution Button */}
       <div className="flex items-center justify-between">
         <div>
@@ -71,8 +90,9 @@ export default function DistributionTab({ pulseId }: DistributionTabProps) {
         </div>
         <button
           onClick={() => triggerMutation.mutate()}
-          disabled={triggerMutation.isLoading}
+          disabled={triggerMutation.isLoading || !isActive}
           className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+          title={!isActive ? 'Activate the pulse survey to refresh distribution' : ''}
         >
           <RefreshCw className={`w-4 h-4 mr-2 ${triggerMutation.isLoading ? 'animate-spin' : ''}`} />
           {triggerMutation.isLoading ? 'Refreshing...' : 'Refresh Distribution'}
