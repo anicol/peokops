@@ -159,6 +159,7 @@ class EmployeeVoicePulseViewSet(ScopedQuerysetMixin, ScopedCreateMixin, viewsets
         Get aggregated insights for this pulse.
         Enforces n ≥ 5 privacy protection and role-based access.
         Supports optional store_id filter for multi-store accounts.
+        Supports optional days parameter (7 or 30, defaults to 7).
         """
         pulse = self.get_object()
         user = request.user
@@ -170,17 +171,26 @@ class EmployeeVoicePulseViewSet(ScopedQuerysetMixin, ScopedCreateMixin, viewsets
                 status=status.HTTP_403_FORBIDDEN
             )
 
-        # Get optional store filter
+        # Get optional store filter and days parameter
         store_id = request.query_params.get('store_id')
+        days_param = request.query_params.get('days', '7')
 
-        # Calculate metrics for current week (last 7 days) as primary data
+        # Validate days parameter
+        try:
+            days = int(days_param)
+            if days not in [7, 30]:
+                days = 7
+        except (ValueError, TypeError):
+            days = 7
+
+        # Calculate metrics for specified time period
         now = timezone.now()
-        one_week_ago = now - timedelta(days=7)
+        time_ago = now - timedelta(days=days)
 
-        # Get current week responses
+        # Get current period responses
         responses = EmployeeVoiceResponse.objects.filter(
             pulse=pulse,
-            completed_at__gte=one_week_ago
+            completed_at__gte=time_ago
         )
 
         # Filter by store if specified
@@ -222,19 +232,19 @@ class EmployeeVoicePulseViewSet(ScopedQuerysetMixin, ScopedCreateMixin, viewsets
                 'message': f"Insights will unlock after {pulse.min_respondents_for_display - total_unique_respondents} more unique team members participate."
             }, status=status.HTTP_200_OK)
 
-        # Calculate week-over-week trends
-        two_weeks_ago = now - timedelta(days=14)
+        # Calculate period-over-period trends
+        previous_period_ago = now - timedelta(days=days * 2)
 
-        # Current week responses (already filtered above)
-        current_week_responses = responses
-        # Previous week responses (8-14 days ago)
-        previous_week_responses = EmployeeVoiceResponse.objects.filter(
+        # Current period responses (already filtered above)
+        current_period_responses = responses
+        # Previous period responses (previous N days)
+        previous_period_responses = EmployeeVoiceResponse.objects.filter(
             pulse=pulse,
-            completed_at__gte=two_weeks_ago,
-            completed_at__lt=one_week_ago
+            completed_at__gte=previous_period_ago,
+            completed_at__lt=time_ago
         )
 
-        # Apply same store filter to previous week if specified
+        # Apply same store filter to previous period if specified
         if store_id and store_id != 'all':
             from integrations.models import SevenShiftsEmployee
             store_employee_ids = SevenShiftsEmployee.objects.filter(
@@ -242,27 +252,27 @@ class EmployeeVoicePulseViewSet(ScopedQuerysetMixin, ScopedCreateMixin, viewsets
                 store_id=store_id
             ).values_list('id', flat=True)
 
-            previous_week_responses = previous_week_responses.filter(
+            previous_period_responses = previous_period_responses.filter(
                 invitation__recipient_phone__in=SevenShiftsEmployee.objects.filter(
                     id__in=store_employee_ids
                 ).values_list('phone', flat=True)
             )
 
-        # Current week metrics
-        current_week_mood = current_week_responses.aggregate(avg_mood=Avg('mood'))['avg_mood'] or 0
-        current_week_confidence_high = current_week_responses.filter(confidence=3).count()
-        current_week_total = current_week_responses.count()
-        current_week_confidence_pct = (current_week_confidence_high / current_week_total * 100) if current_week_total > 0 else 0
+        # Current period metrics
+        current_period_mood = current_period_responses.aggregate(avg_mood=Avg('mood'))['avg_mood'] or 0
+        current_period_confidence_high = current_period_responses.filter(confidence=3).count()
+        current_period_total = current_period_responses.count()
+        current_period_confidence_pct = (current_period_confidence_high / current_period_total * 100) if current_period_total > 0 else 0
 
-        # Previous week metrics
-        previous_week_mood = previous_week_responses.aggregate(avg_mood=Avg('mood'))['avg_mood'] or 0
-        previous_week_confidence_high = previous_week_responses.filter(confidence=3).count()
-        previous_week_total = previous_week_responses.count()
-        previous_week_confidence_pct = (previous_week_confidence_high / previous_week_total * 100) if previous_week_total > 0 else 0
+        # Previous period metrics
+        previous_period_mood = previous_period_responses.aggregate(avg_mood=Avg('mood'))['avg_mood'] or 0
+        previous_period_confidence_high = previous_period_responses.filter(confidence=3).count()
+        previous_period_total = previous_period_responses.count()
+        previous_period_confidence_pct = (previous_period_confidence_high / previous_period_total * 100) if previous_period_total > 0 else 0
 
-        # Calculate trends (difference from previous week)
-        mood_trend = round(current_week_mood - previous_week_mood, 2) if previous_week_mood > 0 else None
-        confidence_trend = round(current_week_confidence_pct - previous_week_confidence_pct, 1) if previous_week_total > 0 else None
+        # Calculate trends (difference from previous period)
+        mood_trend = round(current_period_mood - previous_period_mood, 2) if previous_period_mood > 0 else None
+        confidence_trend = round(current_period_confidence_pct - previous_period_confidence_pct, 1) if previous_period_total > 0 else None
 
         # Calculate mood metrics
         mood_stats = responses.aggregate(avg_mood=Avg('mood'))
@@ -327,7 +337,7 @@ class EmployeeVoicePulseViewSet(ScopedQuerysetMixin, ScopedCreateMixin, viewsets
         insights_data = {
             'pulse_id': pulse.id,
             'pulse_title': pulse.title,
-            'time_window': 'Last 7 days',
+            'time_window': f'Last {days} days',
             'total_responses': total_responses,
             'unique_respondents': unique_respondents,
             'can_display': True,
@@ -362,6 +372,79 @@ class EmployeeVoicePulseViewSet(ScopedQuerysetMixin, ScopedCreateMixin, viewsets
         pulse.check_unlock_status()
         serializer = self.get_serializer(pulse)
         return Response(serializer.data)
+
+    @extend_schema(
+        summary="Get AI-generated summary of employee comments",
+        description="Uses AI to analyze and summarize employee feedback, providing key themes, sentiment, and action items.",
+        responses={200: dict}
+    )
+    @action(detail=True, methods=['get'], url_path='ai-summary')
+    def ai_summary(self, request, pk=None):
+        """
+        Generate an AI-powered summary of employee comments for this pulse.
+        Supports optional days parameter (7 or 30, defaults to 7).
+        """
+        pulse = self.get_object()
+        user = request.user
+
+        # Get optional days parameter
+        days_param = request.query_params.get('days', '7')
+
+        # Validate days parameter
+        try:
+            days = int(days_param)
+            if days not in [7, 30]:
+                days = 7
+        except (ValueError, TypeError):
+            days = 7
+
+        # Get comments for the time period
+        now = timezone.now()
+        time_ago = now - timedelta(days=days)
+
+        responses = EmployeeVoiceResponse.objects.filter(
+            pulse=pulse,
+            completed_at__gte=time_ago
+        ).exclude(comment='')
+
+        # Get store filter if specified
+        store_id = request.query_params.get('store_id')
+        if store_id and store_id != 'all':
+            from integrations.models import SevenShiftsEmployee
+            store_employee_ids = SevenShiftsEmployee.objects.filter(
+                account=pulse.account,
+                store_id=store_id
+            ).values_list('id', flat=True)
+
+            responses = responses.filter(
+                invitation__recipient_phone__in=SevenShiftsEmployee.objects.filter(
+                    id__in=store_employee_ids
+                ).values_list('phone', flat=True)
+            )
+
+        # Extract comment texts
+        comments = [r.comment for r in responses if r.comment]
+
+        # Check n ≥ 5 requirement
+        if len(comments) < pulse.min_respondents_for_display:
+            return Response({
+                'can_display': False,
+                'message': f"AI summary will be available after {pulse.min_respondents_for_display - len(comments)} more comments are submitted.",
+                'comment_count': len(comments),
+                'required_count': pulse.min_respondents_for_display
+            }, status=status.HTTP_200_OK)
+
+        # Generate AI summary
+        from .ai_summary_service import get_ai_summary_service
+        ai_service = get_ai_summary_service()
+        summary_data = ai_service.summarize_comments(pulse.id, comments, days)
+
+        return Response({
+            'can_display': True,
+            'comment_count': len(comments),
+            'time_window': f'Last {days} days',
+            **summary_data
+        })
 
     @extend_schema(
         summary="Get eligible employees for this pulse",
@@ -416,13 +499,14 @@ class EmployeeVoicePulseViewSet(ScopedQuerysetMixin, ScopedCreateMixin, viewsets
     def distribution_preview(self, request, pk=None):
         """
         Preview how distribution will work based on current settings.
-        Shows expected sends per day based on frequency.
+        Shows expected sends per day based on frequency, plus a 7-day simulation.
         """
         pulse = self.get_object()
 
         from integrations.models import SevenShiftsEmployee
+        import random
 
-        # Get eligible employee count
+        # Get eligible employees
         employees = SevenShiftsEmployee.objects.filter(
             account=pulse.account,
             is_active=True
@@ -432,6 +516,7 @@ class EmployeeVoicePulseViewSet(ScopedQuerysetMixin, ScopedCreateMixin, viewsets
             employees = employees.filter(store=pulse.store)
 
         total_employees = employees.count()
+        employee_list = list(employees.values('id', 'first_name', 'last_name', 'phone', 'roles'))
 
         # Calculate expected sends based on frequency
         frequency_map = {
@@ -449,6 +534,32 @@ class EmployeeVoicePulseViewSet(ScopedQuerysetMixin, ScopedCreateMixin, viewsets
             created_at__gte=today_start
         ).count()
 
+        # Generate 7-day forward simulation
+        # This shows users what the distribution pattern will look like
+        simulation = []
+        random.seed(42)  # Consistent seed for preview (not actual scheduling)
+        for day_offset in range(7):
+            day_date = timezone.now().date() + timedelta(days=day_offset)
+            selected_employees = []
+
+            # Simulate random selection
+            for emp in employee_list:
+                if random.random() < send_probability:
+                    # Get first role or 'Team Member' as default
+                    role = emp['roles'][0] if emp['roles'] and len(emp['roles']) > 0 else 'Team Member'
+                    selected_employees.append({
+                        'name': f"{emp['first_name']} {emp['last_name']}",
+                        'phone': emp['phone'][-4:],  # Last 4 digits for privacy
+                        'role': role
+                    })
+
+            simulation.append({
+                'date': day_date.isoformat(),
+                'day_name': day_date.strftime('%A'),
+                'expected_sends': len(selected_employees),
+                'sample_employees': selected_employees[:5]  # Show up to 5 as sample
+            })
+
         return Response({
             'total_eligible_employees': total_employees,
             'delivery_frequency': pulse.delivery_frequency,
@@ -458,6 +569,7 @@ class EmployeeVoicePulseViewSet(ScopedQuerysetMixin, ScopedCreateMixin, viewsets
             'randomization_window_minutes': pulse.randomization_window_minutes,
             'shift_window': pulse.shift_window,
             'shift_window_display': pulse.get_shift_window_display(),
+            'seven_day_simulation': simulation,
         })
 
     @extend_schema(
@@ -468,16 +580,27 @@ class EmployeeVoicePulseViewSet(ScopedQuerysetMixin, ScopedCreateMixin, viewsets
     @action(detail=True, methods=['get'], url_path='distribution-stats')
     def distribution_stats(self, request, pk=None):
         """
-        Get distribution statistics for last 7 days.
+        Get distribution statistics for specified time period (7 or 30 days).
         Shows daily breakdown of scheduled/sent/opened/completed.
         """
         pulse = self.get_object()
 
-        seven_days_ago = timezone.now() - timedelta(days=7)
+        # Get optional days parameter
+        days_param = request.query_params.get('days', '7')
+
+        # Validate days parameter
+        try:
+            days = int(days_param)
+            if days not in [7, 30]:
+                days = 7
+        except (ValueError, TypeError):
+            days = 7
+
+        time_ago = timezone.now() - timedelta(days=days)
 
         invitations = EmployeeVoiceInvitation.objects.filter(
             pulse=pulse,
-            created_at__gte=seven_days_ago
+            created_at__gte=time_ago
         )
 
         # Group by date
@@ -507,6 +630,35 @@ class EmployeeVoicePulseViewSet(ScopedQuerysetMixin, ScopedCreateMixin, viewsets
             'total_completed_7d': total_completed,
             'avg_response_rate_7d': avg_response_rate,
         })
+
+    @extend_schema(
+        summary="Trigger distribution scheduling",
+        description="Manually triggers the distribution scheduling task for this pulse. "
+                    "This will schedule invitations for eligible employees based on the pulse configuration.",
+        request=None,
+        responses={
+            200: OpenApiResponse(description="Distribution scheduling triggered successfully"),
+            403: OpenApiResponse(description="Forbidden - user must be owner or admin"),
+        }
+    )
+    @action(detail=True, methods=['post'], url_path='trigger-distribution')
+    def trigger_distribution(self, request, pk=None):
+        """
+        Manually trigger distribution scheduling for this pulse.
+        Calls the schedule_pulse_invitations Celery task.
+        """
+        from .tasks import schedule_pulse_invitations
+
+        pulse = self.get_object()
+
+        # Trigger the scheduling task
+        task = schedule_pulse_invitations.delay()
+
+        return Response({
+            'message': 'Distribution scheduling triggered successfully',
+            'task_id': task.id,
+            'pulse_id': str(pulse.id)
+        }, status=status.HTTP_200_OK)
 
 
 @extend_schema(

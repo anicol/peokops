@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useQuery } from 'react-query';
 import { employeeVoiceAPI, type EmployeeVoicePulse } from '@/services/api';
-import { BarChart3, TrendingUp, Users, MessageSquare, Loader2, Calendar, Clock } from 'lucide-react';
+import { BarChart3, TrendingUp, Users, MessageSquare, Loader2, Calendar, Clock, Send, Sparkles, Lightbulb, CheckCircle2 } from 'lucide-react';
 import { format, formatDistanceToNow } from 'date-fns';
 
 interface PulseAnalyticsSectionProps {
@@ -15,6 +15,7 @@ export default function PulseAnalyticsSection({ storeId, pulses, selectedStoreId
     pulses.length > 0 ? pulses[0].id : ''
   );
   const [showCommentsModal, setShowCommentsModal] = useState(false);
+  const [timePeriod, setTimePeriod] = useState<'7' | '30'>('7');
 
   // Get responses for selected pulse
   const { data: responses, isLoading: responsesLoading } = useQuery(
@@ -25,16 +26,34 @@ export default function PulseAnalyticsSection({ storeId, pulses, selectedStoreId
     }
   );
 
-  // Get insights for selected pulse with store filter
+  // Get insights for selected pulse with store filter and time period
   const { data: insights, isLoading: insightsLoading } = useQuery(
-    ['employee-voice-insights', selectedPulseId, selectedStoreId],
-    () => employeeVoiceAPI.getPulseInsights(selectedPulseId, selectedStoreId),
+    ['employee-voice-insights', selectedPulseId, selectedStoreId, timePeriod],
+    () => employeeVoiceAPI.getPulseInsights(selectedPulseId, selectedStoreId, timePeriod),
     {
       enabled: !!selectedPulseId,
     }
   );
 
-  const isLoading = responsesLoading || insightsLoading;
+  // Get distribution stats for activity section with time period
+  const { data: stats, isLoading: statsLoading } = useQuery(
+    ['distribution-stats', selectedPulseId, timePeriod],
+    () => employeeVoiceAPI.getDistributionStats(selectedPulseId, timePeriod),
+    {
+      enabled: !!selectedPulseId,
+    }
+  );
+
+  // Get AI summary of comments with time period
+  const { data: aiSummary, isLoading: aiSummaryLoading } = useQuery(
+    ['ai-summary', selectedPulseId, selectedStoreId, timePeriod],
+    () => employeeVoiceAPI.getAISummary(selectedPulseId, selectedStoreId, timePeriod),
+    {
+      enabled: !!selectedPulseId,
+    }
+  );
+
+  const isLoading = responsesLoading || insightsLoading || statsLoading;
 
   if (pulses.length === 0) {
     return (
@@ -57,24 +76,56 @@ export default function PulseAnalyticsSection({ storeId, pulses, selectedStoreId
   const topBottlenecks = insights?.top_bottlenecks || [];
   const commentsCount = insights?.comments?.length || 0;
 
+  // Generate insight summary based on trends
+  const generateInsightSummary = () => {
+    if (moodTrend === null || moodTrend === undefined || confidenceTrend === null || confidenceTrend === undefined) {
+      return null;
+    }
+
+    const moodChange = Math.abs(moodTrend) > 0.1
+      ? (moodTrend > 0 ? 'improved' : 'declined')
+      : 'held steady';
+
+    const confidenceChange = Math.abs(confidenceTrend) > 2
+      ? (confidenceTrend > 0 ? 'increased' : 'decreased')
+      : 'held steady';
+
+    const responseChange = stats?.total_sent_7d && stats?.total_completed_7d
+      ? (stats.total_completed_7d / stats.total_sent_7d >= 0.5 ? '' : 'but response volume dipped')
+      : '';
+
+    // Build the insight sentence
+    if (moodChange === 'held steady' && confidenceChange === 'held steady') {
+      return 'Metrics remain stable compared to the previous period.';
+    } else if (moodChange !== 'held steady' && confidenceChange !== 'held steady') {
+      if (moodChange === 'improved' && confidenceChange === 'increased') {
+        return 'Team mood and confidence both improved.';
+      } else if (moodChange === 'declined' && confidenceChange === 'decreased') {
+        return 'Team mood and confidence both declined.';
+      } else {
+        return `Mood ${moodChange} while confidence ${confidenceChange}.`;
+      }
+    } else if (moodChange !== 'held steady') {
+      return `Mood ${moodChange} ${responseChange}${confidenceChange !== 'held steady' ? ` while confidence ${confidenceChange}` : ''}.`;
+    } else {
+      return `Confidence ${confidenceChange} while mood held steady.`;
+    }
+  };
+
+  const insightSummary = generateInsightSummary();
+
   return (
     <div>
-      {/* Pulse Selector */}
-      <div className="mb-6">
-        <label htmlFor="pulse-select" className="block text-sm font-medium text-gray-700 mb-2">
-          Select Pulse
-        </label>
+      {/* Time Period Selector */}
+      <div className="mb-6 flex items-center justify-between">
+        <h3 className="text-sm font-medium text-gray-700">Time Period</h3>
         <select
-          id="pulse-select"
-          value={selectedPulseId}
-          onChange={(e) => setSelectedPulseId(e.target.value)}
-          className="w-full max-w-md px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          value={timePeriod}
+          onChange={(e) => setTimePeriod(e.target.value as '7' | '30')}
+          className="px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
         >
-          {pulses.map((pulse) => (
-            <option key={pulse.id} value={pulse.id}>
-              {pulse.title}
-            </option>
-          ))}
+          <option value="7">Last 7 Days</option>
+          <option value="30">Last 30 Days</option>
         </select>
       </div>
 
@@ -164,8 +215,126 @@ export default function PulseAnalyticsSection({ storeId, pulses, selectedStoreId
             </div>
           </div>
 
+          {/* Insight Summary */}
+          {insightSummary && (
+            <div className="mb-4 bg-blue-50 border-l-4 border-blue-500 p-3 rounded-r-md">
+              <p className="text-sm text-blue-900 font-medium">{insightSummary}</p>
+            </div>
+          )}
+
+          {/* AI Summary Widget - Moved to top after insight bar */}
+          {aiSummary?.can_display && (
+            <div className="bg-gradient-to-br from-purple-50 to-indigo-50 rounded-lg border-2 border-purple-200 p-4 mb-4">
+              <div className="flex items-center mb-3">
+                <div className="bg-purple-600 rounded-lg p-2 mr-3">
+                  <Sparkles className="w-5 h-5 text-white" />
+                </div>
+                <div>
+                  <h3 className="text-base font-semibold text-gray-900">AI Insights</h3>
+                  <p className="text-xs text-gray-600">
+                    Based on {aiSummary.comment_count} {aiSummary.comment_count === 1 ? 'comment' : 'comments'}
+                  </p>
+                </div>
+                <div className={`ml-auto px-2 py-1 rounded-full text-xs font-medium ${
+                  aiSummary.sentiment === 'positive' ? 'bg-green-100 text-green-800' :
+                  aiSummary.sentiment === 'negative' ? 'bg-red-100 text-red-800' :
+                  'bg-gray-100 text-gray-800'
+                }`}>
+                  {aiSummary.sentiment === 'positive' ? '😊 Positive' :
+                   aiSummary.sentiment === 'negative' ? '😕 Needs Attention' :
+                   '😐 Neutral'}
+                </div>
+              </div>
+
+              {/* Summary */}
+              <div className="bg-white rounded-lg p-3 mb-3">
+                <p className="text-sm text-gray-800 leading-relaxed">
+                  {aiSummary.summary}
+                </p>
+              </div>
+
+              {/* Key Themes */}
+              {aiSummary.key_themes && aiSummary.key_themes.length > 0 && (
+                <div className="mb-3">
+                  <h4 className="text-xs font-semibold text-gray-700 mb-2">Key Themes</h4>
+                  <div className="flex flex-wrap gap-2">
+                    {aiSummary.key_themes.map((theme: string, idx: number) => (
+                      <span
+                        key={idx}
+                        className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-purple-100 text-purple-800"
+                      >
+                        {theme}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Action Items */}
+              {aiSummary.action_items && aiSummary.action_items.length > 0 && (
+                <div>
+                  <h4 className="text-xs font-semibold text-gray-700 mb-2">Suggested Actions</h4>
+                  <div className="space-y-2">
+                    {aiSummary.action_items.map((action: string, idx: number) => (
+                      <div key={idx} className="flex items-start bg-white rounded-lg p-2">
+                        <span className="text-xs mr-2 flex-shrink-0">•</span>
+                        <p className="text-xs text-gray-700">{action}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Privacy Notice for AI Summary */}
+          {aiSummary && !aiSummary.can_display && aiSummary.message && (
+            <div className="bg-gray-50 rounded-lg border border-gray-200 p-3 mb-4 text-center">
+              <Sparkles className="w-6 h-6 text-gray-400 mx-auto mb-2" />
+              <p className="text-xs text-gray-600">{aiSummary.message}</p>
+            </div>
+          )}
+
+          {/* Activity Section */}
+          <div className="bg-white rounded-lg border border-gray-200 p-4 mb-4">
+            <h3 className="text-sm font-semibold text-gray-900 mb-1">{timePeriod}-Day Activity</h3>
+            <p className="text-xs text-gray-600 mb-3">Shows how engaged your team was {timePeriod === '7' ? 'this week' : 'this month'}.</p>
+            <div className="grid grid-cols-3 gap-4">
+              <div>
+                <div className="flex items-center gap-2 mb-1">
+                  <Send className="w-4 h-4 text-blue-600" />
+                  <p className="text-xs text-gray-500">Invites Sent</p>
+                </div>
+                <p className="text-xl font-bold text-blue-600">
+                  {stats?.total_sent_7d || 0}
+                </p>
+                <p className="text-xs text-gray-500 mt-1">Number of surveys delivered.</p>
+              </div>
+              <div>
+                <div className="flex items-center gap-2 mb-1">
+                  <BarChart3 className="w-4 h-4 text-green-600" />
+                  <p className="text-xs text-gray-500">Responses</p>
+                </div>
+                <p className="text-xl font-bold text-green-600">
+                  {stats?.total_completed_7d || 0}
+                </p>
+                <p className="text-xs text-gray-500 mt-1">Completed surveys.</p>
+              </div>
+              <div>
+                <div className="flex items-center gap-2 mb-1">
+                  <TrendingUp className="w-4 h-4 text-purple-600" />
+                  <p className="text-xs text-gray-500">Response Rate</p>
+                </div>
+                <p className="text-xl font-bold text-purple-600">
+                  {stats?.avg_response_rate_7d || 0}%
+                </p>
+                <p className="text-xs text-gray-500 mt-1">Responses divided by total invites.</p>
+              </div>
+            </div>
+          </div>
+
           {/* Confidence Distribution */}
-          <div className="bg-white rounded-lg border border-gray-200 p-3 sm:p-6 mb-4 sm:mb-6">
+          <div className="bg-white rounded-lg border border-gray-200 p-3 sm:p-6 mb-4">
             <h3 className="text-lg font-semibold text-gray-900 mb-4">Confidence Distribution</h3>
             {totalResponses === 0 ? (
               <p className="text-sm text-gray-500 text-center py-8">No responses yet</p>
@@ -202,7 +371,8 @@ export default function PulseAnalyticsSection({ storeId, pulses, selectedStoreId
 
           {/* Top Bottlenecks */}
           <div className="bg-white rounded-lg border border-gray-200 p-3 sm:p-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Top Bottlenecks</h3>
+            <h3 className="text-lg font-semibold text-gray-900 mb-1">Top Bottlenecks</h3>
+            <p className="text-xs text-gray-600 mb-4">This shows what your team mentioned most often.</p>
             {topBottlenecks.length === 0 ? (
               <p className="text-sm text-gray-500 text-center py-8">
                 No bottlenecks reported yet
@@ -220,21 +390,35 @@ export default function PulseAnalyticsSection({ storeId, pulses, selectedStoreId
                     'GUEST_VOLUME': '🍴',
                   };
 
+                  const isTopBottleneck = idx === 0;
+
                   return (
                     <div
                       key={bottleneck.type}
-                      className="flex items-center justify-between p-3 bg-gray-50 rounded-md"
+                      className={`flex items-center justify-between p-3 rounded-md ${
+                        isTopBottleneck
+                          ? 'bg-orange-50 border-l-4 border-orange-500'
+                          : 'bg-gray-50'
+                      }`}
                     >
                       <div className="flex items-center space-x-3">
-                        <span className="text-lg font-bold text-gray-400">#{idx + 1}</span>
+                        <span className={`text-lg font-bold ${isTopBottleneck ? 'text-orange-600' : 'text-gray-400'}`}>
+                          #{idx + 1}
+                        </span>
                         <span className="text-xl">{icons[bottleneck.type] || '📌'}</span>
-                        <span className="text-sm font-medium text-gray-900">
+                        <span className={`text-sm font-medium ${isTopBottleneck ? 'text-orange-900' : 'text-gray-900'}`}>
                           {bottleneck.type.replace(/_/g, ' ').toLowerCase().replace(/\b\w/g, (l: string) => l.toUpperCase())}
                         </span>
                       </div>
                       <div className="flex items-center space-x-3">
-                        <span className="text-sm text-gray-500">{Math.round(bottleneck.percentage)}%</span>
-                        <span className="text-sm font-semibold text-gray-700 bg-gray-200 px-2 py-1 rounded">
+                        <span className={`text-sm ${isTopBottleneck ? 'text-orange-700 font-medium' : 'text-gray-500'}`}>
+                          {Math.round(bottleneck.percentage)}%
+                        </span>
+                        <span className={`text-sm font-semibold px-2 py-1 rounded ${
+                          isTopBottleneck
+                            ? 'text-orange-900 bg-orange-200'
+                            : 'text-gray-700 bg-gray-200'
+                        }`}>
                           {bottleneck.count} mentions
                         </span>
                       </div>
