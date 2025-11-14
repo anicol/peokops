@@ -119,18 +119,22 @@ class SevenShiftsClient:
         return self._request('GET', '/company')
 
     def list_users(self, location_id: Optional[str] = None,
-                   active_only: bool = True) -> List[Dict[str, Any]]:
+                   active_only: bool = True,
+                   limit: int = 500) -> List[Dict[str, Any]]:
         """
-        List users (employees) from 7shifts.
+        List ALL users (employees) from 7shifts with pagination support.
 
         Args:
             location_id: Filter by specific location (optional)
             active_only: Only return active employees
+            limit: Number of results per page (1-500, default 500 for efficiency)
 
         Returns:
-            List of user dictionaries
+            List of ALL user dictionaries (handles pagination automatically)
         """
-        params = {}
+        params = {
+            'limit': min(max(limit, 1), 500)  # Clamp between 1-500
+        }
         if self.company_id:
             params['company_id'] = self.company_id
         if location_id:
@@ -138,8 +142,33 @@ class SevenShiftsClient:
         if active_only:
             params['active'] = 1
 
-        response = self._request('GET', '/users', params=params)
-        return response.get('results', [])
+        all_users = []
+        cursor = None
+        page = 1
+
+        while True:
+            if cursor:
+                params['cursor'] = cursor
+
+            response = self._request('GET', '/users', params=params)
+
+            # Get users from current page (try both 'data' and 'results' for API version compatibility)
+            users = response.get('data', response.get('results', []))
+            all_users.extend(users)
+
+            logger.info(f"7shifts list_users: Fetched page {page} with {len(users)} users (total so far: {len(all_users)})")
+
+            # Check for next page cursor
+            meta = response.get('meta', {})
+            cursor = meta.get('next')
+
+            if not cursor:  # No more pages
+                break
+
+            page += 1
+
+        logger.info(f"7shifts list_users: Completed fetching {len(all_users)} total users across {page} page(s)")
+        return all_users
 
     def get_user(self, user_id: str) -> Dict[str, Any]:
         """Get specific user by ID"""
@@ -193,23 +222,27 @@ class SevenShiftsClient:
 
     def list_shifts(self, start_date: Optional[datetime] = None, end_date: Optional[datetime] = None,
                     location_id: Optional[str] = None,
-                    user_id: Optional[str] = None) -> List[Dict[str, Any]]:
+                    user_id: Optional[str] = None,
+                    limit: int = 500) -> List[Dict[str, Any]]:
         """
-        List shifts within a date range.
+        List ALL shifts within a date range with pagination support.
 
         Args:
             start_date: Start of date range (inclusive) - optional, fetches all if not provided
             end_date: End of date range (inclusive) - optional, fetches all if not provided
             location_id: Filter by location (optional)
             user_id: Filter by user (optional)
+            limit: Number of results per page (1-500, default 500 for efficiency)
 
         Returns:
-            List of shift dictionaries
+            List of ALL shift dictionaries (handles pagination automatically)
         """
         if not self.company_id:
             raise ValueError("company_id is required to list shifts")
 
-        params = {}
+        params = {
+            'limit': min(max(limit, 1), 500)  # Clamp between 1-500
+        }
 
         # Note: 7shifts API has issues with date filtering, so we fetch all shifts
         # and filter client-side. This appears to be an API limitation.
@@ -220,14 +253,37 @@ class SevenShiftsClient:
         if user_id:
             params['user_id'] = user_id
 
-        # Use company-scoped endpoint: /company/{company_id}/shifts
-        response = self._request('GET', f'/company/{self.company_id}/shifts', params=params)
-        shifts = response.get('data', [])
+        all_shifts = []
+        cursor = None
+        page = 1
+
+        # Fetch all pages
+        while True:
+            if cursor:
+                params['cursor'] = cursor
+
+            # Use company-scoped endpoint: /company/{company_id}/shifts
+            response = self._request('GET', f'/company/{self.company_id}/shifts', params=params)
+            shifts = response.get('data', [])
+            all_shifts.extend(shifts)
+
+            logger.info(f"7shifts list_shifts: Fetched page {page} with {len(shifts)} shifts (total so far: {len(all_shifts)})")
+
+            # Check for next page cursor
+            meta = response.get('meta', {})
+            cursor = meta.get('next')
+
+            if not cursor:  # No more pages
+                break
+
+            page += 1
+
+        logger.info(f"7shifts list_shifts: Completed fetching {len(all_shifts)} total shifts across {page} page(s)")
 
         # Filter client-side if date range provided
         if start_date or end_date:
             filtered_shifts = []
-            for shift in shifts:
+            for shift in all_shifts:
                 shift_start = datetime.fromisoformat(shift['start'].replace('Z', '+00:00'))
 
                 if start_date and shift_start < start_date:
@@ -236,9 +292,11 @@ class SevenShiftsClient:
                     continue
 
                 filtered_shifts.append(shift)
+
+            logger.info(f"7shifts list_shifts: Filtered to {len(filtered_shifts)} shifts within date range")
             return filtered_shifts
 
-        return shifts
+        return all_shifts
 
     def get_employee_shifts_for_date(self, user_id: str,
                                      date: datetime) -> List[Dict[str, Any]]:
