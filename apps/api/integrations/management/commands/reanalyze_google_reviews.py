@@ -205,11 +205,11 @@ class Command(BaseCommand):
             # Only analyze reviews that need it
             reviews = reviews.filter(needs_analysis=True)
 
+        # Order by date (newest first) - MUST come before slicing
+        reviews = reviews.order_by('-review_created_at')
+
         # Apply batch size limit
         if options['batch_size']:
             reviews = reviews[:options['batch_size']]
-
-        # Order by date (newest first)
-        reviews = reviews.order_by('-review_created_at')
 
         return reviews

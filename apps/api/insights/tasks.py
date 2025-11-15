@@ -490,19 +490,153 @@ The PeakOps Team
         logger.error(f"Error sending email for analysis {analysis_id}: {str(e)}")
 
 
+@shared_task(bind=True)
+def aggregate_store_review_analysis(self, analysis_id):
+    """
+    Aggregate individual GoogleReviewAnalysis records into store-level ReviewAnalysis insights.
+
+    This is for INTERNAL store analysis (from synced GoogleReviews),
+    NOT for external marketing analysis (from web scraping).
+
+    Args:
+        analysis_id: UUID of the ReviewAnalysis record to populate
+    """
+    from .models import ReviewAnalysis
+    from integrations.models import GoogleReview, GoogleReviewAnalysis
+    from collections import Counter
+    import statistics
+
+    try:
+        analysis = ReviewAnalysis.objects.get(id=analysis_id)
+
+        # Ensure this is a store-based analysis
+        if not analysis.store:
+            logger.error(f"Analysis {analysis_id} has no store - cannot aggregate")
+            analysis.status = ReviewAnalysis.Status.FAILED
+            analysis.error_message = "Analysis not linked to a store"
+            analysis.save()
+            return
+
+        store = analysis.store
+        if not hasattr(store, 'google_location') or not store.google_location:
+            logger.error(f"Store {store.id} has no Google location")
+            analysis.status = ReviewAnalysis.Status.FAILED
+            analysis.error_message = "Store has no linked Google location"
+            analysis.save()
+            return
+
+        location = store.google_location
+
+        # Update status
+        analysis.status = ReviewAnalysis.Status.PROCESSING
+        analysis.progress_message = f'Analyzing {location.google_location_name} reviews...'
+        analysis.progress_percentage = 10
+        analysis.save()
+
+        # Get all reviews for this location with their analyses
+        reviews_with_analysis = GoogleReview.objects.filter(
+            location=location
+        ).select_related('analysis').order_by('-review_created_at')
+
+        total_reviews = reviews_with_analysis.count()
+
+        if total_reviews == 0:
+            logger.warning(f"No reviews found for location {location.id}")
+            analysis.status = ReviewAnalysis.Status.FAILED
+            analysis.error_message = "No reviews found for this location"
+            analysis.save()
+            return
+
+        logger.info(f"Aggregating {total_reviews} reviews for store {store.name}")
+
+        # Progress update
+        analysis.progress_message = f'Processing {total_reviews} customer reviews...'
+        analysis.progress_percentage = 30
+        analysis.google_rating = location.average_rating
+        analysis.google_address = location.address
+        analysis.total_reviews_found = location.total_review_count or total_reviews
+        analysis.reviews_analyzed = total_reviews
+        analysis.save()
+
+        # Format reviews for AI analysis (same format as marketing flow)
+        formatted_reviews = []
+        for review in reviews_with_analysis:
+            formatted_reviews.append({
+                'author': review.reviewer_name,
+                'rating': review.rating,
+                'text': review.review_text,
+                'timestamp': int(review.review_created_at.timestamp()),
+                'time': review.review_created_at.strftime('%Y-%m-%d')
+            })
+
+        # Progress update
+        analysis.progress_message = 'Analyzing reviews with AI...'
+        analysis.progress_percentage = 40
+        analysis.save()
+
+        # Use the SAME AI analyzer as marketing flow
+        from marketing.management.commands.research_google_reviews import Command as AnalyzerCommand
+        analyzer = AnalyzerCommand()
+        analyzer.stdout = MockStdout()
+
+        logger.info(f"Running AI analysis on {len(formatted_reviews)} reviews for store {store.name}")
+
+        # This gives us AI-powered insights (same quality as marketing)
+        insights = analyzer.analyze_reviews(formatted_reviews)
+
+        # Extract date range
+        dates = [r.review_created_at for r in reviews_with_analysis]
+        oldest_date = min(dates) if dates else None
+        newest_date = max(dates) if dates else None
+
+        analysis.oldest_review_date = oldest_date
+        analysis.newest_review_date = newest_date
+
+        # Progress update
+        analysis.progress_message = 'Generating micro-check recommendations...'
+        analysis.progress_percentage = 80
+        analysis.save()
+
+        # This gives us AI-generated micro-checks (same quality as marketing)
+        micro_check_suggestions = analyzer.generate_microcheck_suggestions(insights)
+
+        # Save results
+        # Note: sentiment_summary is a computed property, no need to set it directly
+        analysis.insights = insights
+        analysis.micro_check_suggestions = micro_check_suggestions
+        analysis.status = ReviewAnalysis.Status.COMPLETED
+        analysis.progress_message = f'Analysis complete! Analyzed {total_reviews} reviews.'
+        analysis.progress_percentage = 100
+        analysis.completed_at = timezone.now()
+        analysis.save()
+
+        logger.info(f"Successfully aggregated analysis for store {store.name} (analysis_id={analysis_id})")
+
+    except Exception as e:
+        logger.error(f"Error aggregating store review analysis {analysis_id}: {str(e)}", exc_info=True)
+        try:
+            analysis = ReviewAnalysis.objects.get(id=analysis_id)
+            analysis.status = ReviewAnalysis.Status.FAILED
+            analysis.error_message = f"Aggregation error: {str(e)}"
+            analysis.save()
+        except:
+            pass
+        raise
+
+
 class MockStdout:
     """Mock stdout for management command"""
     def write(self, msg, **kwargs):
         pass
-    
+
     def style(self):
         return self
-    
+
     def SUCCESS(self, msg):
         return msg
-    
+
     def ERROR(self, msg):
         return msg
-    
+
     def WARNING(self, msg):
         return msg

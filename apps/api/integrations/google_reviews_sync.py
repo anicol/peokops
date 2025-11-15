@@ -340,7 +340,9 @@ class GoogleReviewsSyncService:
             logger.info(f"Created new analysis for store {store.name} (analysis_id={analysis.id})")
 
             # Trigger async analysis task
-            from insights.tasks import process_review_analysis
-            process_review_analysis.delay(str(analysis.id))
+            # Use aggregate_store_review_analysis for internal store analysis
+            # (not process_review_analysis which is for marketing/public analysis)
+            from insights.tasks import aggregate_store_review_analysis
+            aggregate_store_review_analysis.delay(str(analysis.id))
         else:
             logger.debug(f"Pending analysis already exists for {store.name} (analysis_id={analysis.id})")
