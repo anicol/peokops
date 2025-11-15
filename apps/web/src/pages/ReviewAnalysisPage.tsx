@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { insightsAPI } from '@/services/api';
 import GooglePlacesAutocomplete from '@/components/GooglePlacesAutocomplete';
 import ReviewTrendChart from '@/components/ReviewTrendChart';
+import ReviewAnalysisDisplay from '@/components/ReviewAnalysisDisplay';
 
 interface AnalysisStatus {
   id: string;
@@ -637,17 +638,16 @@ export default function ReviewAnalysisPage() {
     );
   }
 
-  // Render results (will create this component next)
+  // Render results using shared component with share/modal wrapper
   if (results) {
-    return <ReviewAnalysisResults results={results} />;
+    return <ReviewAnalysisResultsWrapper results={results} />;
   }
 
   return null;
 }
 
-// Results component (simplified version - we can enhance this)
-function ReviewAnalysisResults({ results }: { results: AnalysisResults }) {
-  const sentiment = results.sentiment_summary;
+// Wrapper component that adds share/modal functionality to the shared display component
+function ReviewAnalysisResultsWrapper({ results }: { results: AnalysisResults}) {
   const [showShareModal, setShowShareModal] = useState(false);
   const [showAllReviewsModal, setShowAllReviewsModal] = useState(false);
   const [copyStatus, setCopyStatus] = useState<string>('');
@@ -889,340 +889,94 @@ function ReviewAnalysisResults({ results }: { results: AnalysisResults }) {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-blue-50 to-white py-12 px-4">
-      <div className="max-w-4xl mx-auto">
-        {/* PeakOps Branding Header */}
-        <div className="bg-white rounded-lg shadow-md p-6 mb-8">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <img src="/logo.png" alt="PeakOps" className="w-12 h-12" />
-              <div>
-                <div className="flex items-center gap-2 mb-1">
-                  <h2 className="text-xl font-bold text-gray-900">PeakOps</h2>
-                  <span className="text-gray-400">|</span>
-                  <span className="text-lg font-semibold text-gray-700">AI-Powered Review Analysis</span>
-                </div>
-                <p className="text-sm text-gray-600">Turn customer feedback into actionable daily checks</p>
-              </div>
-            </div>
-            <div className="flex items-center gap-3">
-              <button
-                onClick={handleCopyHTML}
-                className="flex items-center gap-2 bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors relative"
-                title="Copy HTML for email clients"
-              >
-                {copyStatus ? (
-                  <>
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                    </svg>
-                    {copyStatus}
-                  </>
-                ) : (
-                  <>
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
-                    </svg>
-                    Copy HTML
-                  </>
-                )}
-              </button>
-              <button
-                onClick={() => setShowShareModal(true)}
-                className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
-              >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
-                </svg>
-                Share
-              </button>
-            </div>
-          </div>
-        </div>
-
-        {/* 1. HEADER SUMMARY - One Glance View */}
-        <div className="bg-white rounded-lg shadow-lg p-4 sm:p-6 mb-8">
-          <div className="text-center mb-4 sm:mb-6">
-            <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-900 mb-2 px-2">
-              {results.business_name}
-            </h1>
-            <p className="text-gray-600 text-xs sm:text-sm px-2">{results.google_address}</p>
-          </div>
-
-          {/* Snapshot Metrics */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-2 sm:gap-4">
-            {results.google_rating && (
-              <div className="text-center p-3 sm:p-4 bg-yellow-50 rounded-lg border border-yellow-200">
-                <div className="text-xl sm:text-2xl md:text-3xl font-bold text-yellow-700">
-                  {results.google_rating}⭐
-                </div>
-                <div className="text-xs text-gray-600 mt-1">Google Rating</div>
-              </div>
-            )}
-
-            <div className="text-center p-3 sm:p-4 bg-blue-50 rounded-lg border border-blue-200">
-              <div className="text-xl sm:text-2xl md:text-3xl font-bold text-blue-700">
-                {results.reviews_analyzed}
-              </div>
-              <div className="text-xs text-gray-600 mt-1">Reviews Analyzed</div>
-            </div>
-
-            {sentiment && (
-              <>
-                <div className="text-center p-3 sm:p-4 bg-green-50 rounded-lg border border-green-200">
-                  <div className="text-xl sm:text-2xl md:text-3xl font-bold text-green-700">
-                    {sentiment.positive_percentage}%
+    <>
+      {/* Share/Copy buttons header - positioned absolutely over the shared component */}
+      <div className="min-h-screen bg-gradient-to-b from-blue-50 to-white py-12 px-4">
+        <div className="max-w-4xl mx-auto">
+          {/* PeakOps Branding Header with Share Buttons */}
+          <div className="bg-white rounded-lg shadow-md p-6 mb-8">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-4">
+                <img src="/logo.png" alt="PeakOps" className="w-12 h-12" />
+                <div>
+                  <div className="flex items-center gap-2 mb-1">
+                    <h2 className="text-xl font-bold text-gray-900">PeakOps</h2>
+                    <span className="text-gray-400">|</span>
+                    <span className="text-lg font-semibold text-gray-700">AI-Powered Review Analysis</span>
                   </div>
-                  <div className="text-xs text-gray-600 mt-1">Positive</div>
+                  <p className="text-sm text-gray-600">Turn customer feedback into actionable daily checks</p>
                 </div>
-
-                <div className="text-center p-3 sm:p-4 bg-red-50 rounded-lg border border-red-200">
-                  <div className="text-xl sm:text-2xl md:text-3xl font-bold text-red-700">
-                    {sentiment.negative_percentage}%
-                  </div>
-                  <div className="text-xs text-gray-600 mt-1">Negative</div>
-                </div>
-              </>
-            )}
-          </div>
-        </div>
-
-        {/* 2. TOP ISSUES - AI Insights (Top 2-3 most critical) */}
-        {results.insights?.key_issues && results.insights.key_issues.length > 0 && (
-          <div className="bg-gradient-to-r from-orange-50 to-red-50 border-2 border-orange-200 rounded-lg shadow-lg p-6 mb-8">
-            <div className="flex items-center gap-2 mb-3">
-              <span className="text-xl">⚠️</span>
-              <h2 className="text-xl font-bold text-gray-900">
-                Top Priority Issues
-              </h2>
-            </div>
-            <div className="space-y-3">
-              {results.insights.key_issues.slice(0, 3).map((issue: any, index: number) => (
-                <div
-                  key={index}
-                  className={`bg-white rounded-lg p-4 border-l-4 ${
-                    issue.severity === 'HIGH' || issue.severity === 'CRITICAL'
-                      ? 'border-red-500'
-                      : issue.severity === 'MEDIUM'
-                      ? 'border-yellow-500'
-                      : 'border-gray-400'
-                  }`}
+              </div>
+              <div className="flex items-center gap-3">
+                <button
+                  onClick={handleCopyHTML}
+                  className="flex items-center gap-2 bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors relative"
+                  title="Copy HTML for email clients"
                 >
-                  <div className="flex items-start justify-between mb-2">
-                    <h3 className="font-bold text-gray-900 flex items-center">
-                      <span className="mr-2">{issue.severity === 'HIGH' || issue.severity === 'CRITICAL' ? '🔴' : issue.severity === 'MEDIUM' ? '🟡' : '⚪'}</span>
-                      {issue.theme}
-                    </h3>
-                    <div className="flex items-center gap-2 flex-shrink-0 ml-2">
-                      <span className={`px-2 py-0.5 rounded-full text-xs font-bold ${
-                        issue.severity === 'HIGH' || issue.severity === 'CRITICAL'
-                          ? 'bg-red-100 text-red-800'
-                          : issue.severity === 'MEDIUM'
-                          ? 'bg-yellow-100 text-yellow-800'
-                          : 'bg-gray-100 text-gray-800'
-                      }`}>
-                        {issue.severity}
-                      </span>
-                      <span className="text-gray-500 text-xs font-medium">
-                        {issue.mentions} mentions
-                      </span>
-                    </div>
-                  </div>
-                  <p className="text-sm text-gray-700 mb-2">{issue.summary}</p>
-                  {issue.examples && issue.examples.length > 0 && issue.examples[0] && (
-                    <div className="bg-gray-50 p-2 rounded text-xs text-gray-600 italic border-l-2 border-gray-300">
-                      <span className="text-yellow-500 mr-1">{'⭐'.repeat(issue.examples[0].rating)}</span>
-                      "{issue.examples[0].snippet}"
-                    </div>
+                  {copyStatus ? (
+                    <>
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                      </svg>
+                      {copyStatus}
+                    </>
+                  ) : (
+                    <>
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                      </svg>
+                      Copy HTML
+                    </>
                   )}
-                </div>
-              ))}
-            </div>
-
-            {/* One-line CTA */}
-            <div className="mt-4 p-4 bg-blue-50 border-l-4 border-blue-500 rounded">
-              <p className="text-sm text-gray-700 flex items-center gap-2">
-                <span>👇</span>
-                <span><strong>These issues automatically generate daily checks</strong> in your PeakOps plan.</span>
-              </p>
-            </div>
-          </div>
-        )}
-
-        {/* 3. THEME BREAKDOWN - Quick Sentiment Bars */}
-        {results.insights?.operational_themes && (
-          <div className="bg-white rounded-lg shadow-lg p-6 mb-8">
-            <h2 className="text-xl font-bold text-gray-900 mb-4">
-              🔍 Key Topics & Sentiment
-            </h2>
-            <div className="space-y-3">
-              {Object.entries(results.insights.operational_themes)
-                .filter(([_, data]: [string, any]) => data.count > 0)
-                .sort(([_, a]: [string, any], [__, b]: [string, any]) => b.count - a.count)
-                .map(([theme, data]: [string, any]) => {
-                  const totalCount = data.count || 0;
-                  const positiveCount = data.positive_count || 0;
-
-                  // Calculate percentage positive
-                  const positivePercent = totalCount > 0 ? Math.round((positiveCount / totalCount) * 100) : 0;
-
-                  // Determine sentiment label
-                  let sentimentLabel = '';
-                  let sentimentColor = '';
-                  let barColor = '';
-                  if (positivePercent >= 90) {
-                    sentimentLabel = 'Excellent';
-                    sentimentColor = 'text-green-700';
-                    barColor = 'bg-green-500';
-                  } else if (positivePercent >= 50) {
-                    sentimentLabel = 'Mostly Positive';
-                    sentimentColor = 'text-yellow-700';
-                    barColor = 'bg-yellow-500';
-                  } else {
-                    sentimentLabel = 'Needs Attention';
-                    sentimentColor = 'text-red-700';
-                    barColor = 'bg-red-500';
-                  }
-
-                  return (
-                    <div key={theme} className="flex items-center gap-3">
-                      <div className="w-32 flex-shrink-0">
-                        <span className="text-sm font-medium text-gray-700 capitalize">
-                          {theme.replace(/_/g, ' ')}
-                        </span>
-                      </div>
-                      <div className="flex-1 flex items-center gap-2">
-                        <div className="flex-1 bg-gray-200 rounded-full h-6 overflow-hidden">
-                          <div
-                            className={`h-full flex items-center justify-start px-2 text-xs font-medium text-white transition-all ${barColor}`}
-                            style={{ width: `${positivePercent}%` }}
-                          >
-                            {positivePercent >= 15 && `${positivePercent}%`}
-                          </div>
-                        </div>
-                        <span className={`text-sm font-semibold w-32 text-right ${sentimentColor}`}>
-                          {sentimentLabel}
-                        </span>
-                      </div>
-                    </div>
-                  );
-                })}
+                </button>
+                <button
+                  onClick={() => setShowShareModal(true)}
+                  className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
+                  </svg>
+                  Share
+                </button>
+              </div>
             </div>
           </div>
-        )}
-
-        {/* 4. EXAMPLE REVIEWS - Representative Quotes (Minimal) */}
-        {results.insights && (
-          (results.insights.negative_reviews?.filter((r: any) => r.text && r.text.trim()).length > 0) ||
-          (results.insights.positive_reviews?.filter((r: any) => r.text && r.text.trim()).length > 0)
-        ) && (
-          <CustomerVoicesSection
-            negativeReviews={results.insights.negative_reviews?.filter((r: any) => r.text && r.text.trim()) || []}
-            positiveReviews={results.insights.positive_reviews?.filter((r: any) => r.text && r.text.trim()) || []}
-            onViewAllClick={() => setShowAllReviewsModal(true)}
-          />
-        )}
-
-        {/* 5. RECOMMENDED MICRO-CHECKS - Tied to Top Issues */}
-        {results.micro_check_suggestions && results.micro_check_suggestions.length > 0 && (
-          <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border-2 border-blue-200 rounded-lg shadow-lg p-6 mb-8">
-            <h2 className="text-xl font-bold text-gray-900 mb-2 flex items-center gap-2">
-              <span>✅</span>
-              Recommended Actions
-            </h2>
-            <p className="text-sm text-gray-700 mb-4">
-              Daily micro-checks designed to prevent the issues identified above:
-            </p>
-
-            <div className="space-y-4">
-              {results.micro_check_suggestions
-                .slice()
-                .sort((a: any, b: any) => {
-                  // Sort by severity: CRITICAL > HIGH > MEDIUM > LOW
-                  const severityOrder = { 'CRITICAL': 0, 'HIGH': 1, 'MEDIUM': 2, 'LOW': 3 };
-                  const severityA = severityOrder[a.severity as keyof typeof severityOrder] ?? 999;
-                  const severityB = severityOrder[b.severity as keyof typeof severityOrder] ?? 999;
-                  return severityA - severityB;
-                })
-                .map((suggestion: any, index: number) => (
-                <div key={index} className="bg-white border border-gray-200 rounded-lg p-4">
-                  <div className="flex items-start justify-between mb-2">
-                    <h3 className="font-semibold text-gray-900">
-                      {suggestion.title}
-                    </h3>
-                    <span className={`px-2 py-0.5 rounded-full text-xs font-medium flex-shrink-0 ml-2 ${
-                      suggestion.severity === 'HIGH' || suggestion.severity === 'CRITICAL'
-                        ? 'bg-red-100 text-red-800'
-                        : suggestion.severity === 'MEDIUM'
-                        ? 'bg-yellow-100 text-yellow-800'
-                        : 'bg-gray-100 text-gray-800'
-                    }`}>
-                      {suggestion.severity}
-                    </span>
-                  </div>
-
-                  <p className="text-sm text-gray-700 mb-2">
-                    <span className="font-medium">Question:</span> {suggestion.question}
-                  </p>
-
-                  <p className="text-xs text-gray-600 mb-2">
-                    <span className="font-medium">Success:</span> {suggestion.success_criteria}
-                  </p>
-
-                  <div className="text-xs text-gray-500">
-                    📊 Based on {suggestion.mentions_in_reviews} customer reviews
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* CTA */}
-        <div className="bg-gradient-to-r from-blue-600 to-blue-700 rounded-lg shadow-xl p-8 text-center text-white mb-8">
-          <h2 className="text-3xl font-bold mb-4">
-            Ready to Fix These Issues?
-          </h2>
-          <p className="text-xl mb-6 text-blue-100">
-            Start your free trial and implement these micro-checks today
-          </p>
-          <button
-            onClick={() => window.location.href = `/trial-signup?source=review-analysis&analysis_id=${results.id}`}
-            className="bg-white text-blue-600 py-3 px-8 rounded-lg font-bold text-lg hover:bg-blue-50 transition-colors"
-          >
-            Start Free Trial
-          </button>
         </div>
-
-        {/* Footer Branding */}
-        <div className="text-center text-gray-600 text-sm">
-          <p>Powered by <span className="font-semibold text-blue-600">PeakOps</span></p>
-          <p className="mt-2">AI-powered operations management for hospitality businesses</p>
-        </div>
-
-        {/* Share Modal */}
-        {showShareModal && (
-          <ShareAnalysisModal
-            analysisId={results.id}
-            businessName={results.business_name}
-            onClose={() => setShowShareModal(false)}
-          />
-        )}
-
-        {/* All Reviews Modal */}
-        {showAllReviewsModal && (
-          <AllReviewsModal
-            reviews={[
-              ...(results.insights?.negative_reviews || []),
-              ...(results.insights?.positive_reviews || []),
-              ...(results.insights?.neutral_reviews || [])
-            ]}
-            businessName={results.business_name}
-            onClose={() => setShowAllReviewsModal(false)}
-          />
-        )}
       </div>
-    </div>
+
+      {/* Use shared component for main display - it handles its own container */}
+      {/* Offset the py-12 padding from the header above */}
+      <div style={{ marginTop: '-48px' }}>
+        <ReviewAnalysisDisplay
+          results={results}
+          variant="full"
+          showBranding={false}
+          showCTA={true}
+        />
+      </div>
+
+      {/* Share Modal */}
+      {showShareModal && (
+        <ShareAnalysisModal
+          analysisId={results.id}
+          businessName={results.business_name}
+          onClose={() => setShowShareModal(false)}
+        />
+      )}
+
+      {/* All Reviews Modal */}
+      {showAllReviewsModal && (
+        <AllReviewsModal
+          reviews={[
+            ...(results.insights?.negative_reviews || []),
+            ...(results.insights?.positive_reviews || []),
+            ...(results.insights?.neutral_reviews || [])
+          ]}
+          businessName={results.business_name}
+          onClose={() => setShowAllReviewsModal(false)}
+        />
+      )}
+    </>
   );
 }
 
